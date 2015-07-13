@@ -95,28 +95,55 @@
                 (= "hyes" (newlines 0))
                 (= 1 (:row newcursor))))))))
 
-;(deftest history-save-test
-;  (testing "save history"
-;    (is (let [b {:cursor {} 
-;                 :lines ["hello"]
-;                 :history {:items [] :version 0}}
-;                b1 (history-save b)
-;                h2 (:history (history-save (assoc b1 :lines ["hello" "world"])))]
-;          (and (= 2 (:version h2)) (= 2 (-> h2 :items count)))))))
+(def test-buf (create-buf "test-buf" ""))
+
+(deftest history-save-test
+  (testing "save history"
+    (is (let [b (buf-save-cursor test-buf)
+              b1 (merge b {:lines ["hello" "world"] :cursor {:row 1} :ex "exex"})
+              h1 (:history (history-save b1))]
+          (and (= 1 (:version h1)) (= 2 (-> h1 :items count)))))))
+
+(deftest history-peek-test
+  (testing "peek history"
+    (is (map? (history-peek {:history {:items [{:lines {} :cursor {}}] :version 0}})))))
 
 (deftest history-save-unchanged-test
   (testing "save same buffer twice"
-    (is (let [b {:cursor {} 
-                 :lines "hello"
-                 :history {:items [] :version 0}}
-              b1 (history-save b)]
-          ;h2 (:history (history-save (merge b1 {:cursor {:row 1} :ex "exex"})))]
-          (and (= 1 (:version b1)) (= 1 (-> b1 :items count)))))))
+    (is (let [b1 (buf-save-cursor (merge test-buf {:cursor {:row 1} :ex "exex"}))
+              h1 (:history (history-save b1))]
+          (and (= 0 (:version h1)) 
+               (= 1 (-> h1 :items count))
+               (= (-> h1 :items first :cursor :row) 0))))))
 
-(deftest history-save-empty-history-test
-  (testing "first time save history"
-    (is (let [b {:cursor {} 
-                 :lines "hello"
-                 :history {:items [] :version 0}}
-                h (:history (history-save b))]
-          (and (= 1 (:version h)) (= 1 (-> h :items count)))))))
+(deftest history-undo-redo-test
+  (testing "make changes then undo redo"
+    (is (let [b (reduce 
+                  #(history-save (buf-insert %1 (str %2)))
+                  test-buf (range 10))
+              b1 (history-undo b)
+              b2 (history-redo b1)]
+          (and (= ((b1 :lines) 0) "012345678")
+               (= (b2 :lines) (b :lines))
+               (= (b2 :cursor) (b :cursor)))))))
+
+(deftest history-undo-boundary-test
+  (testing "undo until init version"
+    (is (let [b (buf-save-cursor test-buf)
+              b1 (history-save (buf-insert b "yes"))
+              b2 (history-undo (history-undo b1))]
+          (and (= (b2 :lines) (b :lines))
+               (zero? (-> b2 :cursor :row)))))))
+
+             
+(deftest history-undo-cursor-test
+  (testing "undo cursor"
+    (is (let [b (buf-save-cursor test-buf)
+              b1 (history-save (buf-insert b "yes"))
+              b2 (buf-save-cursor b1)
+              b3 (history-save (buf-insert b2 "yes"))
+
+              b4 (history-undo (history-undo b3))]
+          (and (= (b4 :lines) (b :lines))
+               (zero? (-> b4 :cursor :row)))))))
+

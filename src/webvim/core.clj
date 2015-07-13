@@ -67,10 +67,11 @@
             (.printStackTrace e)
             (async/>!! key-server-out (swap! active-buffer merge {:ex "" :mode 0 :message err})))))
       (recur))))
+
 (defonce run-key-server 
   (do
     (init-keymaps)
-    (key-server))) 
+    (key-server)))
 
 (defn edit [keycode]
   (let [before @active-buffer]

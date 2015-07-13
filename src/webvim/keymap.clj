@@ -21,7 +21,7 @@
 (defn set-insert-mode[b]
   (println "set-insert-mode")
   (reset! active-keymap @insert-mode-keymap)
-  (history-save (merge b {:ex "" :mode 1 :message nil :keys nil})))
+  (buf-save-cursor (merge b {:ex "" :mode 1 :message nil :keys nil})))
 
 (defn set-insert-append[b]
   (set-insert-mode
