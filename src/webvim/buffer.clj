@@ -11,6 +11,7 @@
   (let [b {:lines (split-lines-all txt)
            ;row, col, lastcol, viewport row (row from top of current viewport)
            :cursor {:row 0 :col 0 :lastcol 0 :vprow 0}
+           :last-cursor nil
            :sel-range []
            :mode 0
            :name bufname
@@ -21,8 +22,13 @@
            ;viewport size
            :viewport {:w 0 :h 0}}]
     ;TODO: put all server only states (like :viewport) into one map and don't send to client
-    ;initial version 
-    (assoc b :history {:items [{:lines (:lines b) :cursor (:cursor b)}]
+
+    ;The undo/redo function takes advantage of clojure's persistent data structure, just save everything we needs. Consider change to save keystrokes if memory usage is too high.
+    ;Each history item holds two cursors: one is cursor pos when edit begins and the other is when edit ends. Perform undo action will recover cursor to cursor-begin and perform redo action recover cursor to cursor-end. 
+    (assoc b :history {:items [{:lines (:lines b) 
+                                ;The initial version doesn't need cursor-begin
+                                :cursor-begin nil 
+                                :cursor-end (:cursor b)}]
                        :version 0})))
 
 (defn open-file[f]
@@ -42,6 +48,7 @@
 ;    (or (zero? item) (not (= (:lines b) (:lines item))))))
 
 (defn buf-save-cursor
+  "save cursor position when start insertion mode"
   [b]
   (assoc b :last-cursor (:cursor b)))
 
@@ -54,10 +61,10 @@
             newversion (inc version)
             items (subvec (-> b :history :items) 0 newversion)]
         (dissoc (assoc b :history {:items (conj items
-                                                 {:lines (:lines b) 
-                                                  :cursor (:cursor b)
-                                                  :undo-cursor (:last-cursor b)})
-                                    :version newversion}) :last-cursor))
+                                                {:lines (:lines b) 
+                                                 :cursor-begin (:last-cursor b)
+                                                 :cursor-end (:cursor b)})
+                                   :version newversion}) :last-cursor))
       b)))
 
 ;(history-save {:history {:items [] :version 0} :lines [] :cursor {}}) 
@@ -69,22 +76,22 @@
           olditem ((-> b :history :items) version)
           newversion (dec version)
           item ((-> b :history :items) newversion)]
-      (merge b 
-             {:cursor (:undo-cursor olditem)
-              :lines (:lines item)
-              :history 
-              {:items (-> b :history :items) 
-               :version newversion}}))
+      (merge b {:cursor (:cursor-begin olditem)
+                :lines (:lines item)
+                :history 
+                {:items (-> b :history :items) 
+                 :version newversion}}))
     b))
 
 (defn history-redo[b]
   (if (< (-> b :history :version) (-> b :history :items count dec))
-    (let [newversion (-> b :history :version inc)]
-      (merge b 
-             ((-> b :history :items) newversion)
-             {:history 
-              {:items (-> b :history :items) 
-               :version newversion}}))
+    (let [newversion (-> b :history :version inc)
+          item ((-> b :history :items) newversion)]
+      (merge b {:cursor (:cursor-end item)
+                :lines (:lines item)
+                :history 
+                {:items (-> b :history :items) 
+                 :version newversion}}))
     b))
 
 (defn col-count

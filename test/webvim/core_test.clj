@@ -114,12 +114,12 @@
               h1 (:history (history-save b1))]
           (and (= 0 (:version h1)) 
                (= 1 (-> h1 :items count))
-               (= (-> h1 :items first :cursor :row) 0))))))
+               (= (-> h1 :items first :cursor-end :row) 0))))))
 
 (deftest history-undo-redo-test
   (testing "make changes then undo redo"
     (is (let [b (reduce 
-                  #(history-save (buf-insert %1 (str %2)))
+                  #(history-save (buf-insert (buf-save-cursor %1) (str %2)))
                   test-buf (range 10))
               b1 (history-undo b)
               b2 (history-redo b1)]
