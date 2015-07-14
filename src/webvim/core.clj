@@ -23,7 +23,7 @@
                 after))]
     (if (nil? buf)
       (response "")
-      (response (dissoc buf :viewport :name)))))
+      (response (dissoc buf :viewport :name :history)))))
 
 (defn serve-keys
   "Serve a sequence of keys until end of keymap. (works like sytax parser)"
