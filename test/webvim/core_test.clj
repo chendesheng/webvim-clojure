@@ -147,3 +147,39 @@
           (and (= (b4 :lines) (b :lines))
                (zero? (-> b4 :cursor :row)))))))
 
+(defn check-range [b [[r1 c1] [r2 c2]]]
+  (and (= r1 (((-> b :visual :ranges) 0) :row))
+       (= c1 (((-> b :visual :ranges) 0) :col))
+       (= r2 (((-> b :visual :ranges) 1) :row))
+       (= c2 (((-> b :visual :ranges) 1) :col))))
+
+(defn check-cursor [b [r c lc vr]]
+  (and (= r (-> b :cursor :row))
+       (= c (-> b :cursor :col))
+       (= lc (-> b :cursor :lastcol))
+       (= vr (-> b :cursor :vprow))))
+
+
+(deftest set-visual-mode-test
+  (testing "init visual mode"
+    (is (let [b (set-visual-mode (buf-insert test-buf "hello"))]
+          (and (zero? (-> b :visual :type))
+               (check-range b [[0 5] [0 5]]))))))
+
+(deftest visual-mode-move-test
+  (testing "move cursor left then check ranges"
+    (is (let [_ (init-keymaps)
+              h (@visual-mode-keymap "h")
+              k (@visual-mode-keymap "k")
+              b (k (h (set-visual-mode (buf-insert test-buf "hel\nlo"))))]
+          (check-range b [[1 2] [0 1]])))))
+
+(deftest visual-mode-move-cursor-test
+  (testing "move cursor left then check cursor"
+    (is (let [_ (init-keymaps)
+              h (@visual-mode-keymap "h")
+              k (@visual-mode-keymap "k")
+              b (k (h (set-visual-mode (buf-insert test-buf "hel\nlo"))))]
+          (print "cursor::")
+          (pprint (-> b :cursor))
+          (check-cursor b [0 1 1 0])))))

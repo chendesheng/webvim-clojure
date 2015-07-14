@@ -32,6 +32,12 @@ body {
 	text-align:right;
 }
 
+.line-selected {
+	background:#fff;
+	opacity:.1;
+	position:absolute;
+}
+
 .gutter {
 	position:absolute;
 	top:0;

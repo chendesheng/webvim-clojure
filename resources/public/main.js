@@ -29,6 +29,24 @@ function setSize() {
 	$.getJSON('resize/'+w+'/'+h);
 }
 
+function isChinese(c) {
+	return /[\ufe30-\uffa0\u4e00-\u9eff\u3000-\u303F]/.test(c);
+}
+
+function textWidth(txt, a, b) {
+	var x = 0;
+	for (var i = a; i < b; i++) {
+		if (txt[i] == '\t') {
+			x += (4-x%4)*9.57
+		} else if (isChinese(txt[i])) {
+			x+=16;
+		} else {
+			x+=9.57;
+		}
+	}
+	return x;
+}
+
 function render(buf) {
 	if (!buf) return;
 
@@ -49,14 +67,11 @@ function render(buf) {
 		cline = $('#line-'+cr)[0].textContent;
 	}
 	
-	//$('.lines').append('<div class="cursor"></div>');
+	//render cursor
 	if (!$('.lines .cursor').get(0)) {
 		$('.lines').append('<div class="cursor"></div>');
 	}
 
-	function isChinese(c) {
-		return /[\ufe30-\uffa0\u4e00-\u9eff\u3000-\u303F]/.test(c);
-	}
 	var x = 0;
 	for (var i = 0; i < cc; i++) {
 		if (cline[i] == '\t') {
@@ -75,6 +90,7 @@ function render(buf) {
 	$('.cursor').attr('style', 'left:'+x+'px;top:'+y+'px;width:'+w+'px;');
 	
 
+	//render status bar
 	if (buf.mode == 2) {
 		$('.status-bar pre').empty().text(buf.ex);
 		$('.status-bar pre').append('<span class="cursor"> </span>');
@@ -91,10 +107,53 @@ function render(buf) {
 		$('.status-bar pre').empty().text(MODES[buf.mode]+" "+strkeys);
 	}
 
+	//render visual
+	$('.lines .selections').empty();
+	if (buf.mode == 3) {
+		if (!$('.lines .selections').get(0)) {
+			$('.lines').append('<div class="selections"></div>');
+		}
+		var rangs = buf.visual.ranges;
+		var s = rangs[0];
+		var e = rangs[1];
+		//var lines = buf.lines;
+		if (s.row > e.row || (s.row == e.row && s.col > e.col)) {
+			var t = s;
+			s = e;
+			e = t;
+		}
+
+		for (var i = s.row; i <= e.row; i++) {
+			var line = $('<div class="line-selected"></div>');
+			var w = 0;
+			var l = 0;
+			var cline = $('#line-'+i)[0].textContent;
+			if (i == s.row) {
+				w = textWidth(cline, s.col, (e.row==i)?e.col+1:cline.length);
+				l = textWidth(cline, 0, s.col);
+			} else if (i == e.row) {
+				w = textWidth(cline, 0, e.col+1);
+				l = 0;
+			} else {
+				w = textWidth(cline, 0, cline.length);
+				l = 0;
+			}
+
+			line.css('left', l+'px')
+				.css('top', i*20+1+'px')
+				.css('width', w+'px')
+				.css('height', '20px')
+			$('.selections').append(line);
+		}
+	}
+
+
+	//title
 	if (buf.name) {
 		document.title = buf.name;
 	}
 
+	//scroll position
 	$('.lines').scroll(function() {
 		var current = $(this).scrollTop();
 		$('.gutter').scrollTop(current);
@@ -134,5 +193,5 @@ function scrollToCursor(cursor) {
 	}
 }
 
-var MODES = ['-- NORMAL --', '-- INSERT --'];
+var MODES = ['-- NORMAL --', '-- INSERT --', '', '-- VISUAL --'];
 

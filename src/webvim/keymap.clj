@@ -7,16 +7,22 @@
 
 (def motion-keymap (atom {}))
 (def normal-mode-keymap (atom {}))
+(def visual-mode-keymap (atom {}))
 (def insert-mode-keymap (atom {}))
 (def ex-mode-keymap (atom {}))
 
 ;enter point of key sequence parser
 (defonce active-keymap (atom {}))
 
-;TODO undo/redo history
 (defn set-normal-mode[b]
   (reset! active-keymap @normal-mode-keymap)
   (history-save (merge b {:ex "" :mode 0 :keys nil})))
+
+(defn set-visual-mode[b]
+  (reset! active-keymap @visual-mode-keymap)
+  (let [cur (-> b :cursor cursor-to-point)]
+    (merge b {:ex "" :mode 3 :keys nil 
+              :visual {:type 0 :ranges [cur cur]}})))
 
 (defn set-insert-mode[b]
   (println "set-insert-mode")
@@ -59,6 +65,14 @@
                        (assoc b :message "unknown command")))))
 
 ;(reset! active-buffer test-buf)
+(defn visual-mode-wrap-motions-keymap[keymap]
+  (reduce-kv (fn[col k v]
+               (assoc col k 
+                      (fn[b]
+                        (let [newb (v b)]
+                          (assoc-in newb [:visual :ranges 1]
+                                    (-> newb :cursor cursor-to-point))))))
+               {} keymap))
 
 (defn init-keymaps
   "setup keymaps, c+* = ctrl+*; a+* = alt+*. When server recive a keystroke execute function mapped from certain keystroke or :else anything else."
@@ -75,13 +89,20 @@
 
   (reset! normal-mode-keymap @motion-keymap)
   (swap! normal-mode-keymap 
-         merge {"i" set-insert-mode 
+         merge 
+         {"i" set-insert-mode 
                 "a" set-insert-append
                 ":" set-ex-mode
                 "u" history-undo
                 "c+r" history-redo
                 "esc" set-normal-mode
+                "v" set-visual-mode
                 "z" {"z" cursor-center-viewport }})
+
+  (reset! visual-mode-keymap (visual-mode-wrap-motions-keymap @motion-keymap))
+  (swap! visual-mode-keymap merge
+          {"v" set-normal-mode})
+                                    
 
   (reset! insert-mode-keymap 
           {"esc" #(set-normal-mode (cursor-move-char % 0))

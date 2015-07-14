@@ -8,13 +8,18 @@
   (split txt #"\r?\n" -1))
 
 (defn create-buf[bufname txt]
-  (let [b {:lines (split-lines-all txt)
+  (let [b {:name bufname
+           ;Each line is a standard java String
+           :lines (split-lines-all txt)
            ;row, col, lastcol, viewport row (row from top of current viewport)
            :cursor {:row 0 :col 0 :lastcol 0 :vprow 0}
+           ;saved cursor when insert begins, for undo/redo function only
            :last-cursor nil
-           :sel-range []
+           ;:type =0 visual =1 visual line =2 visual block
+           ;:ranges is a vector of point pairs (unordered): [[row1 col1] [row2 col2]]. Alwasy contains even number of points. Both ends are inclusive.
+           :visual {:type 0 :ranges []}
+           ;=0 nomral mode =1 insert mode =2 ex mode =3 visual mode
            :mode 0
-           :name bufname
            ;ongoing ex command
            :ex ""
            ;ongoing command keys, display beside "-- MODE --" prompt
@@ -168,6 +173,9 @@
       :else (dec cnt))))
 
 ;(calc-col test-buf 4 30 30)
+
+(defn cursor-to-point [{row :row col :col}]
+  {:row row :col col})
 
 (defn cursor-move-start
   "Move to beginning of a buffer"
