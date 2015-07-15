@@ -46,7 +46,9 @@ function textWidth(txt, a, b) {
 	}
 	return x;
 }
-
+function htmlEncode(value) {
+    return $('<div/>').text(value).html();
+}
 function render(buf) {
 	if (!buf) return;
 
@@ -59,7 +61,7 @@ function render(buf) {
 		$('.lines').empty();
 		$('.gutter').empty();
 		$(lines).each(function(i, line) {
-			$('.lines').append('<div id="line-'+i+'" class="line"><pre>'+line+'</pre></div>');
+			$('.lines').append('<div id="line-'+i+'" class="line"><pre>'+htmlEncode(line)+'</pre></div>');
 			$('.gutter').append('<div id="line-num-'+i+'" class="line-num">'+(i+1)+'</div>');
 		});
 		cline = lines[cr];
