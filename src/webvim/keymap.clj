@@ -112,7 +112,7 @@
         n (mod (+ i cnt) cnt)]
     (-> b1 
         (assoc-in [:autocompl :suggestions-index] n) 
-        (buffer-replace-suggestion ((-> b1 :autocompl :suggestions) n)))))
+        (buffer-replace-suggestion (-> b1 :autocompl :suggestions (get n))))))
 
 (defn init-keymaps
   "setup keymaps, c+* = ctrl+*; a+* = alt+*. When server recive a keystroke execute function mapped from certain keystroke or :else anything else."

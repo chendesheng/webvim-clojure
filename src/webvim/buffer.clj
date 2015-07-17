@@ -206,7 +206,6 @@
 (defn cursor-move-end
   "Move to first char of last line"
   [b]
-  (pprint (dissoc b :lines))
   (assoc b :cursor
          {:row (-> b :lines count dec) :col 0 :lastcol 0 :vprow (-> b :viewport :h dec)}))
 
@@ -329,40 +328,5 @@
 
 (defn buffer-replace-suggestion[b word]
   (let [subject (buffer-word-before-cursor b)
-        {row :row col :col} (:cursor b)]
-    (merge b (replace-range (:lines b) 
-                                   [{:row row :col (- col (count subject))} {:row row :col col}] 
-                                   word))))
-
-
-;(defn count-lines [b]
-;  (count (:lines b)))
-
-;(count-lines test-buf)
-;(= (join "\n" (:lines test-buf)) (:text test-buf))
-
-;(defn insert-single-line [line s txt]
-;  (let 
-;    [prefix (subs line 0 s)
-;     suffix (subs line s)
-;     lines (split-lines-all txt)]
-;    (update 
-;      (update 
-;        lines 0 #(str prefix %))
-;      (dec (count lines))
-;      #(str % suffix))))
-;
-;(insert-single-line "hello" 2 "yes\nyes")
-
-;(replace-range ["hello" "ok" "yes"] [[0 0] [1 1]] "insert")
-;(replace-range ["hello" "ok" "yes"] [[1 1] [1 1]] "in\nsert")
-;(replace-range ["hello" "ok" "yes"] [[2 0] [2 3]] "in\nsert")
-;(def test-buf (cursor-move-char
-; (cursor-move-char test-buf 2) 2))
-;
-;(def test-buf (assoc test-buf :cursor [5 30 30]))
-;(:cursor (cursor-move-char test-buf 2))
-;(def test-buf (buf-insert test-buf "\n"))
-;(count (:lines test-buf))
-;(def test-buf (replace-range (:lines test-buf) (:cursor test-buf) "a"))
-
+        {col :col} (:cursor b)]
+    (buf-replace b (assoc (:cursor b) :col (- col (count subject))) word)))

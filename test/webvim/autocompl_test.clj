@@ -55,24 +55,24 @@
 
 (deftest autocompl-start-test
   (testing ""
-    (is (let [b (autocompl-start (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vpcol 0}))]
+    (is (let [b (autocompl-start (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vprow 0}))]
           (same-seq? ["co" "cool" "completely" "computer" "continuous" "correlation" "could" "cloud" "clouds"] (-> b :autocompl :suggestions))))))
           
 (deftest autocompl-move-inc-test
   (testing ""
-    (is (let [b (autocompl-move (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vpcol 0}) inc)]
+    (is (let [b (autocompl-move (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vprow 0}) inc)]
           (and (= 1 (-> b :autocompl :suggestions-index))
                (= "cool" (buffer-word-before-cursor b)))))))
 
 (deftest autocompl-move-dec-test
   (testing ""
-    (is (let [b (autocompl-move (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vpcol 0}) dec)]
+    (is (let [b (autocompl-move (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vprow 0}) dec)]
           (and (= 8 (-> b :autocompl :suggestions-index))
                (= "clouds" (buffer-word-before-cursor b)))))))
 
 (deftest autocompl-move-test
   (testing ""
-    (is (let [b (autocompl-move (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vpcol 0}) dec)
+    (is (let [b (autocompl-move (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vprow 0}) dec)
               b1 (-> b (autocompl-move inc) (autocompl-move inc))]
           (and (= 8 (-> b :autocompl :suggestions-index))
                (= "clouds" (buffer-word-before-cursor b))
