@@ -159,27 +159,28 @@
        (= lc (-> b :cursor :lastcol))
        (= vr (-> b :cursor :vprow))))
 
+(deftest buffer-word-before-cursor-test
+  (testing ""
+    (is (let [word (buffer-word-before-cursor (buf-insert test-buf "yes we can"))]
+          (= "can" word)))))
 
-(deftest set-visual-mode-test
-  (testing "init visual mode"
-    (is (let [b (set-visual-mode (buf-insert test-buf "hello"))]
-          (and (zero? (-> b :visual :type))
-               (check-range b [[0 5] [0 5]]))))))
+(deftest buffer-word-before-cursor-single-test
+  (testing ""
+    (is (let [word (buffer-word-before-cursor (buf-insert test-buf "can"))]
+          (= "can" word)))))
 
-(deftest visual-mode-move-test
-  (testing "move cursor left then check ranges"
-    (is (let [_ (init-keymaps)
-              h (@visual-mode-keymap "h")
-              k (@visual-mode-keymap "k")
-              b (k (h (set-visual-mode (buf-insert test-buf "hel\nlo"))))]
-          (check-range b [[1 2] [0 1]])))))
+(deftest buffer-word-before-cursor-empty-test
+  (testing ""
+    (is (let [word (buffer-word-before-cursor (buf-insert test-buf ""))]
+          (= "" word)))))
 
-(deftest visual-mode-move-cursor-test
-  (testing "move cursor left then check cursor"
-    (is (let [_ (init-keymaps)
-              h (@visual-mode-keymap "h")
-              k (@visual-mode-keymap "k")
-              b (k (h (set-visual-mode (buf-insert test-buf "hel\nlo"))))]
-          (print "cursor::")
-          (pprint (-> b :cursor))
-          (check-cursor b [0 1 1 0])))))
+(deftest buffer-word-before-cursor-blank-test
+  (testing ""
+    (is (let [word (buffer-word-before-cursor (buf-insert test-buf " "))]
+          (= "" word)))))
+
+(deftest buffer-replace-suggestion-test
+  (testing ""
+    (is (let [b (buffer-replace-suggestion (buf-insert test-buf "hello") "yayaya")]
+          (= "yayaya" (-> b :lines first))))))
+

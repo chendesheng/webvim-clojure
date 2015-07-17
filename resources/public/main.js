@@ -149,6 +149,28 @@ function render(buf) {
 		}
 	}
 
+	//render autocompl suggestions
+	$('.lines .autocompl').empty();
+	if (buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
+		if (!$('.lines .autocompl')[0]) {
+			$('.lines').append('<div class="autocompl"></div>');
+		}
+
+		var currentWord = buf.autocompl.suggestions[parseInt(buf.autocompl['suggestions-index'])];
+
+		$('.lines .autocompl').empty()
+			.css('left', x-currentWord.length*9.57-10+'px')
+			.css('top', y+20+'px');
+
+		$(buf.autocompl.suggestions).each(function(i, word) {
+			if (i > 0) {
+				var ele = $('<pre></pre>').text(word).appendTo('.lines .autocompl');
+				if (i == parseInt(buf.autocompl['suggestions-index'])) {
+					ele.addClass('highlight');
+				}
+			}
+		});
+	}
 
 	//title
 	if (buf.name) {

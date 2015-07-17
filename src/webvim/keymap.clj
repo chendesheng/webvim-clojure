@@ -3,20 +3,21 @@
             [clojure.core.async :as async]
             [ring.util.response :as response])
   (:use clojure.pprint
-        webvim.buffer))
+        webvim.buffer
+        webvim.autocompl))
 
-(def motion-keymap (atom {}))
-(def normal-mode-keymap (atom {}))
-(def visual-mode-keymap (atom {}))
-(def insert-mode-keymap (atom {}))
-(def ex-mode-keymap (atom {}))
+(defonce motion-keymap (atom {}))
+(defonce normal-mode-keymap (atom {}))
+(defonce visual-mode-keymap (atom {}))
+(defonce insert-mode-keymap (atom {}))
+(defonce ex-mode-keymap (atom {}))
 
 ;enter point of key sequence parser
 (defonce active-keymap (atom {}))
 
 (defn set-normal-mode[b]
   (reset! active-keymap @normal-mode-keymap)
-  (history-save (merge b {:ex "" :mode 0 :keys nil})))
+  (history-save (merge b {:ex "" :mode 0 :keys nil :autocompl {:suggestions nil :suggestions-index 0 :words (-> b :autocompl :words)}})))
 
 (defn set-visual-mode[b]
   (reset! active-keymap @visual-mode-keymap)
@@ -42,9 +43,29 @@
   (merge b {:ex ":" :mode 2 :message nil :keys nil}))
 
 (defn insert-mode-default[b keycode]
-  (if (= 1 (count keycode)) 
-    (buf-insert b keycode)
-    b))
+  (let [b1 (cond 
+             (= "backspace" keycode)
+             (buf-delete b)
+             (= "enter" keycode)
+             (buf-insert b "\n")
+             (= "space" keycode)
+             (buf-insert b " ")
+             (= "tab" keycode)
+             (buf-insert b "\t") 
+             (= 1 (count keycode))
+             (buf-insert b keycode)
+             :else
+             b)]
+    (if (empty? (-> b :autocompl :suggestions))
+      (assoc-in b1 [:autocompl :suggestions] nil)
+      (let [word (buffer-word-before-cursor b1)
+            suggestions  (-> b1 :autocompl :words (autocompl-suggest word))]
+        (assoc b1 :autocompl 
+               (merge (:autocompl b1) 
+                      {:suggestions (if (empty? suggestions)
+                                      nil
+                                      suggestions)
+                       :suggestions-index 0}))))))
 
 (defn ex-mode-default[b keycode]
   (let [ex (:ex b)]
@@ -74,6 +95,25 @@
                                     (-> newb :cursor cursor-to-point))))))
                {} keymap))
 
+(defn autocompl-start[b]
+  (let [word (buffer-word-before-cursor b)
+        suggestions (autocompl-suggest (-> b :autocompl :words) word)]
+    (assoc b :autocompl 
+           (merge (:autocompl b) 
+                  {:suggestions suggestions 
+                   :suggestions-index 0}))))
+
+(defn autocompl-move[b f]
+  (let [b1 (if (nil? (-> b :autocompl :suggestions))
+             (autocompl-start b)
+             b)
+        i (f (-> b1 :autocompl :suggestions-index))
+        cnt (-> b1 :autocompl :suggestions count)
+        n (mod (+ i cnt) cnt)]
+    (-> b1 
+        (assoc-in [:autocompl :suggestions-index] n) 
+        (buffer-replace-suggestion ((-> b1 :autocompl :suggestions) n)))))
+
 (defn init-keymaps
   "setup keymaps, c+* = ctrl+*; a+* = alt+*. When server recive a keystroke execute function mapped from certain keystroke or :else anything else."
   []
@@ -102,15 +142,13 @@
   (reset! visual-mode-keymap (visual-mode-wrap-motions-keymap @motion-keymap))
   (swap! visual-mode-keymap merge
           {"v" set-normal-mode})
-                                    
 
+                                    
   (reset! insert-mode-keymap 
           {"esc" #(set-normal-mode (cursor-move-char % 0))
-           "backspace" buf-delete
            "c+o" @normal-mode-keymap  ;temp normal mode
-           "enter" #(buf-insert % "\n")
-           "space" #(buf-insert % " ")
-           "tab" #(buf-insert % "\t") 
+           "c+n" #(autocompl-move % inc)
+           "c+p" #(autocompl-move % dec)
            :else insert-mode-default })
 
   (reset! ex-mode-keymap

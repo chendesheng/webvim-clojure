@@ -23,10 +23,13 @@
                 after))]
     (if (nil? buf)
       (response "")
-      (let [b (dissoc buf :viewport :name :history)]
-        (if (not (= 3 (:mode b)))
-          (response (dissoc b :visual))
-          (response b))))))
+      (let [b (dissoc buf :viewport :name :history)
+            b1 (if (-> b :autocompl :suggestions empty?)
+                 b
+                 (assoc b :autocompl (dissoc (:autocompl b) :words)))]
+        (if (not (= 3 (:mode b1)))
+          (response (dissoc b1 :visual))
+          (response b1))))))
 
 (defn serve-keys
   "Serve a sequence of keys until end of keymap. (works like sytax parser)"

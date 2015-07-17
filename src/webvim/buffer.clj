@@ -2,6 +2,7 @@
   (:require [me.raynes.fs :as fs]
             [clojure.java.io :as io])
   (:use clojure.pprint
+        webvim.autocompl
         (clojure [string :only (join split)])))
 
 (defn split-lines-all [txt]
@@ -24,17 +25,29 @@
            :ex ""
            ;ongoing command keys, display beside "-- MODE --" prompt
            :keys []
+
+           :autocompl {:words nil
+                       ;empty suggestions means don't display it
+                       ;every input handled in insertion mode should check if :suggestion is nil.
+                       ;  if it is not nil then continue narrow down suggestions
+                       ;ctrl+n, ctrl+p will calculate full suggestions if it is nil
+                       :suggestions nil
+                       ;0 means selection nothing (don't highlight any suggestion item)
+                       ;> 0 means highlight the nth suggestion item
+                       :suggestions-inex 0}
+
            ;viewport size
            :viewport {:w 0 :h 0}}]
     ;TODO: put all server only states (like :viewport) into one map and don't send to client
 
     ;The undo/redo function takes advantage of clojure's persistent data structure, just save everything we needs. Consider change to save keystrokes if memory usage is too high.
     ;Each history item holds two cursors: one is cursor pos when edit begins and the other is when edit ends. Perform undo action will recover cursor to cursor-begin and perform redo action recover cursor to cursor-end. 
-    (assoc b :history {:items [{:lines (:lines b) 
-                                ;The initial version doesn't need cursor-begin
-                                :cursor-begin nil 
-                                :cursor-end (:cursor b)}]
-                       :version 0})))
+    (autocompl-parse-buffer 
+      (assoc b :history {:items [{:lines (:lines b) 
+                                  ;The initial version doesn't need cursor-begin
+                                  :cursor-begin nil 
+                                  :cursor-end (:cursor b)}]
+                         :version 0}))))
 
 (defn open-file[f]
   "Create buffer from a file"
@@ -296,6 +309,26 @@
 
 (defn buffer-append-keys[b keycode]
   (assoc b :keys (conj (:keys b) keycode)))
+
+(defn buffer-word-before-cursor[{lines :lines cur :cursor}]
+  (let [{row :row col :col} cur
+        line (lines row)]
+    (let [s (loop [i (dec col)]
+              (if (neg? i)
+                0
+                (let [ch (int (.charAt line i))]
+                  (if (or (<= (int \a) ch (int \z)) (<= (int \A) ch (int \Z)) (= ch (int \_)))
+                    (recur (dec i))
+                    (inc i)))))]
+      (subs line s col))))
+
+(defn buffer-replace-suggestion[b word]
+  (let [subject (buffer-word-before-cursor b)
+        {row :row col :col} (:cursor b)]
+    (merge b (replace-range (:lines b) 
+                                   [{:row row :col (- col (count subject))} {:row row :col col}] 
+                                   word))))
+
 
 ;(defn count-lines [b]
 ;  (count (:lines b)))

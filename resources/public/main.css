@@ -84,3 +84,18 @@ pre {
 	line-height:30px;
 	padding:0 10px 0 10px;
 }
+
+.autocompl {
+	background:#000;
+	color:#fff;
+	position:absolute;
+	border-radius:4px;
+	padding:3px 0;
+}
+.autocompl pre {
+	padding: 0 10px;
+}
+
+.highlight {
+	background: #555;
+}
