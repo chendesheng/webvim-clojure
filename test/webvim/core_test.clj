@@ -4,6 +4,18 @@
             [webvim.buffer :refer :all])
   (:use clojure.pprint))
 
+(defn check-range [b [[r1 c1] [r2 c2]]]
+  (and (= r1 (((-> b :visual :ranges) 0) :row))
+       (= c1 (((-> b :visual :ranges) 0) :col))
+       (= r2 (((-> b :visual :ranges) 1) :row))
+       (= c2 (((-> b :visual :ranges) 1) :col))))
+
+(defn check-cursor [b [r c lc vr]]
+  (and (= r (-> b :cursor :row))
+       (= c (-> b :cursor :col))
+       (= lc (-> b :cursor :lastcol))
+       (= vr (-> b :cursor :vprow))))
+
 (deftest open-file-test
   (testing "open a local file return init buffer"
     (is (let [b (open-file "project.clj")]
@@ -17,7 +29,6 @@
            (and (= 2 (count newlines))
                 (= "ha" (newlines 0))
                 (= 2 (:col newcursor))
-                (= 2 (:lastcol newcursor))
                 (= 1 (:row newcursor))))))))
 
 (deftest replace-range-insert-line-end-test
@@ -28,7 +39,6 @@
            (and (= 1 (count newlines))
                 (= "hellohaha" (newlines 0))
                 (= 9 (:col newcursor))
-                (= 9 (:lastcol newcursor))
                 (= 0 (:row newcursor))))))))
 
 
@@ -39,7 +49,6 @@
                (replace-range lines [{:row 0 :col 0} {:row 0 :col 0}] "haha")]
            (and (= 2 (count newlines))
                 (= 4 (:col newcursor))
-                (= 4 (:lastcol newcursor))
                 (= 0 (:row newcursor))))))))
 
 (deftest replace-range-insert-breakline-test
@@ -49,7 +58,6 @@
                (replace-range lines [{:row 0 :col 0} {:row 0 :col 0}] "aa\n\nbb")]
            (and (= 4 (count newlines))
                 (= 2 (:col newcursor))
-                (= 2 (:lastcol newcursor))
                 (= 2 (:row newcursor))))))))
 
 (deftest replace-range-insert-middle-test
@@ -59,7 +67,6 @@
                (replace-range lines [{:row 1 :col 1} {:row 1 :col 1}] "aa\n\nbb")]
            (and (= 5 (count newlines))
                 (= 2 (:col newcursor))
-                (= 2 (:lastcol newcursor))
                 (= 3 (:row newcursor))))))))
 
 (deftest replace-range-insert-last-test
@@ -69,7 +76,6 @@
                (replace-range lines [{:row 1 :col 1} {:row 1 :col 1}] "aa\n\nbb")]
            (and (= 5 (count newlines))
                 (= 2 (:col newcursor))
-                (= 2 (:lastcol newcursor))
                 (= 3 (:row newcursor))))))))
 
 
@@ -80,7 +86,6 @@
                (replace-range lines [{:row 0 :col 1} {:row 1 :col 1}] "")]
            (and (= 2 (count newlines))
                 (= 1 (:col newcursor))
-                (= 1 (:lastcol newcursor))
                 (= "horld" (newlines 0))
                 (= 0 (:row newcursor))))))))
 
@@ -91,11 +96,79 @@
                (replace-range lines [{:row 0 :col 1} {:row 1 :col 1}] "yes\n")]
            (and (= 3 (count newlines))
                 (= 0 (:col newcursor))
-                (= 0 (:lastcol newcursor))
                 (= "hyes" (newlines 0))
                 (= 1 (:row newcursor))))))))
 
 (def test-buf (create-buf "test-buf" ""))
+
+(deftest buf-insert-test
+  (testing "insert to a buffer"
+    (let [b (buf-insert test-buf "hello")]
+      (is (check-cursor b [0 5 5 0]))
+      (is (= "hello" (-> b :lines (get 0)))))))
+
+(deftest buf-insert-new-line-test
+  (testing "check cursor vprow"
+    (let [b (buf-insert (assoc test-buf :viewport {:w 1 :h 2}) "a\n\n\n")]
+      (is (check-cursor b [3 0 0 1])))))
+
+(deftest buf-delete-test
+  (testing ""
+    (let [b (-> test-buf (buf-insert "hello") (buf-delete))]
+      (is (check-cursor b [0 4 4 0])))))
+
+(deftest buf-delete-cross-line-test
+  (testing ""
+    (let [b (-> test-buf (assoc :viewport {:w 1 :h 3}) (buf-insert "hello\n\n\n\n") (buf-delete))]
+      (is (check-cursor b [3 0 0 1])))))
+
+(deftest buf-delete-up-cross-viewport-test
+  (testing ""
+    (let [b (-> test-buf
+                (assoc :viewport {:w 1 :h 3})
+                (buf-insert "hello\n\n\n\n")
+                (buf-replace {:row 1 :col 0 :lastcol 0 :vprow 0} ""))]
+      (is (check-cursor b [1 0 0 0])))))
+
+(deftest buf-delete-down-cross-viewport-test
+  (testing ""
+    (let [b (-> test-buf
+                (assoc :viewport {:w 1 :h 2})
+                (buf-insert "hello\n\n\n\n")
+                (cursor-move-char 2)
+                (cursor-move-char 2)
+                (cursor-move-char 2)
+                (buf-replace {:row 3 :col 0 :lastcol 0 :vprow 0} ""))]
+      (is (check-cursor b [1 0 0 0])))))
+
+;(buf-delete-down-cross-viewport-test)
+
+;(deftest buf-replace-test
+;  (testing ""
+;    (let [b (-> test-buf 
+;                (assoc :viewport {:w 1 :h 2}) 
+;                (buf-insert "hello\n\n\n\n")
+;                (buf-replace {:row 0 :col 2 :
+
+(buf-delete-cross-line-test)
+
+(deftest cursor-sort-test
+  (testing ""
+    (let [[cur1 cur2] (cursor-sort {:row 5 :col 4} {:row 5 :col 5})]
+      (is (= 4 (:col cur1))
+          (= 5 (:col cur2))))))
+
+(deftest cursor-sort-reverse-test
+  (testing ""
+    (let [[cur1 cur2] (cursor-sort {:row 5 :col 6} {:row 5 :col 5})]
+      (is (= 5 (:col cur1))
+          (= 6 (:col cur2))))))
+
+(deftest cursor-sort-different-row-test
+  (testing ""
+    (let [[cur1 cur2] (cursor-sort {:row 6 :col 6} {:row 5 :col 5})]
+      (is (= 5 (:row cur1))
+          (= 6 (:col cur1))))))
 
 (deftest history-save-test
   (testing "save history"
@@ -146,18 +219,6 @@
               b4 (history-undo (history-undo b3))]
           (and (= (b4 :lines) (b :lines))
                (zero? (-> b4 :cursor :row)))))))
-
-(defn check-range [b [[r1 c1] [r2 c2]]]
-  (and (= r1 (((-> b :visual :ranges) 0) :row))
-       (= c1 (((-> b :visual :ranges) 0) :col))
-       (= r2 (((-> b :visual :ranges) 1) :row))
-       (= c2 (((-> b :visual :ranges) 1) :col))))
-
-(defn check-cursor [b [r c lc vr]]
-  (and (= r (-> b :cursor :row))
-       (= c (-> b :cursor :col))
-       (= lc (-> b :cursor :lastcol))
-       (= vr (-> b :cursor :vprow))))
 
 (deftest buffer-word-before-cursor-test
   (testing ""

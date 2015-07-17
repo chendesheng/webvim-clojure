@@ -126,8 +126,7 @@
             newcol (count (last txt-lines))]
         {:lines txt-lines
          :cursor {:row (-> txt-lines count dec)
-                  :col newcol
-                  :lastcol newcol}}))
+                  :col newcol}}))
     (let [prefix (subvec lines 0 r1)
           suffix (subvec lines (inc r2))
           l1 (lines r1)
@@ -142,39 +141,48 @@
                    #(str % (subs l2 c2)))]
       {:lines (vec (concat prefix middle suffix))
        :cursor {:row (+ r1 (dec (count txt-lines))) 
-                :col newcol 
-                :lastcol newcol}})))
+                :col newcol}})))
 
-(defn merge-lines-cursor
-  "Merge second buffer's :lines and :cursor to first buffer"
-  [b1 b2]
-  (merge b1 {:lines (:lines b2) 
-            :cursor (merge 
-                      (:cursor b1) 
-                      (:cursor b2))}))
+(defn cursor-sort [cur1 cur2]
+  (let [{r1 :row c1 :col} cur1
+        {r2 :row c2 :col} cur2]
+        (if (or (< r1 r2) (and (= r1 r2) (<= c1 c2)))
+          [cur1 cur2]
+          [cur2 cur1])))
 
-(defn buf-insert [b txt]
+(defn bound-range[v s e]
+  (cond (<= v s) s
+        (>= v e) e
+        :else v))
+
+(defn buf-replace [b cur txt]
+  (let [[cur1 cur2] (cursor-sort (:cursor b) cur)
+        {lines :lines cursor :cursor} (replace-range (:lines b) [cur1 cur2] txt)]
+    (merge b {:lines lines
+              :cursor (merge cursor 
+                             {:lastcol (:col cursor)
+                              :vprow (-> (:row cursor)
+                                         (- (:row cur1)) 
+                                         (+ (:vprow cur1))
+                                         (bound-range 0 (-> b :viewport :h dec)))})})))
+
+(defn buf-insert 
   "Insert at cursor"
-  (let [res (replace-range 
-              (:lines b) 
-              [(:cursor b) (:cursor b)]
-              txt)]
-    (merge-lines-cursor b res)))
+  [b txt]
+  (buf-replace b (:cursor b) txt))
 
 (defn buf-delete
   "Delete cursor left char"
   [b]
-  (println "buf-delete")
-  (let [{row :row col :col} (:cursor b)] 
+  (let [{row :row col :col vprow :vprow} (:cursor b)] 
     (cond 
       (and (= col 0) (> row 0))
-      (merge-lines-cursor b (replace-range 
-                              (:lines b) 
-                              [{:row (dec row) :col (col-count b (dec row))} (:cursor b)] ""))
+      (buf-replace b (merge (:cursor b) 
+                            {:row (dec row) :col (col-count b (dec row)) :vprow (dec vprow)})
+                   "")
       (> col 0)
-      (merge-lines-cursor b (replace-range
-                              (:lines b)
-                              [{:row row :col (dec col)} (:cursor b)] ""))
+      (buf-replace b (assoc (:cursor b) :col (dec col))
+                   "")
       :else b)))
 
 (defn calc-col [b row col lastcol]
@@ -207,8 +215,6 @@
   "Move one character. Direction 0,1,2,3 -> left,right,up,down"
   [b direction]
   (let [{row :row col :col lastcol :lastcol vprow :vprow } (:cursor b)]
-    (pprint (:cursor b))
-    (println "col-count:" (col-count b row))
     (assoc b :cursor 
            (merge (:cursor b) 
                   (cond 
@@ -220,7 +226,6 @@
                     ;move right
                     (and (= direction 1) (> (col-count b row) (inc col)))
                     (let [c (inc col)]
-                      (println c)
                       {:col c :lastcol c})
 
                     ;move up
