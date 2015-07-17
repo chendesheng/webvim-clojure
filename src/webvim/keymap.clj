@@ -56,16 +56,16 @@
              (buf-insert b keycode)
              :else
              b)]
-    (if (empty? (-> b :autocompl :suggestions))
-      (assoc-in b1 [:autocompl :suggestions] nil)
+    (if (empty? (-> b1 :autocompl :suggestions))
+      b1
       (let [word (buffer-word-before-cursor b1)
-            suggestions  (-> b1 :autocompl :words (autocompl-suggest word))]
-        (assoc b1 :autocompl 
-               (merge (:autocompl b1) 
-                      {:suggestions (if (empty? suggestions)
-                                      nil
-                                      suggestions)
-                       :suggestions-index 0}))))))
+            suggestions (-> b1 :autocompl :words (autocompl-suggest word))]
+        (if (= 1 (count suggestions))
+          (assoc-in b1 [:autocompl :suggestions] [])
+          (assoc b1 :autocompl 
+                 (merge (:autocompl b1) 
+                        {:suggestions suggestions
+                         :suggestions-index 0})))))))
 
 (defn ex-mode-default[b keycode]
   (let [ex (:ex b)]
@@ -98,21 +98,25 @@
 (defn autocompl-start[b]
   (let [word (buffer-word-before-cursor b)
         suggestions (autocompl-suggest (-> b :autocompl :words) word)]
-    (assoc b :autocompl 
-           (merge (:autocompl b) 
-                  {:suggestions suggestions 
-                   :suggestions-index 0}))))
+    (if (= 1 (count suggestions))
+      (assoc-in b [:autocompl :suggestions] [])
+      (assoc b :autocompl 
+             (merge (:autocompl b) 
+                    {:suggestions suggestions 
+                     :suggestions-index 0})))))
 
 (defn autocompl-move[b f]
-  (let [b1 (if (nil? (-> b :autocompl :suggestions))
+  (let [b1 (if (empty? (-> b :autocompl :suggestions))
              (autocompl-start b)
              b)
         i (f (-> b1 :autocompl :suggestions-index))
-        cnt (-> b1 :autocompl :suggestions count)
-        n (mod (+ i cnt) cnt)]
-    (-> b1 
-        (assoc-in [:autocompl :suggestions-index] n) 
-        (buffer-replace-suggestion (-> b1 :autocompl :suggestions (get n))))))
+        cnt (-> b1 :autocompl :suggestions count)]
+    (if (zero? cnt)
+      b1
+      (let [n (mod (+ i cnt) cnt)]
+        (-> b1 
+            (assoc-in [:autocompl :suggestions-index] n)
+            (buffer-replace-suggestion (-> b1 :autocompl :suggestions (get n))))))))
 
 (defn init-keymaps
   "setup keymaps, c+* = ctrl+*; a+* = alt+*. When server recive a keystroke execute function mapped from certain keystroke or :else anything else."
