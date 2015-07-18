@@ -126,7 +126,9 @@
   (count ((:lines b) row)))
 
 (defn replace-range 
-  "Core operation of buffer lines manipulation"
+  "Core operation of buffer lines manipulation. 
+  [r1 c1] must before [r2 c2].
+  It's exclusive not include [r2 c2]."
   [lines [{r1 :row c1 :col} {r2 :row c2 :col}] txt]
   (if (zero? (count lines))
     (if (pos? (count txt))
@@ -163,7 +165,9 @@
         (>= v e) e
         :else v))
 
-(defn buf-replace [b cur txt]
+(defn buf-replace 
+  "It's exclusive (not include cur)"
+  [b cur txt]
   (let [[cur1 cur2] (cursor-sort (:cursor b) cur)
         {lines :lines cursor :cursor} (replace-range (:lines b) [cur1 cur2] txt)]
     (merge b {:lines lines

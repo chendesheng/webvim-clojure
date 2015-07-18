@@ -7,6 +7,7 @@
         webvim.autocompl))
 
 (defonce motion-keymap (atom {}))
+(defonce edit-keymap (atom {}))
 (defonce normal-mode-keymap (atom {}))
 (defonce visual-mode-keymap (atom {}))
 (defonce insert-mode-keymap (atom {}))
@@ -104,6 +105,33 @@
                                     (-> newb :cursor cursor-to-point))))))
                {} keymap))
 
+(defn delete-wrap-motions-keymap[keymap]
+  ;exclusive
+  (reduce-kv (fn[col k v]
+               (assoc col k 
+                      (fn[b]
+                        (let [cur (:cursor b)
+                              newb (v b)
+                              newcur (:cursor newb)]
+                          (-> b 
+                              buf-save-cursor
+                              (buf-replace newcur "")
+                              history-save)))))
+               {} keymap))
+
+(defn change-wrap-motions-keymap[keymap]
+  ;exclusive
+  (reduce-kv (fn[col k v]
+               (assoc col k 
+                      (fn[b]
+                        (let [cur (:cursor b)
+                              newb (v b)
+                              newcur (:cursor newb)]
+                          (-> b 
+                              set-insert-mode
+                              (buf-replace newcur ""))))))
+               {} keymap))
+
 (defn autocompl-start[b]
   (let [word (buffer-word-before-cursor b)
         suggestions (autocompl-suggest (-> b :autocompl :words) word)]
@@ -174,17 +202,23 @@
           "c+u" #(cursor-move-viewport %1 -0.5) 
           "c+d" #(cursor-move-viewport %1 0.5)})
 
+  (reset! edit-keymap
+          {"d" (delete-wrap-motions-keymap @motion-keymap)
+           "c" (change-wrap-motions-keymap @motion-keymap)
+           })
+
   (reset! normal-mode-keymap @motion-keymap)
   (swap! normal-mode-keymap 
          merge 
          {"i" set-insert-mode 
-                "a" set-insert-append
-                ":" set-ex-mode
-                "u" history-undo
-                "c+r" history-redo
-                "esc" set-normal-mode
-                "v" set-visual-mode
-                "z" {"z" cursor-center-viewport }})
+          "a" set-insert-append
+          ":" set-ex-mode
+          "u" history-undo
+          "c+r" history-redo
+          "esc" set-normal-mode
+          "v" set-visual-mode
+          "z" {"z" cursor-center-viewport }}
+         @edit-keymap)
 
   (reset! visual-mode-keymap (visual-mode-wrap-motions-keymap @motion-keymap))
   (swap! visual-mode-keymap merge
