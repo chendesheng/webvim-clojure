@@ -1,20 +1,9 @@
 (ns webvim.core-test
   (:require [clojure.test :refer :all]
             [webvim.keymap :refer :all]
+            [webvim.test-util :refer :all]
             [webvim.buffer :refer :all])
   (:use clojure.pprint))
-
-(defn check-range [b [[r1 c1] [r2 c2]]]
-  (and (= r1 (((-> b :visual :ranges) 0) :row))
-       (= c1 (((-> b :visual :ranges) 0) :col))
-       (= r2 (((-> b :visual :ranges) 1) :row))
-       (= c2 (((-> b :visual :ranges) 1) :col))))
-
-(defn check-cursor [b [r c lc vr]]
-  (and (= r (-> b :cursor :row))
-       (= c (-> b :cursor :col))
-       (= lc (-> b :cursor :lastcol))
-       (= vr (-> b :cursor :vprow))))
 
 (deftest open-file-test
   (testing "open a local file return init buffer"
@@ -99,32 +88,30 @@
                 (= "hyes" (newlines 0))
                 (= 1 (:row newcursor))))))))
 
-(def test-buf (create-buf "test-buf" ""))
-
 (deftest buf-insert-test
   (testing "insert to a buffer"
-    (let [b (buf-insert test-buf "hello")]
+    (let [b (buf-insert empty-buf "hello")]
       (is (check-cursor b [0 5 5 0]))
       (is (= "hello" (-> b :lines (get 0)))))))
 
 (deftest buf-insert-new-line-test
   (testing "check cursor vprow"
-    (let [b (buf-insert (assoc test-buf :viewport {:w 1 :h 2}) "a\n\n\n")]
+    (let [b (buf-insert (assoc empty-buf :viewport {:w 1 :h 2}) "a\n\n\n")]
       (is (check-cursor b [3 0 0 1])))))
 
 (deftest buf-delete-test
   (testing ""
-    (let [b (-> test-buf (buf-insert "hello") (buf-delete))]
+    (let [b (-> empty-buf (buf-insert "hello") (buf-delete))]
       (is (check-cursor b [0 4 4 0])))))
 
 (deftest buf-delete-cross-line-test
   (testing ""
-    (let [b (-> test-buf (assoc :viewport {:w 1 :h 3}) (buf-insert "hello\n\n\n\n") (buf-delete))]
+    (let [b (-> empty-buf (assoc :viewport {:w 1 :h 3}) (buf-insert "hello\n\n\n\n") (buf-delete))]
       (is (check-cursor b [3 0 0 1])))))
 
 (deftest buf-delete-up-cross-viewport-test
   (testing ""
-    (let [b (-> test-buf
+    (let [b (-> empty-buf
                 (assoc :viewport {:w 1 :h 3})
                 (buf-insert "hello\n\n\n\n")
                 (buf-replace {:row 1 :col 0 :lastcol 0 :vprow 0} ""))]
@@ -132,7 +119,7 @@
 
 (deftest buf-delete-down-cross-viewport-test
   (testing ""
-    (let [b (-> test-buf
+    (let [b (-> empty-buf
                 (assoc :viewport {:w 1 :h 2})
                 (buf-insert "hello\n\n\n\n")
                 (cursor-move-char 2)
@@ -145,7 +132,7 @@
 
 ;(deftest buf-replace-test
 ;  (testing ""
-;    (let [b (-> test-buf 
+;    (let [b (-> empty-buf 
 ;                (assoc :viewport {:w 1 :h 2}) 
 ;                (buf-insert "hello\n\n\n\n")
 ;                (buf-replace {:row 0 :col 2 :
@@ -172,7 +159,7 @@
 
 (deftest history-save-test
   (testing "save history"
-    (is (let [b (buf-save-cursor test-buf)
+    (is (let [b (buf-save-cursor empty-buf)
               b1 (merge b {:lines ["hello" "world"] :cursor {:row 1} :ex "exex"})
               h1 (:history (history-save b1))]
           (and (= 1 (:version h1)) (= 2 (-> h1 :items count)))))))
@@ -183,7 +170,7 @@
 
 (deftest history-save-unchanged-test
   (testing "save same buffer twice"
-    (is (let [b1 (buf-save-cursor (merge test-buf {:cursor {:row 1} :ex "exex"}))
+    (is (let [b1 (buf-save-cursor (merge empty-buf {:cursor {:row 1} :ex "exex"}))
               h1 (:history (history-save b1))]
           (and (= 0 (:version h1)) 
                (= 1 (-> h1 :items count))
@@ -193,7 +180,7 @@
   (testing "make changes then undo redo"
     (is (let [b (reduce 
                   #(history-save (buf-insert (buf-save-cursor %1) (str %2)))
-                  test-buf (range 10))
+                  empty-buf (range 10))
               b1 (history-undo b)
               b2 (history-redo b1)]
           (and (= ((b1 :lines) 0) "012345678")
@@ -202,7 +189,7 @@
 
 (deftest history-undo-boundary-test
   (testing "undo until init version"
-    (is (let [b (buf-save-cursor test-buf)
+    (is (let [b (buf-save-cursor empty-buf)
               b1 (history-save (buf-insert b "yes"))
               b2 (history-undo (history-undo b1))]
           (and (= (b2 :lines) (b :lines))
@@ -211,7 +198,7 @@
              
 (deftest history-undo-cursor-test
   (testing "undo cursor"
-    (is (let [b (buf-save-cursor test-buf)
+    (is (let [b (buf-save-cursor empty-buf)
               b1 (history-save (buf-insert b "yes"))
               b2 (buf-save-cursor b1)
               b3 (history-save (buf-insert b2 "yes"))
@@ -222,26 +209,26 @@
 
 (deftest buffer-word-before-cursor-test
   (testing ""
-    (is (let [word (buffer-word-before-cursor (buf-insert test-buf "yes we can"))]
+    (is (let [word (buffer-word-before-cursor (buf-insert empty-buf "yes we can"))]
           (= "can" word)))))
 
 (deftest buffer-word-before-cursor-single-test
   (testing ""
-    (is (let [word (buffer-word-before-cursor (buf-insert test-buf "can"))]
+    (is (let [word (buffer-word-before-cursor (buf-insert empty-buf "can"))]
           (= "can" word)))))
 
 (deftest buffer-word-before-cursor-empty-test
   (testing ""
-    (is (let [word (buffer-word-before-cursor (buf-insert test-buf ""))]
+    (is (let [word (buffer-word-before-cursor (buf-insert empty-buf ""))]
           (= "" word)))))
 
 (deftest buffer-word-before-cursor-blank-test
   (testing ""
-    (is (let [word (buffer-word-before-cursor (buf-insert test-buf " "))]
+    (is (let [word (buffer-word-before-cursor (buf-insert empty-buf " "))]
           (= "" word)))))
 
 (deftest buffer-replace-suggestion-test
   (testing ""
-    (is (let [b (buffer-replace-suggestion (buf-insert test-buf "hello") "yayaya")]
+    (is (let [b (buffer-replace-suggestion (buf-insert empty-buf "hello") "yayaya")]
           (= "yayaya" (-> b :lines first))))))
 

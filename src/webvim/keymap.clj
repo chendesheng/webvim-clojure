@@ -128,6 +128,15 @@
           "j" #(cursor-move-char % 3)
           "g" {"g" cursor-move-start}
           "G" cursor-move-end
+          "w" cursor-next-word
+          "W" cursor-next-WORD
+          "b" cursor-back-word
+          "B" cursor-back-WORD
+          "e" cursor-word-end
+          "E" cursor-WORD-end
+          "0" cursor-line-first
+          "^" cursor-line-start
+          "$" cursor-line-end
           "c+u" #(cursor-move-viewport %1 -0.5) 
           "c+d" #(cursor-move-viewport %1 0.5)})
 

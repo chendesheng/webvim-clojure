@@ -61,6 +61,14 @@
 (defn history-peek[b]
   ((-> b :history :items) (-> b :history :version)))
 
+(defn buf-refresh-txt-cache
+  "Call this function concate whole buffer into a single string and save to :txt-cache"
+  [b]
+  (if (= (:lines b) (-> b :txt-cache :lines))
+    b
+    (let [txt (join "\n" (:lines b))]
+      (assoc b :txt-cache {:lines (:lines b) :txt txt}))))
+
 ;(defn history-changed?[b]
 ;  (let [item (history-peek b)]
 ;    (or (zero? item) (not (= (:lines b) (:lines item))))))
@@ -208,7 +216,151 @@
   [b]
   (assoc b :cursor
          {:row (-> b :lines count dec) :col 0 :lastcol 0 :vprow (-> b :viewport :h dec)}))
+    
+(def re-word-start #"\W(?=\w)|[\s\w](?=[^\s\w])")
+(def re-word-start-line-start #"^(?=\S)|\W(?=\w)|[\s\w](?=[^\s\w])")
+(def re-word-start-back #"\W(?=\w)|[\s\w](?=[^\s\w])|^(?=\S)")
 
+(def re-WORD-start #"\s(?=\S)")
+(def re-WORD-start-line-start #"^(?=\S)|\s(?=\S)")
+(def re-WORD-start-back #"\s(?=\S)|^(?=\S)")
+
+(def re-word-end #"(?=\S$)|(?=\w\W)|(?=[^\s\w][\s\w])")
+(def re-WORD-end #"(?=\S$)|(?=\S\s)")
+
+(defn line-next-re
+  "Move to next charactor match by re." 
+  [line col re]
+  (let [subline (subs line col)
+        m (re-matcher re subline)]
+    (if (.find m)
+      [true (-> m .end (+ col))]
+      [false col])))
+
+(defn line-back-re
+  "Move to backious charactor match by re. col=-1 means match whole line" 
+  [line col re]
+  (let [subline (if (= -1 col)
+                  line
+                  (subs line 0 col))
+        m (re-matcher re subline)]
+    (if (.find m)
+      (loop [lastend (.end m)]
+        (println lastend)
+        (if (.find m)
+          (recur (.end m))
+          [true lastend]))
+      [false col])))
+
+(defn cursor-next-re
+  "Match re line by line (re not match multiple lines), don't change cursor if not finded"
+  [b re re-line-start]
+  (loop [row (-> b :cursor :row)
+         col (-> b :cursor :col)
+         re-current re]
+    (if (< row (-> b :lines count))
+      (let [line (-> b :lines (get row))
+            [matched newcol] (line-next-re line col re-current)]
+        (if (not matched)
+          (recur (inc row) 0 re-line-start)
+          (-> b 
+              (assoc-in [:cursor :row] row)
+              (assoc-in [:cursor :vprow] (-> row 
+                                             (- (-> b :cursor :row)) 
+                                             (+ (-> b :cursor :vprow))
+                                             (bound-range 0 (-> b :viewport :h dec))))
+              (assoc-in [:cursor :col] newcol)
+              (assoc-in [:cursor :lastcol] newcol))))
+      b)))
+
+(defn cursor-back-re
+  "Match re line by line in reverse"
+  [b re]
+  (loop [row (-> b :cursor :row)
+         col (-> b :cursor :col)]
+    (if (>= row 0)
+      (let [line (-> b :lines (get row))
+            [matched newcol] (line-back-re line col re)]
+        (if (not matched)
+          (recur (dec row) -1)
+          (-> b 
+              (assoc-in [:cursor :row] row)
+              (assoc-in [:cursor :vprow] (-> (-> b :cursor :vprow)
+                                             (- (-> b :cursor :row)) 
+                                             (+ row)
+                                             (bound-range 0 (-> b :viewport :h dec))))
+              (assoc-in [:cursor :col] newcol)
+              (assoc-in [:cursor :lastcol] newcol))))
+      b)))
+
+(defn cursor-back-word
+  "The \"b\" motion."
+  [b]
+  (-> b 
+      (cursor-back-re re-word-start-back)))
+
+(defn cursor-back-WORD
+  "The \"B\" motion."
+  [b]
+  (-> b 
+      (cursor-back-re re-WORD-start-back)))
+
+
+(defn cursor-next-word
+  "The \"w\" motion. Difference from vim's \"w\" is this motion will skip empty lines"
+  [b]
+  (cursor-next-re b 
+                  re-word-start
+                  re-word-start-line-start))
+
+(defn cursor-next-WORD
+  "The \"W\" motion"
+  [b]
+  (cursor-next-re b 
+                  re-WORD-start
+                  re-WORD-start-line-start))
+
+(defn cursor-word-end
+  "The \"e\" motion."
+  [b]
+  (-> b 
+      (update-in [:cursor :col] inc)
+      (cursor-next-re re-word-end re-word-end)))
+
+(defn cursor-WORD-end
+  "The \"E\" motion."
+  [b]
+  (-> b 
+      (update-in [:cursor :col] inc) 
+      (cursor-next-re re-WORD-end re-WORD-end)))
+
+(defn cursor-line-first
+  "The \"0\" motion"
+  [b]
+  (if (-> b :cursor :col zero?)
+    b
+    (-> b
+        (assoc-in [:cursor :col] 0) 
+        (assoc-in [:cursor :lastcol] 0))))
+
+(defn cursor-line-start
+  "The \"^\" motion"
+  [b]
+  (let [line (-> b :lines (get (-> b :cursor :row)))
+        [matched col] (line-next-re line 0 #"\s(?=\S)")]
+    (if matched
+      (-> b
+          (assoc-in [:cursor :col] col) 
+          (assoc-in [:cursor :lastcol] col))
+      b)))
+
+(defn cursor-line-end
+  "The \"$\" motion"
+  [b]
+  (let [col (-> b :lines (get (-> b :cursor :row)) count dec)]
+    (-> b
+        (assoc-in [:cursor :col] col)
+        (assoc-in [:cursor :lastcol] col))))
 
 (defn cursor-move-char
   "Move one character. Direction 0,1,2,3 -> left,right,up,down"
