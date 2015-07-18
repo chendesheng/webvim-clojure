@@ -145,7 +145,9 @@
 
   (reset! visual-mode-keymap (visual-mode-wrap-motions-keymap @motion-keymap))
   (swap! visual-mode-keymap merge
-          {"v" set-normal-mode})
+          {"v" set-normal-mode
+           "esc" set-normal-mode
+           "z" {"z" cursor-center-viewport}})
 
                                     
   (reset! insert-mode-keymap 
