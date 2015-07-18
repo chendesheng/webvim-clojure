@@ -14,6 +14,7 @@
 
 ;enter point of key sequence parser
 (defonce active-keymap (atom {}))
+(defonce registers (atom {}))
 
 (defn set-normal-mode[b]
   (reset! active-keymap @normal-mode-keymap)
@@ -41,6 +42,10 @@
 (defn set-ex-mode[b]
   (reset! active-keymap @ex-mode-keymap)
   (merge b {:ex ":" :mode 2 :message nil :keys nil}))
+
+(defn set-ex-search-mode[b]
+  (reset! active-keymap @ex-mode-keymap)
+  (merge b {:ex "/" :mode 2 :message nil :keys nil}))
 
 (defn insert-mode-default[b keycode]
   (let [b1 (cond 
@@ -82,6 +87,10 @@
                        (merge (open-file (:name b)) 
                               {:cursor (:cursor b) 
                                :message (str "\"" (:name b) "\" " (count (:lines b)) "L")})
+                       (= \/ (first ex))
+                       (let []
+                         (swap! registers assoc "/" (subs ex 1))
+                         (cursor-next-str b (@registers "/")))
                        :else
                        (assoc b :message "unknown command")))))
 
@@ -118,6 +127,26 @@
             (assoc-in [:autocompl :suggestions-index] n)
             (buffer-replace-suggestion (-> b1 :autocompl :suggestions (get n))))))))
 
+(defn move-to-next-char[b keycode]
+  (let [ch (cond 
+             (= 1 (count keycode))
+             keycode
+             (= "tab" keycode)
+             "\t"
+             (= "space" keycode)
+             " ")]
+    (cursor-next-char b ch)))
+
+(defn move-to-back-char[b keycode]
+  (let [ch (cond 
+             (= 1 (count keycode))
+             keycode
+             (= "tab" keycode)
+             "\t"
+             (= "space" keycode)
+             " ")]
+    (cursor-back-char b ch)))
+
 (defn init-keymaps
   "setup keymaps, c+* = ctrl+*; a+* = alt+*. When server recive a keystroke execute function mapped from certain keystroke or :else anything else."
   []
@@ -137,6 +166,11 @@
           "0" cursor-line-first
           "^" cursor-line-start
           "$" cursor-line-end
+          "f" { :else move-to-next-char }
+          "F" { :else move-to-back-char }
+          "/" set-ex-search-mode
+          "n" #(cursor-next-str % ("/" @registers))
+          "N" #(cursor-back-str % ("/" @registers))
           "c+u" #(cursor-move-viewport %1 -0.5) 
           "c+d" #(cursor-move-viewport %1 0.5)})
 

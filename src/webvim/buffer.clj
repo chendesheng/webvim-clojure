@@ -217,13 +217,13 @@
   (assoc b :cursor
          {:row (-> b :lines count dec) :col 0 :lastcol 0 :vprow (-> b :viewport :h dec)}))
     
-(def re-word-start #"\W(?=\w)|[\s\w](?=[^\s\w])")
-(def re-word-start-line-start #"^(?=\S)|\W(?=\w)|[\s\w](?=[^\s\w])")
-(def re-word-start-back #"\W(?=\w)|[\s\w](?=[^\s\w])|^(?=\S)")
+(def re-word-start #"(?<=\W)\w|(?<=[\s\w])[^\s\w]")
+(def re-word-start-line-start #"(?=^\S)|(?<=\W)\w|(?<=[\s\w])[^\s\w]")
+(def re-word-start-back #"(?<=\W)\w|(?<=[\s\w])[^\s\w]|(?=^\S)")
 
-(def re-WORD-start #"\s(?=\S)")
-(def re-WORD-start-line-start #"^(?=\S)|\s(?=\S)")
-(def re-WORD-start-back #"\s(?=\S)|^(?=\S)")
+(def re-WORD-start #"(?<=\s)\S")
+(def re-WORD-start-line-start #"(?=^\S)|(?<=\s)\S")
+(def re-WORD-start-back #"(?<=\s)\S|(?=^\S)")
 
 (def re-word-end #"(?=\S$)|(?=\w\W)|(?=[^\s\w][\s\w])")
 (def re-WORD-end #"(?=\S$)|(?=\S\s)")
@@ -234,7 +234,7 @@
   (let [subline (subs line col)
         m (re-matcher re subline)]
     (if (.find m)
-      [true (-> m .end (+ col))]
+      [true (-> m .start (+ col))]
       [false col])))
 
 (defn line-back-re
@@ -245,10 +245,9 @@
                   (subs line 0 col))
         m (re-matcher re subline)]
     (if (.find m)
-      (loop [lastend (.end m)]
-        (println lastend)
+      (loop [lastend (.start m)]
         (if (.find m)
-          (recur (.end m))
+          (recur (.start m))
           [true lastend]))
       [false col])))
 
@@ -273,6 +272,19 @@
               (assoc-in [:cursor :lastcol] newcol))))
       b)))
 
+(defn cursor-next-str
+  "The \"n\" motion"
+  [b s]
+  (if (empty? s)
+    b
+    (let [re (re-pattern s)
+          b1 (cursor-move-char b 1)
+          b2 (cursor-next-re b1 re re)]
+      (if (= b1 b2) ;not found, wrap back and searh again
+        (cursor-next-re
+          (cursor-move-start b) re re)
+        b2))))
+
 (defn cursor-back-re
   "Match re line by line in reverse"
   [b re]
@@ -292,6 +304,18 @@
               (assoc-in [:cursor :col] newcol)
               (assoc-in [:cursor :lastcol] newcol))))
       b)))
+
+(defn cursor-back-str
+  "The \"N\" motion"
+  [b s]
+  (if (empty? s)
+    b
+    (let [re (re-pattern s)
+          b1 (cursor-back-re b re)]
+      (if (= b b1)
+        (cursor-back-re (cursor-move-end b) re)
+        b1))))
+
 
 (defn cursor-back-word
   "The \"b\" motion."
@@ -352,6 +376,28 @@
       (-> b
           (assoc-in [:cursor :col] col) 
           (assoc-in [:cursor :lastcol] col))
+      b)))
+
+(defn cursor-next-char
+  [b ch]
+  (let [line (-> b :lines (get (-> b :cursor :row)))
+        col (-> b :cursor :col inc)
+        [matched newcol] (line-next-re line col (re-pattern (str "(?=" ch ")")))]
+    (if matched
+      (-> b
+          (assoc-in [:cursor :col] newcol) 
+          (assoc-in [:cursor :lastcol] newcol))
+      b)))
+
+(defn cursor-back-char
+  [b ch]
+  (let [line (-> b :lines (get (-> b :cursor :row)))
+        col (-> b :cursor :col)
+        [matched newcol] (line-back-re line col (re-pattern (str "(?=" ch ")")))]
+    (if matched
+      (-> b
+          (assoc-in [:cursor :col] newcol) 
+          (assoc-in [:cursor :lastcol] newcol))
       b)))
 
 (defn cursor-line-end

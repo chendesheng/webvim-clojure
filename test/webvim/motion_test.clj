@@ -65,3 +65,41 @@
 
 ;(cursor-back-re-cross-line-test)
 
+(deftest cursor-next-char-test
+  (testing ""
+    (let [b (-> empty-buf
+                (buf-insert "helloworld")
+                (cursor-line-first)
+                (cursor-next-char "w"))]
+      (is (check-cursor b [0 5 5 0])))))
+
+;(cursor-next-char-test)
+
+(deftest cursor-next-char-not-found-test
+  (testing ""
+    (let [b (-> empty-buf
+                (buf-insert "helloworld")
+                (cursor-line-first)
+                (cursor-next-char "1"))]
+      (is (check-cursor b [0 0 0 0])))))
+
+;(cursor-next-char-not-found-test)
+
+(deftest cursor-back-char-test
+  (testing ""
+    (let [b (-> empty-buf
+                (buf-insert "helloworld")
+                (cursor-back-char "w"))]
+      (is (check-cursor b [0 5 5 0])))))
+;(cursor-back-char-test)
+
+(deftest cursor-back-char-not-found-test
+  (testing ""
+    (let [b (-> empty-buf
+                (buf-insert "helloworld")
+                (cursor-back-char "1"))]
+      (is (check-cursor b [0 10 10 0])))))
+
+;(cursor-back-char-not-found-test)
+
+

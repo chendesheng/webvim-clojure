@@ -71,6 +71,7 @@
           (let [err (str "caught exception: " (.getMessage e))]
             (println (.getMessage e))
             (.printStackTrace e)
+            (reset! active-keymap @normal-mode-keymap)
             (async/>!! key-server-out (swap! active-buffer merge {:ex "" :mode 0 :message err})))))
       (recur))))
 
