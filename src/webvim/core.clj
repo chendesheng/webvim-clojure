@@ -11,7 +11,6 @@
         ring.util.response
         ring.middleware.json))
 
-
 (defn render 
   "Write changes to browser."
   ;TODO: only write changed lines
@@ -23,40 +22,81 @@
                 after))]
     (if (nil? buf)
       (response "")
-      (let [b (dissoc buf :viewport :name :history)
+      (let [b (dissoc buf :viewport :name :history :txt-cache :context :last-cursor)
             b1 (if (-> b :autocompl :suggestions empty?)
-                 b
-                 (assoc b :autocompl (dissoc (:autocompl b) :words)))]
-        (if (not (= 3 (:mode b1)))
+                 (dissoc b :autocompl)
+                 b)]
+        (if (not (= visual-mode (:mode b1)))
           (response (dissoc b1 :visual))
           (response b1))))))
 
+;(defn serve-keymap[in out b keymap]
+;  (if (fn? (:enter f))
+;    (swap! b (:enter f)))
+;  (async/>!! out (swap! b buffer-append-keys keycode))
+;  (loop []
+;    (let [keycode (async/<!! in)]
+;      (serve-keys in out b f keycode) ;recusivly walk through keymap TREE
+;      (if (fn? (:continue f))
+;        (if ((:continue f) @b keycode)
+;          (let[]
+;            (async/>!! out @b)
+;            (recur))))))
+;  (if (fn? (:leave f))
+;    (swap! b (:leave f))))
+;
+;(defn serve-key[in out b keymap f]
+;  (if (fn? (:before keymap))
+;    (swap! b (:before keymap)))
+;  (cond 
+;    (fn? f)
+;    (swap! b f)
+;    (fn? (:else keymap))
+;    (swap! b (:else keymap)))
+;  (if (fn? (:after keymap))
+;    (swap! b (:after keymap))))
+;
+;(defn serve-keys [in out b keymap]
+;  (let [keycode (async/<!! in)
+;        f (keymap keycode)]
+;    (if (map? f)
+;      (serve-keymap in out b f)
+;      (serve-key in out b keymap f))
+;    (async/>!! out @b)))
+
 (defn serve-keys
   "Serve a sequence of keys until end of keymap. (works like sytax parser)"
-  [in out b keymap]
-  (let [keycode (async/<!! in)
-        aa (println "got key:" keycode)
+  [in out b keymap keycode]
+  (let [aa (println "got key:" keycode)
         f (keymap keycode)]
-    (println f)
-    (cond
-;      (= keycode "c+c") ;;stop everything and get back to normal mode
-;      (let [b1 (set-normal-mode @b)]
-;        (async/>!! out b1reset! b b1))
-
+    (if (fn? (:before keymap))
+      (swap! b (:before keymap)))
+    (cond 
       (map? f)
-      (let [b1 (swap! b buffer-append-keys keycode)]
-        (async/>!! out b1)
-        (serve-keys in out b f))
+      (let[]
+        (if (fn? (:enter f))
+          (swap! b (:enter f)))
+        (async/>!! out (swap! b buffer-append-keys keycode))
+        (loop []
+          (let [keycode (async/<!! in)]
+            (serve-keys in out b f keycode) ;recusivly walk through keymap TREE
+            (if (fn? (:continue f))
+              (if ((:continue f) @b keycode)
+                (let[]
+                  (async/>!! out @b)
+                  (recur))))))
+        (if (fn? (:leave f))
+          (swap! b (:leave f))))
 
       (fn? f)
-      (let [b1 (dissoc (f @b) :keys)]
-        (async/>!! out (reset! b b1)))
+      (swap! b f)
 
       (nil? f)
-      (async/>!! out (let [else (:else keymap)]
-                       (if (nil? else)
-                         (reset! b @b)
-                         (reset! b (else @b keycode))))))))
+      (let [else (:else keymap)]
+        (if (fn? else)
+          (swap! b else keycode))))
+    (if (fn? (:after keymap))
+      (swap! b (:after keymap)))))
 
 (defonce key-server-in (async/chan))
 (defonce key-server-out (async/chan))
@@ -66,18 +106,22 @@
   (async/thread 
     (loop[]
       (try
-        (serve-keys key-server-in key-server-out active-buffer @active-keymap)
+        (let [keycode (async/<!! key-server-in)
+              haswriteout (serve-keys key-server-in key-server-out 
+                                      active-buffer @root-keymap keycode)]
+          (println "write out")
+          (async/>!! key-server-out @active-buffer))
         (catch Exception e
           (let [err (str "caught exception: " (.getMessage e))]
             (println (.getMessage e))
             (.printStackTrace e)
-            (reset! active-keymap @normal-mode-keymap)
+            (reset! root-keymap @normal-mode-keymap)
             (async/>!! key-server-out (swap! active-buffer merge {:ex "" :mode 0 :message err})))))
       (recur))))
 
 (defonce run-key-server 
   (do
-    (init-keymaps)
+    (init-keymap-tree)
     (key-server)))
 
 (defn edit [keycode]

@@ -93,7 +93,7 @@ function render(buf) {
 	
 
 	//render status bar
-	if (buf.mode == 2) {
+	if (buf.ex && buf.ex.length > 0) {
 		$('.status-bar pre').empty().text(buf.ex);
 		$('.status-bar pre').append('<span class="cursor"> </span>');
 	} else if (buf.message) {
@@ -111,7 +111,7 @@ function render(buf) {
 
 	//render visual
 	$('.lines .selections').empty();
-	if (buf.mode == 3) {
+	if (buf.mode == 2) {
 		if (!$('.lines .selections').get(0)) {
 			$('.lines').append('<div class="selections"></div>');
 		}
@@ -217,5 +217,5 @@ function scrollToCursor(cursor) {
 	}
 }
 
-var MODES = ['-- NORMAL --', '-- INSERT --', '', '-- VISUAL --'];
+var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];
 

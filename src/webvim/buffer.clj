@@ -42,12 +42,15 @@
 
     ;The undo/redo function takes advantage of clojure's persistent data structure, just save everything we needs. Consider change to save keystrokes if memory usage is too high.
     ;Each history item holds two cursors: one is cursor pos when edit begins and the other is when edit ends. Perform undo action will recover cursor to cursor-begin and perform redo action recover cursor to cursor-end. 
-    (autocompl-parse-buffer 
-      (assoc b :history {:items [{:lines (:lines b) 
+    (-> b
+        (assoc :history {:items [{:lines (:lines b) 
                                   ;The initial version doesn't need cursor-begin
                                   :cursor-begin nil 
                                   :cursor-end (:cursor b)}]
-                         :version 0}))))
+                         :version 0})
+        autocompl-parse-buffer
+        ;cache whole txt for searching, use :lines check if same version
+        (assoc :txt-cache {:lines (:lines b)  :txt txt}))))
 
 (defn open-file[f]
   "Create buffer from a file"
@@ -177,6 +180,10 @@
                                          (- (:row cur1)) 
                                          (+ (:vprow cur1))
                                          (bound-range 0 (-> b :viewport :h dec)))})})))
+
+(defn char-under-cursor[{lines :lines cursor :cursor}]
+  (let [{row :row col :col} cursor]
+    (str (.charAt (lines row) col))))
 
 (defn buf-insert 
   "Insert at cursor"
