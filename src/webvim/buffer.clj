@@ -197,6 +197,7 @@
                    "")
       :else b)))
 
+
 (defn calc-col [b row col lastcol]
   "set col to lastcol if length is avaliable"
   (let [cnt (col-count b row)]
@@ -222,8 +223,8 @@
          {:row (-> b :lines count dec) :col 0 :lastcol 0 :vprow (-> b :viewport :h dec)}))
     
 (def re-word-start #"(?<=\W)\w|(?<=[\s\w])[^\s\w]")
-(def re-word-start-line-start #"(?=^\S)|(?<=\W)\w|(?<=[\s\w])[^\s\w]")
-(def re-word-start-back #"(?<=\W)\w|(?<=[\s\w])[^\s\w]|(?=^\S)")
+(def re-word-start-line-start #"^\S|(?<=\W)\w|(?<=[\s\w])[^\s\w]")
+(def re-word-start-back #"(?<=\W)\w|(?<=[\s\w])[^\s\w]|^\S")
 
 (def re-WORD-start #"(?<=\s)\S")
 (def re-WORD-start-line-start #"(?=^\S)|(?<=\s)\S")
@@ -275,19 +276,6 @@
               (assoc-in [:cursor :col] newcol)
               (assoc-in [:cursor :lastcol] newcol))))
       b)))
-
-(defn cursor-next-str
-  "The \"n\" motion"
-  [b s]
-  (if (empty? s)
-    b
-    (let [re (re-pattern s)
-          b1 (cursor-move-char b 1)
-          b2 (cursor-next-re b1 re re)]
-      (if (= b1 b2) ;not found, wrap back and searh again
-        (cursor-next-re
-          (cursor-move-start b) re re)
-        b2))))
 
 (defn cursor-back-re
   "Match re line by line in reverse"
@@ -375,7 +363,7 @@
   "The \"^\" motion"
   [b]
   (let [line (-> b :lines (get (-> b :cursor :row)))
-        [matched col] (line-next-re line 0 #"\s(?=\S)")]
+        [matched col] (line-next-re line 0 #"^\S|(?<=\s)\S")]
     (if matched
       (-> b
           (assoc-in [:cursor :col] col) 
@@ -446,6 +434,20 @@
                       {:row (inc row) :col (calc-col b (inc row) col lastcol) :vprow newvprow})
 
                     :else (:cursor b))))))
+
+(defn cursor-next-str
+  "The \"n\" motion"
+  [b s]
+  (if (empty? s)
+    b
+    (let [re (re-pattern s)
+          b1 (cursor-move-char b 1)
+          b2 (cursor-next-re b1 re re)]
+      (if (= b1 b2) ;not found, wrap back and searh again
+        (cursor-next-re
+          (cursor-move-start b) re re)
+        b2))))
+
 
 (defn first-nonspace-pos
   "Return index of first non-space char"
@@ -532,3 +534,33 @@
   (let [subject (buffer-word-before-cursor b)
         {col :col} (:cursor b)]
     (buf-replace b (assoc (:cursor b) :col (- col (count subject))) word)))
+
+(defn buf-delete-line
+  "Delete line under cursor and put cursor to next line"
+  [b]
+  (let [row (-> b :cursor :row)
+        vprow (-> b :cursor :vprow)
+        line (-> b :lines (get row))
+        [cur1 cur2] 
+        (cond 
+          (= 1 (-> b :lines count)) ;only one line
+          (merge b {:lines [] :cursor {:row 0 :col 0 :lastcol 0 :vprow 0}})
+
+          (= row (-> b :lines count dec)) ;if it is last line delete from previous line
+          (let [prevline (-> b :lines (get (dec row)))]
+            [{:row (dec row) :col (count prevline) :vprow (dec vprow)} 
+             {:row row :col (count line) :vprow vprow}])
+
+          :else
+          [{:row row :col 0 :vprow vprow}
+           {:row (inc row) :col 0 :vprow (inc vprow)}])
+        {lines :lines cursor :cursor} (replace-range (:lines b) [cur1 cur2] "")]
+    (-> b 
+        (merge {:lines lines
+                :cursor (merge cursor 
+                               {:lastcol (:col cursor)
+                                :vprow (-> (:row cursor)
+                                           (- (:row cur1))
+                                           (+ (:vprow cur1))
+                                           (bound-range 0 (-> b :viewport :h dec)))})})
+        cursor-line-start)))

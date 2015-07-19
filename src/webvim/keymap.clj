@@ -175,6 +175,12 @@
              " ")]
     (cursor-back-char b ch)))
 
+(defn delete-line[b]
+  (-> b
+    buf-save-cursor
+    buf-delete-line
+    history-save))
+
 (defn init-keymaps
   "setup keymaps, c+* = ctrl+*; a+* = alt+*. When server recive a keystroke execute function mapped from certain keystroke or :else anything else."
   []
@@ -204,6 +210,7 @@
 
   (reset! edit-keymap
           {"d" (delete-wrap-motions-keymap @motion-keymap)
+           "D" delete-line
            "c" (change-wrap-motions-keymap @motion-keymap)
            })
 
