@@ -114,7 +114,7 @@
     (let [b (-> empty-buf
                 (assoc :viewport {:w 1 :h 3})
                 (buf-insert "hello\n\n\n\n")
-                (buf-replace {:row 1 :col 0 :lastcol 0 :vprow 0} ""))]
+                (buf-replace {:row 1 :col 0 :lastcol 0 :vprow 0} "" false))]
       (is (check-cursor b [1 0 0 0])))))
 
 (deftest buf-delete-down-cross-viewport-test
@@ -125,17 +125,34 @@
                 (cursor-move-char 2)
                 (cursor-move-char 2)
                 (cursor-move-char 2)
-                (buf-replace {:row 3 :col 0 :lastcol 0 :vprow 0} ""))]
+                (buf-replace {:row 3 :col 0 :lastcol 0 :vprow 0} "" false))]
       (is (check-cursor b [1 0 0 0])))))
 
-;(buf-delete-down-cross-viewport-test)
+(deftest buf-txt-cache-init-test
+  (testing ""
+    (let [b (-> (create-buf "test-buf" "hello\nhello"))]
+      (is (= (:lines b) (-> b :txt-cache :lines)))
+      (is (= "hello\nhello" (-> b :txt-cache :txt))))))
 
-;(deftest buf-replace-test
-;  (testing ""
-;    (let [b (-> empty-buf 
-;                (assoc :viewport {:w 1 :h 2}) 
-;                (buf-insert "hello\n\n\n\n")
-;                (buf-replace {:row 0 :col 2 :
+(deftest buf-refresh-txt-cache-test
+  (testing ""
+    (let [b (-> empty-buf
+                (buf-insert "hello\nhello"))]
+      (is (not (= (:lines b) (-> b :txt-cache :lines))))
+      (let [b1 (buf-refresh-txt-cache b)]
+        (is (= (:lines b1) (-> b1 :txt-cache :lines)))
+        (is (= "hello\nhello" (-> b1 :txt-cache :txt)))))))
+
+(deftest buf-txt-cache-hit-test
+  (testing ""
+    (let [b (-> empty-buf
+                (buf-insert "hello\nhello"))]
+      (is (not (= (:lines b) (-> b :txt-cache :lines))))
+      (let [b1 (buf-refresh-txt-cache b)
+            b2 (buf-refresh-txt-cache b1)]
+        (is (= b1 b2))))))
+                
+;(buf-delete-down-cross-viewport-test)
 
 (buf-delete-cross-line-test)
 
@@ -232,3 +249,13 @@
     (is (let [b (buffer-replace-suggestion (buf-insert empty-buf "hello") "yayaya")]
           (= "yayaya" (-> b :lines first))))))
 
+
+(deftest char-under-cursor-test
+  (testing ""
+    (let [b (-> empty-buf 
+                (buf-insert "hello")
+                (cursor-move-char 0))
+          ch (char-under-cursor b)]
+      (is (= "o" ch)))))
+
+;(char-under-cursor-test)

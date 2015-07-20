@@ -13,7 +13,7 @@
 
 (deftest visual-mode-move-test
   (testing "move cursor left then check ranges"
-    (is (let [_ (init-keymaps)
+    (is (let [_ (init-keymap-tree)
               h (@visual-mode-keymap "h")
               k (@visual-mode-keymap "k")
               b (k (h (set-visual-mode (buf-insert empty-buf "hel\nlo"))))]
@@ -21,7 +21,7 @@
 
 (deftest visual-mode-move-cursor-test
   (testing "move cursor left then check cursor"
-    (is (let [_ (init-keymaps)
+    (is (let [_ (init-keymap-tree)
               h (@visual-mode-keymap "h")
               k (@visual-mode-keymap "k")
               b (k (h (set-visual-mode (buf-insert empty-buf "hel\nlo"))))]

@@ -151,7 +151,7 @@ function render(buf) {
 
 	//render autocompl suggestions
 	$('.lines .autocompl').empty();
-	if (buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
+	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
 		if (!$('.lines .autocompl')[0]) {
 			$('.lines').append('<div class="autocompl"></div>');
 		}

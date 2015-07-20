@@ -34,11 +34,7 @@
                        :suggestions nil
                        ;0 means selection nothing (don't highlight any suggestion item)
                        ;> 0 means highlight the nth suggestion item
-                       :suggestions-inex 0}
-
-           ;viewport size
-           :viewport {:w 0 :h 0}}]
-    ;TODO: put all server only states (like :viewport) into one map and don't send to client
+                       :suggestions-inex 0}}]
 
     ;The undo/redo function takes advantage of clojure's persistent data structure, just save everything we needs. Consider change to save keystrokes if memory usage is too high.
     ;Each history item holds two cursors: one is cursor pos when edit begins and the other is when edit ends. Perform undo action will recover cursor to cursor-begin and perform redo action recover cursor to cursor-end. 
@@ -55,6 +51,9 @@
 (defn open-file[f]
   "Create buffer from a file"
   (create-buf f (slurp f)))
+
+;one server only serve one window at one time
+(defonce window (atom{:viewport {:w 0 :h 0}}))
 
 (defonce active-buffer (atom {}))
 
@@ -170,16 +169,19 @@
 
 (defn buf-replace 
   "It's exclusive (not include cur)"
-  [b cur txt]
+  [b cur txt inclusive]
   (let [[cur1 cur2] (cursor-sort (:cursor b) cur)
-        {lines :lines cursor :cursor} (replace-range (:lines b) [cur1 cur2] txt)]
+        cur3 (if inclusive
+               (update cur2 :col inc)
+               cur2)
+        {lines :lines cursor :cursor} (replace-range (:lines b) [cur1 cur3] txt)]
     (merge b {:lines lines
               :cursor (merge cursor 
                              {:lastcol (:col cursor)
                               :vprow (-> (:row cursor)
                                          (- (:row cur1)) 
                                          (+ (:vprow cur1))
-                                         (bound-range 0 (-> b :viewport :h dec)))})})))
+                                         (bound-range 0 (-> @window :viewport :h dec)))})})))
 
 (defn char-under-cursor[{lines :lines cursor :cursor}]
   (let [{row :row col :col} cursor]
@@ -188,7 +190,8 @@
 (defn buf-insert 
   "Insert at cursor"
   [b txt]
-  (buf-replace b (:cursor b) txt))
+  (println (str "buf-inert:" txt))
+  (buf-replace b (:cursor b) txt false))
 
 (defn buf-delete
   "Delete cursor left char"
@@ -198,10 +201,10 @@
       (and (= col 0) (> row 0))
       (buf-replace b (merge (:cursor b) 
                             {:row (dec row) :col (col-count b (dec row)) :vprow (dec vprow)})
-                   "")
+                   "" false)
       (> col 0)
       (buf-replace b (assoc (:cursor b) :col (dec col))
-                   "")
+                   "" false)
       :else b)))
 
 
@@ -227,7 +230,7 @@
   "Move to first char of last line"
   [b]
   (assoc b :cursor
-         {:row (-> b :lines count dec) :col 0 :lastcol 0 :vprow (-> b :viewport :h dec)}))
+         {:row (-> b :lines count dec) :col 0 :lastcol 0 :vprow (-> @window :viewport :h dec)}))
     
 (def re-word-start #"(?<=\W)\w|(?<=[\s\w])[^\s\w]")
 (def re-word-start-line-start #"^\S|(?<=\W)\w|(?<=[\s\w])[^\s\w]")
@@ -279,7 +282,7 @@
               (assoc-in [:cursor :vprow] (-> row 
                                              (- (-> b :cursor :row)) 
                                              (+ (-> b :cursor :vprow))
-                                             (bound-range 0 (-> b :viewport :h dec))))
+                                             (bound-range 0 (-> @window :viewport :h dec))))
               (assoc-in [:cursor :col] newcol)
               (assoc-in [:cursor :lastcol] newcol))))
       b)))
@@ -299,7 +302,7 @@
               (assoc-in [:cursor :vprow] (-> (-> b :cursor :vprow)
                                              (- (-> b :cursor :row)) 
                                              (+ row)
-                                             (bound-range 0 (-> b :viewport :h dec))))
+                                             (bound-range 0 (-> @window :viewport :h dec))))
               (assoc-in [:cursor :col] newcol)
               (assoc-in [:cursor :lastcol] newcol))))
       b)))
@@ -435,9 +438,9 @@
                     ;move down
                     (and (= direction 3) (> (-> b :lines count) (inc row)))
                     (let [newvprow 
-                          (if (< vprow (-> b :viewport :h dec))
+                          (if (< vprow (-> @window :viewport :h dec))
                             (inc vprow)
-                            (-> b :viewport :h dec))]
+                            (-> @window :viewport :h dec))]
                       {:row (inc row) :col (calc-col b (inc row) col lastcol) :vprow newvprow})
 
                     :else (:cursor b))))))
@@ -472,9 +475,9 @@
     (- (int (- i)))))
 
 (defn cursor-move-viewport
-  "Jump cursor by viewport height, deps to buffer's :viewport, keep cursor's viewport row unchanged."
+  "Jump cursor by viewport height, deps to window's :viewport, keep cursor's viewport row unchanged."
   [b factor]
-  (let [d (round-to-zero (* (:h (:viewport b)) factor))
+  (let [d (round-to-zero (* (:h (:viewport @window)) factor))
         row (+ (-> b :cursor :row) d)
         newrow (cond 
                  (< row 0)
@@ -494,7 +497,7 @@
 (defn cursor-center-viewport[b]
   (assoc b :cursor 
          (merge (:cursor b) 
-                {:vprow (int (/ (-> b :viewport :h) 2))})))
+                {:vprow (int (/ (-> @window :viewport :h) 2))})))
 
 
 (defn write-buffer
@@ -525,6 +528,9 @@
 (defn buffer-append-keys[b keycode]
   (assoc b :keys (conj (:keys b) keycode)))
 
+(defn buffer-reset-keys[b]
+  (assoc b :keys []))
+
 (defn buffer-word-before-cursor[{lines :lines cur :cursor}]
   (let [{row :row col :col} cur
         line (lines row)]
@@ -540,7 +546,7 @@
 (defn buffer-replace-suggestion[b word]
   (let [subject (buffer-word-before-cursor b)
         {col :col} (:cursor b)]
-    (buf-replace b (assoc (:cursor b) :col (- col (count subject))) word)))
+    (buf-replace b (assoc (:cursor b) :col (- col (count subject))) word false)))
 
 (defn buf-delete-line
   "Delete line under cursor and put cursor to next line"
@@ -569,5 +575,5 @@
                                 :vprow (-> (:row cursor)
                                            (- (:row cur1))
                                            (+ (:vprow cur1))
-                                           (bound-range 0 (-> b :viewport :h dec)))})})
+                                           (bound-range 0 (-> @window :viewport :h dec)))})})
         cursor-line-start)))

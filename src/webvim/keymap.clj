@@ -4,6 +4,7 @@
             [ring.util.response :as response])
   (:use clojure.pprint
         webvim.buffer
+        clojure.tools.trace
         webvim.autocompl))
 
 (defonce motion-keymap (atom {}))
@@ -21,12 +22,86 @@
 (defonce insert-mode 1)
 (defonce visual-mode 2)
 
+(defonce key-server-in (async/chan))
+(defonce key-server-out (async/chan))
+
+(declare serve-keymap)
+(declare map-fn-else)
+
+(defn call-if-fn [b f & args]
+  (if (fn? f)
+    (apply f b args)
+    b))
+
+(defn testprint[obj prefix]
+  (let[]
+    (println prefix)
+    (pprint obj)
+    obj))
+
+;two types: key (leaf), keymap (internal node)
+;when visit a keymap call :enter :leave 
+; keymap is repetitive if :continue return true
+;when visit a key call :before :after
+(defn serve-keys
+  "Serve a sequence of keys until end of keymap. Recusivly walk through keymap tree (works like sytax parser)"
+  [b in out keymap keycode]
+  (let [f (keymap keycode)]
+    (println "got key:" keycode)
+    (if (or (fn? f) (map? f) (fn? (:else keymap)))
+      (-> b
+          (call-if-fn (:before keymap) keycode)
+          (map-fn-else in out keymap keycode)
+          (call-if-fn (:after keymap) keycode))
+      b)))
+
+(defn map-fn-else[b in out keymap keycode]
+  (let [f (keymap keycode)]
+    (cond
+      (map? f)
+      (serve-keymap b in out f keycode)
+      (fn? f)
+      (f b)
+      (nil? f)
+      (call-if-fn b (:else keymap) keycode))))
+
+(defn loop-serve-keys[b in out keymap]
+  (let [keycode (async/<!! in)
+        b1 (serve-keys b in out keymap keycode)]
+    (if (and (fn? (:continue keymap))
+             ((:continue keymap) b1 keycode))
+      (let[]
+        (async/>!! out b1)
+        (recur b1 in out keymap))
+      b1)))
+
+(defn send-out
+  "write to out channel then return first argument"
+  [obj out]
+  (let[]
+    (async/>!! out obj)
+    obj))
+
+(defn serve-keymap[b in out keymap keycode]
+  (-> b
+      (buffer-append-keys keycode)
+      (call-if-fn (:enter keymap))
+      (send-out out)
+      (loop-serve-keys in out keymap)
+      (call-if-fn (:leave keymap))))
+
 (defn set-normal-mode[b]
+  (print "set-normal-mode:")
   (-> b 
-      (merge {:ex "" :mode normal-mode :keys nil :autocompl {:suggestions nil :suggestions-index 0 :words (-> b :autocompl :words)}})
-      history-save))
+      (merge {:ex "" 
+              :mode normal-mode 
+              :keys nil 
+              :autocompl {:suggestions nil 
+                          :suggestions-index 0 
+                          :words (-> b :autocompl :words)}})))
 
 (defn set-visual-mode[b]
+  (print "set-visual-mode:")
   (let [cur (-> b :cursor cursor-to-point)]
     (merge b {:ex "" :mode visual-mode :keys nil 
               :visual {:type 0 :ranges [cur cur]}})))
@@ -50,6 +125,7 @@
   (merge b {:ex "/" :message nil :keys nil}))
 
 (defn insert-mode-default[b keycode]
+  (println (str "insert-mode-default:" keycode))
   (let [b1 (cond 
              (= "backspace" keycode)
              (buf-delete b)
@@ -96,22 +172,46 @@
       :else
       (assoc b :message "unknown command"))))
 
-(defn save-lastbuf[b]
-  (assoc-in b [:context :lastbuf] b))
+(defn save-lastbuf[b keycode]
+  (-> b (assoc-in [:context :lastbuf] b)))
 
-(defn delete-motion[b]
-    (-> b :context :lastbuf 
-        buf-save-cursor
-        (buf-replace (:cursor b) "")
-        history-save))
+(defonce map-key-inclusive 
+  {"h" false
+   "l" false
+   "w" false 
+   "W" false 
+   "e" true 
+   "E" true 
+   "b" false 
+   "B" false 
+   "f" true
+   "F" false
+   "t" true
+   "T" false
+   "/" false})
 
-(defn change-motion[b]
+(defn inclusive? [keycode]
+  (let [res (map-key-inclusive keycode)]
+    (if (nil? res)
+      true
+      res)))
+
+(defn delete-motion[b keycode]
+  (println (str "delete-motion:" keycode))
+  (println (str "inclusive:" (inclusive? keycode)))
+  (-> b :context :lastbuf 
+      buf-save-cursor
+      (buf-replace 
+        (:cursor b) "" (inclusive? keycode))
+      history-save))
+
+(defn change-motion[b keycode]
   (-> b :context :lastbuf
-      set-insert-mode
-      (buf-replace (:cursor b) "")))
+      (buf-replace (:cursor b) "" (inclusive? keycode))
+      (serve-keymap key-server-in key-server-out (@normal-mode-keymap "i") keycode)))
 
-(defn visual-mode-select[b]
-  (println "visual-mode-select")
+(defn visual-mode-select[b keycode]
+  (print "visual-mode-select:")
   (assoc-in b [:visual :ranges 1]
             (-> b :cursor cursor-to-point)))
 
@@ -192,6 +292,12 @@
            "$" cursor-line-end
            "f" { :else move-to-next-char }
            "F" { :else move-to-back-char }
+           "t" { :else #(-> %1 
+                            (move-to-next-char %2)
+                            (cursor-move-char 0)) }
+           "T" { :else #(-> %1
+                            (move-to-back-char %2)
+                            (cursor-move-char 1)) }
            "/" (merge @ex-mode-keymap 
                       {:enter set-ex-search-mode
                        :else ex-mode-default})
@@ -209,42 +315,45 @@
           {;"c+o" @normal-mode-keymap 
            "c+n" #(autocompl-move % inc)
            "c+p" #(autocompl-move % dec)
-           :else insert-mode-default })
+           :else insert-mode-default 
+           :enter set-insert-mode
+           :continue #(not (= "esc" %2))
+           :leave #(-> %
+                       (cursor-move-char 0)
+                       set-normal-mode
+                       history-save)})
 
   (reset! normal-mode-keymap @motion-keymap)
   (swap! normal-mode-keymap 
          merge 
-         {"i" (merge 
-                {:enter set-insert-mode
-                 :leave #(set-normal-mode (cursor-move-char % 0))
-                 :continue #(not (= "esc" %2))}
-                @insert-mode-keymap)
+         {"i" @insert-mode-keymap
           "a" (merge
-                {:enter set-insert-append
-                 :leave set-normal-mode}
-                @insert-mode-keymap)
+                @insert-mode-keymap
+                {:enter set-insert-append})
           ":" (merge
+                @ex-mode-keymap
                 {:enter set-ex-mode
-                 :leave set-normal-mode}
-                @ex-mode-keymap)
+                 :leave set-normal-mode})
           "u" history-undo
           "c+r" history-redo
           "esc" set-normal-mode
           "v" (merge
+                @visual-mode-keymap
                 {:enter set-visual-mode
                  :leave set-normal-mode
                  :continue #(not (or (= "esc" %2) (= "v" %2)))
-                 :after visual-mode-select}
-                @visual-mode-keymap)
+                 :after visual-mode-select})
           "z" {"z" cursor-center-viewport }
           "d" (merge 
                 @motion-keymap
                 {:before save-lastbuf 
                  :after delete-motion
+                 ;"j" delete-line
+                 ;"k" delete-line
                  "d" delete-line})
           "D" delete-line
           "c" (merge
                 @motion-keymap
                 {:before save-lastbuf 
-                 :after change-motion})})
+                 :after change-motion })})
   (reset! root-keymap @normal-mode-keymap))
