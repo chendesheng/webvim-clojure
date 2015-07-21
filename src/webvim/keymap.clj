@@ -4,7 +4,6 @@
             [ring.util.response :as response])
   (:use clojure.pprint
         webvim.buffer
-        clojure.tools.trace
         webvim.autocompl))
 
 (defonce motion-keymap (atom {}))
@@ -16,7 +15,7 @@
 
 ;enter point of key sequence parser
 (defonce root-keymap (atom {}))
-(defonce registers (atom {}))
+(defonce registers (atom {"%" (:name @active-buffer)}))
 
 (defonce normal-mode 0)
 (defonce insert-mode 1)
@@ -33,11 +32,11 @@
     (apply f b args)
     b))
 
-(defn testprint[obj prefix]
-  (let[]
-    (println prefix)
-    (pprint obj)
-    obj))
+;(defn testprint[obj prefix]
+;  (let[]
+;    (println prefix)
+;    (pprint obj)
+;    obj))
 
 ;two types: key (leaf), keymap (internal node)
 ;when visit a keymap call :enter :leave 
@@ -111,12 +110,13 @@
   (buf-save-cursor (merge b {:ex "" :mode insert-mode :message nil :keys nil})))
 
 (defn set-insert-append[b]
-  (set-insert-mode
-    (let [cursor (:cursor b)]
-      (if (pos? (:col cursor))
-        (let [newcol (-> cursor :col inc)]
-          (assoc b :cursor (merge cursor {:col newcol :lastcol newcol})))
-        (assoc b :cursor (merge cursor {:col 0 :lastcol 0}))))))
+  (let [col (if (= (col-count b (-> b :cursor :row)) 1) ;contains only EOL
+              0
+              (-> b :cursor :col inc))]
+    (-> b
+        set-insert-mode
+        (assoc-in [:cursor :col] col)
+        (assoc-in [:cursor :lastcol] col))))
 
 (defn set-ex-mode[b]
   (merge b {:ex ":" :message nil :keys nil}))
@@ -258,6 +258,12 @@
              " ")]
     (cursor-back-char b ch)))
 
+(defn put-from-register[b keycode]
+  (let [txt (@registers keycode)]
+    (if (string? txt)
+      (buf-insert b txt))
+    b))
+
 (defn delete-line[b]
   (-> b
     buf-save-cursor
@@ -315,6 +321,9 @@
           {;"c+o" @normal-mode-keymap 
            "c+n" #(autocompl-move % inc)
            "c+p" #(autocompl-move % dec)
+           "c+r" {
+                  :else put-from-register
+                  }
            :else insert-mode-default 
            :enter set-insert-mode
            :continue #(not (= "esc" %2))
@@ -351,9 +360,16 @@
                  ;"j" delete-line
                  ;"k" delete-line
                  "d" delete-line})
+          "p" #(put-from-register % "\"")
           "D" delete-line
           "c" (merge
                 @motion-keymap
                 {:before save-lastbuf 
-                 :after change-motion })})
+                 :after change-motion })
+          :after (fn[b keycode]
+                   (let [{col :col row :row} (:cursor b)]
+                     ;prevent cursor on top of EOF in normal mode
+                     (if (and (> col 0) (>= col (dec (col-count b row))))
+                       (update-in b [:cursor :col] dec)
+                       b)))})
   (reset! root-keymap @normal-mode-keymap))

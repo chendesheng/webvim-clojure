@@ -5,8 +5,13 @@
         webvim.autocompl
         (clojure [string :only (join split)])))
 
-(defn split-lines-all [txt]
-  (split txt #"\r?\n" -1))
+;
+(defn split-lines-all 
+  "Split by \\n and keep \\n. Always has a extra empty string after last \\n.
+=> (split-lines-all \"\")
+[\"\"]"
+  [txt]
+  (split txt #"(?<=\n)" -1))
 
 (defn create-buf[bufname txt]
   (let [b {:name bufname
@@ -68,7 +73,7 @@
   [b]
   (if (= (:lines b) (-> b :txt-cache :lines))
     b
-    (let [txt (join "\n" (:lines b))]
+    (let [txt (join (:lines b))]
       (assoc b :txt-cache {:lines (:lines b) :txt txt}))))
 
 ;(defn history-changed?[b]
@@ -130,30 +135,35 @@
 (defn replace-range 
   "Core operation of buffer lines manipulation. 
   [r1 c1] must before [r2 c2].
-  It's exclusive not include [r2 c2]."
-  [lines [{r1 :row c1 :col} {r2 :row c2 :col}] txt]
-  (if (zero? (count lines))
-    (if (pos? (count txt))
-      (let [txt-lines (split-lines-all txt)
-            newcol (count (last txt-lines))]
-        {:lines txt-lines
-         :cursor {:row (-> txt-lines count dec)
-                  :col newcol}}))
-    (let [prefix (subvec lines 0 r1)
-          suffix (subvec lines (inc r2))
-          l1 (lines r1)
-          l2 (lines r2)
-          txt-lines (split-lines-all txt)
-          newcol (if (= 1 (count txt-lines))
-                   (+ c1 (count (first txt-lines)))
-                   (count (last txt-lines)))
-          middle (update
-                   (update txt-lines 0 #(str (subs l1 0 c1) %))
-                   (dec (count txt-lines))
-                   #(str % (subs l2 c2)))]
-      {:lines (vec (concat prefix middle suffix))
-       :cursor {:row (+ r1 (dec (count txt-lines))) 
-                :col newcol}})))
+  It's exclusive not include [r2 c2].
+  The lines argument must contains at leave one item (could be an empty string)"
+  [lines {r1 :row c1 :col} {r2 :row c2 :col} txt]
+  ;__________
+  ;__________ ;prefix 
+  ;____...... ;l1
+  ;..........
+  ;..________ ;l2
+  ;__________ ;suffix
+  (let [prefix (subvec lines 0 r1)
+        suffix (subvec lines (inc r2))
+        l1 (subs (lines r1) 0 c1)
+        l2 (subs (lines r2) c2)
+        txt-lines (split-lines-all txt)
+        middle (-> txt-lines
+                   (update 0 #(str l1 %))
+                   (update (dec (count txt-lines)) #(str % l2)))
+        newcol (- (count (last middle)) (count l2))]
+    ;(print "prefix:")
+    ;(pprint prefix)
+    ;(println (str "l1:" l1))
+    ;(println (str "l2:" l2))
+    ;(print "middle:")
+    ;(pprint middle)
+    ;(print "suffix:")
+    ;(pprint suffix)
+    {:lines (vec (concat prefix middle suffix))
+     :cursor {:row (+ r1 (dec (count txt-lines))) 
+              :col newcol}}))
 
 (defn cursor-sort [cur1 cur2]
   (let [{r1 :row c1 :col} cur1
@@ -171,10 +181,12 @@
   "It's exclusive (not include cur)"
   [b cur txt inclusive]
   (let [[cur1 cur2] (cursor-sort (:cursor b) cur)
-        cur3 (if inclusive
-               (update cur2 :col inc)
-               cur2)
-        {lines :lines cursor :cursor} (replace-range (:lines b) [cur1 cur3] txt)]
+        ;_ (print "cur1:")
+        ;_ (pprint cur1)
+        ;_ (print "cur2:")
+        ;_ (pprint cur2)
+        cur3 (if inclusive (update cur2 :col inc) cur2)
+        {lines :lines cursor :cursor} (replace-range (:lines b) cur1 cur3 txt)]
     (merge b {:lines lines
               :cursor (merge cursor 
                              {:lastcol (:col cursor)
@@ -200,7 +212,7 @@
     (cond 
       (and (= col 0) (> row 0))
       (buf-replace b (merge (:cursor b) 
-                            {:row (dec row) :col (col-count b (dec row)) :vprow (dec vprow)})
+                            {:row (dec row) :col (dec (col-count b (dec row))) :vprow (dec vprow)})
                    "" false)
       (> col 0)
       (buf-replace b (assoc (:cursor b) :col (dec col))
@@ -405,13 +417,15 @@
 (defn cursor-line-end
   "The \"$\" motion"
   [b]
-  (let [col (-> b :lines (get (-> b :cursor :row)) count dec)]
+  (let [col (-> b :lines (get (-> b :cursor :row)) count dec)
+        col1 (if (neg? col) 0 col)]
     (-> b
         (assoc-in [:cursor :col] col)
         (assoc-in [:cursor :lastcol] col))))
 
 (defn cursor-move-char
-  "Move one character. Direction 0,1,2,3 -> left,right,up,down"
+  "Move one character. Direction 0,1,2,3 -> left,right,up,down
+    In normal mode the cursor should never go to \n"
   [b direction]
   (let [{row :row col :col lastcol :lastcol vprow :vprow } (:cursor b)]
     (assoc b :cursor 
@@ -512,8 +526,7 @@
       (fs/create (fs/file tmp))
       (with-open [wrtr (io/writer (fs/file tmp))]
         (doseq [line lines]
-          (do (.write wrtr line)
-              (.write wrtr "\n"))))
+          (.write wrtr line)))
       ;TODO handle line break
       ;TODO fsync before rename
       ;TODO Windows?
@@ -567,7 +580,7 @@
           :else
           [{:row row :col 0 :vprow vprow}
            {:row (inc row) :col 0 :vprow (inc vprow)}])
-        {lines :lines cursor :cursor} (replace-range (:lines b) [cur1 cur2] "")]
+        {lines :lines cursor :cursor} (replace-range (:lines b) cur1 cur2 "")]
     (-> b 
         (merge {:lines lines
                 :cursor (merge cursor 

@@ -13,19 +13,20 @@
 
 (deftest visual-mode-move-test
   (testing "move cursor left then check ranges"
-    (is (let [_ (init-keymap-tree)
-              h (@visual-mode-keymap "h")
-              k (@visual-mode-keymap "k")
-              b (k (h (set-visual-mode (buf-insert empty-buf "hel\nlo"))))]
-          (check-range b [[1 2] [0 1]])))))
+    (let [_ (init-keymap-tree)
+          h (@visual-mode-keymap "h")
+          k (@visual-mode-keymap "k")
+          b (visual-mode-select 
+              (k (h (set-visual-mode (buf-insert empty-buf "hel\nlo")))) "a")]
+      (is (check-range b [[1 2] [0 1]])))))
+
+;(visual-mode-move-test)
 
 (deftest visual-mode-move-cursor-test
   (testing "move cursor left then check cursor"
-    (is (let [_ (init-keymap-tree)
-              h (@visual-mode-keymap "h")
-              k (@visual-mode-keymap "k")
-              b (k (h (set-visual-mode (buf-insert empty-buf "hel\nlo"))))]
-          (print "cursor::")
-          (pprint (-> b :cursor))
-          (check-cursor b [0 1 1 0])))))
-
+    (let [_ (init-keymap-tree)
+          h (@visual-mode-keymap "h")
+          k (@visual-mode-keymap "k")
+          b (k (h (set-visual-mode (buf-insert empty-buf "hel\nlo"))))]
+      (is (check-cursor b [0 1 1 0])))))
+;(visual-mode-move-cursor-test)

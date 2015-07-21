@@ -12,102 +12,148 @@
 
 (deftest replace-range-insert-empty-test
   (testing "insert into empty tests"
-   (is (let [lines []]
+   (is (let [lines [""]]
          (let [{newlines :lines newcursor :cursor} 
-               (replace-range lines [{:row 0 :col 0} {:row 0 :col 0}] "ha\nha")]
+               (replace-range lines {:row 0 :col 0} {:row 0 :col 0} "ha\nha")]
            (and (= 2 (count newlines))
-                (= "ha" (newlines 0))
+                (= "ha\n" (newlines 0))
                 (= 2 (:col newcursor))
                 (= 1 (:row newcursor))))))))
 
+;(replace-range-insert-empty-test)
+
 (deftest replace-range-insert-line-end-test
   (testing "insert into line end"
-   (is (let [lines ["hello"]]
+   (is (let [lines ["hello\n"]]
          (let [{newlines :lines newcursor :cursor} 
-               (replace-range lines [{:row 0 :col 5} {:row 0 :col 5}] "haha")]
+               (replace-range lines {:row 0 :col 5} {:row 0 :col 5} "haha")]
            (and (= 1 (count newlines))
-                (= "hellohaha" (newlines 0))
+                (= "hellohaha\n" (newlines 0))
                 (= 9 (:col newcursor))
                 (= 0 (:row newcursor))))))))
+
+;(replace-range-insert-line-end-test)
 
 
 (deftest replace-range-insert-test
   (testing "insert texts"
-   (is (let [lines ["hello" "world"]]
-         (let [{newlines :lines newcursor :cursor} 
-               (replace-range lines [{:row 0 :col 0} {:row 0 :col 0}] "haha")]
-           (and (= 2 (count newlines))
-                (= 4 (:col newcursor))
-                (= 0 (:row newcursor))))))))
+    (let [lines ["hello\n" "world"]
+          {newlines :lines newcursor :cursor} (replace-range lines {:row 0 :col 0} {:row 0 :col 0} "haha")]
+      (is (= "hahahello\n" (newlines 0)))
+      (is (= 2 (count newlines)))
+      (is (= 4 (:col newcursor)))
+      (is (= 0 (:row newcursor))))))
+
+;(replace-range-insert-test)
 
 (deftest replace-range-insert-breakline-test
   (testing "insert test contains \\n"
-   (is (let [lines ["hello" "world"]]
+   (is (let [lines ["hello\n" "world"]]
          (let [{newlines :lines newcursor :cursor} 
-               (replace-range lines [{:row 0 :col 0} {:row 0 :col 0}] "aa\n\nbb")]
+               (replace-range lines {:row 0 :col 0} {:row 0 :col 0} "aa\n\nbb")]
            (and (= 4 (count newlines))
                 (= 2 (:col newcursor))
                 (= 2 (:row newcursor))))))))
+
+;(replace-range-insert-breakline-test)
 
 (deftest replace-range-insert-middle-test
   (testing "insert test contains \\n"
    (is (let [lines ["hello" "world" "yes"]]
          (let [{newlines :lines newcursor :cursor} 
-               (replace-range lines [{:row 1 :col 1} {:row 1 :col 1}] "aa\n\nbb")]
+               (replace-range lines {:row 1 :col 1} {:row 1 :col 1} "aa\n\nbb")]
            (and (= 5 (count newlines))
                 (= 2 (:col newcursor))
                 (= 3 (:row newcursor))))))))
+;(replace-range-insert-middle-test)
 
 (deftest replace-range-insert-last-test
   (testing "insert test contains \\n"
-   (is (let [lines ["hello" "world" "yes"]]
+   (is (let [lines ["hello\n" "world\n" "yes"]]
          (let [{newlines :lines newcursor :cursor} 
-               (replace-range lines [{:row 1 :col 1} {:row 1 :col 1}] "aa\n\nbb")]
+               (replace-range lines {:row 1 :col 1} {:row 1 :col 1} "aa\n\nbb")]
            (and (= 5 (count newlines))
                 (= 2 (:col newcursor))
                 (= 3 (:row newcursor))))))))
-
+;(replace-range-insert-last-test)
 
 (deftest replace-range-delete-test
   (testing "delete test"
-   (is (let [lines ["hello" "world" "yes"]]
-         (let [{newlines :lines newcursor :cursor} 
-               (replace-range lines [{:row 0 :col 1} {:row 1 :col 1}] "")]
-           (and (= 2 (count newlines))
-                (= 1 (:col newcursor))
-                (= "horld" (newlines 0))
-                (= 0 (:row newcursor))))))))
+    (let [lines ["hello\n" "world\n" "yes"]
+          {newlines :lines newcursor :cursor} 
+          (replace-range lines {:row 0 :col 1} {:row 1 :col 1} "")]
+      (is (= 2 (count newlines)))
+      (is (= 1 (:col newcursor)))
+      (is (= "horld\n" (newlines 0)))
+      (is (= 0 (:row newcursor))))))
+;(replace-range-delete-test)
+
+
+(deftest replace-range-delete-cross-line-test
+  (testing "delete test"
+    (let [lines ["hello\n" "world"]
+          {newlines :lines newcursor :cursor} 
+          (replace-range lines {:row 0 :col 5} {:row 1 :col 0} "")]
+      (is (= 1 (count newlines)))
+      (is (= 5 (:col newcursor)))
+      (is (= "helloworld" (newlines 0)))
+      (is (= 0 (:row newcursor))))))
+
+;(replace-range-delete-cross-line-test)
 
 (deftest replace-range-replace-test
   (testing "delete & insert test"
-   (is (let [lines ["hello" "world" "yes"]]
-         (let [{newlines :lines newcursor :cursor} 
-               (replace-range lines [{:row 0 :col 1} {:row 1 :col 1}] "yes\n")]
-           (and (= 3 (count newlines))
-                (= 0 (:col newcursor))
-                (= "hyes" (newlines 0))
-                (= 1 (:row newcursor))))))))
+    (let [lines ["hello\n" "world\n" "yes"]
+          {newlines :lines newcursor :cursor} 
+          (replace-range lines {:row 0 :col 1} {:row 1 :col 1} "yes\n")]
+      (is (= 3 (count newlines)))
+      (is (= 0 (:col newcursor)))
+      (is (= "hyes\n" (newlines 0)))
+      (is (= "orld\n" (newlines 1)))
+      (is (= 1 (:row newcursor))))))
+
+;(replace-range-replace-test)
 
 (deftest buf-insert-test
   (testing "insert to a buffer"
     (let [b (buf-insert empty-buf "hello")]
       (is (check-cursor b [0 5 5 0]))
       (is (= "hello" (-> b :lines (get 0)))))))
+;(buf-insert-test)
 
 (deftest buf-insert-new-line-test
   (testing "check cursor vprow"
-    (let [b (buf-insert (assoc empty-buf :viewport {:w 1 :h 2}) "a\n\n\n")]
+    (let [_ (swap! window assoc :viewport {:w 1 :h 2})
+          b (buf-insert empty-buf "a\n\n\n")]
       (is (check-cursor b [3 0 0 1])))))
+
+;(buf-insert-new-line-test)
 
 (deftest buf-delete-test
   (testing ""
     (let [b (-> empty-buf (buf-insert "hello") (buf-delete))]
       (is (check-cursor b [0 4 4 0])))))
 
+;(buf-delete-test)
+
+(deftest buf-delete-empty
+  (testing ""
+    (let [b (-> empty-buf (buf-delete))]
+      (is (check-cursor b [0 0 0 0]))
+      (is (= "" (-> b :lines (get 0)))))))
+
+;(buf-delete-empty)
+
 (deftest buf-delete-cross-line-test
   (testing ""
-    (let [b (-> empty-buf (assoc :viewport {:w 1 :h 3}) (buf-insert "hello\n\n\n\n") (buf-delete))]
+    (let [_ (swap! window assoc :viewport {:w 1 :h 3})
+          b (-> empty-buf 
+                (buf-insert "hello\n\n\n\n") 
+                (testprint)
+                (buf-delete))]
       (is (check-cursor b [3 0 0 1])))))
+
+;(buf-delete-cross-line-test)
 
 (deftest buf-delete-up-cross-viewport-test
   (testing ""
@@ -116,6 +162,7 @@
                 (buf-insert "hello\n\n\n\n")
                 (buf-replace {:row 1 :col 0 :lastcol 0 :vprow 0} "" false))]
       (is (check-cursor b [1 0 0 0])))))
+;(buf-delete-up-cross-viewport-test)
 
 (deftest buf-delete-down-cross-viewport-test
   (testing ""
@@ -127,6 +174,7 @@
                 (cursor-move-char 2)
                 (buf-replace {:row 3 :col 0 :lastcol 0 :vprow 0} "" false))]
       (is (check-cursor b [1 0 0 0])))))
+;(buf-delete-down-cross-viewport-test)
 
 (deftest buf-txt-cache-init-test
   (testing ""
@@ -143,6 +191,7 @@
         (is (= (:lines b1) (-> b1 :txt-cache :lines)))
         (is (= "hello\nhello" (-> b1 :txt-cache :txt)))))))
 
+
 (deftest buf-txt-cache-hit-test
   (testing ""
     (let [b (-> empty-buf
@@ -154,7 +203,7 @@
                 
 ;(buf-delete-down-cross-viewport-test)
 
-(buf-delete-cross-line-test)
+;(buf-delete-cross-line-test)
 
 (deftest cursor-sort-test
   (testing ""

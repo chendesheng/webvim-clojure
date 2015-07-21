@@ -23,19 +23,23 @@
 
 (deftest cursor-next-word-cross-line-test
   (testing ""
-    (let [b (-> empty-buf 
+    (let [_ (swap! window assoc :viewport {:w 1 :h 3})
+          b (-> empty-buf 
                 (buf-insert "aaa   bbb\nccc")
                 (assoc :cursor {:row 0 :col 6 :lastcol 6 :vprow 0})
                 (cursor-next-word))]
-      (is (check-cursor b [1 0 0 -1])))))
+      (is (check-cursor b [1 0 0 1])))))
+
+;(cursor-next-word-cross-line-test)
 
 (deftest cursor-next-word-from-empty-line-test
   (testing ""
-    (let [b (-> empty-buf 
+    (let [_ (swap! window assoc :viewport {:w 1 :h 3})
+          b (-> empty-buf 
                 (buf-insert "bbb\n\n@ccc")
                 (assoc :cursor {:row 1 :col 0 :lastcol 0 :vprow 0})
                 (cursor-next-word))]
-      (is (check-cursor b [2 0 0 -1])))))
+      (is (check-cursor b [2 0 0 1])))))
 
 ;(cursor-next-word-from-empty-line-test)
 
