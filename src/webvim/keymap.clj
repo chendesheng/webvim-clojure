@@ -271,6 +271,7 @@
       (-> b
           buf-save-cursor
           (buf-insert txt)
+          (cursor-move-char 0)
           history-save)
       b)))
 
@@ -281,6 +282,7 @@
           buf-save-cursor
           (update-in [:cursor :col] inc)
           (buf-insert txt)
+          (cursor-move-char 0)
           history-save)
       b)))
 
