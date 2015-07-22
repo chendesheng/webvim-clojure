@@ -392,11 +392,16 @@
           (assoc-in [:cursor :lastcol] col))
       b)))
 
+
+(defn quote-pattern[ch]
+  (java.util.regex.Pattern/quote ch))
+
 (defn cursor-next-char
   [b ch]
   (let [line (-> b :lines (get (-> b :cursor :row)))
         col (-> b :cursor :col inc)
-        [matched newcol] (line-next-re line col (re-pattern (str "(?=" ch ")")))]
+        re (str "(?=" (quote-pattern ch) ")")
+        [matched newcol] (line-next-re line col (re-pattern re))]
     (if matched
       (-> b
           (assoc-in [:cursor :col] newcol) 
@@ -407,7 +412,8 @@
   [b ch]
   (let [line (-> b :lines (get (-> b :cursor :row)))
         col (-> b :cursor :col)
-        [matched newcol] (line-back-re line col (re-pattern (str "(?=" ch ")")))]
+        re (str "(?=" (quote-pattern ch) ")")
+        [matched newcol] (line-back-re line col (re-pattern re))]
     (if matched
       (-> b
           (assoc-in [:cursor :col] newcol) 
