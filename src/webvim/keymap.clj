@@ -165,6 +165,12 @@
       (merge (open-file (:name b)) 
              {:cursor (:cursor b) 
               :message (str "\"" (:name b) "\" " (count (:lines b)) "L")})
+      (string? (re-find #":\d+" ex))
+      (let [row (bound-range (dec (Integer. (re-find #"\d+" ex))) 0 (-> b :lines count dec))]
+        (-> b 
+            (assoc-in [:cursor :row] row)
+            (assoc-in [:cursor :vprow] (-> @window :viewport :h (/ 2) int))
+            (cursor-line-start)))
       (= \/ (first ex))
       (let []
         (swap! registers assoc "/" (subs ex 1))
