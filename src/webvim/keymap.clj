@@ -378,6 +378,13 @@
           "a" (merge
                 @insert-mode-keymap
                 {:enter set-insert-append})
+          "s" (merge
+                @insert-mode-keymap
+                {:enter (fn[b]
+                          (swap! registers assoc "\"" (buf-copy-range b (:cursor b) (:cursor b) true))
+                          (-> b
+                              set-insert-mode
+                              (buf-replace (:cursor b) "" true)))})
           ":" (merge
                 @ex-mode-keymap
                 {:enter set-ex-mode
