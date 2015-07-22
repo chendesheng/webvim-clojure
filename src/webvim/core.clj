@@ -25,7 +25,7 @@
       (let [b (dissoc buf :name :history :txt-cache :context :last-cursor)
             b1 (if (-> b :autocompl :suggestions empty?)
                  (dissoc b :autocompl)
-                 b)]
+                 (update-in b [:autocompl] dissoc :words))]
         (if (not (= visual-mode (:mode b1)))
           (response (dissoc b1 :visual))
           (response b1))))))
