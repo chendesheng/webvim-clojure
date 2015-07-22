@@ -590,3 +590,33 @@
                                            (+ (:vprow cur1))
                                            (bound-range 0 (-> @window :viewport :h dec)))})})
         cursor-line-start)))
+
+(defn- pprint2[obj prefix]
+  (let[]
+    (println prefix)
+    (pprint obj)
+    obj))
+
+(defn buf-line[b row]
+  (-> b :lines (get row)))
+
+(defn buf-copy-range[b p1 p2 inclusive]
+  (pprint p1)
+  (pprint p2)
+  (let [[{r1 :row c1 :col} cur2] (cursor-sort p1 p2)
+        {r2 :row c2 :col} (if inclusive
+                            {:row (:row cur2) :col (-> cur2 :col inc)}
+                            cur2)
+        res (loop [res []
+                   r r1]
+              (if (= r1 r2)
+                (conj res (subs (buf-line b r) c1 c2))
+                (cond 
+                  (= r r2)
+                  (conj res (subs (buf-line b r) 0 c2))
+                  (= r r1)
+                  (recur (conj res (subs (buf-line b r) c1)) (inc r))
+                  :else
+                  (recur (conj res (buf-line b r)) (inc r)))))]
+    
+    (pprint2 (join res) "buf-copy-range")))

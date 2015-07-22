@@ -32,11 +32,11 @@
     (apply f b args)
     b))
 
-;(defn testprint[obj prefix]
-;  (let[]
-;    (println prefix)
-;    (pprint obj)
-;    obj))
+(defn- pprint2[obj prefix]
+  (let[]
+    (println prefix)
+    (pprint obj)
+    obj))
 
 ;two types: key (leaf), keymap (internal node)
 ;when visit a keymap call :enter :leave 
@@ -196,17 +196,24 @@
       true
       res)))
 
+(defn- buf-copy-range-lastbuf[b cur inclusive]
+  (println (str "inclusive:" inclusive))
+  (swap! registers assoc "\"" (buf-copy-range b cur (:cursor b) inclusive))
+  b)
+
 (defn delete-motion[b keycode]
   (println (str "delete-motion:" keycode))
   (println (str "inclusive:" (inclusive? keycode)))
   (-> b :context :lastbuf 
       buf-save-cursor
-      (buf-replace 
+      (buf-copy-range-lastbuf (:cursor b) (inclusive? keycode))
+      (buf-replace
         (:cursor b) "" (inclusive? keycode))
       history-save))
 
 (defn change-motion[b keycode]
   (-> b :context :lastbuf
+      (buf-copy-range-lastbuf (:cursor b) (inclusive? keycode))
       (buf-replace (:cursor b) "" (inclusive? keycode))
       (serve-keymap key-server-in key-server-out (@normal-mode-keymap "i") keycode)))
 
@@ -261,8 +268,22 @@
 (defn put-from-register[b keycode]
   (let [txt (@registers keycode)]
     (if (string? txt)
-      (buf-insert b txt))
-    b))
+      (-> b
+          buf-save-cursor
+          (buf-insert txt)
+          history-save)
+      b)))
+
+(defn put-from-register-append[b keycode]
+  (let [txt (@registers keycode)]
+    (if (string? txt)
+      (-> b
+          buf-save-cursor
+          (update-in [:cursor :col] inc)
+          (buf-insert txt)
+          history-save)
+      b)))
+
 
 (defn delete-line[b]
   (-> b
@@ -315,7 +336,20 @@
   (reset! visual-mode-keymap @motion-keymap)
   (swap! visual-mode-keymap 
          merge
-          {"z" {"z" cursor-center-viewport}})
+         {"z" {"z" cursor-center-viewport}
+          "y" (fn[b]
+                (let [[p1 p2] (-> b :visual :ranges)]
+                  (swap! registers assoc "\"" (buf-copy-range b p1 p2 true))
+                  (let [[cur1 _] (apply cursor-sort (-> b :visual :ranges))]
+                    (-> b 
+                        (assoc :cursor {:row (:row cur1)
+                                        :col (:col cur1)
+                                        :lastcol (:col cur1)
+                                        :vprow (bound-range 
+                                                 (+ (-> b :cursor :vprow) 
+                                                    (- (:row cur1) (-> b :cursor :row)))
+                                                 0 
+                                                 (-> @window :viewport :h))})))))})
 
   (reset! insert-mode-keymap 
           {;"c+o" @normal-mode-keymap 
@@ -350,7 +384,7 @@
                 @visual-mode-keymap
                 {:enter set-visual-mode
                  :leave set-normal-mode
-                 :continue #(not (or (= "esc" %2) (= "v" %2)))
+                 :continue #(not (or (= "esc" %2) (= "v" %2) (= "y" %2)))
                  :after visual-mode-select})
           "z" {"z" cursor-center-viewport }
           "d" (merge 
@@ -360,7 +394,8 @@
                  ;"j" delete-line
                  ;"k" delete-line
                  "d" delete-line})
-          "p" #(put-from-register % "\"")
+          "p" #(put-from-register-append % "\"")
+          "P" #(put-from-register % "\"")
           "D" delete-line
           "c" (merge
                 @motion-keymap
