@@ -58,6 +58,7 @@
   (let [before @active-buffer]
     (async/>!! key-server-in keycode)
     (let [after (async/<!! key-server-out)]
+      (reset! active-buffer after)
       (render before after))))
 
 (defn parse-int [s]
