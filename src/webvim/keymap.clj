@@ -204,12 +204,14 @@
 (defn delete-motion[b keycode]
   (println (str "delete-motion:" keycode))
   (println (str "inclusive:" (inclusive? keycode)))
-  (-> b :context :lastbuf 
-      buf-save-cursor
-      (buf-copy-range-lastbuf (:cursor b) (inclusive? keycode))
-      (buf-replace
-        (:cursor b) "" (inclusive? keycode))
-      history-save))
+  (if (nil? (-> b :context :lastbuf))
+    b
+    (-> b :context :lastbuf 
+        buf-save-cursor
+        (buf-copy-range-lastbuf (:cursor b) (inclusive? keycode))
+        (buf-replace
+          (:cursor b) "" (inclusive? keycode))
+        history-save)))
 
 (defn change-motion[b keycode]
   (-> b :context :lastbuf
@@ -289,6 +291,7 @@
 
 (defn delete-line[b]
   (-> b
+    (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
     buf-save-cursor
     buf-delete-line
     history-save))

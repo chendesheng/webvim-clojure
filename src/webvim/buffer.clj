@@ -576,7 +576,7 @@
         [cur1 cur2] 
         (cond 
           (= 1 (-> b :lines count)) ;only one line
-          (merge b {:lines [] :cursor {:row 0 :col 0 :lastcol 0 :vprow 0}})
+          (merge b {:lines [""] :cursor {:row 0 :col 0 :lastcol 0 :vprow 0}})
 
           (= row (-> b :lines count dec)) ;if it is last line delete from previous line
           (let [prevline (-> b :lines (get (dec row)))]
