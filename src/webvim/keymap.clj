@@ -394,6 +394,15 @@
                  ;"j" delete-line
                  ;"k" delete-line
                  "d" delete-line})
+          "x" (fn[b]
+                (if (= (col-count b (-> b :cursor :row)) 1)
+                  b
+                  (let []
+                    (swap! registers assoc "\"" (buf-copy-range b (:cursor b) (:cursor b) true))
+                    (-> b 
+                        buf-save-cursor
+                        (buf-replace (:cursor b) "" true)
+                        history-save))))
           "p" #(put-from-register-append % "\"")
           "P" #(put-from-register % "\"")
           "D" delete-line
@@ -407,4 +416,4 @@
                      (if (and (> col 0) (>= col (dec (col-count b row))))
                        (update-in b [:cursor :col] dec)
                        b)))})
-  (reset! root-keymap @normal-mode-keymap))
+(reset! root-keymap @normal-mode-keymap))
