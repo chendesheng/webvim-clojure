@@ -83,12 +83,12 @@
   (GET "/buf" [] (response @active-buffer))
   (GET "/resize/:w/:h" [w h] 
        (swap! window assoc :viewport {:w (parse-int w) :h (parse-int h)}))
-  (GET "/key/:keycode" [keycode] (edit keycode)))
+  (GET "/key" {{keycode :code} :params} (edit keycode)))
 
 
 (def app
   ;(wrap-json-response main-routes))
-  (-> (compojure.handler/site main-routes)
+  (-> (compojure.handler/api main-routes)
       (wrap-json-response)
       (wrap-resource "public")))
 

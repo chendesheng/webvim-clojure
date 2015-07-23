@@ -22,7 +22,7 @@ $(document).keydown(function(event) {
 		}
 
 		if (key) {
-			$.getJSON('key/'+key, function(resp) {
+			$.getJSON('key?code='+encodeURIComponent(key), function(resp) {
 				render(resp);
 			});
 		}
@@ -38,7 +38,7 @@ $(document).keypress(function(event) {
 	if (ch) {
 		console.log(ch);
 
-		$.getJSON('key/'+encodeURIComponent(ch), function(resp) {
+		$.getJSON('key?code='+encodeURIComponent(ch), function(resp) {
 			render(resp);
 		});
 	}
