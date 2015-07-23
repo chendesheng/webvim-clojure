@@ -136,6 +136,10 @@ function render(buf) {
 			} else if (i == e.row) {
 				w = textWidth(cline, 0, e.col+1);
 				l = 0;
+			} else if (cline.length==0) {
+				//empty line always contains '\n'
+				w = 9.57;
+				l = 0;
 			} else {
 				w = textWidth(cline, 0, cline.length);
 				l = 0;
