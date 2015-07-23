@@ -199,6 +199,16 @@
   (let [{row :row col :col} cursor]
     (str (.charAt (lines row) col))))
 
+(defn word-under-cursor
+  "Find next word end, then find word start back from that end."
+  [lines {row :row col :col}]
+  (let [line (lines row)
+        [matched pos] (line-next-re line col re-word-end)
+        end (if matched (inc pos) (count line))
+        [matched1 pos1] (line-back-re line end re-word-start)
+        start (if matched1 pos1 0)]
+   [(subs line start end) start]))
+
 (defn buf-insert 
   "Insert at cursor"
   [b txt]
@@ -265,7 +275,7 @@
       [false col])))
 
 (defn line-back-re
-  "Move to backious charactor match by re. col=-1 means match whole line" 
+  "Move to back charactor match by re. col=-1 means match whole line" 
   [line col re]
   (let [subline (if (= -1 col)
                   line

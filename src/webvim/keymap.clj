@@ -302,6 +302,22 @@
     buf-delete-line
     history-save))
 
+(defn move-next-same-word[b]
+  (let [[word start] (word-under-cursor (:lines b) (:cursor b))
+        re (str "\\b" word "\\b")]
+    (swap! registers assoc "/" re)
+    (-> b 
+        (assoc-in [:cursor :col] start)
+        (cursor-next-str re))))
+
+(defn move-back-same-word[b]
+  (let [[word start] (word-under-cursor (:lines b) (:cursor b))
+        re (str "\\b" word "\\b")]
+    (swap! registers assoc "/" re)
+    (-> b 
+        (assoc-in [:cursor :col] start)
+        (cursor-back-str re))))
+
 (defn init-keymap-tree
   []
   (reset! ex-mode-keymap
@@ -339,6 +355,8 @@
            "/" (merge @ex-mode-keymap 
                       {:enter set-ex-search-mode
                        :else ex-mode-default})
+           "*" move-next-same-word
+           "#" move-back-same-word
            "n" #(cursor-next-str % (@registers "/"))
            "N" #(cursor-back-str % (@registers "/"))
            "c+u" #(cursor-move-viewport %1 -0.5) 

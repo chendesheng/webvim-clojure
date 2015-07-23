@@ -308,3 +308,13 @@
       (is (= "o" ch)))))
 
 ;(char-under-cursor-test)
+
+(deftest word-under-cursor-test
+  (testing ""
+    (let [lines ["hello1 world"]]
+      (is (= "hello1") ((word-under-cursor lines {:row 0 :col 0}) 0))
+      (is (= "world") ((word-under-cursor lines {:row 0 :col 8}) 0))
+      (is (= "world") ((word-under-cursor lines {:row 0 :col 6}) 0))
+      (is (= "") ((word-under-cursor lines {:row 0 :col 12}) 0)))))
+
+;(word-under-cursor-test)

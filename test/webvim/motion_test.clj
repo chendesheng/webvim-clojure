@@ -107,3 +107,13 @@
 ;(cursor-back-char-not-found-test)
 
 
+(deftest cursor-next-str-test
+  (testing ""
+    (let [b (-> empty-buf
+                (buf-insert "hello\nworld"))
+          b1 (cursor-next-str b "\bworld\b")]
+      (is (= 1 (-> b1 :cursor :row))))))
+
+(cursor-next-str-test)
+
+
