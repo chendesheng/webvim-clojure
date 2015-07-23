@@ -72,7 +72,7 @@
       (let[]
         (async/>!! out b1)
         (recur b1 in out keymap))
-      b1)))
+      [b1 keycode])))
 
 (defn send-out
   "write to out channel then return first argument"
@@ -82,12 +82,12 @@
     obj))
 
 (defn serve-keymap[b in out keymap keycode]
-  (-> b
-      (buffer-append-keys keycode)
-      (call-if-fn (:enter keymap))
-      (send-out out)
-      (loop-serve-keys in out keymap)
-      (call-if-fn (:leave keymap))))
+  (let [b1 (-> b
+               (buffer-append-keys keycode)
+               (call-if-fn (:enter keymap) keycode)
+               (send-out out))
+        [b2 leave-keycode] (loop-serve-keys b1 in out keymap)]
+    (call-if-fn b2 (:leave keymap) leave-keycode)))
 
 (defn set-normal-mode[b]
   (print "set-normal-mode:")
@@ -121,8 +121,11 @@
 (defn set-ex-mode[b]
   (merge b {:ex ":" :message nil :keys nil}))
 
-(defn set-ex-search-mode[b]
-  (merge b {:ex "/" :message nil :keys nil}))
+(defn set-ex-search-mode[b keycode]
+  (println "set-ex-search-mode")
+  (-> b 
+      (merge {:ex "/" :message nil :keys nil})
+      (assoc-in [:context :lastbuf] b)))
 
 (defn insert-mode-default[b keycode]
   (println (str "insert-mode-default:" keycode))
@@ -151,10 +154,22 @@
                          :suggestions-index 0})))))))
 
 (defn ex-mode-default[b keycode]
-  (let [ex (:ex b)]
-    (if (= (count keycode) 1)
-      (assoc b :ex (str ex keycode))
-      b)))
+  (let [ex (:ex b)
+        newex (cond 
+                (= keycode "space")
+                (str ex " ")
+                (= keycode "backspace")
+                (subs ex 0 (-> ex count dec))
+                (= 1 (count keycode))
+                (str ex keycode)
+                :else ex)]
+    (if (= \/ (first newex))
+      (let [lb (-> b :context :lastbuf)]
+        (-> lb
+            (assoc :ex newex)
+            (assoc-in [:context :lastbuf] lb) ;keep lastbuf avaiable on stack
+            (cursor-next-str (subs newex 1))))
+      (assoc b :ex newex))))
 
 (defn execute [b]
   (let [ex (:ex b)]
@@ -174,7 +189,7 @@
       (= \/ (first ex))
       (let []
         (swap! registers assoc "/" (subs ex 1))
-        (cursor-next-str b (@registers "/")))
+        b)
       :else
       (assoc b :message "unknown command"))))
 
@@ -322,10 +337,11 @@
   []
   (reset! ex-mode-keymap
           {"enter" execute
-           "space" #(assoc % :ex (str (:ex %) " "))
-           "backspace" #(let [ex (subs (:ex %) 0 (-> % :ex count dec))]
-                           (assoc % :ex ex))
            :continue #(not (or (= "esc" %2) (= "enter" %2) (empty? (:ex %1))))
+           :leave (fn[b keycode]
+                    (if (and (= "esc" keycode) (= \/ (-> b :ex first)))
+                      (-> b :context :lastbuf (dissoc :ex))
+                      b))
            :else ex-mode-default})
 
   (reset! motion-keymap
@@ -388,12 +404,13 @@
                   :else put-from-register
                   }
            :else insert-mode-default 
-           :enter set-insert-mode
+           :enter (fn[b keycode] (set-insert-mode b))
            :continue #(not (= "esc" %2))
-           :leave #(-> %
-                       (cursor-move-char 0)
-                       set-normal-mode
-                       history-save)})
+           :leave (fn[b keycode]
+                    (-> b
+                        (cursor-move-char 0)
+                        set-normal-mode
+                        history-save))})
 
   (reset! normal-mode-keymap @motion-keymap)
   (swap! normal-mode-keymap 
@@ -401,25 +418,26 @@
          {"i" @insert-mode-keymap
           "a" (merge
                 @insert-mode-keymap
-                {:enter set-insert-append})
+                {:enter (fn[b keycode] (set-insert-append b))})
           "s" (merge
                 @insert-mode-keymap
-                {:enter (fn[b]
+                {:enter (fn[b keycode]
                           (swap! registers assoc "\"" (buf-copy-range b (:cursor b) (:cursor b) true))
                           (-> b
                               set-insert-mode
                               (buf-replace (:cursor b) "" true)))})
           ":" (merge
                 @ex-mode-keymap
-                {:enter set-ex-mode
-                 :leave set-normal-mode})
+                {:enter (fn[b keycode] (set-ex-mode b))
+                 :leave (fn[b keycode] (set-normal-mode b))})
           "u" history-undo
           "c+r" history-redo
           "esc" set-normal-mode
           "v" (merge
                 @visual-mode-keymap
-                {:enter set-visual-mode
-                 :leave set-normal-mode
+                {:enter (fn[b keycode] (set-visual-mode b))
+                 :leave (fn[b keycode]
+                          (set-normal-mode b))
                  :continue #(not (or (= "esc" %2) (= "v" %2) (= "y" %2)))
                  :after visual-mode-select})
           "z" {"z" cursor-center-viewport }
