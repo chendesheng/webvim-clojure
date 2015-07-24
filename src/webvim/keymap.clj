@@ -21,9 +21,6 @@
 (defonce insert-mode 1)
 (defonce visual-mode 2)
 
-(defonce key-server-in (async/chan))
-(defonce key-server-out (async/chan))
-
 (declare serve-keymap)
 (declare map-fn-else)
 
@@ -38,40 +35,42 @@
     (pprint obj)
     obj))
 
+
 ;two types: key (leaf), keymap (internal node)
 ;when visit a keymap call :enter :leave 
 ; keymap is repetitive if :continue return true
 ;when visit a key call :before :after
 (defn serve-keys
   "Serve a sequence of keys until end of keymap. Recusivly walk through keymap tree (works like sytax parser)"
-  [b in out keymap keycode]
+  [b keymap keycode]
   (let [f (keymap keycode)]
     (println "got key:" keycode)
-    (if (or (fn? f) (map? f) (fn? (:else keymap)))
-      (-> b
-          (call-if-fn (:before keymap) keycode)
-          (map-fn-else in out keymap keycode)
-          (call-if-fn (:after keymap) keycode))
-      b)))
+    (let [b1 (update-in b [:macro :recording-keys] #(conj % keycode))]
+      (if (or (fn? f) (map? f) (fn? (:else keymap)))
+        (-> b1
+            (call-if-fn (:before keymap) keycode)
+            (map-fn-else keymap keycode)
+            (call-if-fn (:after keymap) keycode))
+        b1))))
 
-(defn map-fn-else[b in out keymap keycode]
+(defn map-fn-else[b keymap keycode]
   (let [f (keymap keycode)]
     (cond
       (map? f)
-      (serve-keymap b in out f keycode)
+      (serve-keymap b f keycode)
       (fn? f)
       (f b)
       (nil? f)
       (call-if-fn b (:else keymap) keycode))))
 
-(defn loop-serve-keys[b in out keymap]
-  (let [keycode (async/<!! in)
-        b1 (serve-keys b in out keymap keycode)]
+(defn loop-serve-keys[b keymap]
+  (let [keycode (async/<!! (:chan-in b))
+        b1 (serve-keys b keymap keycode)]
     (if (and (fn? (:continue keymap))
              ((:continue keymap) b1 keycode))
       (let[]
-        (async/>!! out b1)
-        (recur b1 in out keymap))
+        (async/>!! (:chan-out b1) b1)
+        (recur b1 keymap))
       [b1 keycode])))
 
 (defn send-out
@@ -81,23 +80,50 @@
     (async/>!! out obj)
     obj))
 
-(defn serve-keymap[b in out keymap keycode]
+(defn serve-keymap[b keymap keycode]
   (let [b1 (-> b
                (buffer-append-keys keycode)
                (call-if-fn (:enter keymap) keycode)
-               (send-out out))
-        [b2 leave-keycode] (loop-serve-keys b1 in out keymap)]
+               (send-out (:chan-out b)))
+        [b2 leave-keycode] (loop-serve-keys b1 keymap)]
     (call-if-fn b2 (:leave keymap) leave-keycode)))
+
+
+(defn key-server-inner[b keymap]
+  (let [{in :chan-in out :chan-out} b]
+    (try
+      (let [keycode (async/<!! in)]
+        (if (nil? keycode)
+          nil
+          (-> b
+              (serve-keys keymap keycode)
+              (buffer-reset-keys)
+              (send-out out))))
+      (catch Exception e
+        (let [err (str "caught exception: " e)]
+          (println err)
+          (.printStackTrace e)
+          (send-out (merge b {:ex "" :mode 0 :message err}) 
+                    out))))))
+
+(defn key-server
+  "Start a dedicate thread handle input keys. Close :chan-in will stop this thread."
+  [b keymap]
+  (async/thread 
+    (loop[b1 b]
+      (if (not (nil? b1))
+        (recur (key-server-inner b1 keymap))
+        ;FIXME Exception in thread "async-thread-macro-8" java.lang.IllegalArgumentException: No implementation of method : :close! of protocol: #'clojure.core.async.impl.protocols/Channel found for class: nil  
+        (async/close! (:chan-out b1))))))
 
 (defn set-normal-mode[b]
   (print "set-normal-mode:")
-  (-> b 
-      (merge {:ex "" 
-              :mode normal-mode 
-              :keys nil 
-              :autocompl {:suggestions nil 
-                          :suggestions-index 0 
-                          :words (-> b :autocompl :words)}})))
+  (merge b {:ex "" 
+            :mode normal-mode 
+            :keys nil 
+            :autocompl {:suggestions nil 
+                        :suggestions-index 0 
+                        :words (-> b :autocompl :words)}}))
 
 (defn set-visual-mode[b]
   (print "set-visual-mode:")
@@ -105,16 +131,18 @@
     (merge b {:ex "" :mode visual-mode :keys nil 
               :visual {:type 0 :ranges [cur cur]}})))
 
-(defn set-insert-mode[b]
+(defn set-insert-mode[b keycode]
   (println "set-insert-mode")
-  (buf-save-cursor (merge b {:ex "" :mode insert-mode :message nil :keys nil})))
+  (-> b 
+      (merge {:ex "" :mode insert-mode :message nil :keys nil})
+      buf-save-cursor))
 
-(defn set-insert-append[b]
+(defn set-insert-append[b keycode]
   (let [col (if (= (col-count b (-> b :cursor :row)) 1) ;contains only EOL
               0
               (-> b :cursor :col inc))]
     (-> b
-        set-insert-mode
+        (set-insert-mode keycode)
         (assoc-in [:cursor :col] col)
         (assoc-in [:cursor :lastcol] col))))
 
@@ -235,10 +263,12 @@
         history-save)))
 
 (defn change-motion[b keycode]
+  (println "change-motion:" keycode)
   (-> b :context :lastbuf
+      ;(println (str "change-motion:" keycode))
       (buf-copy-range-lastbuf (:cursor b) (inclusive? keycode))
       (buf-replace (:cursor b) "" (inclusive? keycode))
-      (serve-keymap key-server-in key-server-out (@normal-mode-keymap "i") keycode)))
+      (serve-keymap (@normal-mode-keymap "i") keycode)))
 
 (defn visual-mode-select[b keycode]
   (print "visual-mode-select:")
@@ -333,6 +363,51 @@
         (assoc-in [:cursor :col] start)
         (cursor-back-str re))))
 
+(defn buf-close-chan-in[b]
+  (async/close! (:chan-in b))
+  b)
+
+(defn replay-keys [b keycodes keymap]
+  (let [in (async/chan) ;use local :chan-in :chan-out only for replay keys
+        out (async/chan)
+        b1 (-> b
+               (assoc :chan-in in)
+               (assoc :chan-out out))]
+    (println "start replay:")
+    (pprint keycodes)
+    (key-server b1 keymap)
+
+    ;loop through keycodes, feed :chan-in read :chan-out, return last :chan-out result
+    (loop [kc (first keycodes)
+           coll (subvec keycodes 1)]
+      (let[_ (async/>!! in kc) 
+           b2 (async/<!! out)]
+        (pprint coll)
+        (if (empty? coll)
+          (-> b2
+              buf-close-chan-in
+              ;restore channel back
+              (assoc :chan-in (:chan-in b))
+              (assoc :chan-out (:chan-out b)))
+          (recur (first coll) (subvec coll 1)))))))
+
+(defn normal-mode-after[b keycode]
+  (let [{col :col row :row} (:cursor b)
+        lastbuf (-> b :context :lastbuf)]
+    ;if nothing changed there is no need to overwrite "." register
+    ;so keys like i<esc> won't affect, this also exclude all motions.
+    (if (not (or (= (:lines lastbuf) (:lines b))
+                 ;These commands should not get repeat
+                 (contains? #{".", "u", "c+r", "p", "P", ":"} keycode)))
+      (swap! registers assoc "." (-> b :macro :recording-keys)))
+    ;alwasy clear :recording-keys
+    ;prevent cursor on top of EOF in normal mode
+    (if (and (> col 0) (>= col (dec (col-count b row))))
+      (-> b 
+          (update-in [:cursor :col] dec)
+          (assoc-in [:macro :recording-keys] []))
+      (assoc-in  b [:macro :recording-keys] []))))
+
 (defn init-keymap-tree
   []
   (reset! ex-mode-keymap
@@ -363,6 +438,7 @@
            "f" { :else move-to-next-char }
            "F" { :else move-to-back-char }
            "t" { :else #(-> %1 
+                            (update-in [:keys] conj %2)
                             (move-to-next-char %2)
                             (cursor-move-char 0)) }
            "T" { :else #(-> %1
@@ -400,11 +476,9 @@
           {;"c+o" @normal-mode-keymap 
            "c+n" #(autocompl-move % inc)
            "c+p" #(autocompl-move % dec)
-           "c+r" {
-                  :else put-from-register
-                  }
+           "c+r" { :else put-from-register }
            :else insert-mode-default 
-           :enter (fn[b keycode] (set-insert-mode b))
+           :enter set-insert-mode
            :continue #(not (= "esc" %2))
            :leave (fn[b keycode]
                     (-> b
@@ -418,13 +492,13 @@
          {"i" @insert-mode-keymap
           "a" (merge
                 @insert-mode-keymap
-                {:enter (fn[b keycode] (set-insert-append b))})
+                {:enter set-insert-append})
           "s" (merge
                 @insert-mode-keymap
                 {:enter (fn[b keycode]
                           (swap! registers assoc "\"" (buf-copy-range b (:cursor b) (:cursor b) true))
                           (-> b
-                              set-insert-mode
+                              (set-insert-mode keycode)
                               (buf-replace (:cursor b) "" true)))})
           "o" (merge
                 @insert-mode-keymap
@@ -432,6 +506,13 @@
                           (-> b
                               (set-insert-mode keycode)
                               buf-insert-line-after))})
+          "." (fn[b]
+                (let [keycodes (@registers ".")]
+                  (if (not (nil? keycodes))
+                    (let [{in :chan-in out :chan-out} b] 
+                      ;remove "." from normal-mode-keymap prevent recursive, probably useless
+                      (replay-keys b keycodes (dissoc @normal-mode-keymap ".")))
+                    b)))
           ":" (merge
                 @ex-mode-keymap
                 {:enter (fn[b keycode] (set-ex-mode b))
@@ -470,10 +551,7 @@
                 @motion-keymap
                 {:before save-lastbuf 
                  :after change-motion })
-          :after (fn[b keycode]
-                   (let [{col :col row :row} (:cursor b)]
-                     ;prevent cursor on top of EOF in normal mode
-                     (if (and (> col 0) (>= col (dec (col-count b row))))
-                       (update-in b [:cursor :col] dec)
-                       b)))})
+          :before (fn [b keycode]
+                    (assoc-in b [:context :lastbuf] b))
+          :after normal-mode-after})
 (reset! root-keymap @normal-mode-keymap))

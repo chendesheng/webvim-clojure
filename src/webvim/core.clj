@@ -11,6 +11,12 @@
         ring.util.response
         ring.middleware.json))
 
+(defn- pprint2[obj prefix]
+  (let[]
+    (println prefix)
+    (pprint obj)
+    obj))
+
 (defn render 
   "Write changes to browser."
   ;TODO: only write changed lines
@@ -22,7 +28,7 @@
                 after))]
     (if (nil? buf)
       (response "")
-      (let [b (dissoc buf :name :history :txt-cache :context :last-cursor)
+      (let [b (dissoc buf :name :history :txt-cache :context :last-cursor :macro :chan-in :chan-out)
             b1 (if (-> b :autocompl :suggestions empty?)
                  (dissoc b :autocompl)
                  (update-in b [:autocompl] dissoc :words))]
@@ -30,34 +36,27 @@
           (response (dissoc b1 :visual))
           (response b1))))))
 
-(defn key-server[]
-  "Start a dedicate thread handle input keys, this thread should never stop util application ends."
-  (async/thread 
-    (loop[]
-      (try
-        (let [keycode (async/<!! key-server-in)]
-          (async/>!! key-server-out 
-                     (reset! active-buffer 
-                             (-> @active-buffer
-                                 (serve-keys key-server-in key-server-out @root-keymap keycode)
-                                 (buffer-reset-keys)))))
-        (catch Exception e
-          (let [err (str "caught exception: " e)]
-            (println err)
-            (.printStackTrace e)
-            (reset! root-keymap @normal-mode-keymap)
-            (async/>!! key-server-out (swap! active-buffer merge {:ex "" :mode 0 :message err})))))
-      (recur))))
-
 (defonce run-key-server 
   (do
     (init-keymap-tree)
-    (key-server)))
+    (key-server @active-buffer @root-keymap)))
+
+(defn restart-key-server
+  "For repl"
+  []
+  (let [b @active-buffer]
+    (async/close! (:chan-in b))
+    (reset! active-buffer 
+            (-> b
+                (assoc :chan-in (async/chan))
+                (assoc :chan-out (async/chan))))
+    (init-keymap-tree)
+    (key-server @active-buffer @root-keymap)))
 
 (defn edit [keycode]
   (let [before @active-buffer]
-    (async/>!! key-server-in keycode)
-    (let [after (async/<!! key-server-out)]
+    (async/>!! (:chan-in before) keycode)
+    (let [after (async/<!! (:chan-out before))]
       (reset! active-buffer after)
       (render before after))))
 
@@ -80,7 +79,9 @@
 
 (defroutes main-routes
   (GET "/" [request] (homepage request))
-  (GET "/buf" [] (response @active-buffer))
+  (GET "/buf" [] (response (dissoc @active-buffer 
+                                   :chan-in :chan-out :context 
+                                   :history :last-cursor)))
   (GET "/resize/:w/:h" [w h] 
        (swap! window assoc :viewport {:w (parse-int w) :h (parse-int h)}))
   (GET "/key" {{keycode :code} :params} (edit keycode)))
