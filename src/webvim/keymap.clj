@@ -506,6 +506,14 @@
            "#" move-back-same-word
            "n" #(cursor-next-str % (@registers "/"))
            "N" #(cursor-back-str % (@registers "/"))
+           "}" (fn[b]
+                 (-> b
+                     (cursor-next-str "^[^\n]")
+                     (cursor-next-str "^\n")))
+           "{" (fn[b]
+                 (-> b
+                     (cursor-back-str "^[^\n]")
+                     (cursor-back-str "^\n")))
            "c+u" #(cursor-move-viewport %1 -0.5) 
            "c+d" #(cursor-move-viewport %1 0.5)})
 
