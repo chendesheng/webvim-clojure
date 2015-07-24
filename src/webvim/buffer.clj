@@ -24,6 +24,10 @@
   [txt]
   (split txt #"(?<=\n)" -1))
 
+(defn inc-col [b]
+  (update-in b [:cursor :col] inc))
+
+
 (defn create-buf[bufname txt]
   (let [b {:name bufname
            ;Each line is a standard java String
@@ -218,7 +222,53 @@
 
 (defn char-under-cursor[{lines :lines cursor :cursor}]
   (let [{row :row col :col} cursor]
-    (str (.charAt (lines row) col))))
+    (.charAt (lines row) col)))
+
+(def left-braces #{\( \[ \{})
+(def right-braces #{\) \] \}})
+(def all-braces {\( \) \) \( \[ \] \] \[ \{ \} \} \{})
+(defn cursor-match-brace[b]
+  (let [brace (char-under-cursor b)
+        m (all-braces brace)
+        lines (:lines b)
+        left? (contains? left-braces brace)]
+    (if (nil? m) nil
+      (if left?
+        (loop[cnt 0
+              row (-> b :cursor :row)
+              col (-> b :cursor :col)]
+          (if (>= row (count lines)) ;EOF
+            nil
+            (let [ch (.charAt (lines row) col)
+                  ncnt (cond (= brace ch)
+                             (inc cnt)
+                             (= m ch)
+                             (dec cnt)
+                             :else cnt)]
+              (if (zero? ncnt) ;find match
+                {:row row :col col}
+                (let [[nrow ncol] (if (< col (-> row lines count dec))
+                                    [row (inc col)]
+                                    [(inc row) 0])]
+                  (recur ncnt nrow ncol))))))
+        (loop[cnt 0
+              row (-> b :cursor :row)
+              col (-> b :cursor :col)]
+          (if (< row 0) ;EOF
+            nil
+            (let [ch (.charAt (lines row) col)
+                  ncnt (cond (= brace ch)
+                             (inc cnt)
+                             (= m ch)
+                             (dec cnt)
+                             :else cnt)]
+              (if (zero? ncnt) ;find match
+                {:row row :col col}
+                (let [[nrow ncol] (if (> col 0)
+                                    [row (dec col)]
+                                    [(dec row) (-> (dec row) lines count dec)])]
+                  (recur ncnt nrow ncol))))))))))
+
 
 (defn line-next-re
   "Move to next charactor match by re." 
@@ -348,7 +398,6 @@
       (if (= b b1)
         (cursor-back-re (cursor-move-end b) re)
         b1))))
-
 
 (defn cursor-back-word
   "The \"b\" motion."
@@ -484,9 +533,6 @@
 
                     :else (:cursor b))))))
 
-(defn inc-col [b]
-  (update-in b [:cursor :col] inc))
-
 (defn cursor-next-str
   "The \"n\" motion"
   [b s]
@@ -499,6 +545,7 @@
         (cursor-next-re
           (cursor-move-start b) re re)
         b2))))
+
 
 (defn first-nonspace-pos
   "Return index of first non-space char"

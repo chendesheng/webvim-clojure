@@ -305,7 +305,7 @@
                 (buf-insert "hello")
                 (cursor-move-char 0))
           ch (char-under-cursor b)]
-      (is (= "o" ch)))))
+      (is (= \o ch)))))
 
 ;(char-under-cursor-test)
 
@@ -327,3 +327,46 @@
       (is (= 3 (-> b :lines count))))))
 
 ;(buf-insert-line-after-test)
+
+(deftest cursor-match-brace-test
+  (testing ""
+    (let [pos (let [b (-> empty-buf  
+                         (buf-insert "can()")
+                         (assoc-in [:cursor :col] 3))]
+               (cursor-match-brace b))]
+      (pprint pos)
+      (is (= 4 (:col pos))))))
+
+;(cursor-match-brace-test)
+
+(deftest cursor-match-brace-nested-test
+  (testing ""
+    (let [pos (let [b (-> empty-buf  
+                         (buf-insert "{{{{}}}}}")
+                         (assoc-in [:cursor :col] 1))]
+               (cursor-match-brace b))]
+      (pprint pos)
+      (is (= 6 (:col pos))))))
+
+;(cursor-match-brace-nested-test)
+
+(deftest cursor-match-brace-right-test
+  (testing ""
+    (let [pos (let [b (-> empty-buf  
+                         (buf-insert "{{{{}}}}}")
+                         (assoc-in [:cursor :col] 6))]
+               (cursor-match-brace b))]
+      (pprint pos)
+      (is (= 1 (:col pos))))))
+
+;(cursor-match-brace-right-test)
+
+(deftest cursor-match-brace-not-found-test
+  (testing ""
+    (let [pos (let [b (-> empty-buf  
+                         (buf-insert "{({{{}}}}}")
+                         (assoc-in [:cursor :col] 1))]
+               (cursor-match-brace b))]
+      (is (= nil pos)))))
+
+;(cursor-match-brace-not-found-test)

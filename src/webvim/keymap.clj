@@ -514,8 +514,20 @@
                  (-> b
                      (cursor-back-str "^[^\n]")
                      (cursor-back-str "^\n")))
-           "c+u" #(cursor-move-viewport %1 -0.5) 
-           "c+d" #(cursor-move-viewport %1 0.5)})
+           "%" (fn[b]
+                 (let [b1 (if (not (contains? all-braces (char-under-cursor b)))
+                            (cursor-next-str b "[(\\[{}\\])]")
+                            b)]
+                   (let [cur (cursor-match-brace b1)]
+                     (if (nil? cur) b1
+                       (update-in b1 [:cursor] 
+                                  merge cur 
+                                  {:lastcol (:col cur)} 
+                                  {:vprow (bound-range 
+                                            (+ (-> b1 :cursor :vprow) (- (:row cur) (-> b1 :cursor :row))) 
+                                            0 (-> @window :viewport :h dec))})))))
+                 "c+u" #(cursor-move-viewport %1 -0.5) 
+                 "c+d" #(cursor-move-viewport %1 0.5)})
 
   (reset! visual-mode-keymap @motion-keymap)
   (swap! visual-mode-keymap 
