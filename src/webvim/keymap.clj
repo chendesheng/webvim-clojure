@@ -214,11 +214,12 @@
                 (str ex keycode)
                 :else ex)]
     (if (= \/ (first newex))
-      (let [lb (-> b :context :lastbuf)]
-        (-> lb
-            (assoc :ex newex)
-            (assoc-in [:context :lastbuf] lb) ;keep lastbuf avaiable on stack
-            (cursor-next-str (subs newex 1))))
+      (let [lb (-> b :context :lastbuf)
+            newb (-> lb
+                     (assoc :ex newex)
+                     (assoc-in [:context :lastbuf] lb))] ;keep lastbuf avaiable on stack
+        (try (cursor-next-str newb (subs newex 1))
+             (catch Exception e  newb)))
       (assoc b :ex newex))))
 
 (defn execute [b]
