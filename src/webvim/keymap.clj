@@ -146,6 +146,17 @@
         (assoc-in [:cursor :col] col)
         (assoc-in [:cursor :lastcol] col))))
 
+(defn set-insert-line-end[b keycode]
+  (let [col (dec (col-count b (-> b :cursor :row)))]
+    (-> b
+        cursor-line-end
+        (set-insert-mode keycode))))
+
+(defn set-insert-line-start[b keycode]
+  (-> b
+      cursor-line-start
+      (set-insert-mode keycode)))
+
 (defn set-ex-mode[b]
   (merge b {:ex ":" :message nil :keys nil}))
 
@@ -493,6 +504,12 @@
           "a" (merge
                 @insert-mode-keymap
                 {:enter set-insert-append})
+          "A" (merge
+                @insert-mode-keymap
+                {:enter set-insert-line-end})
+          "I" (merge
+                @insert-mode-keymap
+                {:enter set-insert-line-start})
           "s" (merge
                 @insert-mode-keymap
                 {:enter (fn[b keycode]
