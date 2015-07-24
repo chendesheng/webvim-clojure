@@ -318,3 +318,12 @@
       (is (= "") ((word-under-cursor lines {:row 0 :col 12}) 0)))))
 
 ;(word-under-cursor-test)
+
+(deftest buf-insert-line-after-test
+  (testing ""
+    (let [b (-> empty-buf
+                (buf-insert "he\nllo")
+                buf-insert-line-after)]
+      (is (= 3 (-> b :lines count))))))
+
+;(buf-insert-line-after-test)

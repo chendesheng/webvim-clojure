@@ -1,10 +1,21 @@
 (ns webvim.buffer
   (:require [me.raynes.fs :as fs]
+            [clojure.core.async :as async]
             [clojure.java.io :as io])
   (:use clojure.pprint
         webvim.autocompl
         (clojure [string :only (join split)])))
 
+(def re-word-start #"(?<=\W)\w|(?<=[\s\w])[^\s\w]")
+(def re-word-start-line-start #"^\S|(?<=\W)\w|(?<=[\s\w])[^\s\w]")
+(def re-word-start-back #"(?<=\W)\w|(?<=[\s\w])[^\s\w]|^\S")
+
+(def re-WORD-start #"(?<=\s)\S")
+(def re-WORD-start-line-start #"(?=^\S)|(?<=\s)\S")
+(def re-WORD-start-back #"(?<=\s)\S|(?=^\S)")
+
+(def re-word-end #"(?=\S$)|(?=\w\W)|(?=[^\s\w][\s\w])")
+(def re-WORD-end #"(?=\S$)|(?=\S\s)")
 ;
 (defn split-lines-all 
   "Split by \\n and keep \\n. Always has a extra empty string after last \\n.
@@ -28,8 +39,17 @@
            :mode 0
            ;ongoing ex command
            :ex ""
-           ;ongoing command keys, display beside "-- MODE --" prompt
+           ;ongoing command keys, display beside "-- MODE --" prompt. Only save keys trigger next keymap, right before :enter function is called.
            :keys []
+
+           ;send key to this channel when editting this buffer
+           :chan-in (async/chan)
+           ;get result from this channel after send key to :chan-in
+           :chan-out (async/chan)
+
+           :macro {:recording-keys nil ;record keys when :recording-keys is not nil
+                   ;which register will macro save to
+                   :register ""}
 
            :autocompl {:words nil
                        ;empty suggestions means don't display it
@@ -132,6 +152,7 @@
   [b row]
   (count ((:lines b) row)))
 
+;TODO: fix buffer insert after line break
 (defn replace-range 
   "Core operation of buffer lines manipulation. 
   [r1 c1] must before [r2 c2].
@@ -199,6 +220,29 @@
   (let [{row :row col :col} cursor]
     (str (.charAt (lines row) col))))
 
+(defn line-next-re
+  "Move to next charactor match by re." 
+  [line col re]
+  (let [subline (subs line col)
+        m (re-matcher re subline)]
+    (if (.find m)
+      [true (-> m .start (+ col))]
+      [false col])))
+
+(defn line-back-re
+  "Move to back charactor match by re. col=-1 means match whole line" 
+  [line col re]
+  (let [subline (if (= -1 col)
+                  line
+                  (subs line 0 col))
+        m (re-matcher re subline)]
+    (if (.find m)
+      (loop [lastend (.start m)]
+        (if (.find m)
+          (recur (.start m))
+          [true lastend]))
+      [false col])))
+
 (defn word-under-cursor
   "Find next word end, then find word start back from that end."
   [lines {row :row col :col}]
@@ -212,7 +256,6 @@
 (defn buf-insert 
   "Insert at cursor"
   [b txt]
-  (println (str "buf-inert:" txt))
   (buf-replace b (:cursor b) txt false))
 
 (defn buf-delete
@@ -253,40 +296,6 @@
   [b]
   (assoc b :cursor
          {:row (-> b :lines count dec) :col 0 :lastcol 0 :vprow (-> @window :viewport :h dec)}))
-    
-(def re-word-start #"(?<=\W)\w|(?<=[\s\w])[^\s\w]")
-(def re-word-start-line-start #"^\S|(?<=\W)\w|(?<=[\s\w])[^\s\w]")
-(def re-word-start-back #"(?<=\W)\w|(?<=[\s\w])[^\s\w]|^\S")
-
-(def re-WORD-start #"(?<=\s)\S")
-(def re-WORD-start-line-start #"(?=^\S)|(?<=\s)\S")
-(def re-WORD-start-back #"(?<=\s)\S|(?=^\S)")
-
-(def re-word-end #"(?=\S$)|(?=\w\W)|(?=[^\s\w][\s\w])")
-(def re-WORD-end #"(?=\S$)|(?=\S\s)")
-
-(defn line-next-re
-  "Move to next charactor match by re." 
-  [line col re]
-  (let [subline (subs line col)
-        m (re-matcher re subline)]
-    (if (.find m)
-      [true (-> m .start (+ col))]
-      [false col])))
-
-(defn line-back-re
-  "Move to back charactor match by re. col=-1 means match whole line" 
-  [line col re]
-  (let [subline (if (= -1 col)
-                  line
-                  (subs line 0 col))
-        m (re-matcher re subline)]
-    (if (.find m)
-      (loop [lastend (.start m)]
-        (if (.find m)
-          (recur (.start m))
-          [true lastend]))
-      [false col])))
 
 (defn cursor-next-re
   "Match re line by line (re not match multiple lines), don't change cursor if not finded"
@@ -616,9 +625,21 @@
 (defn buf-line[b row]
   (-> b :lines (get row)))
 
+(defn buf-insert-line-after
+  "The \"o\" command"
+  [b]
+  (let [lines (:lines b)
+        row (-> b :cursor :row)]
+    (-> b
+        (assoc :lines 
+               (vec (concat
+                      (subvec lines 0 (inc row))
+                      ["\n"]
+                      (subvec lines (inc row)))))
+        (assoc :cursor {:row (inc row) :col 0 :lastcol 0 
+                        :vprow (-> b :cursor :vprow inc (bound-range 0 (-> @window :viewport :h dec)))}))))
+
 (defn buf-copy-range[b p1 p2 inclusive]
-  (pprint p1)
-  (pprint p2)
   (let [[{r1 :row c1 :col} cur2] (cursor-sort p1 p2)
         {r2 :row c2 :col} (if inclusive
                             {:row (:row cur2) :col (-> cur2 :col inc)}
@@ -634,5 +655,4 @@
                   (recur (conj res (subs (buf-line b r) c1)) (inc r))
                   :else
                   (recur (conj res (buf-line b r)) (inc r)))))]
-    
-    (pprint2 (join res) "buf-copy-range")))
+    (join res)))

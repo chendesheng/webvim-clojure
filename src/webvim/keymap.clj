@@ -426,6 +426,12 @@
                           (-> b
                               set-insert-mode
                               (buf-replace (:cursor b) "" true)))})
+          "o" (merge
+                @insert-mode-keymap
+                {:enter (fn[b keycode]
+                          (-> b
+                              (set-insert-mode keycode)
+                              buf-insert-line-after))})
           ":" (merge
                 @ex-mode-keymap
                 {:enter (fn[b keycode] (set-ex-mode b))
