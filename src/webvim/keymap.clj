@@ -157,6 +157,17 @@
       cursor-line-start
       (set-insert-mode keycode)))
 
+(defn set-insert-remove-char[b keycode]
+  (swap! registers assoc "\"" (buf-copy-range b (:cursor b) (:cursor b) true))
+  (-> b
+      (set-insert-mode keycode)
+      (buf-replace (:cursor b) "" true)))
+
+(defn set-insert-new-line[b keycode]
+  (-> b 
+      (set-insert-mode keycode)
+      buf-insert-line-after))
+
 (defn set-ex-mode[b]
   (merge b {:ex ":" :message nil :keys nil}))
 
@@ -419,6 +430,38 @@
           (assoc-in [:macro :recording-keys] []))
       (assoc-in  b [:macro :recording-keys] []))))
 
+(defn dot-repeat[b]
+  (let [keycodes (@registers ".")]
+    (if (empty? keycodes)
+      b
+      (let [{in :chan-in out :chan-out} b] 
+        ;remove "." from normal-mode-keymap prevent recursive, probably useless
+        (replay-keys b keycodes (dissoc @normal-mode-keymap "."))))))
+
+(defn cut-char[b]
+  (if (= (col-count b (-> b :cursor :row)) 1)
+    b
+    (let [cursor (:cursor b)]
+      (swap! registers assoc "\"" (buf-copy-range b cursor cursor true))
+      (-> b 
+          buf-save-cursor
+          (buf-replace cursor "" true)
+          history-save))))
+
+(defn yank-visual[b]
+  (let [[p1 p2] (-> b :visual :ranges)]
+    (swap! registers assoc "\"" (buf-copy-range b p1 p2 true))
+    (let [[cur1 _] (apply cursor-sort (-> b :visual :ranges))]
+      (-> b 
+          (assoc :cursor {:row (:row cur1)
+                          :col (:col cur1)
+                          :lastcol (:col cur1)
+                          :vprow (bound-range 
+                                   (+ (-> b :cursor :vprow) 
+                                      (- (:row cur1) (-> b :cursor :row)))
+                                   0 
+                                   (-> @window :viewport :h))})))))
+
 (defn init-keymap-tree
   []
   (reset! ex-mode-keymap
@@ -469,19 +512,7 @@
   (swap! visual-mode-keymap 
          merge
          {"z" {"z" cursor-center-viewport}
-          "y" (fn[b]
-                (let [[p1 p2] (-> b :visual :ranges)]
-                  (swap! registers assoc "\"" (buf-copy-range b p1 p2 true))
-                  (let [[cur1 _] (apply cursor-sort (-> b :visual :ranges))]
-                    (-> b 
-                        (assoc :cursor {:row (:row cur1)
-                                        :col (:col cur1)
-                                        :lastcol (:col cur1)
-                                        :vprow (bound-range 
-                                                 (+ (-> b :cursor :vprow) 
-                                                    (- (:row cur1) (-> b :cursor :row)))
-                                                 0 
-                                                 (-> @window :viewport :h))})))))})
+          "y" yank-visual})
 
   (reset! insert-mode-keymap 
           {;"c+o" @normal-mode-keymap 
@@ -512,24 +543,11 @@
                 {:enter set-insert-line-start})
           "s" (merge
                 @insert-mode-keymap
-                {:enter (fn[b keycode]
-                          (swap! registers assoc "\"" (buf-copy-range b (:cursor b) (:cursor b) true))
-                          (-> b
-                              (set-insert-mode keycode)
-                              (buf-replace (:cursor b) "" true)))})
+                {:enter set-insert-remove-char})
           "o" (merge
                 @insert-mode-keymap
-                {:enter (fn[b keycode]
-                          (-> b
-                              (set-insert-mode keycode)
-                              buf-insert-line-after))})
-          "." (fn[b]
-                (let [keycodes (@registers ".")]
-                  (if (not (nil? keycodes))
-                    (let [{in :chan-in out :chan-out} b] 
-                      ;remove "." from normal-mode-keymap prevent recursive, probably useless
-                      (replay-keys b keycodes (dissoc @normal-mode-keymap ".")))
-                    b)))
+                {:enter set-insert-new-line})
+          "." dot-repeat
           ":" (merge
                 @ex-mode-keymap
                 {:enter (fn[b keycode] (set-ex-mode b))
@@ -552,15 +570,7 @@
                  ;"j" delete-line
                  ;"k" delete-line
                  "d" delete-line})
-          "x" (fn[b]
-                (if (= (col-count b (-> b :cursor :row)) 1)
-                  b
-                  (let []
-                    (swap! registers assoc "\"" (buf-copy-range b (:cursor b) (:cursor b) true))
-                    (-> b 
-                        buf-save-cursor
-                        (buf-replace (:cursor b) "" true)
-                        history-save))))
+          "x" cut-char
           "p" #(put-from-register-append % "\"")
           "P" #(put-from-register % "\"")
           "D" delete-line
