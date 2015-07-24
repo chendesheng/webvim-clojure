@@ -83,6 +83,11 @@ pre {
 	height:30px;
 	line-height:30px;
 	padding:0 10px 0 10px;
+	overflow:auto;
+}
+
+.status-bar::-webkit-scrollbar {
+        display: none;
 }
 
 .autocompl {
