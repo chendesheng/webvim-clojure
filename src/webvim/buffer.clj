@@ -381,14 +381,14 @@
   "The \"e\" motion."
   [b]
   (-> b 
-      (update-in [:cursor :col] inc)
+      (inc-col b)
       (cursor-next-re re-word-end re-word-end)))
 
 (defn cursor-WORD-end
   "The \"E\" motion."
   [b]
   (-> b 
-      (update-in [:cursor :col] inc) 
+      (inc-col b)
       (cursor-next-re re-WORD-end re-WORD-end)))
 
 (defn cursor-line-first
@@ -484,19 +484,21 @@
 
                     :else (:cursor b))))))
 
+(defn inc-col [b]
+  (update-in b [:cursor :col] inc))
+
 (defn cursor-next-str
   "The \"n\" motion"
   [b s]
   (if (empty? s)
     b
     (let [re (re-pattern s)
-          b1 (cursor-move-char b 1)
+          b1 (inc-col b)
           b2 (cursor-next-re b1 re re)]
       (if (= b1 b2) ;not found, wrap back and searh again
         (cursor-next-re
           (cursor-move-start b) re re)
         b2))))
-
 
 (defn first-nonspace-pos
   "Return index of first non-space char"
