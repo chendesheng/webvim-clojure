@@ -468,8 +468,8 @@
            :continue #(not (or (= "esc" %2) (= "enter" %2) (empty? (:ex %1))))
            :leave (fn[b keycode]
                     (if (and (= "esc" keycode) (= \/ (-> b :ex first)))
-                      (-> b :context :lastbuf (dissoc :ex))
-                      b))
+                      (-> b :context :lastbuf (assoc :ex ""))
+                      (assoc b :ex "")))
            :else ex-mode-default})
 
   (reset! motion-keymap
