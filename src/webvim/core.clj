@@ -22,6 +22,15 @@
     (dissoc b p)
     b))
 
+;diff line by line
+(defn diff-lines [lines1 lines2]
+  (if (= (count lines1) (count lines2))
+    (vec (map (fn[l1 l2]
+           (if (= l1 l2)
+             nil
+             l2)) lines1 lines2))
+    lines2))
+  
 (defn render 
   "Write changes to browser."
   ;TODO: only write changed lines
@@ -30,7 +39,7 @@
               nil
               (if (= (:lines before) (:lines after))
                 (dissoc after :lines)
-                after))]
+                (assoc after :lines (diff-lines (:lines before) (:lines after)))))]
     (if (nil? buf)
       (response "")
       (let [b (-> buf 

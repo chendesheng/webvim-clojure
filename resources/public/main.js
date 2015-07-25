@@ -58,16 +58,23 @@ function render(buf) {
 	var cline = "";
 	if (buf.lines) {
 		var lines = buf.lines;
-		$('.lines').empty();
-		$('.gutter').empty();
 		$(lines).each(function(i, line) {
-			$('.lines').append('<div id="line-'+i+'" class="line"><pre>'+htmlEncode(line)+'</pre></div>');
-			$('.gutter').append('<div id="line-num-'+i+'" class="line-num">'+(i+1)+'</div>');
+			if (line == null)
+				return;
+
+			if ($('#line-'+i).get(0)) {
+				$('#line-'+i+' pre').text(line);
+			} else {
+				$('.lines').append('<div id="line-'+i+'" class="line"><pre>'+htmlEncode(line)+'</pre></div>');
+			}
+
+			if (!$('#line-num-'+i).get(0)) {
+				$('.gutter').append('<div id="line-num-'+i+'" class="line-num">'+(i+1)+'</div>');
+			}
 		});
-		cline = lines[cr];
-	} else {
-		cline = $('#line-'+cr)[0].textContent;
 	}
+
+	cline = $('#line-'+cr)[0].textContent;
 	
 	//render cursor
 	if (!$('.lines .cursor').get(0)) {
