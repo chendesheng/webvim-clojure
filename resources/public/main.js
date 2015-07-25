@@ -25,7 +25,7 @@ var waitForFinalEvent = (function () {
 
 function setSize() {
 	var view = $('.lines')[0];
-	var w = Math.round(view.offsetWidth/9.57), h = Math.round(view.offsetHeight/20);
+	var w = Math.round(view.offsetWidth/9.57), h = Math.round(view.offsetHeight/21);
 	$.getJSON('resize/'+w+'/'+h);
 }
 
@@ -84,7 +84,7 @@ function render(buf) {
 			x+=9.57;
 		}
 	}
-	var y = cr*20+1;
+	var y = cr*21+1;
 	var w = 9.57;
 	if (isChinese(cline[cc])) {
 		w = 16;
@@ -137,7 +137,7 @@ function render(buf) {
 
 		$('.lines .autocompl').empty()
 			.css('left', x-currentWord.length*9.57-10+'px')
-			.css('top', y+20+'px');
+			.css('top', y+21+'px');
 
 		$(buf.autocompl.suggestions).each(function(i, word) {
 			if (i > 0) {
@@ -172,17 +172,17 @@ function scrollToCursor(cursor) {
 	var width = lines.width();
 	var height = lines.height();
 
-	var vpheight = Math.round(height/20);
+	var vpheight = Math.round(height/21);
 	//var aligntop = cursor.vprow < vpheight/2; //true from top or false from bottom
 	if (cursor.vprow == vpheight-1)
 		aligntop = false;
 	if (cursor.vprow == 0)
 		aligntop = true;
 	if (aligntop) {
-		var srctop = 20*(cursor.row - cursor.vprow);
+		var srctop = 21*(cursor.row - cursor.vprow);
 		lines.scrollTop(srctop+1);
 	} else {
-		var srctop = 20*cursor.row - (height-20*(vpheight - cursor.vprow));
+		var srctop = 21*cursor.row - (height-21*(vpheight - cursor.vprow));
 		console.log(srctop);
 		lines.scrollTop(srctop+1);
 	}
@@ -233,9 +233,8 @@ function renderSelection($p, s, e, reverseTextColor) {
 		}
 
 		line.css('left', l+'px')
-			.css('top', (i*20+1)+'px')
-			.css('width', w+'px')
-			.css('height', '21px');
+			.css('top', (i*21+1)+'px')
+			.css('width', w+'px');
 
 		if (reverseTextColor) {
 			var txt;
