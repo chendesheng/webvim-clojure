@@ -32,7 +32,7 @@ body {
 	text-align:right;
 }
 
-.line-selected {
+.selections .line-selected {
 	background:#fff;
 	opacity:.1;
 	position:absolute;
@@ -71,7 +71,8 @@ pre {
 	background:#528bff;
 	opacity:0.5;
 	width:9.57px;
-	height:20px;
+	height:21px;
+	z-index:1000000;
 }
 
 .status-bar {
@@ -101,6 +102,17 @@ pre {
 	padding: 0 10px;
 }
 
-.highlight {
+.autocompl .highlight {
 	background: #555;
+}
+
+.line-selected {
+	white-space:nowrap;
+}
+
+.highlights .line-selected {
+	background:#ffd58e;
+	/*background:#33CCCC;*/
+	color:#000;
+	position:absolute;
 }

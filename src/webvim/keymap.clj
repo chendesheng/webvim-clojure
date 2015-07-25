@@ -220,6 +220,22 @@
              (catch Exception e  newb)))
       (assoc b :ex newex))))
 
+
+(defn move-to-line[b row]
+  (-> b 
+      (assoc-in [:cursor :row] row)
+      (assoc-in [:cursor :vprow] (-> @window :viewport :h (/ 2) int))
+      (cursor-line-start)))
+
+(defn highlight-all-matches[b re]
+  (loop [b1 (cursor-next-str b re)
+         hls (:highlights b1)]
+    (if (and (= (-> b1 :cursor :row) (-> b :cursor :row))
+             (= (-> b1 :cursor :col) (-> b :cursor :col)))
+      (assoc b :highlights (vec hls))
+      (let [b2 (cursor-next-str b1 re)]
+        (recur b2 (concat hls (:highlights b2)))))))
+
 (defn execute [b]
   (let [ex (:ex b)]
     (cond
@@ -229,16 +245,15 @@
       (merge (open-file (:name b)) 
              {:cursor (:cursor b) 
               :message (str "\"" (:name b) "\" " (count (:lines b)) "L")})
+      (= ex ":nohl")
+      (dissoc b :highlights)
       (string? (re-find #":\d+" ex))
       (let [row (bound-range (dec (Integer. (re-find #"\d+" ex))) 0 (-> b :lines count dec))]
-        (-> b 
-            (assoc-in [:cursor :row] row)
-            (assoc-in [:cursor :vprow] (-> @window :viewport :h (/ 2) int))
-            (cursor-line-start)))
+        (move-to-line b row))
       (= \/ (first ex))
-      (let []
-        (swap! registers assoc "/" (subs ex 1))
-        b)
+      (let [re (subs ex 1)]
+        (swap! registers assoc "/" re)
+        (highlight-all-matches b re))
       :else
       (assoc b :message "unknown command"))))
 
@@ -374,7 +389,8 @@
     (swap! registers assoc "/" re)
     (-> b 
         (assoc-in [:cursor :col] start)
-        (cursor-next-str re))))
+        (cursor-next-str re)
+        (highlight-all-matches re))))
 
 (defn move-back-same-word[b]
   (let [[word start] (word-under-cursor (:lines b) (:cursor b))
@@ -382,7 +398,8 @@
     (swap! registers assoc "/" re)
     (-> b 
         (assoc-in [:cursor :col] start)
-        (cursor-back-str re))))
+        (cursor-back-str re)
+        (highlight-all-matches re))))
 
 (defn buf-close-chan-in[b]
   (async/close! (:chan-in b))
@@ -502,8 +519,14 @@
                        :else ex-mode-default})
            "*" move-next-same-word
            "#" move-back-same-word
-           "n" #(cursor-next-str % (@registers "/"))
-           "N" #(cursor-back-str % (@registers "/"))
+           "n" #(let[re (@registers "/")]
+                  (-> % 
+                      (cursor-next-str re)
+                      (highlight-all-matches re)))
+           "N" #(let[re (@registers "/")]
+                  (-> % 
+                      (cursor-back-str re)
+                      (highlight-all-matches re)))
            "}" (fn[b]
                  (-> b
                      (cursor-next-str "^[^\n]")

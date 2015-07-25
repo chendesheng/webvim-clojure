@@ -115,42 +115,15 @@ function render(buf) {
 		if (!$('.lines .selections').get(0)) {
 			$('.lines').append('<div class="selections"></div>');
 		}
-		var rangs = buf.visual.ranges;
-		var s = rangs[0];
-		var e = rangs[1];
-		//var lines = buf.lines;
-		if (s.row > e.row || (s.row == e.row && s.col > e.col)) {
-			var t = s;
-			s = e;
-			e = t;
-		}
+		renderSelections($('.lines .selections'), buf.visual.ranges)
+	}
 
-		for (var i = s.row; i <= e.row; i++) {
-			var line = $('<div class="line-selected"></div>');
-			var w = 0;
-			var l = 0;
-			var cline = $('#line-'+i)[0].textContent;
-			if (i == s.row) {
-				w = textWidth(cline, s.col, (e.row==i)?e.col+1:cline.length);
-				l = textWidth(cline, 0, s.col);
-			} else if (i == e.row) {
-				w = textWidth(cline, 0, e.col+1);
-				l = 0;
-			} else if (cline.length==0) {
-				//empty line always contains '\n'
-				w = 9.57;
-				l = 0;
-			} else {
-				w = textWidth(cline, 0, cline.length);
-				l = 0;
-			}
-
-			line.css('left', l+'px')
-				.css('top', i*20+1+'px')
-				.css('width', w+'px')
-				.css('height', '20px')
-			$('.selections').append(line);
+	$('.lines .highlights').empty();
+	if (buf.highlights) {
+		if (!$('.lines .highlights').get(0)) {
+			$('.lines').append('<div class="highlights"></div>');
 		}
+		renderSelections($('.lines .highlights'), buf.highlights, true)
 	}
 
 	//render autocompl suggestions
@@ -218,6 +191,67 @@ function scrollToCursor(cursor) {
 		lines.scrollLeft(el.offsetLeft+el.offsetWidth-width);
 	} else if (el.offsetLeft < scrleft) {
 		lines.scrollLeft(el.offsetLeft);
+	}
+}
+
+function renderSelections($p, ranges, reverseTextColor) {
+	for (var i = 0; i < ranges.length; i+=2) {
+		var s = ranges[i];
+		var e = ranges[i+1];
+		renderSelection($p, s, e, reverseTextColor);
+	}
+}
+
+//if reverseTextColor==true copy text from lines append to line-selected
+function renderSelection($p, s, e, reverseTextColor) {
+	//sort
+	if (s.row > e.row || (s.row == e.row && s.col > e.col)) {
+		var t = s;
+		s = e;
+		e = t;
+	}
+
+	for (var i = s.row; i <= e.row; i++) {
+		var line = $('<div class="line-selected"></div>');
+		var w = 0;
+		var l = 0;
+		var cline = $('#line-'+i)[0].textContent;
+
+		if (i == s.row) {
+			w = textWidth(cline, s.col, (e.row==i)?e.col+1:cline.length);
+			l = textWidth(cline, 0, s.col);
+		} else if (i == e.row) {
+			w = textWidth(cline, 0, e.col+1);
+			l = 0;
+		} else if (cline.length==0) {
+			//empty line always contains '\n'
+			w = 9.57;
+			l = 0;
+		} else {
+			w = textWidth(cline, 0, cline.length);
+			l = 0;
+		}
+
+		line.css('left', l+'px')
+			.css('top', (i*20+1)+'px')
+			.css('width', w+'px')
+			.css('height', '21px');
+
+		if (reverseTextColor) {
+			var txt;
+			if (i == s.row) {
+				txt = cline.substring(s.col, (e.row==i)?e.col+1:cline.length);
+			} else if (i == e.row) {
+				txt = cline.substring(0, e.col+1);
+			} else if (cline.length==0) {
+				txt = '\n';
+			} else {
+				txt = cline;
+			}
+			line.append(txt);
+		}
+
+		$p.append(line);
 	}
 }
 

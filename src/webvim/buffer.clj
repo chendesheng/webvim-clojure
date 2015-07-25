@@ -37,7 +37,7 @@
            ;saved cursor when insert begins, for undo/redo function only
            :last-cursor nil
            ;:type =0 visual =1 visual line =2 visual block
-           ;:ranges is a vector of point pairs (unordered): [[row1 col1] [row2 col2]]. Alwasy contains even number of points. Both ends are inclusive.
+           ;:ranges is a vector of point pairs (unordered): [{:row :col} {:row :col}]. Alwasy contains even number of points. Both ends are inclusive.
            :visual {:type 0 :ranges []}
            ;=0 nomral mode =1 insert mode =2 ex mode =3 visual mode
            :mode 0
@@ -54,6 +54,8 @@
            :macro {:recording-keys nil ;record keys when :recording-keys is not nil
                    ;which register will macro save to
                    :register ""}
+           ;Highlight texts, for hlsearch. Same format with visual ranges.
+           :highlights []
 
            :autocompl {:words nil
                        ;empty suggestions means don't display it
@@ -276,8 +278,8 @@
   (let [subline (subs line col)
         m (re-matcher re subline)]
     (if (.find m)
-      [true (-> m .start (+ col))]
-      [false col])))
+      [true (-> m .start (+ col)) (-> m .end (+ col))]
+      [false col col])))
 
 (defn line-back-re
   "Move to back charactor match by re. col=-1 means match whole line" 
@@ -347,18 +349,24 @@
   (assoc b :cursor
          {:row (-> b :lines count dec) :col 0 :lastcol 0 :vprow (-> @window :viewport :h dec)}))
 
+(defn highlight-matched[b row start end]
+  (if (> end start)
+    (assoc b :highlights [{:row row :col start} {:row row :col (dec end)}])
+    b))
+
 (defn cursor-next-re
-  "Match re line by line (re not match multiple lines), don't change cursor if not finded"
+  "Match re line by line (re not match multiple lines), don't change cursor if not found"
   [b re re-line-start]
   (loop [row (-> b :cursor :row)
          col (-> b :cursor :col)
          re-current re]
     (if (< row (-> b :lines count))
       (let [line (-> b :lines (get row))
-            [matched newcol] (line-next-re line col re-current)]
+            [matched newcol endcol] (line-next-re line col re-current)]
         (if (not matched)
           (recur (inc row) 0 re-line-start)
           (-> b 
+              (highlight-matched row newcol endcol)
               (assoc-in [:cursor :row] row)
               (assoc-in [:cursor :vprow] (-> row 
                                              (- (-> b :cursor :row)) 
