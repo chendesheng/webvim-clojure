@@ -94,7 +94,7 @@
     (try
       (let [keycode (async/<!! in)]
         (if (nil? keycode)
-          nil
+          (async/close! out)
           (-> b
               (serve-keys keymap keycode)
               (buffer-reset-keys)
@@ -112,9 +112,7 @@
   (async/thread 
     (loop[b1 b]
       (if (not (nil? b1))
-        (recur (key-server-inner b1 keymap))
-        ;FIXME Exception in thread "async-thread-macro-8" java.lang.IllegalArgumentException: No implementation of method : :close! of protocol: #'clojure.core.async.impl.protocols/Channel found for class: nil  
-        (async/close! (:chan-out b1))))))
+        (recur (key-server-inner b1 keymap))))))
 
 (defn set-normal-mode[b]
   (print "set-normal-mode:")
