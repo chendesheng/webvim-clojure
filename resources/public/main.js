@@ -118,12 +118,30 @@ function render(buf) {
 		renderSelections($('.lines .selections'), buf.visual.ranges)
 	}
 
+	//render hlsearch
 	$('.lines .highlights').empty();
 	if (buf.highlights) {
 		if (!$('.lines .highlights').get(0)) {
 			$('.lines').append('<div class="highlights"></div>');
 		}
 		renderSelections($('.lines .highlights'), buf.highlights, true)
+	}
+
+	//render matched brace pair
+	$('.lines .highlight-brace-pair').empty();
+	if (buf.braces) {
+		if (!$('.lines .highlight-brace-pair').get(0)) {
+			$('.lines').append('<div class="highlight-brace-pair"></div>');
+		}
+		var ranges = [];
+		for (var i = 0; i < buf.braces.length; i++) {
+			var pt = buf.braces[i];
+			//skip cursor, don't draw twice in same point
+			if (pt.row == cr && pt.col == cc) continue; 
+
+			ranges.push(pt, pt);
+		}
+		renderSelections($('.lines .highlight-brace-pair'), ranges);
 	}
 
 	//render autocompl suggestions
@@ -211,6 +229,8 @@ function renderSelection($p, s, e, reverseTextColor) {
 		e = t;
 	}
 
+		console.log(s);
+		console.log(e);
 	for (var i = s.row; i <= e.row; i++) {
 		var line = $('<div class="line-selected"></div>');
 		var w = 0;
@@ -250,6 +270,7 @@ function renderSelection($p, s, e, reverseTextColor) {
 			line.append(txt);
 		}
 
+		console.log(line);
 		$p.append(line);
 	}
 }

@@ -176,7 +176,6 @@
       (assoc-in [:context :lastbuf] b)))
 
 (defn insert-mode-default[b keycode]
-  (println (str "insert-mode-default:" keycode))
   (let [b1 (cond 
              (= "backspace" keycode)
              (buf-delete b)
@@ -189,15 +188,16 @@
              (= 1 (count keycode))
              (buf-insert b keycode)
              :else
-             b)]
-    (if (empty? (-> b1 :autocompl :suggestions))
-      b1
-      (let [word (buffer-word-before-cursor b1)
-            suggestions (-> b1 :autocompl :words (autocompl-suggest word))]
+             b)
+        b2 (buf-update-highlight-brace-pair b1 (:cursor (cursor-move-char b1 0)))]
+    (if (empty? (-> b2 :autocompl :suggestions))
+      b2
+      (let [word (buffer-word-before-cursor b2)
+            suggestions (-> b2 :autocompl :words (autocompl-suggest word))]
         (if (= 1 (count suggestions))
-          (assoc-in b1 [:autocompl :suggestions] [])
-          (assoc b1 :autocompl 
-                 (merge (:autocompl b1) 
+          (assoc-in b2 [:autocompl :suggestions] [])
+          (assoc b2 :autocompl 
+                 (merge (:autocompl b2) 
                         {:suggestions suggestions
                          :suggestions-index 0})))))))
 
@@ -440,11 +440,12 @@
       (swap! registers assoc "." (-> b :macro :recording-keys)))
     ;alwasy clear :recording-keys
     ;prevent cursor on top of EOF in normal mode
-    (if (and (> col 0) (>= col (dec (col-count b row))))
-      (-> b 
-          (update-in [:cursor :col] dec)
-          (assoc-in [:macro :recording-keys] []))
-      (assoc-in  b [:macro :recording-keys] []))))
+    (let [b1 (if (and (> col 0) (>= col (dec (col-count b row))))
+               (update-in b [:cursor :col] dec)
+               b)]
+      (-> b1 
+          (assoc-in [:macro :recording-keys] [])
+          (buf-update-highlight-brace-pair (:cursor b1))))))
 
 (defn dot-repeat[b]
   (let [keycodes (@registers ".")]

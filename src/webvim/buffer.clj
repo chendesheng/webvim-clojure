@@ -34,6 +34,10 @@
            :lines (split-lines-all txt)
            ;row, col, lastcol, viewport row (row from top of current viewport)
            :cursor {:row 0 :col 0 :lastcol 0 :vprow 0}
+           ;For client display matched braces: [{:row :col} {:row :col}]
+           ;If any of them equal to :cursor draw cursor only
+           ;TODO set initial value
+           :braces nil
            ;saved cursor when insert begins, for undo/redo function only
            :last-cursor nil
            ;:type =0 visual =1 visual line =2 visual block
@@ -229,16 +233,20 @@
 (def left-braces #{\( \[ \{})
 (def right-braces #{\) \] \}})
 (def all-braces {\( \) \) \( \[ \] \] \[ \{ \} \} \{})
-(defn cursor-match-brace[b]
-  (let [brace (char-under-cursor b)
+
+(defn buf-char-at[b {row :row col :col}]
+  (-> b :lines (get row) (.charAt col)))
+
+(defn buf-match-brace[b pt]
+  (let [brace (buf-char-at b pt)
         m (all-braces brace)
         lines (:lines b)
         left? (contains? left-braces brace)]
     (if (nil? m) nil
       (if left?
         (loop[cnt 0
-              row (-> b :cursor :row)
-              col (-> b :cursor :col)]
+              row (:row pt)
+              col (:col pt)]
           (if (>= row (count lines)) ;EOF
             nil
             (let [ch (.charAt (lines row) col)
@@ -254,8 +262,8 @@
                                     [(inc row) 0])]
                   (recur ncnt nrow ncol))))))
         (loop[cnt 0
-              row (-> b :cursor :row)
-              col (-> b :cursor :col)]
+              row (:row pt)
+              col (:col pt)]
           (if (< row 0) ;EOF
             nil
             (let [ch (.charAt (lines row) col)
@@ -268,9 +276,14 @@
                 {:row row :col col}
                 (let [[nrow ncol] (if (> col 0)
                                     [row (dec col)]
-                                    [(dec row) (-> (dec row) lines count dec)])]
+                                    [(dec row) (if (zero? row)
+                                                 0
+                                                 (-> (dec row) lines count dec))])]
                   (recur ncnt nrow ncol))))))))))
 
+
+(defn cursor-match-brace[b]
+  (buf-match-brace b (:cursor b)))
 
 (defn line-next-re
   "Move to next charactor match by re." 
@@ -713,3 +726,9 @@
                   :else
                   (recur (conj res (buf-line b r)) (inc r)))))]
     (join res)))
+
+(defn buf-update-highlight-brace-pair[b pt]
+  (let [pt2 (buf-match-brace b pt)]
+    (if (nil? pt2)
+      (dissoc b :braces)
+      (assoc b :braces [{:row (:row pt) :col (:col pt)} pt2]))))

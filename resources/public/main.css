@@ -26,7 +26,6 @@ body {
 .selections .line-selected {
 	background:#fff;
 	opacity:.1;
-	position:absolute;
 }
 
 .gutter {
@@ -117,6 +116,7 @@ pre {
 .line-selected {
 	white-space:nowrap;
 	height:21px;
+	position:absolute;
 }
 
 .highlights .line-selected {
@@ -124,5 +124,12 @@ pre {
 	background:#33CCCC;*/
 	background:#ffdb9e;
 	color:#000;
-	position:absolute;
+}
+
+.highlight-brace-pair .line-selected {
+	background:#007acc;
+	opacity:0.3;
+	width:9.57px;
+	height:21px;
+	z-index:1000;
 }
