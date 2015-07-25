@@ -53,11 +53,11 @@
 
 (defn autocompl-suggest [words subject]
   (reduce #(conj %1 (last %2)) []
-          (sort-by first 
+          (sort-by (juxt first second str)
                    (reduce 
                      (fn [suggestions word]
                        (let [indexes (fuzzy-match word subject)]
                          (if (empty? indexes)
                            suggestions
-                           (conj suggestions [(- (last indexes) (first indexes)) word])))) [[0 subject]] words))))
+                           (conj suggestions [(- (last indexes) (first indexes)) (first indexes) word])))) [[0 0 subject]] words))))
 

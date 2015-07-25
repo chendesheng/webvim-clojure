@@ -90,17 +90,19 @@ pre {
 	background:#007ACC;
 }
 
-.status-bar::-webkit-scrollbar, .lines::-webkit-scrollbar {
+.status-bar::-webkit-scrollbar, .lines::-webkit-scrollbar, .autocompl::-webkit-scrollbar{
         display: none;
 }
 
 .autocompl {
 	background:#eee;
-	border:solid 1px #1d1d1d;
-	border-radius:3px;
+	border-radius:5px;
 	color:#000;
 	position:absolute;
-	padding:3px 0;
+	box-shadow: 0 2px 8px 1px #000;
+	max-height:240px;
+	max-width:500px;
+	overflow:auto;
 }
 .autocompl pre {
 	padding: 0 10px;

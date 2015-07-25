@@ -151,34 +151,6 @@ function render(buf) {
 		renderSelections($('.lines .highlight-brace-pair'), ranges);
 	}
 
-	//render autocompl suggestions
-	$('.lines .autocompl').empty();
-	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
-		if (!$('.lines .autocompl')[0]) {
-			$('.lines').append('<div class="autocompl"></div>');
-		}
-
-		var currentWord = buf.autocompl.suggestions[parseInt(buf.autocompl['suggestions-index'])];
-
-		$('.lines .autocompl').empty()
-			.css('left', x-currentWord.length*9.57-10+'px')
-			.css('top', y+21+'px');
-
-		$(buf.autocompl.suggestions).each(function(i, word) {
-			if (i > 0) {
-				var ele = $('<pre></pre>').text(word).appendTo('.lines .autocompl');
-				if (i == parseInt(buf.autocompl['suggestions-index'])) {
-					ele.addClass('highlight');
-				}
-			}
-		});
-	}
-
-	//title
-	if (buf.name) {
-		document.title = buf.name;
-	}
-
 	//scroll position
 	$('.lines').scroll(function() {
 		var current = $(this).scrollTop();
@@ -186,6 +158,55 @@ function render(buf) {
 	});
 
 	scrollToCursor(buf.cursor);
+
+	//render autocompl suggestions
+	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
+		var lastSelectedIndex = 0;
+		var lastScrollTop = 0;
+		var $autocompl = $('.lines .autocompl');
+		if (!$autocompl[0]) {
+			$('.lines').append('<div class="autocompl"></div>');
+		} else if ($('.lines .autocompl .highlight')[0]) {
+			lastSelectedIndex = parseInt($('.lines .autocompl .highlight').attr('id').split('-')[1]);
+			lastScrollTop = $autocompl.scrollTop();
+		}
+
+		var selectedIndex = parseInt(buf.autocompl['suggestions-index']);
+		var currentWord = buf.autocompl.suggestions[selectedIndex];
+		$autocompl.empty().css('left', x-currentWord.length*9.57-10+'px')
+		$(buf.autocompl.suggestions).each(function(i, word) {
+			if (i > 0) {
+				var ele = $('<pre id="suggestion-'+i+'"></pre>').text(word)
+					.appendTo('.lines .autocompl');
+				if (i == selectedIndex) {
+					ele.addClass('highlight');
+				}
+			}
+		});
+
+		console.log($('.lines').height());
+		if (y+21+$autocompl.height()-$('.lines').scrollTop() < $('.lines').height()) {
+			$autocompl.css('top', y+21+'px');
+		} else {
+			$autocompl.css('top', y-$autocompl.height()+'px');
+		}
+
+		var viewportTop = lastScrollTop;
+		var viewportBottom = lastScrollTop+240;
+		var currentPos = (selectedIndex-1) * 24;
+		if (currentPos < viewportTop) {
+			$autocompl.scrollTop(currentPos);
+		} else if (currentPos+24 >= viewportBottom) {
+			$autocompl.scrollTop(currentPos-216);
+		}
+	} else {
+		$('.lines .autocompl').empty();
+	}
+
+	//title
+	if (buf.name) {
+		document.title = buf.name;
+	}
 }
 
 var aligntop = true;
