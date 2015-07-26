@@ -27,8 +27,11 @@
   [txt]
   (split txt #"(?<=\n)" -1))
 
+(defn cursor-inc-col [cursor]
+  (update-in cursor [:col] inc))
+
 (defn inc-col [b]
-  (update-in b [:cursor :col] inc))
+  (update-in b [:cursor] cursor-inc-col))
 
 (defn dec-col [b]
   (if (pos? (-> b :cursor :col))
@@ -48,7 +51,7 @@
            ;saved cursor when insert begins, for undo/redo function only
            :last-cursor nil
            ;:type =0 visual =1 visual line =2 visual block
-           ;:ranges is a vector of point pairs (unordered): [{:row :col} {:row :col}]. Always contains even number of points. Both ends are inclusive.
+           ;:ranges is a vector of point pairs (unordered): [{:row :col} {:row :col}]. Always contains even number of points. Right end is exclusive.
            :visual {:type 0 :ranges []}
            ;=0 nomral mode =1 insert mode =2 ex mode =3 visual mode
            :mode 0

@@ -146,7 +146,7 @@ function render(buf) {
 			//skip cursor, don't draw twice in same point
 			if (pt.row == cr && pt.col == cc) continue; 
 
-			ranges.push(pt, pt);
+			ranges.push(pt, {row:pt.row, col:pt.col+1});
 		}
 		renderSelections($('.lines .highlight-brace-pair'), ranges);
 	}
@@ -266,10 +266,10 @@ function renderSelection($p, s, e, reverseTextColor) {
 		var cline = $('#line-'+i)[0].textContent;
 
 		if (i == s.row) {
-			w = textWidth(cline, s.col, (e.row==i)?e.col+1:cline.length);
+			w = textWidth(cline, s.col, (e.row==i)?e.col:cline.length);
 			l = textWidth(cline, 0, s.col);
 		} else if (i == e.row) {
-			w = textWidth(cline, 0, e.col+1);
+			w = textWidth(cline, 0, e.col);
 			l = 0;
 		} else if (cline.length==0) {
 			//empty line always contains '\n'
@@ -287,9 +287,9 @@ function renderSelection($p, s, e, reverseTextColor) {
 		if (reverseTextColor) {
 			var txt;
 			if (i == s.row) {
-				txt = cline.substring(s.col, (e.row==i)?e.col+1:cline.length);
+				txt = cline.substring(s.col, (e.row==i)?e.col:cline.length);
 			} else if (i == e.row) {
-				txt = cline.substring(0, e.col+1);
+				txt = cline.substring(0, e.col);
 			} else if (cline.length==0) {
 				txt = '\n';
 			} else {

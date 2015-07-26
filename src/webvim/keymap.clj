@@ -125,7 +125,7 @@
   (print "set-visual-mode:")
   (let [cur (-> b :cursor cursor-to-point)]
     (merge b {:ex "" :mode visual-mode :keys nil 
-              :visual {:type 0 :ranges [cur cur]}})))
+              :visual {:type 0 :ranges [cur (cursor-inc-col cur)]}})))
 
 (defn set-insert-mode[b keycode]
   (println "set-insert-mode")
@@ -312,7 +312,7 @@
 (defn visual-mode-select[b keycode]
   (print "visual-mode-select:")
   (assoc-in b [:visual :ranges 1]
-            (-> b :cursor cursor-to-point)))
+            (-> b :cursor cursor-inc-col cursor-to-point)))
 
 (defn autocompl-start[b]
   (let [word (buffer-word-before-cursor b)
@@ -414,7 +414,7 @@
 (defn replay-keys [b keycodes keymap]
   (let [in (async/chan) ;use local :chan-in :chan-out only for replay keys
         out (async/chan)
-        registers (atom {})
+        registers (atom @(:registers b))
         b1 (-> b
                (assoc :registers registers) ;Use different reigsters when replay keys, avoid changing to the global registers.
                (assoc :chan-in in)
@@ -477,7 +477,7 @@
 
 (defn yank-visual[b]
   (let [[p1 p2] (-> b :visual :ranges)]
-    (swap! (:registers b) assoc "\"" (buf-copy-range b p1 p2 true))
+    (swap! (:registers b) assoc "\"" (buf-copy-range b p1 p2 false))
     (let [[cur1 _] (apply cursor-sort (-> b :visual :ranges))]
       (-> b 
           (assoc :cursor {:row (:row cur1)
