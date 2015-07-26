@@ -363,7 +363,7 @@
       (-> b
           buf-save-cursor
           (buf-insert txt)
-          (dec-col)
+          dec-col
           history-save)
       b)))
 
@@ -576,7 +576,7 @@
            :continue #(not (= "esc" %2))
            :leave (fn[b keycode]
                     (-> b
-                        dec-col
+                        (cursor-move-char 0)
                         set-normal-mode
                         history-save))})
 
