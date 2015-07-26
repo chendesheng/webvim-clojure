@@ -301,8 +301,8 @@
   (let [subline (subs line col)
         m (re-matcher re subline)]
     (if (.find m)
-      [true (-> m .start (+ col)) (-> m .end (+ col))]
-      [false col col])))
+      [(-> m .start (+ col)) (-> m .end (+ col))]
+      nil)))
 
 (defn line-back-re
   "Move to back charactor match by re. col=-1 means match whole line" 
@@ -312,21 +312,22 @@
                   (subs line 0 col))
         m (re-matcher re subline)]
     (if (.find m)
-      (loop [lastend (.start m)]
-        (if (.find m)
-          (recur (.start m))
-          [true lastend]))
-      [false col])))
+      (loop [m1 m]
+        (let [matched [(.start m1) (.end m1)]]
+          (if (.find m1)
+            (recur m1)
+            matched)))
+      nil)))
 
 (defn word-under-cursor
   "Find next word end, then find word start back from that end."
   [lines {row :row col :col}]
   (let [line (lines row)
-        [matched pos] (line-next-re line col re-word-end)
-        end (if matched (inc pos) (count line))
-        [matched1 pos1] (line-back-re line end re-word-start)
-        start (if matched1 pos1 0)]
-   [(subs line start end) start]))
+        matched (line-next-re line col re-word-end)
+        end (if (not (nil? matched)) (inc (matched 0)) (count line))
+        matched1 (line-back-re line end re-word-start)
+        start (if (not (nil? matched1)) (matched1 0) 0)]
+    [(subs line start end) start]))
 
 (defn buf-insert 
   "Insert at cursor"
@@ -372,32 +373,32 @@
   (assoc b :cursor
          {:row (-> b :lines count dec) :col 0 :lastcol 0 :vprow (-> @window :viewport :h dec)}))
 
-(defn highlight-matched[b row start end]
-  (if (> end start)
-    (assoc b :highlights [{:row row :col start} {:row row :col (dec end)}])
-    b))
+(defn lines-next-re[{lines :lines cursor :cursor} re re-line-start]
+  (loop [row (:row cursor)
+         col (:col cursor)
+         re-current re]
+    (if (< row (count lines))
+      (let [line (lines row)
+            matched (line-next-re line col re-current)]
+        (if (not matched)
+          (recur (inc row) 0 re-line-start)
+          [[{:row row :col (matched 0)} {:row row :col (matched 1)}]
+           {:row row
+            :vprow (-> row 
+                       (- (:row cursor)) 
+                       (+ (:vprow cursor))
+                       (bound-range 0 (-> @window :viewport :h dec)))
+            :col (matched 0)
+            :lastcol (matched 0)}]))
+      [nil cursor])))
 
 (defn cursor-next-re
   "Match re line by line (re not match multiple lines), don't change cursor if not found"
   [b re re-line-start]
-  (loop [row (-> b :cursor :row)
-         col (-> b :cursor :col)
-         re-current re]
-    (if (< row (-> b :lines count))
-      (let [line (-> b :lines (get row))
-            [matched newcol endcol] (line-next-re line col re-current)]
-        (if (not matched)
-          (recur (inc row) 0 re-line-start)
-          (-> b 
-              (highlight-matched row newcol endcol)
-              (assoc-in [:cursor :row] row)
-              (assoc-in [:cursor :vprow] (-> row 
-                                             (- (-> b :cursor :row)) 
-                                             (+ (-> b :cursor :vprow))
-                                             (bound-range 0 (-> @window :viewport :h dec))))
-              (assoc-in [:cursor :col] newcol)
-              (assoc-in [:cursor :lastcol] newcol))))
-      b)))
+  (let [[matched newcursor] (lines-next-re b re re-line-start)]
+    (if (nil? matched)
+      b
+      (assoc b :cursor newcursor))))
 
 (defn cursor-back-re
   "Match re line by line in reverse"
@@ -406,8 +407,8 @@
          col (-> b :cursor :col)]
     (if (>= row 0)
       (let [line (-> b :lines (get row))
-            [matched newcol] (line-back-re line col re)]
-        (if (not matched)
+            matched (line-back-re line col re)]
+        (if (nil? matched)
           (recur (dec row) -1)
           (-> b 
               (assoc-in [:cursor :row] row)
@@ -415,8 +416,8 @@
                                              (- (-> b :cursor :row)) 
                                              (+ row)
                                              (bound-range 0 (-> @window :viewport :h dec))))
-              (assoc-in [:cursor :col] newcol)
-              (assoc-in [:cursor :lastcol] newcol))))
+              (assoc-in [:cursor :col] (matched 0))
+              (assoc-in [:cursor :lastcol] (matched 0)))))
       b)))
 
 (defn cursor-back-str
@@ -512,11 +513,11 @@
   (let [line (-> b :lines (get (-> b :cursor :row)))
         col (-> b :cursor :col)
         re (str "(?=" (quote-pattern ch) ")")
-        [matched newcol] (line-back-re line col (re-pattern re))]
-    (if matched
+        matched (line-back-re line col (re-pattern re))]
+    (if (not (nil? matched))
       (-> b
-          (assoc-in [:cursor :col] newcol) 
-          (assoc-in [:cursor :lastcol] newcol))
+          (assoc-in [:cursor :col] (matched 0)) 
+          (assoc-in [:cursor :lastcol] (matched 0)))
       b)))
 
 (defn cursor-line-end
@@ -564,19 +565,26 @@
 
                     :else (:cursor b))))))
 
+(defn highlight-matched[b {r1 :row c1 :col} {r2 :row c2 :col}]
+  (assoc b :highlights [{:row r1 :col c1} {:row r2 :col (dec c2)}]))
+
 (defn cursor-next-str
-  "The \"n\" motion"
+  "Find next matched regex. If wrap is true, continue from top when hit bottom."
   [b s]
   (if (empty? s)
     b
     (let [re (re-pattern s)
-          b1 (inc-col b)
-          b2 (cursor-next-re b1 re re)]
-      (if (= b1 b2) ;not found, wrap back and searh again
-        (cursor-next-re
-          (cursor-move-start b) re re)
-        b2))))
-
+          [matched newcur] (lines-next-re (inc-col b) re re)]
+      (if (nil? matched) ;not found, wrap back and searh again
+        (let [[matched2 newcur2] (lines-next-re (cursor-move-start b) re re)]
+          (if matched2
+            (-> b 
+                (assoc :highlights matched2)
+                (assoc :cursor newcur2))
+            b))
+        (-> b 
+            (assoc :highlights matched)
+            (assoc :cursor newcur))))))
 
 (defn first-nonspace-pos
   "Return index of first non-space char"

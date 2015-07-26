@@ -215,7 +215,7 @@
                      (assoc :ex newex)
                      (assoc-in [:context :lastbuf] lb))] ;keep lastbuf avaiable on stack
         (try (cursor-next-str newb (subs newex 1))
-             (catch Exception e  newb)))
+             (catch Exception e newb)))
       (assoc b :ex newex))))
 
 
