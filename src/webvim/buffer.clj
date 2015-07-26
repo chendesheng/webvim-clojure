@@ -38,6 +38,20 @@
     (update-in b [:cursor :col] dec)
     b))
 
+;generate buffer id 
+(defonce gen-id (atom 0))
+
+;key: buffer id, value: buffer map
+(defonce buffer-list (atom {}))
+
+(defn buffer-list-add
+  "Generate buffer id (increase from 1) and add to buffer-list"
+  [b]
+  (let [id (swap! gen-id inc)
+        b1 (assoc b :id id)]
+    (swap! buffer-list assoc id b1)
+    b1))
+
 (defn create-buf[bufname txt]
   (let [b {:name bufname
            ;Each line is a standard java String
@@ -96,9 +110,10 @@
         ;cache whole txt for searching, use :lines check if same version
         (assoc :txt-cache {:lines (:lines b)  :txt txt}))))
 
-(defn open-file[f]
-  "Create buffer from a file"
-  (create-buf f (slurp f)))
+(defn open-file
+  "Create buffer from a file. Add buffer to buffer-list"
+  [f]
+  (buffer-list-add (create-buf f (slurp f))))
 
 ;one server only serve one window at one time
 (defonce window (atom{:viewport {:w 0 :h 0}}))
@@ -106,7 +121,6 @@
 (defonce active-buffer (atom {}))
 ;only for testing on repl
 (reset! active-buffer (open-file "testfile.clj"))
-
 
 (defn history-peek[b]
   ((-> b :history :items) (-> b :history :version)))

@@ -234,25 +234,36 @@
       (let [b2 (cursor-next-str b1 re)]
         (recur b2 (concat hls (:highlights b2)))))))
 
+(def ex-commands
+  {"write" (fn[b _ _]
+             (write-buffer b))
+   "nohlsearch" (fn[b _ _]
+                  (dissoc b :highlights))
+   "edit" (fn[b excmd file]
+            (println "file:" file)
+            (assoc (open-file file)
+                   :message (str "\"" file "\" " (count (:lines b)) "L")))
+   #"^(\d+)$" (fn[b row _]
+                (println "row:" row)
+                (let [row (bound-range (dec (Integer. row)) 0 (-> b :lines count dec))]
+                  (move-to-line b row)))})
+
+(defn handle-search[b]
+  (let [re (-> b :ex (subs 1))]
+    (swap! (:registers b) assoc "/" re)
+    (highlight-all-matches b re)))
+
 (defn execute [b]
-  (let [ex (:ex b)]
-    (cond
-      (= ex ":w")
-      (write-buffer b)
-      (= ex ":e")
-      (merge (open-file (:name b)) 
-             {:cursor (:cursor b) 
-              :message (str "\"" (:name b) "\" " (count (:lines b)) "L")})
-      (= ex ":nohl")
-      (dissoc b :highlights)
-      (string? (re-find #":\d+" ex))
-      (let [row (bound-range (dec (Integer. (re-find #"\d+" ex))) 0 (-> b :lines count dec))]
-        (move-to-line b row))
-      (= \/ (first ex))
-      (let [re (subs ex 1)]
-        (swap! (:registers b) assoc "/" re)
-        (highlight-all-matches b re))
-      :else
+  (let [[_ excmd args] (re-find #"\s*:([^\s]+)\s*(.*)\s*" (:ex b))
+        handlers (filter fn?
+                   (map (fn[[cmd handler]]
+                          (println cmd)
+                          (if (string? cmd)
+                            (if (zero? (.indexOf cmd excmd)) handler nil)
+                            (let [m (re-find cmd excmd)]
+                              (if (not (nil? m)) handler nil)))) ex-commands))]
+    (if (= 1 (count handlers))
+      ((first handlers) b excmd args)
       (assoc b :message "unknown command"))))
 
 (defn save-lastbuf[b keycode]
@@ -492,8 +503,7 @@
 (defn init-keymap-tree
   []
   (reset! ex-mode-keymap
-          {"enter" execute
-           :continue #(not (or (= "esc" %2) (= "enter" %2) (empty? (:ex %1))))
+          {:continue #(not (or (= "esc" %2) (= "enter" %2) (empty? (:ex %1))))
            :leave (fn[b keycode]
                     (if (and (= "esc" keycode) (= \/ (-> b :ex first)))
                       (-> b :context :lastbuf (assoc :ex ""))
@@ -525,7 +535,8 @@
                             (move-to-back-char %2)
                             inc-col) }
            "/" (merge @ex-mode-keymap 
-                      {:enter set-ex-search-mode
+                      {"enter" handle-search
+                       :enter set-ex-search-mode
                        :else ex-mode-default})
            "*" move-next-same-word
            "#" move-back-same-word
@@ -602,7 +613,8 @@
           "." dot-repeat
           ":" (merge
                 @ex-mode-keymap
-                {:enter (fn[b keycode] (set-ex-mode b))
+                {"enter" execute
+                 :enter (fn[b keycode] (set-ex-mode b))
                  :leave (fn[b keycode] (set-normal-mode b))})
           "u" history-undo
           "c+r" history-redo

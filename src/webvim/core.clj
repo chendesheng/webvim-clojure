@@ -17,40 +17,58 @@
     (pprint obj)
     obj))
 
-(defn dissoc-if-emtpy[b p]
-  (if (empty? (b p))
-    (dissoc b p)
+(defn dissoc-emtpy[b ks]
+  (if (empty? (get-in b ks))
+    (if (= 1 (count ks))
+      (dissoc b (first ks))
+      (recur (update-in b (pop ks) dissoc (peek ks)) (pop ks)))
     b))
 
 ;diff line by line
-(defn diff-lines [lines1 lines2]
-  (if (= (count lines1) (count lines2))
-    (vec (map (fn[l1 l2]
-           (if (= l1 l2)
-             nil
-             l2)) lines1 lines2))
-    lines2))
-  
+(defn diff-lines [after before]
+  (let [lines1 (:lines before)
+        lines2 (:lines after)]
+    (cond 
+      (= lines1 lines2)
+      (dissoc after :lines)
+      (= (count lines1) (count lines2))
+      (-> after
+          (dissoc :lines)
+          (assoc :difflines 
+                 (vec (map (fn[l1 l2]
+                             (if (= l1 l2)
+                               nil
+                               l2)) lines1 lines2))))
+      :else
+      after)))
+
+(defn- remove-server-only-fields[b]
+  (-> b 
+      (dissoc :history :txt-cache :context :last-cursor 
+          :macro :chan-in :chan-out :registers)
+      (dissoc-emtpy [:highlights])
+      (update-in [:autocompl] dissoc :words)
+      (dissoc-emtpy [:autocompl :suggestions])))
+
+(defn- remove-visual-mode[b]
+  (if (not (= visual-mode (:mode b)))
+    (dissoc b :visual)
+    b))
+
+
 (defn render 
   "Write changes to browser."
-  ;TODO: only write changed lines
   [before after]
-  (let [buf (if (= before after)
-              nil
-              (if (= (:lines before) (:lines after))
-                (dissoc after :lines)
-                (assoc after :lines (diff-lines (:lines before) (:lines after)))))]
-    (if (nil? buf)
-      (response "")
-      (let [b (-> buf 
-                  (dissoc :name :history :txt-cache :context :last-cursor :macro :chan-in :chan-out :registers)
-                  (dissoc-if-emtpy :highlights))
-            b1 (if (-> b :autocompl :suggestions empty?)
-                 (dissoc b :autocompl)
-                 (update-in b [:autocompl] dissoc :words))]
-        (if (not (= visual-mode (:mode b1)))
-          (response (dissoc b1 :visual))
-          (response b1))))))
+  (let [b (cond (= before after)
+                ""
+                (or (nil? before) (not (= (:id before) (:id after))))
+                (remove-server-only-fields after)
+                :else
+                (-> after
+                    (diff-lines before)
+                    remove-server-only-fields
+                    remove-visual-mode))]
+    (response b)))
 
 (defonce run-key-server 
   (do
@@ -68,6 +86,8 @@
                 (assoc :chan-out (async/chan))))
     (init-keymap-tree)
     (key-server @active-buffer @root-keymap)))
+
+(restart-key-server)
 
 (defn edit [keycode]
   (let [before @active-buffer]
@@ -95,10 +115,7 @@
 
 (defroutes main-routes
   (GET "/" [request] (homepage request))
-  (GET "/buf" [] (response (-> @active-buffer 
-                               (dissoc :chan-in :chan-out :context 
-                                   :history :last-cursor :registers)
-                               (dissoc-if-emtpy :highlights))))
+  (GET "/buf" [] (render nil @active-buffer))
   (GET "/resize/:w/:h" [w h] 
        (swap! window assoc :viewport {:w (parse-int w) :h (parse-int h)}))
   (GET "/key" {{keycode :code} :params} (edit keycode)))

@@ -46,35 +46,55 @@ function textWidth(txt, a, b) {
 	}
 	return x;
 }
+
 function htmlEncode(value) {
     return $('<div/>').text(value).html();
 }
+
+function replaceBinding(html, data, ifEncode) {
+	for (var p in data) {
+		if (data.hasOwnProperty(p)) {
+			var v = data[p];
+			html = html.replace(new RegExp('{' + p + '}', 'g'), ifEncode ? htmlEncode(v) : v);
+		}
+	}
+	return html;
+}
+
+var lineTemplate = '<div id="line-{row}" class="line"><pre>{line}</pre></div>';
+var gutterLineTemplate = '<div id="line-num-{row}" class="line-num">{incrow}</div>';
+
+function lineid(i) {
+	return '#line-'+i;
+}
+
 function render(buf) {
 	if (!buf) return;
 
 	var cr = parseInt(buf.cursor.row)
 	var cc = parseInt(buf.cursor.col)
 
-	var cline = "";
+	//render lines
 	if (buf.lines) {
+		$('.lines').empty();
 		var lines = buf.lines;
 		$(lines).each(function(i, line) {
-			if (line == null)
-				return;
-
-			if ($('#line-'+i).get(0)) {
-				$('#line-'+i+' pre').text(line);
-			} else {
-				$('.lines').append('<div id="line-'+i+'" class="line"><pre>'+htmlEncode(line)+'</pre></div>');
-			}
-
-			if (!$('#line-num-'+i).get(0)) {
-				$('.gutter').append('<div id="line-num-'+i+'" class="line-num">'+(i+1)+'</div>');
-			}
+			$('.lines').append(replaceBinding(lineTemplate, {row:i, line:line}, true));
+			$('.gutter').append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
 		});
+		
 	}
 
-	cline = $('#line-'+cr)[0].textContent;
+	if (buf.difflines) {
+		var lines = buf.difflines;
+		$(lines).each(function(i, line) {
+			if (line) {
+				$(lineid(i)+' pre').text(line);
+			}
+		});
+	} 
+
+	var cline = $('#line-'+cr)[0].textContent;
 	
 	//render cursor
 	if (!$('.lines .cursor').get(0)) {
