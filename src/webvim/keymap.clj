@@ -15,7 +15,6 @@
 
 ;enter point of key sequence parser
 (defonce root-keymap (atom {}))
-(defonce registers (atom {"%" (:name @active-buffer)}))
 
 (defonce normal-mode 0)
 (defonce insert-mode 1)
@@ -155,7 +154,7 @@
       (set-insert-mode keycode)))
 
 (defn set-insert-remove-char[b keycode]
-  (swap! registers assoc "\"" (buf-copy-range b (:cursor b) (:cursor b) true))
+  (swap! (:registers b) assoc "\"" (buf-copy-range b (:cursor b) (:cursor b) true))
   (-> b
       (set-insert-mode keycode)
       (buf-replace (:cursor b) "" true)))
@@ -251,7 +250,7 @@
         (move-to-line b row))
       (= \/ (first ex))
       (let [re (subs ex 1)]
-        (swap! registers assoc "/" re)
+        (swap! (:registers b) assoc "/" re)
         (highlight-all-matches b re))
       :else
       (assoc b :message "unknown command"))))
@@ -283,7 +282,9 @@
 
 (defn- buf-copy-range-lastbuf[b cur inclusive]
   (println (str "inclusive:" inclusive))
-  (swap! registers assoc "\"" (buf-copy-range b cur (:cursor b) inclusive))
+  (println (str "cursor:" cur))
+  (println (str "cursor2:" (:cursor b)))
+  (swap! (:registers b) assoc "\"" (buf-copy-range b cur (:cursor b) inclusive))
   b)
 
 (defn delete-motion[b keycode]
@@ -357,7 +358,7 @@
     (cursor-back-char b ch)))
 
 (defn put-from-register[b keycode]
-  (let [txt (@registers keycode)]
+  (let [txt (@(:registers b) keycode)]
     (if (string? txt)
       (-> b
           buf-save-cursor
@@ -367,7 +368,7 @@
       b)))
 
 (defn put-from-register-append[b keycode]
-  (let [txt (@registers keycode)
+  (let [txt (@(:registers b) keycode)
         col (-> b :cursor :col inc)
         col1 (if (= col (col-count b (-> b :cursor :row)))
                (dec col)
@@ -391,7 +392,7 @@
 (defn move-next-same-word[b]
   (let [[word start] (word-under-cursor (:lines b) (:cursor b))
         re (str "\\b" word "\\b")]
-    (swap! registers assoc "/" re)
+    (swap! (:registers b) assoc "/" re)
     (-> b 
         (assoc-in [:cursor :col] start)
         (cursor-next-str re)
@@ -400,7 +401,7 @@
 (defn move-back-same-word[b]
   (let [[word start] (word-under-cursor (:lines b) (:cursor b))
         re (str "\\b" word "\\b")]
-    (swap! registers assoc "/" re)
+    (swap! (:registers b) assoc "/" re)
     (-> b 
         (assoc-in [:cursor :col] start)
         (cursor-back-str re)
@@ -413,7 +414,9 @@
 (defn replay-keys [b keycodes keymap]
   (let [in (async/chan) ;use local :chan-in :chan-out only for replay keys
         out (async/chan)
+        registers (atom {})
         b1 (-> b
+               (assoc :registers registers) ;Use different reigsters when replay keys, avoid changing to the global registers.
                (assoc :chan-in in)
                (assoc :chan-out out))]
     (println "start replay:")
@@ -429,7 +432,8 @@
         (if (empty? coll)
           (-> b2
               buf-close-chan-in
-              ;restore channel back
+              ;restore back
+              (assoc :registers (:registers b))
               (assoc :chan-in (:chan-in b))
               (assoc :chan-out (:chan-out b)))
           (recur (first coll) (subvec coll 1)))))))
@@ -443,7 +447,7 @@
     (if (not (or (= (:lines lastbuf) (:lines b))
                  ;These commands should not get repeat
                  (contains? #{".", "u", "c+r", "p", "P", ":"} keycode)))
-      (swap! registers assoc "." (-> b :macro :recording-keys)))
+      (swap! (:registers b) assoc "." (-> b :macro :recording-keys)))
     ;alwasy clear :recording-keys
     ;prevent cursor on top of EOF in normal mode
     (let [b1 (if (and (> col 0) (>= col (dec (col-count b row))))
@@ -454,7 +458,7 @@
           (buf-update-highlight-brace-pair (:cursor b1))))))
 
 (defn dot-repeat[b]
-  (let [keycodes (@registers ".")]
+  (let [keycodes (@(:registers b) ".")]
     (if (empty? keycodes)
       b
       (let [{in :chan-in out :chan-out} b] 
@@ -465,7 +469,7 @@
   (if (= (col-count b (-> b :cursor :row)) 1)
     b
     (let [cursor (:cursor b)]
-      (swap! registers assoc "\"" (buf-copy-range b cursor cursor true))
+      (swap! (:registers b) assoc "\"" (buf-copy-range b cursor cursor true))
       (-> b 
           buf-save-cursor
           (buf-replace cursor "" true)
@@ -473,7 +477,7 @@
 
 (defn yank-visual[b]
   (let [[p1 p2] (-> b :visual :ranges)]
-    (swap! registers assoc "\"" (buf-copy-range b p1 p2 true))
+    (swap! (:registers b) assoc "\"" (buf-copy-range b p1 p2 true))
     (let [[cur1 _] (apply cursor-sort (-> b :visual :ranges))]
       (-> b 
           (assoc :cursor {:row (:row cur1)
@@ -525,11 +529,11 @@
                        :else ex-mode-default})
            "*" move-next-same-word
            "#" move-back-same-word
-           "n" #(let[re (@registers "/")]
+           "n" #(let[re (@(:registers %) "/")]
                   (-> % 
                       (cursor-next-str re)
                       (highlight-all-matches re)))
-           "N" #(let[re (@registers "/")]
+           "N" #(let[re (@(:registers %) "/")]
                   (-> % 
                       (cursor-back-str re)
                       (highlight-all-matches re)))

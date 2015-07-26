@@ -43,7 +43,7 @@
     (if (nil? buf)
       (response "")
       (let [b (-> buf 
-                  (dissoc :name :history :txt-cache :context :last-cursor :macro :chan-in :chan-out)
+                  (dissoc :name :history :txt-cache :context :last-cursor :macro :chan-in :chan-out :registers)
                   (dissoc-if-emtpy :highlights))
             b1 (if (-> b :autocompl :suggestions empty?)
                  (dissoc b :autocompl)
@@ -97,7 +97,7 @@
   (GET "/" [request] (homepage request))
   (GET "/buf" [] (response (-> @active-buffer 
                                (dissoc :chan-in :chan-out :context 
-                                   :history :last-cursor)
+                                   :history :last-cursor :registers)
                                (dissoc-if-emtpy :highlights))))
   (GET "/resize/:w/:h" [w h] 
        (swap! window assoc :viewport {:w (parse-int w) :h (parse-int h)}))

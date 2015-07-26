@@ -6,6 +6,9 @@
         webvim.autocompl
         (clojure [string :only (join split)])))
 
+;global registers. Don't access this directly, always access buffer's :registers
+(defonce registers (atom {}))
+
 (def re-word-start #"(?<=\W)\w|(?<=[\s\w])[^\s\w]")
 (def re-word-start-line-start #"^\S|(?<=\W)\w|(?<=[\s\w])[^\s\w]")
 (def re-word-start-back #"(?<=\W)\w|(?<=[\s\w])[^\s\w]|^\S")
@@ -45,7 +48,7 @@
            ;saved cursor when insert begins, for undo/redo function only
            :last-cursor nil
            ;:type =0 visual =1 visual line =2 visual block
-           ;:ranges is a vector of point pairs (unordered): [{:row :col} {:row :col}]. Alwasy contains even number of points. Both ends are inclusive.
+           ;:ranges is a vector of point pairs (unordered): [{:row :col} {:row :col}]. Always contains even number of points. Both ends are inclusive.
            :visual {:type 0 :ranges []}
            ;=0 nomral mode =1 insert mode =2 ex mode =3 visual mode
            :mode 0
@@ -53,17 +56,20 @@
            :ex ""
            ;ongoing command keys, display beside "-- MODE --" prompt. Only save keys trigger next keymap, right before :enter function is called.
            :keys []
-
            ;send key to this channel when editting this buffer
            :chan-in (async/chan)
            ;get result from this channel after send key to :chan-in
            :chan-out (async/chan)
 
-           :macro {:recording-keys nil ;record keys when :recording-keys is not nil
+           :macro {:recording-keys nil
                    ;which register will macro save to
                    :register ""}
            ;Highlight texts, for hlsearch. Same format with visual ranges.
            :highlights []
+
+           ;Local registers, atom. Set init value to global registers so it can share cross buffers.
+           ;Use different registers in macro replaying to avoid side effect.
+           :registers registers
 
            :autocompl {:words nil
                        ;empty suggestions means don't display it
@@ -95,9 +101,9 @@
 (defonce window (atom{:viewport {:w 0 :h 0}}))
 
 (defonce active-buffer (atom {}))
-
 ;only for testing on repl
 (reset! active-buffer (open-file "testfile.clj"))
+
 
 (defn history-peek[b]
   ((-> b :history :items) (-> b :history :version)))
