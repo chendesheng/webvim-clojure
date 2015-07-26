@@ -27,6 +27,10 @@
 (defn inc-col [b]
   (update-in b [:cursor :col] inc))
 
+(defn dec-col [b]
+  (if (pos? (-> b :cursor :col))
+    (update-in b [:cursor :col] dec)
+    b))
 
 (defn create-buf[bufname txt]
   (let [b {:name bufname
@@ -276,7 +280,7 @@
                 {:row row :col col}
                 (let [[nrow ncol] (if (> col 0)
                                     [row (dec col)]
-                                    [(dec row) (if (zero? row)
+                                    [(dec row) (if (not (pos? row))
                                                  0
                                                  (-> (dec row) lines count dec))])]
                   (recur ncnt nrow ncol))))))))))
@@ -451,14 +455,14 @@
   "The \"e\" motion."
   [b]
   (-> b 
-      (inc-col b)
+      inc-col
       (cursor-next-re re-word-end re-word-end)))
 
 (defn cursor-WORD-end
   "The \"E\" motion."
   [b]
   (-> b 
-      (inc-col b)
+      inc-col
       (cursor-next-re re-WORD-end re-WORD-end)))
 
 (defn cursor-line-first
@@ -512,7 +516,7 @@
 (defn cursor-line-end
   "The \"$\" motion"
   [b]
-  (let [col (-> b :lines (get (-> b :cursor :row)) count dec)
+  (let [col (-> b :lines (get (-> b :cursor :row)) count dec dec)
         col1 (if (neg? col) 0 col)]
     (-> b
         (assoc-in [:cursor :col] col)

@@ -44,7 +44,6 @@
   "Serve a sequence of keys until end of keymap. Recusivly walk through keymap tree (works like sytax parser)"
   [b keymap keycode]
   (let [f (keymap keycode)]
-    (println "got key:" keycode)
     (let [b1 (update-in b [:macro :recording-keys] #(conj % keycode))]
       (if (or (fn? f) (map? f) (fn? (:else keymap)))
         (-> b1
@@ -189,7 +188,7 @@
              (buf-insert b keycode)
              :else
              b)
-        b2 (buf-update-highlight-brace-pair b1 (:cursor (cursor-move-char b1 0)))]
+        b2 (buf-update-highlight-brace-pair b1 (:cursor (dec-col b1)))]
     (if (empty? (-> b2 :autocompl :suggestions))
       b2
       (let [word (buffer-word-before-cursor b2)
@@ -273,7 +272,8 @@
    "F" false
    "t" true
    "T" false
-   "/" false})
+   "/" false
+   "$" true})
 
 (defn inclusive? [keycode]
   (let [res (map-key-inclusive keycode)]
@@ -300,11 +300,13 @@
 
 (defn change-motion[b keycode]
   (println "change-motion:" keycode)
-  (-> b :context :lastbuf
-      ;(println (str "change-motion:" keycode))
-      (buf-copy-range-lastbuf (:cursor b) (inclusive? keycode))
-      (buf-replace (:cursor b) "" (inclusive? keycode))
-      (serve-keymap (@normal-mode-keymap "i") keycode)))
+  (let [inclusive (inclusive? keycode)
+        lastcur (-> b :context :lastbuf :cursor)]
+    (-> b 
+        ;(println (str "change-motion:" keycode))
+        (buf-copy-range-lastbuf lastcur (inclusive? keycode))
+        (buf-replace lastcur "" (inclusive? keycode))
+        (serve-keymap (@normal-mode-keymap "i") keycode))))
 
 (defn visual-mode-select[b keycode]
   (print "visual-mode-select:")
@@ -360,21 +362,24 @@
       (-> b
           buf-save-cursor
           (buf-insert txt)
-          (cursor-move-char 0)
+          (dec-col)
           history-save)
       b)))
 
 (defn put-from-register-append[b keycode]
-  (let [txt (@registers keycode)]
+  (let [txt (@registers keycode)
+        col (-> b :cursor :col inc)
+        col1 (if (= col (col-count b (-> b :cursor :row)))
+               (dec col)
+               col)]
     (if (string? txt)
       (-> b
           buf-save-cursor
-          (update-in [:cursor :col] inc)
+          (assoc-in [:cursor :col] col1)
           (buf-insert txt)
-          (cursor-move-char 0)
+          dec-col
           history-save)
       b)))
-
 
 (defn delete-line[b]
   (-> b
@@ -432,6 +437,7 @@
 (defn normal-mode-after[b keycode]
   (let [{col :col row :row} (:cursor b)
         lastbuf (-> b :context :lastbuf)]
+    (pprint (-> b :macro :recording-keys))
     ;if nothing changed there is no need to overwrite "." register
     ;so keys like i<esc> won't affect, this also exclude all motions.
     (if (not (or (= (:lines lastbuf) (:lines b))
@@ -509,12 +515,11 @@
            "f" { :else move-to-next-char }
            "F" { :else move-to-back-char }
            "t" { :else #(-> %1 
-                            (update-in [:keys] conj %2)
                             (move-to-next-char %2)
-                            (cursor-move-char 0)) }
+                            dec-col) }
            "T" { :else #(-> %1
                             (move-to-back-char %2)
-                            (cursor-move-char 1)) }
+                            inc-col) }
            "/" (merge @ex-mode-keymap 
                       {:enter set-ex-search-mode
                        :else ex-mode-default})
@@ -567,7 +572,7 @@
            :continue #(not (= "esc" %2))
            :leave (fn[b keycode]
                     (-> b
-                        (cursor-move-char 0)
+                        dec-col
                         set-normal-mode
                         history-save))})
 
