@@ -47,7 +47,6 @@
       (dissoc :history :txt-cache :context :last-cursor 
           :macro :chan-in :chan-out :registers)
       (dissoc-emtpy [:highlights])
-      (update-in [:autocompl] dissoc :words)
       (dissoc-emtpy [:autocompl :suggestions])))
 
 (defn- remove-visual-mode[b]

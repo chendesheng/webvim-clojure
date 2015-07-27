@@ -3,6 +3,8 @@
   (:use clojure.pprint
         (clojure [string :only (split)])))
 
+(defonce autocompl-words (atom #{}))
+
 (defn fuzzy-match 
   "return true if word \"contains\" subject. length of subject must longer than 2"
   [word subject]
@@ -44,12 +46,12 @@
   (set (filter #(> (count %) 2) (split-words txt))))
 
 (defn autocompl-parse-buffer
-  "Parse a buffer content split to words and save to (-> b :autocomplete :words)"
+  "Parse a buffer lines split to words and save to global autocompl-words"
   [b]
-  (let [lines (:lines b)]
-    (assoc-in b [:autocompl :words]
-              (reduce (fn[words line]
-                        (set/union words (autocompl-parse line))) #{} lines))))
+  (reset! autocompl-words 
+          (reduce (fn[words line]
+                    (set/union words (autocompl-parse line))) @autocompl-words (:lines b)))
+  b)
 
 (defn autocompl-suggest [words subject]
   (reduce #(conj %1 (last %2)) []

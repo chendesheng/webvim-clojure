@@ -118,8 +118,7 @@
             :mode normal-mode 
             :keys nil 
             :autocompl {:suggestions nil 
-                        :suggestions-index 0 
-                        :words (-> b :autocompl :words)}}))
+                        :suggestions-index 0}}))
 
 (defn set-visual-mode[b]
   (print "set-visual-mode:")
@@ -191,7 +190,7 @@
     (if (empty? (-> b2 :autocompl :suggestions))
       b2
       (let [word (buffer-word-before-cursor b2)
-            suggestions (-> b2 :autocompl :words (autocompl-suggest word))]
+            suggestions (autocompl-suggest @autocompl-words word)]
         (if (= 1 (count suggestions))
           (assoc-in b2 [:autocompl :suggestions] [])
           (assoc b2 :autocompl 
@@ -327,7 +326,7 @@
 
 (defn autocompl-start[b]
   (let [word (buffer-word-before-cursor b)
-        suggestions (autocompl-suggest (-> b :autocompl :words) word)]
+        suggestions (autocompl-suggest @autocompl-words word)]
     (if (= 1 (count suggestions))
       (assoc-in b [:autocompl :suggestions] [])
       (assoc b :autocompl 
