@@ -4,6 +4,7 @@
             [ring.util.response :as response])
   (:use clojure.pprint
         webvim.buffer
+        webvim.global
         webvim.autocompl))
 
 (defonce motion-keymap (atom {}))
@@ -27,13 +28,6 @@
   (if (fn? f)
     (apply f b args)
     b))
-
-(defn- pprint2[obj prefix]
-  (let[]
-    (println prefix)
-    (pprint obj)
-    obj))
-
 
 ;two types: key (leaf), keymap (internal node)
 ;when visit a keymap call :enter :leave 
@@ -107,13 +101,15 @@
 (defn key-server
   "Start a dedicate thread handle input keys. Close :chan-in will stop this thread."
   [b keymap]
+  (println "key-server:" (b :id))
   (async/thread 
     (loop[b1 b]
       (if (not (nil? b1))
-        (recur (key-server-inner b1 keymap))))))
+        (recur (key-server-inner b1 keymap)))))
+  b)
 
 (defn set-normal-mode[b]
-  (print "set-normal-mode:")
+  (println "set-normal-mode:")
   (merge b {:ex "" 
             :mode normal-mode 
             :keys nil 
@@ -121,7 +117,7 @@
                         :suggestions-index 0}}))
 
 (defn set-visual-mode[b]
-  (print "set-visual-mode:")
+  (println "set-visual-mode:")
   (let [cur (-> b :cursor cursor-to-point)]
     (merge b {:ex "" :mode visual-mode :keys nil 
               :visual {:type 0 :ranges [cur (cursor-inc-col cur)]}})))
@@ -233,6 +229,9 @@
       (let [b2 (cursor-next-str b1 re)]
         (recur b2 (concat hls (:highlights b2)))))))
 
+(defn- buf-info[b]
+  (assoc b :message (str "\"" (:name b) "\" " (count (:lines b)) "L")))
+
 (def ex-commands
   {"write" (fn[b _ _]
              (write-buffer b))
@@ -240,8 +239,27 @@
                   (dissoc b :highlights))
    "edit" (fn[b excmd file]
             (println "file:" file)
-            (assoc (open-file file)
-                   :message (str "\"" file "\" " (count (:lines b)) "L")))
+            (if (or (empty? file) (= file (:name b)))
+              b ;TODO maybe we should refresh something when reopen same file?
+              (let [newid (-> file
+                             open-file
+                             buf-info
+                             buffer-list-save
+                             ;start a new thread handle this file
+                             (key-server @root-keymap)
+                             (get :id))]
+                (reset! active-buffer-id newid)
+                b)))
+   "bnext" (fn[b execmd args]
+             (let [id (-> b :id inc)
+                   newid (if (> id @gen-buf-id) 1 id)]
+               (reset! active-buffer-id newid)
+               b))
+   "bprev" (fn[b execmd args]
+             (let [id (-> b :id dec)
+                   newid (if (< id 1) @gen-buf-id id)]
+               (reset! active-buffer-id newid)
+               b))
    #"^(\d+)$" (fn[b row _]
                 (println "row:" row)
                 (let [row (bound-range (dec (Integer. row)) 0 (-> b :lines count dec))]
@@ -256,7 +274,7 @@
   (let [[_ excmd args] (re-find #"\s*:([^\s]+)\s*(.*)\s*" (:ex b))
         handlers (filter fn?
                    (map (fn[[cmd handler]]
-                          (println cmd)
+                          ;(println cmd)
                           (if (string? cmd)
                             (if (zero? (.indexOf cmd excmd)) handler nil)
                             (let [m (re-find cmd excmd)]
@@ -451,7 +469,7 @@
 (defn normal-mode-after[b keycode]
   (let [{col :col row :row} (:cursor b)
         lastbuf (-> b :context :lastbuf)]
-    (pprint (-> b :macro :recording-keys))
+    (println "normal-mode-after, recording-keys" (-> b :macro :recording-keys))
     ;if nothing changed there is no need to overwrite "." register
     ;so keys like i<esc> won't affect, this also exclude all motions.
     (if (not (or (= (:lines lastbuf) (:lines b))

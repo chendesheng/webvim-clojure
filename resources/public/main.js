@@ -77,10 +77,13 @@ function render(buf) {
 	//render lines
 	if (buf.lines) {
 		$('.lines').empty();
+		$('.gutter').empty();
 		var lines = buf.lines;
 		$(lines).each(function(i, line) {
-			$('.lines').append(replaceBinding(lineTemplate, {row:i, line:line}, true));
-			$('.gutter').append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
+			if (line) {
+				$('.lines').append(replaceBinding(lineTemplate, {row:i, line:line}, true));
+				$('.gutter').append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
+			}
 		});
 		
 	}

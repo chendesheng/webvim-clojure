@@ -3,8 +3,9 @@
             [clojure.core.async :as async]
             [clojure.java.io :as io])
   (:use clojure.pprint
+        (clojure [string :only (join split)])
         webvim.autocompl
-        (clojure [string :only (join split)])))
+        webvim.global))
 
 ;global registers. Don't access this directly, always access buffer's :registers
 (defonce registers (atom {}))
@@ -38,18 +39,12 @@
     (update-in b [:cursor :col] dec)
     b))
 
-;generate buffer id 
-(defonce gen-id (atom 0))
-
-;key: buffer id, value: buffer map
-(defonce buffer-list (atom {}))
-
-(defn buffer-list-add
+(defn buffer-list-save
   "Generate buffer id (increase from 1) and add to buffer-list"
   [b]
-  (let [id (swap! gen-id inc)
+  (let [id (swap! gen-buf-id inc)
         b1 (assoc b :id id)]
-    (swap! buffer-list assoc id b1)
+    (reset! buffer-list (assoc @buffer-list id b1))
     b1))
 
 (defn create-buf[bufname txt]
@@ -111,16 +106,9 @@
         (assoc :txt-cache {:lines (:lines b)  :txt txt}))))
 
 (defn open-file
-  "Create buffer from a file. Add buffer to buffer-list"
+  "Create buffer from a file by slurp."
   [f]
-  (buffer-list-add (create-buf f (slurp f))))
-
-;one server only serve one window at one time
-(defonce window (atom{:viewport {:w 0 :h 0}}))
-
-(defonce active-buffer (atom {}))
-;only for testing on repl
-(reset! active-buffer (open-file "testfile.clj"))
+  (create-buf f (slurp f)))
 
 (defn history-peek[b]
   ((-> b :history :items) (-> b :history :version)))
@@ -274,7 +262,7 @@
         (loop[cnt 0
               row (:row pt)
               col (:col pt)]
-          (if (>= row (count lines)) ;EOF
+          (if (>= row (-> lines count dec)) ;EOF
             nil
             (let [ch (.charAt (lines row) col)
                   ncnt (cond (= brace ch)
@@ -388,7 +376,7 @@
   "Move to first char of last line"
   [b]
   (assoc b :cursor
-         {:row (-> b :lines count dec) :col 0 :lastcol 0 :vprow (-> @window :viewport :h dec)}))
+         {:row (-> b :lines count dec dec) :col 0 :lastcol 0 :vprow (-> @window :viewport :h dec)}))
 
 (defn lines-next-re[{lines :lines cursor :cursor} re re-line-start]
   (loop [row (:row cursor)
@@ -573,7 +561,7 @@
                       {:row (dec row) :col (calc-col b (dec row) col lastcol) :vprow newvprow})
 
                     ;move down
-                    (and (= direction 3) (> (-> b :lines count) (inc row)))
+                    (and (= direction 3) (> (-> b :lines count dec) (inc row)))
                     (let [newvprow 
                           (if (< vprow (-> @window :viewport :h dec))
                             (inc vprow)
@@ -720,12 +708,6 @@
                                            (+ (:vprow cur1))
                                            (bound-range 0 (-> @window :viewport :h dec)))})})
         cursor-line-start)))
-
-(defn- pprint2[obj prefix]
-  (let[]
-    (println prefix)
-    (pprint obj)
-    obj))
 
 (defn buf-line[b row]
   (-> b :lines (get row)))

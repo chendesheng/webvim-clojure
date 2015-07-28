@@ -5,17 +5,12 @@
   (:use clojure.pprint
         webvim.buffer
         webvim.keymap
+        webvim.global
         (compojure handler [core :only (GET POST defroutes)])
         (hiccup [page :only (html5)])
         ring.middleware.resource
         ring.util.response
         ring.middleware.json))
-
-(defn- pprint2[obj prefix]
-  (let[]
-    (println prefix)
-    (pprint obj)
-    obj))
 
 (defn dissoc-emtpy[b ks]
   (if (empty? (get-in b ks))
@@ -54,7 +49,6 @@
     (dissoc b :visual)
     b))
 
-
 (defn render 
   "Write changes to browser."
   [before after]
@@ -69,31 +63,36 @@
                     remove-visual-mode))]
     (response b)))
 
-(defonce run-key-server 
-  (do
-    (init-keymap-tree)
-    (key-server @active-buffer @root-keymap)))
 
 (defn restart-key-server
   "For repl"
   []
-  (let [b @active-buffer]
-    (async/close! (:chan-in b))
-    (reset! active-buffer 
-            (-> b
-                (assoc :chan-in (async/chan))
-                (assoc :chan-out (async/chan))))
-    (init-keymap-tree)
-    (key-server @active-buffer @root-keymap)))
+  (init-keymap-tree)
+  (let [b (active-buffer)
+        _ (async/close! (:chan-in b))
+        b2 (-> b
+               (assoc :chan-in (async/chan))
+               (assoc :chan-out (async/chan)))]
+    (swap! buffer-list assoc (:id b2) b2)
+    (key-server b2 @root-keymap)
+    nil))
 
+;TODO How to run code only in repl env? Conditional compile?
+;only for testing on repl
+(defonce open-test-file
+  (reset! active-buffer-id (-> "testfile.clj"
+                               open-file
+                               buffer-list-save
+                               :id)))
 (restart-key-server)
 
 (defn edit [keycode]
-  (let [before @active-buffer]
+  (let [before (active-buffer)]
     (async/>!! (:chan-in before) keycode)
     (let [after (async/<!! (:chan-out before))]
-      (reset! active-buffer after)
-      (render before after))))
+      (swap! buffer-list assoc (:id after) after)
+      ;Always write (active-buffer) back because active-buffer-id may change by current key
+      (render before (active-buffer)))))
 
 (defn parse-int [s]
   (Integer. (re-find #"\d+" s)))
@@ -114,7 +113,7 @@
 
 (defroutes main-routes
   (GET "/" [request] (homepage request))
-  (GET "/buf" [] (render nil @active-buffer))
+  (GET "/buf" [] (render nil (active-buffer)))
   (GET "/resize/:w/:h" [w h] 
        (swap! window assoc :viewport {:w (parse-int w) :h (parse-int h)}))
   (GET "/key" {{keycode :code} :params} (edit keycode)))
