@@ -1,6 +1,7 @@
 (ns webvim.core-test
   (:require [clojure.test :refer :all]
             [webvim.keymap :refer :all]
+            [webvim.global :refer :all]
             [webvim.test-util :refer :all]
             [webvim.buffer :refer :all])
   (:use clojure.pprint))
@@ -117,7 +118,7 @@
 (deftest buf-insert-test
   (testing "insert to a buffer"
     (let [b (buf-insert empty-buf "hello")]
-      (is (check-cursor b [0 5 5 0]))
+      (is (check-cursor (:cursor b) [0 5 5 0]))
       (is (= "hello" (-> b :lines (get 0)))))))
 ;(buf-insert-test)
 
@@ -125,21 +126,21 @@
   (testing "check cursor vprow"
     (let [_ (swap! window assoc :viewport {:w 1 :h 2})
           b (buf-insert empty-buf "a\n\n\n")]
-      (is (check-cursor b [3 0 0 1])))))
+      (is (check-cursor (:cursor b) [3 0 0 1])))))
 
 ;(buf-insert-new-line-test)
 
 (deftest buf-delete-test
   (testing ""
     (let [b (-> empty-buf (buf-insert "hello") (buf-delete))]
-      (is (check-cursor b [0 4 4 0])))))
+      (is (check-cursor (:cursor b) [0 4 4 0])))))
 
 ;(buf-delete-test)
 
 (deftest buf-delete-empty
   (testing ""
     (let [b (-> empty-buf (buf-delete))]
-      (is (check-cursor b [0 0 0 0]))
+      (is (check-cursor (:cursor b) [0 0 0 0]))
       (is (= "" (-> b :lines (get 0)))))))
 
 ;(buf-delete-empty)
@@ -151,7 +152,7 @@
                 (buf-insert "hello\n\n\n\n") 
                 (testprint)
                 (buf-delete))]
-      (is (check-cursor b [3 0 0 1])))))
+      (is (check-cursor (:cursor b) [3 0 0 1])))))
 
 ;(buf-delete-cross-line-test)
 
@@ -161,7 +162,7 @@
                 (assoc :viewport {:w 1 :h 3})
                 (buf-insert "hello\n\n\n\n")
                 (buf-replace {:row 1 :col 0 :lastcol 0 :vprow 0} "" false))]
-      (is (check-cursor b [1 0 0 0])))))
+      (is (check-cursor (:cursor b) [1 0 0 0])))))
 ;(buf-delete-up-cross-viewport-test)
 
 (deftest buf-delete-down-cross-viewport-test
@@ -173,7 +174,7 @@
                 (cursor-move-char 2)
                 (cursor-move-char 2)
                 (buf-replace {:row 3 :col 0 :lastcol 0 :vprow 0} "" false))]
-      (is (check-cursor b [1 0 0 0])))))
+      (is (check-cursor (:cursor b) [1 0 0 0])))))
 ;(buf-delete-down-cross-viewport-test)
 
 (deftest buf-txt-cache-init-test
@@ -331,9 +332,9 @@
 (deftest cursor-match-brace-test
   (testing ""
     (let [pos (let [b (-> empty-buf  
-                         (buf-insert "can()")
-                         (assoc-in [:cursor :col] 3))]
-               (cursor-match-brace b))]
+                          (buf-insert "can()")
+                          (assoc-in [:cursor :col] 3))]
+                (cursor-match-brace b))]
       (pprint pos)
       (is (= 4 (:col pos))))))
 

@@ -7,9 +7,11 @@
 
 (deftest set-visual-mode-test
   (testing "init visual mode"
-    (is (let [b (set-visual-mode (buf-insert empty-buf "hello"))]
-          (and (zero? (-> b :visual :type))
-               (check-range b [[0 5] [0 5]]))))))
+    (let [b (set-visual-mode (buf-insert empty-buf "hello"))]
+      (is (zero? (-> b :visual :type)))
+      (is (check-range (-> b :visual :ranges) [[0 5] [0 6]])))))
+
+;(set-visual-mode-test)
 
 (deftest visual-mode-move-test
   (testing "move cursor left then check ranges"
@@ -18,7 +20,7 @@
           k (@visual-mode-keymap "k")
           b (visual-mode-select 
               (k (h (set-visual-mode (buf-insert empty-buf "hel\nlo")))) "a")]
-      (is (check-range b [[1 2] [0 1]])))))
+      (is (check-range (-> b :visual :ranges) [[1 2] [0 2]])))))
 
 ;(visual-mode-move-test)
 
@@ -28,5 +30,5 @@
           h (@visual-mode-keymap "h")
           k (@visual-mode-keymap "k")
           b (k (h (set-visual-mode (buf-insert empty-buf "hel\nlo"))))]
-      (is (check-cursor b [0 1 1 0])))))
+      (is (check-cursor (:cursor b) [0 1 1 0])))))
 ;(visual-mode-move-cursor-test)

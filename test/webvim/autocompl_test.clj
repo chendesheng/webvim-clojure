@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [webvim.autocompl :refer :all]
             [webvim.keymap :refer :all]
+            [webvim.test-util :refer :all]
             [webvim.buffer :refer :all])
   (:use clojure.pprint))
 
@@ -12,6 +13,7 @@
     And entities that we see as continuous are a superimposition we place on a bunch of values that are causally-related. We see things happen over time and we say, “Oh, that’s Fred!” or “Oh, that’s the river outside the back of my house” or “That’s a cloud.” Right? We know you can look at a cloud for enough time, and all of a sudden it’s like, well, that was three clouds or the cloud disappeared. Right? There is no cloud changing. Right? You superimpose the notion of cloud on a series of related cloud values.")
 
 (def test-words (autocompl-parse test-text))
+(reset! autocompl-words test-words)
 
 (def test-buf (create-buf "Are we there yet?" test-text))
 
@@ -44,25 +46,29 @@
     (is (let [indexes (fuzzy-match "abdef" "abc")]
           (empty? indexes)))))
 
-(deftest autocompl-parse-buffer-test
-  (testing ""
-    (is (-> test-buf :autocompl :words count pos?))))
-
 (deftest autocompl-suggest-test
   (testing ""
-    (is (let [suggestions (autocompl-suggest (-> test-buf :autocompl :words) "co")]
-        (same-seq? ["co" "cool" "completely" "computer" "continuous" "correlation" "could" "cloud" "clouds"] suggestions)))))
+    (let [suggestions (autocompl-suggest @autocompl-words "co")]
+      (is 
+        (same-seq? ["co" "completely" "computer" "continuous" "cool" "correlation" "could" "cloud" "clouds"] suggestions)))))
+
+;(autocompl-suggest-test)
 
 (deftest autocompl-start-test
   (testing ""
-    (is (let [b (autocompl-start (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vprow 0}))]
-          (same-seq? ["co" "cool" "completely" "computer" "continuous" "correlation" "could" "cloud" "clouds"] (-> b :autocompl :suggestions))))))
+    (let [b (autocompl-start (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vprow 0}))]
+      (is 
+        (same-seq? ["co" "completely" "computer" "continuous" "cool" "correlation" "could" "cloud" "clouds"] (-> b :autocompl :suggestions))))))
+
+;(autocompl-start-test)
           
 (deftest autocompl-move-inc-test
   (testing ""
-    (is (let [b (autocompl-move (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vprow 0}) inc)]
-          (and (= 1 (-> b :autocompl :suggestions-index))
-               (= "cool" (buffer-word-before-cursor b)))))))
+    (let [b (autocompl-move (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vprow 0}) inc)]
+      (is (= 1 (-> b :autocompl :suggestions-index)))
+      (is (= "completely" (buffer-word-before-cursor b))))))
+
+;(autocompl-move-inc-test)
 
 (deftest autocompl-move-dec-test
   (testing ""
@@ -72,11 +78,11 @@
 
 (deftest autocompl-move-test
   (testing ""
-    (is (let [b (autocompl-move (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vprow 0}) dec)
-              b1 (-> b (autocompl-move inc) (autocompl-move inc))]
-          (and (= 8 (-> b :autocompl :suggestions-index))
-               (= "clouds" (buffer-word-before-cursor b))
-               (= 1 (-> b1 :autocompl :suggestions-index))
-               (= "cool" (buffer-word-before-cursor b1)))))))
+    (let [b (autocompl-move (assoc test-buf :cursor {:row 0 :col 100 :lastcol 100 :vprow 0}) dec)
+          b1 (-> b (autocompl-move inc) (autocompl-move inc))]
+      (is (= 8 (-> b :autocompl :suggestions-index)))
+      (is (= "clouds" (buffer-word-before-cursor b)))
+      (is (= 1 (-> b1 :autocompl :suggestions-index)))
+      (is (= "completely" (buffer-word-before-cursor b1))))))
 
-
+;(autocompl-move-test)

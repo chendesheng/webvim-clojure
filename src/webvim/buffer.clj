@@ -262,8 +262,7 @@
         (loop[cnt 0
               row (:row pt)
               col (:col pt)]
-          (if (>= row (-> lines count dec)) ;EOF
-            nil
+          (if (< row (-> lines count)) ;EOF
             (let [ch (.charAt (lines row) col)
                   ncnt (cond (= brace ch)
                              (inc cnt)
@@ -275,7 +274,8 @@
                 (let [[nrow ncol] (if (< col (-> row lines count dec))
                                     [row (inc col)]
                                     [(inc row) 0])]
-                  (recur ncnt nrow ncol))))))
+                  (recur ncnt nrow ncol))))
+            nil))
         (loop[cnt 0
               row (:row pt)
               col (:col pt)]
@@ -295,11 +295,6 @@
                                                  0
                                                  (-> (dec row) lines count dec))])]
                   (recur ncnt nrow ncol))))))))))
-
-
-(defn cursor-match-brace[b]
-  (buf-match-brace b (:cursor b)))
-
 (defn line-next-re
   "Move to next charactor match by re." 
   [line col re]
@@ -497,6 +492,9 @@
           (assoc-in [:cursor :lastcol] col))
       b)))
 
+(defn cursor-match-brace[b]
+  (let [b1 (cursor-next-re b #"[\(\[\{\)\]\}]" #"[\(\[\{\)\]\}]")]
+    (buf-match-brace b1 (:cursor b1))))
 
 (defn quote-pattern[ch]
   (java.util.regex.Pattern/quote ch))
