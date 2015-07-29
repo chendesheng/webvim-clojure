@@ -575,7 +575,7 @@
                      (cursor-back-str "^\n")))
            "%" (fn[b]
                  (let [b1 (if (not (contains? all-braces (char-under-cursor b)))
-                            (cursor-next-str b "[(\\[{}\\])]")
+                            (cursor-next-re b #"[\(\[\{\)\]\}]" #"[\(\[\{\)\]\}]")
                             b)]
                    (let [cur (cursor-match-brace b1)]
                      (if (nil? cur) b1

@@ -177,20 +177,41 @@
   [b row]
   (count ((:lines b) row)))
 
+(defn pt-push
+  "set pt to next BOL if it is EOL"
+  [pt lines]
+  (let [{r :row c :col} pt
+        c_r (count (lines r))]
+    (if (= c c_r)
+      {:row (-> pt :row inc) :col 0}
+      pt)))
+
+;(defn pt-pull[pt lines]
+;  (cond
+;    (and (zero? r) (zero? c))
+;    pt
+;    (zero? c) 
+;    (let [r1 (-> pt :row dec)]
+;      {:row r1 :col (count (lines r1))})
+;    :else
+;    pt))
+
 ;TODO: fix buffer insert after line break
 (defn replace-range 
   "Core operation of buffer lines manipulation. 
   [r1 c1] must before [r2 c2].
   It's exclusive not include [r2 c2].
-  The lines argument must contains at leave one item (could be an empty string)"
-  [lines {r1 :row c1 :col} {r2 :row c2 :col} txt]
+  The lines argument must contains at least one item (could be an empty string)"
+  [lines pt1 pt2 txt]
   ;__________
   ;__________ ;prefix 
   ;____...... ;l1
   ;..........
   ;..________ ;l2
   ;__________ ;suffix
-  (let [prefix (subvec lines 0 r1)
+  (let [{r1 :row c1 :col} (pt-push pt1 lines)
+        {r2 :row c2 :col} (pt-push pt2 lines)
+        prefix (subvec lines 0 r1)
         suffix (subvec lines (inc r2))
         l1 (subs (lines r1) 0 c1)
         l2 (subs (lines r2) c2)
@@ -393,7 +414,7 @@
       [nil cursor])))
 
 (defn cursor-next-re
-  "Match re line by line (re not match multiple lines), don't change cursor if not found"
+  "Match re line by line (re not match multiple lines), don't change cursor if nothing is found"
   [b re re-line-start]
   (let [[matched newcursor] (lines-next-re b re re-line-start)]
     (if (nil? matched)
@@ -567,9 +588,6 @@
                       {:row (inc row) :col (calc-col b (inc row) col lastcol) :vprow newvprow})
 
                     :else (:cursor b))))))
-
-(defn highlight-matched[b {r1 :row c1 :col} {r2 :row c2 :col}]
-  (assoc b :highlights [{:row r1 :col c1} {:row r2 :col (dec c2)}]))
 
 (defn cursor-next-str
   "Find next matched regex. If wrap is true, continue from top when hit bottom."
