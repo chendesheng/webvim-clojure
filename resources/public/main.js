@@ -7,6 +7,12 @@ $(document).ready(function() {
 			waitForFinalEvent(setSize, 500, "resize window");
 		});
 	});
+
+	//scroll position
+	$('.lines').scroll(function() {
+		var current = $(this).scrollTop();
+		$('.gutter').scrollTop(current);
+	});
 });
 
 //https://stackoverflow.com/questions/2854407/javascript-jquery-window-resize-how-to-fire-after-the-resize-is-completed/4541963#4541963
@@ -129,19 +135,14 @@ function render(buf) {
 	} else if (buf.message) {
 		$('.status-bar pre').empty().text(buf.message);
 	} else {
-		var strkeys = ""
-		if (buf.keys && buf.keys.length > 0) {
-			for (var i = 0; i < buf.keys.length; i++) {
-				strkeys += buf.keys[i];
-			}
+		if (typeof buf.mode != 'undefined' && buf.mode < MODES.length) {
+			$('.status-bar pre').empty().text(MODES[buf.mode]);
 		}
-
-		$('.status-bar pre').empty().text(MODES[buf.mode]+" "+strkeys);
 	}
 
 	//render visual
 	$('.lines .selections').empty();
-	if (buf.mode == 2) {
+	if (buf.visual) {
 		if (!$('.lines .selections').get(0)) {
 			$('.lines').append('<div class="selections"></div>');
 		}
@@ -174,12 +175,6 @@ function render(buf) {
 		renderSelections($('.lines .highlight-brace-pair'), ranges);
 	}
 
-	//scroll position
-	$('.lines').scroll(function() {
-		var current = $(this).scrollTop();
-		$('.gutter').scrollTop(current);
-	});
-
 	scrollToCursor(buf.cursor);
 
 	//render autocompl suggestions
@@ -207,7 +202,6 @@ function render(buf) {
 			}
 		});
 
-		console.log($('.lines').height());
 		if (y+21+$autocompl.height()-$('.lines').scrollTop() < $('.lines').height()) {
 			$autocompl.css('top', y+21+'px');
 		} else {
@@ -252,7 +246,6 @@ function scrollToCursor(cursor) {
 		lines.scrollTop(srctop+1);
 	} else {
 		var srctop = 21*cursor.row - (height-21*(vpheight - cursor.vprow));
-		console.log(srctop);
 		lines.scrollTop(srctop+1);
 	}
 
@@ -280,8 +273,6 @@ function renderSelection($p, s, e, reverseTextColor) {
 		e = t;
 	}
 
-		console.log(s);
-		console.log(e);
 	for (var i = s.row; i <= e.row; i++) {
 		var line = $('<div class="line-selected"></div>');
 		var w = 0;
@@ -321,7 +312,6 @@ function renderSelection($p, s, e, reverseTextColor) {
 			line.append(txt);
 		}
 
-		console.log(line);
 		$p.append(line);
 	}
 }

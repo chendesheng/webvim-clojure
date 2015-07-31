@@ -45,9 +45,15 @@
       (dissoc-emtpy [:autocompl :suggestions])))
 
 (defn- remove-visual-mode[b]
-  (if (not (= visual-mode (:mode b)))
+  (pprint (-> b :visual :ranges))
+  (if (empty? (-> b :visual :ranges))
     (dissoc b :visual)
     b))
+
+(defn- dissoc-if-equal[after before k]
+  (if (= (before k) (after k))
+    (dissoc after k)
+    after))
 
 (defn render 
   "Write changes to browser."
@@ -58,9 +64,12 @@
                 (remove-server-only-fields after)
                 :else
                 (-> after
-                    (diff-lines before)
+                    remove-visual-mode
                     remove-server-only-fields
-                    remove-visual-mode))]
+                    (diff-lines before)
+                    (dissoc-if-equal before :mode)
+                    (dissoc-if-equal before :ex)
+                    (dissoc-if-equal before :message)))]
     (response b)))
 
 

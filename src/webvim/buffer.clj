@@ -183,18 +183,20 @@
   (let [{r :row c :col} pt
         c_r (count (lines r))]
     (if (= c c_r)
-      {:row (-> pt :row inc) :col 0}
+      (if (>= r (dec (count lines)))
+        pt
+        {:row (-> pt :row inc) :col 0})
       pt)))
 
-;(defn pt-pull[pt lines]
-;  (cond
-;    (and (zero? r) (zero? c))
-;    pt
-;    (zero? c) 
-;    (let [r1 (-> pt :row dec)]
-;      {:row r1 :col (count (lines r1))})
-;    :else
-;    pt))
+(defn pt-pull[pt lines]
+  (cond
+    (and (zero? (pt :row)) (zero? (pt :col)))
+    pt
+    (zero? (pt :col)) 
+    (let [r1 (-> pt :row dec)]
+      {:row r1 :col (count (lines r1))})
+    :else
+    pt))
 
 ;TODO: fix buffer insert after line break
 (defn replace-range 
@@ -212,14 +214,22 @@
   (let [{r1 :row c1 :col} (pt-push pt1 lines)
         {r2 :row c2 :col} (pt-push pt2 lines)
         prefix (subvec lines 0 r1)
-        suffix (subvec lines (inc r2))
+        [_ & suffix] (subvec lines r2)
         l1 (subs (lines r1) 0 c1)
         l2 (subs (lines r2) c2)
         txt-lines (split-lines-all txt)
         middle (-> txt-lines
                    (update 0 #(str l1 %))
                    (update (dec (count txt-lines)) #(str % l2)))
-        newcol (- (count (last middle)) (count l2))]
+        newcol (- (count (last middle)) (count l2))
+        newrow (+ r1 (dec (count txt-lines)))
+        newlines (vec (concat prefix middle suffix))
+        newcur (if (= newrow (dec (count newlines)))
+                 (pt-pull {:row newrow
+                           :col newcol} newlines)
+                 {:row newrow
+                  :col newcol})]
+
     ;(print "prefix:")
     ;(pprint prefix)
     ;(println (str "l1:" l1))
@@ -228,9 +238,8 @@
     ;(pprint middle)
     ;(print "suffix:")
     ;(pprint suffix)
-    {:lines (vec (concat prefix middle suffix))
-     :cursor {:row (+ r1 (dec (count txt-lines))) 
-              :col newcol}}))
+    {:lines newlines
+     :cursor newcur}))
 
 (defn cursor-sort [cur1 cur2]
   (let [{r1 :row c1 :col} cur1
@@ -252,7 +261,7 @@
         ;_ (pprint cur1)
         ;_ (print "cur2:")
         ;_ (pprint cur2)
-        cur3 (if inclusive (update cur2 :col inc) cur2)
+        cur3 (if inclusive (inc-col cur2) cur2)
         {lines :lines cursor :cursor} (replace-range (:lines b) cur1 cur3 txt)]
     (merge b {:lines lines
               :cursor (merge cursor 
@@ -271,7 +280,16 @@
 (def all-braces {\( \) \) \( \[ \] \] \[ \{ \} \} \{})
 
 (defn buf-char-at[b {row :row col :col}]
-  (-> b :lines (get row) (.charAt col)))
+  (let [line (-> b :lines (get row))]
+    (if (< col (count line))
+      (.charAt line col)
+      0)))
+
+(defn lines-char-at[lines row col]
+  (let [line (lines row)]
+    (if (< col (count line))
+      (.charAt line col)
+      0)))
 
 (defn buf-match-brace[b pt]
   (let [brace (buf-char-at b pt)
@@ -284,7 +302,7 @@
               row (:row pt)
               col (:col pt)]
           (if (< row (-> lines count)) ;EOF
-            (let [ch (.charAt (lines row) col)
+            (let [ch (lines-char-at lines row col)
                   ncnt (cond (= brace ch)
                              (inc cnt)
                              (= m ch)
@@ -302,7 +320,7 @@
               col (:col pt)]
           (if (< row 0) ;EOF
             nil
-            (let [ch (.charAt (lines row) col)
+            (let [ch (lines-char-at lines row col)
                   ncnt (cond (= brace ch)
                              (inc cnt)
                              (= m ch)
@@ -506,7 +524,9 @@
   "The \"^\" motion"
   [b]
   (let [line (-> b :lines (get (-> b :cursor :row)))
-        [matched col] (line-next-re line 0 #"^\S|(?<=\s)\S")]
+        [matched col] (if (= 1 (count line))
+                        [true 0]
+                        (line-next-re line 0 #"^\S|(?<=\s)\S"))]
     (if matched
       (-> b
           (assoc-in [:cursor :col] col) 
@@ -701,29 +721,15 @@
   (let [row (-> b :cursor :row)
         vprow (-> b :cursor :vprow)
         line (-> b :lines (get row))
-        [cur1 cur2] 
-        (cond 
-          (= 1 (-> b :lines count)) ;only one line
-          (merge b {:lines [""] :cursor {:row 0 :col 0 :lastcol 0 :vprow 0}})
-
-          (= row (-> b :lines count dec)) ;if it is last line delete from previous line
-          (let [prevline (-> b :lines (get (dec row)))]
-            [{:row (dec row) :col (count prevline) :vprow (dec vprow)} 
-             {:row row :col (count line) :vprow vprow}])
-
-          :else
-          [{:row row :col 0 :vprow vprow}
-           {:row (inc row) :col 0 :vprow (inc vprow)}])
-        {lines :lines cursor :cursor} (replace-range (:lines b) cur1 cur2 "")]
+        {lines :lines cursor :cursor} (replace-range (:lines b)
+                                                     {:row row :col 0}
+                                                     {:row row :col (col-count b row)}
+                                                     "")]
     (-> b 
-        (merge {:lines lines
-                :cursor (merge cursor 
-                               {:lastcol (:col cursor)
-                                :vprow (-> (:row cursor)
-                                           (- (:row cur1))
-                                           (+ (:vprow cur1))
-                                           (bound-range 0 (-> @window :viewport :h dec)))})})
-        cursor-line-start)))
+        (assoc :lines lines)
+        (assoc-in [:cursor :row] (:row cursor))
+        (assoc-in [:cursor :col] (:col cursor))
+        cursor-line-first)))
 
 (defn buf-line[b row]
   (-> b :lines (get row)))
@@ -744,9 +750,7 @@
 
 (defn buf-copy-range[b p1 p2 inclusive]
   (let [[{r1 :row c1 :col} cur2] (cursor-sort p1 p2)
-        {r2 :row c2 :col} (if inclusive
-                            {:row (:row cur2) :col (-> cur2 :col inc)}
-                            cur2)
+        {r2 :row c2 :col} (if inclusive (inc-col cur2) cur2)
         res (loop [res []
                    r r1]
               (if (= r1 r2)

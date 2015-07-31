@@ -20,6 +20,7 @@
 (defonce normal-mode 0)
 (defonce insert-mode 1)
 (defonce visual-mode 2)
+(defonce ex-mode 3)
 
 (declare serve-keymap)
 (declare map-fn-else)
@@ -113,6 +114,7 @@
   (merge b {:ex "" 
             :mode normal-mode 
             :keys nil 
+            :visual {:type 0 :ranges []}
             :autocompl {:suggestions nil 
                         :suggestions-index 0}}))
 
@@ -160,7 +162,7 @@
       buf-insert-line-after))
 
 (defn set-ex-mode[b]
-  (merge b {:ex ":" :message nil :keys nil}))
+  (merge b {:mode ex-mode :ex ":" :message nil :keys nil}))
 
 (defn set-ex-search-mode[b keycode]
   (println "set-ex-search-mode")
@@ -271,17 +273,19 @@
     (highlight-all-matches b re)))
 
 (defn execute [b]
-  (let [[_ excmd args] (re-find #"\s*:([^\s]+)\s*(.*)\s*" (:ex b))
-        handlers (filter fn?
-                   (map (fn[[cmd handler]]
-                          ;(println cmd)
-                          (if (string? cmd)
-                            (if (zero? (.indexOf cmd excmd)) handler nil)
-                            (let [m (re-find cmd excmd)]
-                              (if (not (nil? m)) handler nil)))) ex-commands))]
-    (if (= 1 (count handlers))
-      ((first handlers) b excmd args)
-      (assoc b :message "unknown command"))))
+  (let [[_ excmd args] (re-find #"\s*:([^\s]+)\s*(.*)\s*" (:ex b))]
+    (if (nil? excmd)
+      b
+      (let [handlers (filter fn?
+                             (map (fn[[cmd handler]]
+                                    ;(println cmd)
+                                    (if (string? cmd)
+                                      (if (zero? (.indexOf cmd excmd)) handler nil)
+                                      (let [m (re-find cmd excmd)]
+                                        (if (not (nil? m)) handler nil)))) ex-commands))]
+        (if (= 1 (count handlers))
+          ((first handlers) b excmd args)
+          (assoc b :message "unknown command"))))))
 
 (defn save-lastbuf[b keycode]
   (-> b (assoc-in [:context :lastbuf] b)))
@@ -338,9 +342,12 @@
         (serve-keymap (@normal-mode-keymap "i") keycode))))
 
 (defn visual-mode-select[b keycode]
-  (print "visual-mode-select:")
+  (println "visual-mode-select:")
   (assoc-in b [:visual :ranges 1]
-            (-> b :cursor cursor-inc-col cursor-to-point)))
+            (-> b 
+                :cursor 
+                cursor-inc-col 
+                cursor-to-point)))
 
 (defn autocompl-start[b]
   (let [word (buffer-word-before-cursor b)

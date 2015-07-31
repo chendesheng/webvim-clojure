@@ -1,5 +1,4 @@
 $(document).keydown(function(event) {
-	console.log(event.keyCode);
 	var key = KEYCODE_KEYDOWN[event.keyCode];
 	if (key || event.ctrlKey || event.altKey) {
 		event.preventDefault();
@@ -32,12 +31,9 @@ $(document).keydown(function(event) {
 $(document).keypress(function(event) {
 	event.preventDefault();
 	var code = event.keyCode || event.charCode || event.which;;
-	console.log(code);
 
 	var ch = String.fromCharCode(code)
 	if (ch) {
-		console.log(ch);
-
 		$.getJSON('key?code='+encodeURIComponent(ch), function(resp) {
 			render(resp);
 		});
