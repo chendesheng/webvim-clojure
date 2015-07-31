@@ -261,7 +261,7 @@
         ;_ (pprint cur1)
         ;_ (print "cur2:")
         ;_ (pprint cur2)
-        cur3 (if inclusive (inc-col cur2) cur2)
+        cur3 (if inclusive (cursor-inc-col cur2) cur2)
         {lines :lines cursor :cursor} (replace-range (:lines b) cur1 cur3 txt)]
     (merge b {:lines lines
               :cursor (merge cursor 
@@ -516,9 +516,7 @@
   [b]
   (if (-> b :cursor :col zero?)
     b
-    (-> b
-        (assoc-in [:cursor :col] 0) 
-        (assoc-in [:cursor :lastcol] 0))))
+    (buf-change-cursor-col 0)))
 
 (defn cursor-line-start
   "The \"^\" motion"
@@ -528,9 +526,7 @@
                         [true 0]
                         (line-next-re line 0 #"^\S|(?<=\s)\S"))]
     (if matched
-      (-> b
-          (assoc-in [:cursor :col] col) 
-          (assoc-in [:cursor :lastcol] col))
+      (buf-change-cursor-col col)
       b)))
 
 (defn cursor-match-brace[b]
@@ -547,9 +543,7 @@
         re (str "(?=" (quote-pattern ch) ")")
         [matched newcol] (line-next-re line col (re-pattern re))]
     (if matched
-      (-> b
-          (assoc-in [:cursor :col] newcol) 
-          (assoc-in [:cursor :lastcol] newcol))
+      (buf-change-cursor-col newcol)
       b)))
 
 (defn cursor-back-char
@@ -559,9 +553,7 @@
         re (str "(?=" (quote-pattern ch) ")")
         matched (line-back-re line col (re-pattern re))]
     (if (not (nil? matched))
-      (-> b
-          (assoc-in [:cursor :col] (matched 0)) 
-          (assoc-in [:cursor :lastcol] (matched 0)))
+      (buf-change-cursor-col (matched 0))
       b)))
 
 (defn cursor-line-end
@@ -569,9 +561,7 @@
   [b]
   (let [col (-> b :lines (get (-> b :cursor :row)) count dec dec)
         col1 (if (neg? col) 0 col)]
-    (-> b
-        (assoc-in [:cursor :col] col)
-        (assoc-in [:cursor :lastcol] col))))
+      (buf-change-cursor-col col)))
 
 (defn cursor-move-char
   "Move one character. Direction 0,1,2,3 -> left,right,up,down
@@ -778,7 +768,7 @@
 
 (defn buf-copy-range[b p1 p2 inclusive]
   (let [[{r1 :row c1 :col} cur2] (cursor-sort p1 p2)
-        {r2 :row c2 :col} (if inclusive (inc-col cur2) cur2)
+        {r2 :row c2 :col} (if inclusive (cursor-inc-col cur2) cur2)
         res (loop [res []
                    r r1]
               (if (= r1 r2)

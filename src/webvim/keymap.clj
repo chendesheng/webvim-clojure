@@ -322,27 +322,38 @@
   (swap! (:registers b) assoc "\"" (buf-copy-range b cur (:cursor b) inclusive))
   b)
 
+(defn same-pos? 
+  "return true if :row and :col are equal"
+  [cur1 cur2]
+  (and (= (:row cur1) (:row cur2)) (= (:col cur1) (:col cur2))))
+
 (defn delete-motion[b keycode]
   (println (str "delete-motion:" keycode))
   (println (str "inclusive:" (inclusive? keycode)))
-  (if (nil? (-> b :context :lastbuf))
-    b
-    (-> b :context :lastbuf 
-        buf-save-cursor
-        (buf-copy-range-lastbuf (:cursor b) (inclusive? keycode))
-        (buf-replace
-          (:cursor b) "" (inclusive? keycode))
-        history-save)))
+  (let [lastbuf (-> b :context :lastbuf)]
+    (if (or (nil? lastbuf) (same-pos? (:cursor b) (:cursor lastbuf))) ;don't do anything if cursor doesn't change
+      b
+      (-> b :context :lastbuf 
+          buf-save-cursor
+          (buf-copy-range-lastbuf (:cursor b) (inclusive? keycode))
+          (buf-replace
+            (:cursor b) "" (inclusive? keycode))
+          history-save))))
 
 (defn change-motion[b keycode]
   (println "change-motion:" keycode)
-  (let [inclusive (inclusive? keycode)
-        lastcur (-> b :context :lastbuf :cursor)]
-    (-> b 
-        ;(println (str "change-motion:" keycode))
-        (buf-copy-range-lastbuf lastcur (inclusive? keycode))
-        (buf-replace lastcur "" (inclusive? keycode))
-        (serve-keymap (@normal-mode-keymap "i") keycode))))
+  (let [lastbuf (-> b :context :lastbuf)
+        lastcur (lastbuf :cursor)]
+    (pprint lastcur)
+    (pprint (:cursor b))
+    (if (or (nil? lastbuf) (same-pos? (:cursor b) lastcur))
+      b
+      (let [inclusive (inclusive? keycode)]
+        (-> b 
+            ;(println (str "change-motion:" keycode))
+            (buf-copy-range-lastbuf lastcur inclusive)
+            (buf-replace lastcur "" inclusive)
+            (serve-keymap (@normal-mode-keymap "i") keycode))))))
 
 (defn visual-mode-select[b keycode]
   (println "visual-mode-select:")
@@ -384,6 +395,19 @@
              (= "space" keycode)
              " ")]
     (cursor-next-char b ch)))
+
+(defn move-before-next-char[b keycode]
+  (let [b1 (move-to-next-char b keycode)]
+    (if (same-pos? (:cursor b1) (-> b1 :context :lastbuf :cursor))
+      b1
+      (dec-col b1))))
+
+(defn move-after-back-char[b keycode]
+  (let [b1 (move-to-back-char b keycode)]
+    (if (same-pos? (:cursor b1) (-> b1 :context :lastbuf :cursor))
+      b1
+      (inc-col b1))))
+
 
 (defn move-to-back-char[b keycode]
   (let [ch (cond 
@@ -555,12 +579,8 @@
            "$" cursor-line-end
            "f" { :else move-to-next-char }
            "F" { :else move-to-back-char }
-           "t" { :else #(-> %1 
-                            (move-to-next-char %2)
-                            dec-col) }
-           "T" { :else #(-> %1
-                            (move-to-back-char %2)
-                            inc-col) }
+           "t" { :else move-before-next-char }
+           "T" { :else move-after-back-char }
            "/" (merge @ex-mode-keymap 
                       {"enter" handle-search
                        :enter set-ex-search-mode
