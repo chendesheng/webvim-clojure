@@ -748,6 +748,34 @@
         (assoc :cursor {:row (inc row) :col 0 :lastcol 0 
                         :vprow (-> b :cursor :vprow inc (bound-range 0 (-> @window :viewport :h dec)))}))))
 
+(defn buf-change-cursor-col[b col]
+  (-> b
+      (assoc-in [:cursor :col] col)
+      (assoc-in [:cursor :lastcol] col)))
+
+(defn trim-left-space[line]
+  (.replaceAll line "^ +" ""))
+
+(defn buf-indent-new-line
+  "auto indent, append same space as previous line"
+  [b]
+  (let [lines (b :lines)
+        row (-> b :cursor :row)
+        line (lines row)]
+    (if (zero? row)
+      b
+      (let [pline (lines (dec row))
+            prefix (re-find #"( +)[^ ]" pline)
+            line (lines row)]
+        (if (nil? prefix)
+          b
+          (let [s (prefix 1)] 
+            (-> b
+              (assoc :lines (assoc lines row (str s (trim-left-space line))))
+              (buf-change-cursor-col (.length s)))))))))
+
+;(buf-indent-new-line {:lines ["  hello" "\n" ""] :cursor {:row 1 :col 0 :lastcol 0 :vprow 0}})
+
 (defn buf-copy-range[b p1 p2 inclusive]
   (let [[{r1 :row c1 :col} cur2] (cursor-sort p1 p2)
         {r2 :row c2 :col} (if inclusive (inc-col cur2) cur2)
