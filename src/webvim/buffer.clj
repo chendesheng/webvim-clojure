@@ -113,6 +113,11 @@
 (defn history-peek[b]
   ((-> b :history :items) (-> b :history :version)))
 
+(defn buf-change-cursor-col[b col]
+  (-> b
+      (assoc-in [:cursor :col] col)
+      (assoc-in [:cursor :lastcol] col)))
+
 (defn buf-refresh-txt-cache
   "Call this function concate whole buffer into a single string and save to :txt-cache"
   [b]
@@ -516,7 +521,7 @@
   [b]
   (if (-> b :cursor :col zero?)
     b
-    (buf-change-cursor-col 0)))
+    (buf-change-cursor-col b 0)))
 
 (defn cursor-line-start
   "The \"^\" motion"
@@ -526,7 +531,7 @@
                         [true 0]
                         (line-next-re line 0 #"^\S|(?<=\s)\S"))]
     (if matched
-      (buf-change-cursor-col col)
+      (buf-change-cursor-col b col)
       b)))
 
 (defn cursor-match-brace[b]
@@ -543,7 +548,7 @@
         re (str "(?=" (quote-pattern ch) ")")
         [matched newcol] (line-next-re line col (re-pattern re))]
     (if matched
-      (buf-change-cursor-col newcol)
+      (buf-change-cursor-col b newcol)
       b)))
 
 (defn cursor-back-char
@@ -553,7 +558,7 @@
         re (str "(?=" (quote-pattern ch) ")")
         matched (line-back-re line col (re-pattern re))]
     (if (not (nil? matched))
-      (buf-change-cursor-col (matched 0))
+      (buf-change-cursor-col b (matched 0))
       b)))
 
 (defn cursor-line-end
@@ -561,7 +566,7 @@
   [b]
   (let [col (-> b :lines (get (-> b :cursor :row)) count dec dec)
         col1 (if (neg? col) 0 col)]
-      (buf-change-cursor-col col)))
+      (buf-change-cursor-col b col)))
 
 (defn cursor-move-char
   "Move one character. Direction 0,1,2,3 -> left,right,up,down
@@ -737,11 +742,6 @@
                       (subvec lines (inc row)))))
         (assoc :cursor {:row (inc row) :col 0 :lastcol 0 
                         :vprow (-> b :cursor :vprow inc (bound-range 0 (-> @window :viewport :h dec)))}))))
-
-(defn buf-change-cursor-col[b col]
-  (-> b
-      (assoc-in [:cursor :col] col)
-      (assoc-in [:cursor :lastcol] col)))
 
 (defn trim-left-space[line]
   (.replaceAll line "^ +" ""))

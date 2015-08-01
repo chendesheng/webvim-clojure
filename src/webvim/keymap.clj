@@ -396,6 +396,16 @@
              " ")]
     (cursor-next-char b ch)))
 
+(defn move-to-back-char[b keycode]
+  (let [ch (cond 
+             (= 1 (count keycode))
+             keycode
+             (= "tab" keycode)
+             "\t"
+             (= "space" keycode)
+             " ")]
+    (cursor-back-char b ch)))
+
 (defn move-before-next-char[b keycode]
   (let [b1 (move-to-next-char b keycode)]
     (if (same-pos? (:cursor b1) (-> b1 :context :lastbuf :cursor))
@@ -408,16 +418,6 @@
       b1
       (inc-col b1))))
 
-
-(defn move-to-back-char[b keycode]
-  (let [ch (cond 
-             (= 1 (count keycode))
-             keycode
-             (= "tab" keycode)
-             "\t"
-             (= "space" keycode)
-             " ")]
-    (cursor-back-char b ch)))
 
 (defn put-from-register[b keycode]
   (let [txt (@(:registers b) keycode)]
