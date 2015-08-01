@@ -5,6 +5,7 @@
   (:use clojure.pprint
         webvim.buffer
         webvim.global
+        webvim.jumplist
         webvim.autocompl))
 
 (defonce motion-keymap (atom {}))
@@ -254,19 +255,23 @@
                              (key-server @root-keymap)
                              (get :id))]
                 (reset! active-buffer-id newid)
+                (jump-push b)
                 b)))
    "bnext" (fn[b execmd args]
              (let [id (-> b :id inc)
                    newid (if (> id @gen-buf-id) 1 id)]
                (reset! active-buffer-id newid)
+               (jump-push b)
                b))
    "bprev" (fn[b execmd args]
              (let [id (-> b :id dec)
                    newid (if (< id 1) @gen-buf-id id)]
                (reset! active-buffer-id newid)
+               (jump-push b)
                b))
    #"^(\d+)$" (fn[b row _]
                 (println "row:" row)
+                (jump-push b)
                 (let [row (bound-range (dec (Integer. row)) 0 (-> b :lines count dec))]
                   (move-to-line b row)))})
 
@@ -503,6 +508,8 @@
 (defn normal-mode-after[b keycode]
   (let [{col :col row :row} (:cursor b)
         lastbuf (-> b :context :lastbuf)]
+    (if (not (nil? (motions-push-jumps keycode)))
+      (jump-push lastbuf))
     (println "normal-mode-after, recording-keys" (-> b :macro :recording-keys))
     ;if nothing changed there is no need to overwrite "." register
     ;so keys like i<esc> won't affect, this also exclude all motions.
@@ -550,6 +557,38 @@
                                       (- (:row cur1) (-> b :cursor :row)))
                                    0 
                                    (-> @window :viewport :h))})))))
+
+(defn cursor-bound-vprow[cur]
+  (update-in cur [:vprow]
+             bound-range 
+             0 
+             (-> @window :viewport :h)))
+
+(defn inside? [lines {r :row c :col}]
+  (and (< r (count lines)) (< c (count (lines r)))))
+
+(defn move-to-jumplist
+  [b fndir]
+  (loop [pos (fndir b)]
+    (if (nil? pos)
+      b ;newest or oldest
+      (let [newb (@buffer-list (pos :id))]
+        (if (nil? newb)
+          ;buffer has been deleted, ignore
+          (recur (fndir b)) 
+          ;pos is avaliable
+          (if (inside? (newb :lines) (pos :cursor))
+            (let [newid (newb :id)
+                  newcur (cursor-bound-vprow (pos :cursor))]
+              (if (= newid @active-buffer-id) 
+                ;update pos inside current buffer
+                (assoc b :cursor newcur)
+                (let []
+                  (reset! active-buffer-id newid)
+                  (swap! buffer-list assoc-in [newid :cursor] newcur)
+                  b)))
+            ;buffer has been modifed and cursor is no longer inside, ignore
+            (recur (fndir b))))))))
 
 (defn init-keymap-tree
   []
@@ -608,15 +647,14 @@
                             (cursor-next-re b #"[\(\[\{\)\]\}]" #"[\(\[\{\)\]\}]")
                             b)]
                    (let [cur (cursor-match-brace b1)]
-                     (if (nil? cur) b1
-                       (update-in b1 [:cursor] 
-                                  merge cur 
-                                  {:lastcol (:col cur)} 
-                                  {:vprow (bound-range 
-                                            (+ (-> b1 :cursor :vprow) (- (:row cur) (-> b1 :cursor :row))) 
-                                            0 (-> @window :viewport :h dec))})))))
-                 "c+u" #(cursor-move-viewport %1 -0.5) 
-                 "c+d" #(cursor-move-viewport %1 0.5)})
+                     (if (nil? cur) 
+                       b1
+                       (let [newcur (-> cur 
+                                        (assoc :lastcol (:col cur))
+                                        cursor-bound-vprow)]
+                         (assoc b1 :cursor newcur))))))
+           "c+u" #(cursor-move-viewport %1 -0.5) 
+           "c+d" #(cursor-move-viewport %1 0.5)})
 
   (reset! visual-mode-keymap @motion-keymap)
   (swap! visual-mode-keymap 
@@ -665,6 +703,8 @@
                  :leave (fn[b keycode] (set-normal-mode b))})
           "u" history-undo
           "c+r" history-redo
+          "c+o" #(move-to-jumplist % jump-prev)
+          "c+i" #(move-to-jumplist % jump-next)
           "esc" set-normal-mode
           "v" (merge
                 @visual-mode-keymap
