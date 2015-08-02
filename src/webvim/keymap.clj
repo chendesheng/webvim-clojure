@@ -31,6 +31,11 @@
     (apply f b args)
     b))
 
+(defn- record-keys[b keycode]
+  (if (nil? (#{"c+n" "c+p" "c+a" "c+x"} keycode)) ;Don't record keycode for these commands
+    (update-in b [:macro :recording-keys] conj keycode)
+    b))
+
 ;two types: key (leaf), keymap (internal node)
 ;when visit a keymap call :enter :leave 
 ; keymap is repetitive if :continue return true
@@ -39,13 +44,13 @@
   "Serve a sequence of keys until end of keymap. Recusivly walk through keymap tree (works like sytax parser)"
   [b keymap keycode]
   (let [f (keymap keycode)]
-    (let [b1 (update-in b [:macro :recording-keys] #(conj % keycode))]
-      (if (or (fn? f) (map? f) (fn? (:else keymap)))
-        (-> b1
-            (call-if-fn (:before keymap) keycode)
-            (map-fn-else keymap keycode)
-            (call-if-fn (:after keymap) keycode))
-        b1))))
+    (if (or (fn? f) (map? f) (fn? (:else keymap)))
+      (-> b
+          (record-keys keycode)
+          (call-if-fn (:before keymap) keycode)
+          (map-fn-else keymap keycode)
+          (call-if-fn (:after keymap) keycode))
+      b)))
 
 (defn map-fn-else[b keymap keycode]
   (let [f (keymap keycode)]
@@ -392,10 +397,16 @@
         cnt (-> b1 :autocompl :suggestions count)]
     (if (zero? cnt)
       b1
-      (let [n (mod (+ i cnt) cnt)]
+      (let [n (mod (+ i cnt) cnt)
+            w (-> b1 :autocompl :suggestions (get n))
+            s (-> b1 :autocompl :suggestions (get 0))
+            ;delete back then insert word
+            ks (apply conj (vec (repeat (count s) "backspace")) (map str (vec w)))]
         (-> b1 
             (assoc-in [:autocompl :suggestions-index] n)
-            (buffer-replace-suggestion (-> b1 :autocompl :suggestions (get n))))))))
+            (update-in [:macro :recording-keys] 
+                      #(apply conj % ks)) 
+            (buffer-replace-suggestion w))))))
 
 (defn move-to-next-char[b keycode]
   (let [ch (cond 
