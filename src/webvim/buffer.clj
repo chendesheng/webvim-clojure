@@ -532,11 +532,11 @@
   "The \"^\" motion"
   [b]
   (let [line (-> b :lines (get (-> b :cursor :row)))
-        [matched col] (if (= 1 (count line))
+        [start end] (if (= 1 (count line))
                         [true 0]
                         (line-next-re line 0 #"^\S|(?<=\s)\S"))]
-    (if matched
-      (buf-change-cursor-col b col)
+    (if start
+      (buf-change-cursor-col b start)
       b)))
 
 (defn cursor-match-brace[b]
@@ -569,9 +569,9 @@
 (defn cursor-line-end
   "The \"$\" motion"
   [b]
-  (let [col (-> b :lines (get (-> b :cursor :row)) count dec dec)
+  (let [col (-> b :lines (get (-> b :cursor :row)) count dec)
         col1 (if (neg? col) 0 col)]
-      (buf-change-cursor-col b col)))
+      (buf-change-cursor-col b col1)))
 
 (defn cursor-move-char
   "Move one character. Direction 0,1,2,3 -> left,right,up,down
