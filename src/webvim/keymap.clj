@@ -378,12 +378,11 @@
 (defn autocompl-start[b]
   (let [word (buffer-word-before-cursor b)
         suggestions (autocompl-suggest @autocompl-words word)]
-    (if (= 1 (count suggestions))
-      (assoc-in b [:autocompl :suggestions] [])
-      (assoc b :autocompl 
-             (merge (:autocompl b) 
-                    {:suggestions suggestions 
-                     :suggestions-index 0})))))
+    (println "autocompl:")
+    (println word)
+    (assoc b :autocompl 
+           {:suggestions suggestions 
+            :suggestions-index 0})))
 
 (defn autocompl-move[b f]
   (let [b1 (if (empty? (-> b :autocompl :suggestions))

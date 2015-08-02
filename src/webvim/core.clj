@@ -6,6 +6,7 @@
         webvim.buffer
         webvim.keymap
         webvim.global
+        webvim.autocompl
         (compojure handler [core :only (GET POST defroutes)])
         (hiccup [page :only (html5)])
         ring.middleware.resource
@@ -20,6 +21,7 @@
     b))
 
 ;diff line by line
+;TODO more advanced diff algorithm
 (defn diff-lines [after before]
   (let [lines1 (:lines before)
         lines2 (:lines after)]
@@ -33,9 +35,15 @@
                  (vec (map (fn[l1 l2]
                              (if (= l1 l2)
                                nil
-                               l2)) lines1 lines2))))
+                               (let[]
+                                 (autocompl-words-remove l1)
+                                 (autocompl-words-parse l2)
+                                 l2))) lines1 lines2))))
       :else
-      after)))
+      (let[]
+        (autocompl-words-remove-buffer before)
+        (autocompl-words-parse-buffer after)
+        after))))
 
 (defn- remove-server-only-fields[b]
   (-> b 
@@ -45,7 +53,6 @@
       (dissoc-emtpy [:autocompl :suggestions])))
 
 (defn- remove-visual-mode[b]
-  (pprint (-> b :visual :ranges))
   (if (empty? (-> b :visual :ranges))
     (dissoc b :visual)
     b))

@@ -184,6 +184,7 @@ function render(buf) {
 		var $autocompl = $('.lines .autocompl');
 		if (!$autocompl[0]) {
 			$('.lines').append('<div class="autocompl"></div>');
+			$autocompl = $('.lines .autocompl');
 		} else if ($('.lines .autocompl .highlight')[0]) {
 			lastSelectedIndex = parseInt($('.lines .autocompl .highlight').attr('id').split('-')[1]);
 			lastScrollTop = $autocompl.scrollTop();

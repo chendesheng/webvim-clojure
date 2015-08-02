@@ -101,7 +101,7 @@
                                   :cursor-begin nil 
                                   :cursor-end (:cursor b)}]
                          :version 0})
-        autocompl-parse-buffer
+        autocompl-words-parse-buffer
         ;cache whole txt for searching, use :lines check if same version
         (assoc :txt-cache {:lines (:lines b)  :txt txt}))))
 
