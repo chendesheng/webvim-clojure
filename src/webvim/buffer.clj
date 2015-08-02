@@ -339,6 +339,7 @@
                                                  0
                                                  (-> (dec row) lines count dec))])]
                   (recur ncnt nrow ncol))))))))))
+
 (defn line-next-re
   "Move to next charactor match by re." 
   [line col re]
@@ -347,6 +348,33 @@
     (if (.find m)
       [(-> m .start (+ col)) (-> m .end (+ col))]
       nil)))
+
+(defn buf-line[b row]
+  (-> b :lines (get row)))
+
+(defn cursor-line-end
+  "The \"$\" motion"
+  [b]
+  (let [col (-> b :lines (get (-> b :cursor :row)) count dec)
+        col1 (if (neg? col) 0 col)]
+      (buf-change-cursor-col b col1)))
+
+;for "dw" or "cw"
+(defn buf-line-next-re
+  "Not cross line, goto line end if not found"
+  [b re]
+  (let [{r :row c :col} (b :cursor)
+        line (buf-line b r)
+        [start end] (line-next-re line c re)]
+    (if (nil? start)
+      (cursor-line-end b)
+      (buf-change-cursor-col b start))))
+
+(defn buf-line-next-word[b]
+  (buf-line-next-re b re-word-start))
+
+(defn buf-line-next-WORD[b]
+  (buf-line-next-re b re-WORD-start))
 
 (defn line-back-re
   "Move to back charactor match by re. col=-1 means match whole line" 
@@ -566,13 +594,6 @@
       (buf-change-cursor-col b (matched 0))
       b)))
 
-(defn cursor-line-end
-  "The \"$\" motion"
-  [b]
-  (let [col (-> b :lines (get (-> b :cursor :row)) count dec)
-        col1 (if (neg? col) 0 col)]
-      (buf-change-cursor-col b col1)))
-
 (defn cursor-move-char
   "Move one character. Direction 0,1,2,3 -> left,right,up,down
     In normal mode the cursor should never go to \n"
@@ -765,9 +786,6 @@
         (assoc-in [:cursor :row] (:row cursor))
         (assoc-in [:cursor :col] (:col cursor))
         cursor-line-first)))
-
-(defn buf-line[b row]
-  (-> b :lines (get row)))
 
 (defn buf-insert-line-after
   "The \"o\" command"

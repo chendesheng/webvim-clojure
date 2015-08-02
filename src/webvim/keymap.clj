@@ -638,8 +638,8 @@
            "j" #(cursor-move-char % 3)
            "g" {"g" cursor-move-start}
            "G" cursor-move-end
-           "w" cursor-next-word
-           "W" cursor-next-WORD
+           "w" buf-line-next-word
+           "W" buf-line-next-WORD
            "b" cursor-back-word
            "B" cursor-back-WORD
            "e" cursor-word-end
@@ -714,7 +714,10 @@
   (reset! normal-mode-keymap @motion-keymap)
   (swap! normal-mode-keymap 
          merge 
-         {"i" @insert-mode-keymap
+         {"w" cursor-next-word
+          "W" cursor-next-WORD
+
+          "i" @insert-mode-keymap
           "a" (merge
                 @insert-mode-keymap
                 {:enter set-insert-append})
@@ -763,7 +766,7 @@
           "c" (merge
                 @motion-keymap
                 {:before save-lastbuf 
-                 :after change-motion })
+                 :after change-motion})
           :before (fn [b keycode]
                     (assoc-in b [:context :lastbuf] b))
           :after normal-mode-after})
