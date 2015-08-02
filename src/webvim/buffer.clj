@@ -561,9 +561,9 @@
   [b]
   (let [line (-> b :lines (get (-> b :cursor :row)))
         [start end] (if (= 1 (count line))
-                        [true 0]
+                        [nil nil]
                         (line-next-re line 0 #"^\S|(?<=\s)\S"))]
-    (if start
+    (if (nil? start)
       (buf-change-cursor-col b start)
       b)))
 
