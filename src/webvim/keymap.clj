@@ -763,9 +763,14 @@
           "p" #(put-from-register-append % "\"")
           "P" #(put-from-register % "\"")
           "D" delete-line
+          "J" (fn[b]
+                (-> b 
+                    buf-save-cursor
+                    buf-join-line
+                    history-save))
           "c" (merge
                 @motion-keymap
-                {:before save-lastbuf 
+                {:before save-lastbuf
                  :after change-motion})
           :before (fn [b keycode]
                     (assoc-in b [:context :lastbuf] b))

@@ -845,3 +845,18 @@
     (if (nil? pt2)
       (dissoc b :braces)
       (assoc b :braces [{:row (:row pt) :col (:col pt)} pt2]))))
+
+(defn buf-join-line
+  "join current line and next line"
+  [b]
+  (let [{r :row c :col} (b :cursor)]
+    (if (< r (-> b :lines count dec))
+      (let [[start _] (line-next-re (buf-line b (inc r)) 0 #"^\S|(?<=\s)\S")
+            col (if (nil? start)
+                  (dec (col-count b (inc r)))
+                  start)]
+        (-> b
+            cursor-line-end
+            (buf-replace {:row (inc r) :col col} " " false)
+            dec-col))
+      b)))
