@@ -103,7 +103,6 @@
 (defn key-server
   "Start a dedicate thread handle input keys. Close :chan-in will stop this thread."
   [b keymap]
-  (println "key-server:" (b :id))
   (async/thread 
     (loop[b1 b]
       (if (not (nil? b1))
@@ -171,7 +170,7 @@
 (defn set-ex-search-mode[b keycode]
   (println "set-ex-search-mode")
   (-> b 
-      (merge {:ex "/" :message nil :keys nil})
+      (merge {:ex keycode :message nil :keys nil})
       (assoc-in [:context :lastbuf] b)))
 
 (defn insert-mode-default[b keycode]
@@ -210,13 +209,22 @@
                 (= 1 (count keycode))
                 (str ex keycode)
                 :else ex)]
-    (if (= \/ (first newex))
+    (cond 
+      (= \/ (first newex))
       (let [lb (-> b :context :lastbuf)
             newb (-> lb
                      (assoc :ex newex)
                      (assoc-in [:context :lastbuf] lb))] ;keep lastbuf avaiable on stack
         (try (cursor-next-str newb (subs newex 1))
              (catch Exception e newb)))
+      (= \? (first newex))
+      (let [lb (-> b :context :lastbuf)
+            newb (-> lb
+                     (assoc :ex newex)
+                     (assoc-in [:context :lastbuf] lb))]
+        (try (cursor-back-str newb (subs newex 1))
+             (catch Exception e newb)))
+      :else
       (assoc b :ex newex))))
 
 
@@ -276,9 +284,8 @@
                   (move-to-line b row)))})
 
 (defn handle-search[b]
-  (let [re (-> b :ex (subs 1))]
-    (swap! (:registers b) assoc "/" re)
-    (highlight-all-matches b re)))
+  (swap! (:registers b) assoc "/" (b :ex))
+  (highlight-all-matches b (subs (b :ex) 1)))
 
 (defn execute [b]
   (let [[_ excmd args] (re-find #"\s*:([^\s]+)\s*(.*)\s*" (:ex b))]
@@ -459,7 +466,7 @@
 (defn move-next-same-word[b]
   (let [[word start] (word-under-cursor (:lines b) (:cursor b))
         re (str "\\b" word "\\b")]
-    (swap! (:registers b) assoc "/" re)
+    (swap! (:registers b) assoc "/" (str "/" re))
     (-> b 
         (assoc-in [:cursor :col] start)
         (cursor-next-str re)
@@ -468,7 +475,7 @@
 (defn move-back-same-word[b]
   (let [[word start] (word-under-cursor (:lines b) (:cursor b))
         re (str "\\b" word "\\b")]
-    (swap! (:registers b) assoc "/" re)
+    (swap! (:registers b) assoc "/" (str "?" re))
     (-> b 
         (assoc-in [:cursor :col] start)
         (cursor-back-str re)
@@ -590,6 +597,20 @@
             ;buffer has been modifed and cursor is no longer inside, ignore
             (recur (fndir b))))))))
 
+(defn move-next-empty-line[b]
+  (let [b1 (cursor-simple-next-str b "^[^\n]")
+        b2 (cursor-simple-next-str b1 "^\n") ]
+    (if (or (= b b1) (= b1 b2))
+      b
+      b2)))
+
+(defn move-back-empty-line[b]
+  (let [b1 (cursor-simple-back-str b "^[^\n]")
+        b2 (cursor-simple-back-str b1 "^\n") ]
+    (if (or (= b b1) (= b1 b2))
+      b
+      b2)))
+
 (defn init-keymap-tree
   []
   (reset! ex-mode-keymap
@@ -624,24 +645,28 @@
                       {"enter" handle-search
                        :enter set-ex-search-mode
                        :else ex-mode-default})
+           "?" (merge @ex-mode-keymap
+                      {"enter" handle-search
+                       :enter set-ex-search-mode
+                       :else ex-mode-default})
            "*" move-next-same-word
            "#" move-back-same-word
-           "n" #(let[re (@(:registers %) "/")]
+           "n" #(let[s (or (@(:registers %) "/") "/")
+                     dir (first s)
+                     re (subs s 1)
+                     fnsearch (if (= \/ dir) cursor-next-str cursor-back-str)]
                   (-> % 
-                      (cursor-next-str re)
+                      (fnsearch re)
                       (highlight-all-matches re)))
-           "N" #(let[re (@(:registers %) "/")]
+           "N" #(let[s (or (@(:registers %) "/") "?")
+                     dir (or (first s) "")
+                     re (subs s 1)
+                     fnsearch (if (= \/ dir) cursor-back-str cursor-next-str)]
                   (-> % 
-                      (cursor-back-str re)
+                      (fnsearch re)
                       (highlight-all-matches re)))
-           "}" (fn[b]
-                 (-> b
-                     (cursor-next-str "^[^\n]")
-                     (cursor-next-str "^\n")))
-           "{" (fn[b]
-                 (-> b
-                     (cursor-back-str "^[^\n]")
-                     (cursor-back-str "^\n")))
+           "}" move-next-empty-line
+           "{" move-back-empty-line
            "%" (fn[b]
                  (let [b1 (if (not (contains? all-braces (char-under-cursor b)))
                             (cursor-next-re b #"[\(\[\{\)\]\}]" #"[\(\[\{\)\]\}]")

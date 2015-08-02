@@ -28,8 +28,8 @@
                           }))
 
 ;jump-push before these motions
-(defonce motions-push-jumps
-  #{"/" "?" "n" "N" "%" "G" "c+d" "c+u" "{" "}"})
+(def motions-push-jumps
+  #{"/" "?" "*" "#" "n" "N" "%" "G" "c+d" "c+u" "{" "}"})
 
 (defn jump-current-pos[]
   ((@jump-list :positions) (@jump-list :current)))

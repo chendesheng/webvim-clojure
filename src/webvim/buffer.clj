@@ -436,6 +436,24 @@
             :lastcol (matched 0)}]))
       [nil cursor])))
 
+(defn lines-back-re[{lines :lines cursor :cursor} re]
+  (loop [row (:row cursor)
+         col (:col cursor)]
+    (if (>= row 0)
+      (let [line (lines row)
+            matched (line-back-re line col re)]
+        (if (not matched)
+          (recur (dec row) -1)
+          [[{:row row :col (matched 0)} {:row row :col (matched 1)}]
+           {:row row
+            :vprow (-> row 
+                       (- (:row cursor)) 
+                       (+ (:vprow cursor))
+                       (bound-range 0 (-> @window :viewport :h dec)))
+            :col (matched 0)
+            :lastcol (matched 0)}]))
+      [nil cursor])))
+
 (defn cursor-next-re
   "Match re line by line (re not match multiple lines), don't change cursor if nothing is found"
   [b re re-line-start]
@@ -464,28 +482,15 @@
               (assoc-in [:cursor :lastcol] (matched 0)))))
       b)))
 
-(defn cursor-back-str
-  "The \"N\" motion"
-  [b s]
-  (if (empty? s)
-    b
-    (let [re (re-pattern s)
-          b1 (cursor-back-re b re)]
-      (if (= b b1)
-        (cursor-back-re (cursor-move-end b) re)
-        b1))))
-
 (defn cursor-back-word
   "The \"b\" motion."
   [b]
-  (-> b 
-      (cursor-back-re re-word-start-back)))
+  (cursor-back-re b re-word-start-back))
 
 (defn cursor-back-WORD
   "The \"B\" motion."
   [b]
-  (-> b 
-      (cursor-back-re re-WORD-start-back)))
+  (cursor-back-re b re-WORD-start-back))
 
 
 (defn cursor-next-word
@@ -604,8 +609,25 @@
 
                     :else (:cursor b))))))
 
+(defn cursor-simple-next-str
+  "no wrap to beginning, no highlights"
+  [b s]
+  (let [re (re-pattern s)
+        [matched newcur] (lines-next-re (inc-col b) re re)]
+    (if (nil? matched) 
+      b
+      (assoc b :cursor newcur))))
+
+(defn cursor-simple-back-str
+  [b s]
+  (let [re (re-pattern s)
+        [matched newcur] (lines-back-re b re)]
+    (if (nil? matched) 
+      b
+      (assoc b :cursor newcur))))
+
 (defn cursor-next-str
-  "Find next matched regex. If wrap is true, continue from top when hit bottom."
+  "The \"n\" command"
   [b s]
   (if (empty? s)
     b
@@ -613,6 +635,24 @@
           [matched newcur] (lines-next-re (inc-col b) re re)]
       (if (nil? matched) ;not found, wrap back and searh again
         (let [[matched2 newcur2] (lines-next-re (cursor-move-start b) re re)]
+          (if matched2
+            (-> b 
+                (assoc :highlights matched2)
+                (assoc :cursor newcur2))
+            b))
+        (-> b 
+            (assoc :highlights matched)
+            (assoc :cursor newcur))))))
+
+(defn cursor-back-str
+  "The \"N\" motion"
+  [b s]
+  (if (empty? s)
+    b
+    (let [re (re-pattern s)
+          [matched newcur] (lines-back-re b re)]
+      (if (nil? matched) ;not found, wrap back and searh again
+        (let [[matched2 newcur2] (lines-back-re (cursor-move-end b) re)]
           (if matched2
             (-> b 
                 (assoc :highlights matched2)
