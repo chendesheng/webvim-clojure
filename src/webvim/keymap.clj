@@ -686,6 +686,8 @@
                        b1
                        (let [newcur (-> cur 
                                         (assoc :lastcol (:col cur))
+                                        (assoc :vprow (+ (-> b1 :cursor :vprow)
+                                                         (- (:row cur) (-> b1 :cursor :row))))
                                         cursor-bound-vprow)]
                          (assoc b1 :cursor newcur))))))
            "c+u" #(cursor-move-viewport %1 -0.5) 
