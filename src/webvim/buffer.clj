@@ -36,6 +36,8 @@
            :braces nil
            ;saved cursor when insert begins, for undo/redo function only
            :last-cursor nil
+           ;save :lines object when write buffer to disk, check if lines unsaved
+           :last-saved-lines nil
            ;:type =0 visual =1 visual line =2 visual block
            ;:ranges is a vector of point pairs (unordered): [{:row :col} {:row :col}]. Always contains even number of points. Right end is exclusive.
            :visual {:type 0 :ranges []}
@@ -73,6 +75,7 @@
     ;The undo/redo function takes advantage of clojure's persistent data structure, just save everything we needs. Consider change to save keystrokes if memory usage is too high.
     ;Each history item holds two cursors: one is cursor pos when edit begins and the other is when edit ends. Perform undo action will recover cursor to cursor-begin and perform redo action recover cursor to cursor-end. 
     (-> b
+        (assoc :last-saved-lines (b :lines))
         (assoc :history {:items [{:lines (:lines b) 
                                   ;The initial version doesn't need cursor-begin
                                   :cursor-begin nil 
@@ -299,6 +302,11 @@
                    "" false)
       :else b)))
 
+(defn buf-lines-unsaved?
+  "if :lines unsaved after last save"
+  [b]
+  (not (= (b :lines) (b :last-saved-lines))))
+
 ;(calc-col test-buf 4 30 30)
 (defn write-buffer
   "Write buffer to disk. This operation MUST be atomic."
@@ -317,7 +325,9 @@
       ;TODO fsync before rename
       ;TODO Windows?
       (fs/rename tmp f)
-      (assoc b :message (str "\"" f "\" " (count lines) "L written")))
+      (-> b
+          (assoc :message (str "\"" f "\" " (count lines) "L written"))
+          (assoc :last-saved-lines (b :lines))))
     (catch Exception e 
       (println (.getMessage e))
       (.printStackTrace e)

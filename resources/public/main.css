@@ -90,6 +90,15 @@ pre {
 	background:#007ACC;
 }
 
+.status-bar.buffer-unsaved:after{
+	content:'unsaved';
+	position:absolute;
+	top:0;
+	right:10px;
+	bottom:0;
+	display:block;
+}
+
 .status-bar::-webkit-scrollbar, .lines::-webkit-scrollbar, .autocompl::-webkit-scrollbar{
         display: none;
 }

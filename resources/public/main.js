@@ -140,6 +140,9 @@ function render(buf) {
 		}
 	}
 
+	//render unsaved
+	$('.status-bar').toggleClass('buffer-unsaved', !!buf.unsaved);
+
 	//render visual
 	$('.lines .selections').empty();
 	if (buf.visual) {

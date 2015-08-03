@@ -57,6 +57,13 @@
     (dissoc b :visual)
     b))
 
+(defn- track-unsaved[b]
+  (if (buf-lines-unsaved? b)
+    (-> b 
+        (dissoc :last-saved-lines)
+        (assoc :unsaved 1))
+    (dissoc b :last-saved-lines)))
+
 (defn- dissoc-if-equal[after before k]
   (if (= (before k) (after k))
     (dissoc after k)
@@ -71,6 +78,7 @@
                 (remove-server-only-fields after)
                 :else
                 (-> after
+                    track-unsaved
                     remove-visual-mode
                     remove-server-only-fields
                     (diff-lines before)
