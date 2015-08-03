@@ -78,7 +78,7 @@ pre {
 }
 
 
-.status-bar, .status-bar pre {
+.status-bar {
 	position:absolute;
 	left:0;
 	right:0;
@@ -97,6 +97,10 @@ pre {
 	right:10px;
 	bottom:0;
 	display:block;
+}
+
+.status-bar .ongoing-keys {
+	padding-left:30px;
 }
 
 .status-bar::-webkit-scrollbar, .lines::-webkit-scrollbar, .autocompl::-webkit-scrollbar{

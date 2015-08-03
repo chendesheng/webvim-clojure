@@ -133,7 +133,7 @@
     [:body
      [:div.gutter]
      [:div.lines]
-     [:div.status-bar [:pre]]]))
+     [:div.status-bar [:span.ex] [:span.ongoing-keys]]]))
 
 (defroutes main-routes
   (GET "/" [request] (homepage request))

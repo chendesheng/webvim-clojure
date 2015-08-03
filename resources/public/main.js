@@ -128,20 +128,33 @@ function render(buf) {
 	$('.cursor').attr('style', 'left:'+x+'px;top:'+y+'px;width:'+w+'px;');
 	
 
-	//render status bar
+	//render ex
 	if (buf.ex && buf.ex.length > 0) {
-		$('.status-bar pre').empty().text(buf.ex);
-		$('.status-bar pre').append('<span class="cursor"> </span>');
+		$('.status-bar .ex').empty().text(buf.ex);
+		$('.status-bar .ex').append('<span class="cursor"> </span>');
 	} else if (buf.message) {
-		$('.status-bar pre').empty().text(buf.message);
+		$('.status-bar .ex').empty().text(buf.message);
 	} else {
 		if (typeof buf.mode != 'undefined' && buf.mode < MODES.length) {
-			$('.status-bar pre').empty().text(MODES[buf.mode]);
+			$('.status-bar .ex').empty().text(MODES[buf.mode]);
 		}
 	}
 
 	//render unsaved
 	$('.status-bar').toggleClass('buffer-unsaved', !!buf.unsaved);
+
+	//render ongoing keys
+	if (buf.keys && buf.keys.length > 0) {
+		var keysstr = '';
+		for (var i = 0; i < buf.keys.length; i++) {
+			var k = buf.keys[i];
+			if (k.length > 1) k = '<'+k+'>';
+			keysstr += k;
+		}
+		$('.status-bar .ongoing-keys').text(keysstr);
+	} else {
+		$('.status-bar .ongoing-keys').empty();
+	}
 
 	//render visual
 	$('.lines .selections').empty();
