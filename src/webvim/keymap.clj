@@ -623,6 +623,8 @@
       b
       b2)))
 
+(defn- nop[b] b)
+
 (defn init-keymap-tree
   []
   (reset! ex-mode-keymap
@@ -649,10 +651,14 @@
            "0" cursor-line-first
            "^" cursor-line-start
            "$" cursor-line-end
-           "f" { :else move-to-next-char }
-           "F" { :else move-to-back-char }
-           "t" { :else move-before-next-char }
-           "T" { :else move-after-back-char }
+           "f" {"esc" nop
+                :else move-to-next-char }
+           "F" {"esc" nop
+                :else move-to-back-char }
+           "t" {"esc" nop 
+                :else move-before-next-char }
+           "T" {"esc" nop 
+                :else move-after-back-char }
            "/" (merge @ex-mode-keymap 
                       {"enter" handle-search
                        :enter set-ex-search-mode
@@ -705,7 +711,8 @@
           {;"c+o" @normal-mode-keymap 
            "c+n" #(autocompl-move % inc)
            "c+p" #(autocompl-move % dec)
-           "c+r" { :else put-from-register }
+           "c+r" {"esc" #(assoc % :keys [])
+                  :else put-from-register }
            :else insert-mode-default 
            :enter set-insert-mode
            :continue #(not (= "esc" %2))
