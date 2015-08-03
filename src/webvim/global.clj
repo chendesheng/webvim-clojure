@@ -6,6 +6,10 @@
   (:use clojure.pprint
         (clojure [string :only (join split)])))
 
+;global registers. Don't access this directly, always access buffer's :registers
+(defonce registers (atom {}))
+
+
 ;one server only serve one window at one time
 (defonce window (atom{:viewport {:w 0 :h 0}}))
 
@@ -32,3 +36,25 @@
     (println prefix)
     (pprint obj)
     obj))
+
+(defn bound-range[v s e]
+  (cond (<= v s) s
+        (>= v e) e
+        :else v))
+
+(defn cursor-inc-col [cursor]
+  (update-in cursor [:col] inc))
+
+(defn inc-col [b]
+  (update-in b [:cursor] cursor-inc-col))
+
+(defn dec-col [b]
+  (if (pos? (-> b :cursor :col))
+    (update-in b [:cursor :col] dec)
+    b))
+
+(defn col-count
+  "Take row number return count length of a row."
+  [b row]
+  (count ((:lines b) row)))
+

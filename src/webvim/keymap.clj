@@ -4,6 +4,8 @@
             [ring.util.response :as response])
   (:use clojure.pprint
         webvim.buffer
+        webvim.history
+        webvim.cursor
         webvim.global
         webvim.jumplist
         webvim.autocompl))

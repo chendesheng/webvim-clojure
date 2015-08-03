@@ -5,39 +5,16 @@
   (:use clojure.pprint
         (clojure [string :only (join split)])
         webvim.autocompl
+        webvim.history
+        webvim.cursor
         webvim.global))
 
-;global registers. Don't access this directly, always access buffer's :registers
-(defonce registers (atom {}))
-
-(def re-word-start #"(?<=\W)\w|(?<=[\s\w])[^\s\w]")
-(def re-word-start-line-start #"^\S|(?<=\W)\w|(?<=[\s\w])[^\s\w]")
-(def re-word-start-back #"(?<=\W)\w|(?<=[\s\w])[^\s\w]|^\S")
-
-(def re-WORD-start #"(?<=\s)\S")
-(def re-WORD-start-line-start #"(?=^\S)|(?<=\s)\S")
-(def re-WORD-start-back #"(?<=\s)\S|(?=^\S)")
-
-(def re-word-end #"(?=\S$)|(?=\w\W)|(?=[^\s\w][\s\w])")
-(def re-WORD-end #"(?=\S$)|(?=\S\s)")
-;
 (defn split-lines-all 
   "Split by \\n and keep \\n. Always has a extra empty string after last \\n.
 => (split-lines-all \"\")
 [\"\"]"
   [txt]
   (split txt #"(?<=\n)" -1))
-
-(defn cursor-inc-col [cursor]
-  (update-in cursor [:col] inc))
-
-(defn inc-col [b]
-  (update-in b [:cursor] cursor-inc-col))
-
-(defn dec-col [b]
-  (if (pos? (-> b :cursor :col))
-    (update-in b [:cursor :col] dec)
-    b))
 
 (defn buffer-list-save
   "Generate buffer id (increase from 1) and add to buffer-list"
@@ -62,7 +39,7 @@
            ;:type =0 visual =1 visual line =2 visual block
            ;:ranges is a vector of point pairs (unordered): [{:row :col} {:row :col}]. Always contains even number of points. Right end is exclusive.
            :visual {:type 0 :ranges []}
-           ;=0 nomral mode =1 insert mode =2 ex mode =3 visual mode
+           ;=0 normal mode =1 insert mode =2 ex mode =3 visual mode
            :mode 0
            ;ongoing ex command
            :ex ""
@@ -110,14 +87,6 @@
   [f]
   (create-buf f (slurp f)))
 
-(defn history-peek[b]
-  ((-> b :history :items) (-> b :history :version)))
-
-(defn buf-change-cursor-col[b col]
-  (-> b
-      (assoc-in [:cursor :col] col)
-      (assoc-in [:cursor :lastcol] col)))
-
 (defn buf-refresh-txt-cache
   "Call this function concate whole buffer into a single string and save to :txt-cache"
   [b]
@@ -126,61 +95,10 @@
     (let [txt (join (:lines b))]
       (assoc b :txt-cache {:lines (:lines b) :txt txt}))))
 
-;(defn history-changed?[b]
-;  (let [item (history-peek b)]
-;    (or (zero? item) (not (= (:lines b) (:lines item))))))
-
 (defn buf-save-cursor
   "save cursor position when start insertion mode"
   [b]
   (assoc b :last-cursor (:cursor b)))
-
-(defn history-save
-  "push state into history, only :lines and :cursor is needed"
-  [b]
-  (let [item (history-peek b)]
-    (if (not (= (:lines b) (:lines item)))
-      (let [version (-> b :history :version)
-            newversion (inc version)
-            items (subvec (-> b :history :items) 0 newversion)]
-        (dissoc (assoc b :history {:items (conj items
-                                                {:lines (:lines b) 
-                                                 :cursor-begin (:last-cursor b)
-                                                 :cursor-end (:cursor b)})
-                                   :version newversion}) :last-cursor))
-      b)))
-
-;(history-save {:history {:items [] :version 0} :lines [] :cursor {}}) 
-;(history-save {:history {:items [{:lines [] :cursor {}}] :version 1} :lines ["aaa"] :cursor {}}) 
-
-(defn history-undo[b]
-  (if (pos? (-> b :history :version))
-    (let [version (-> b :history :version)
-          olditem ((-> b :history :items) version)
-          newversion (dec version)
-          item ((-> b :history :items) newversion)]
-      (merge b {:cursor (:cursor-begin olditem)
-                :lines (:lines item)
-                :history 
-                {:items (-> b :history :items) 
-                 :version newversion}}))
-    b))
-
-(defn history-redo[b]
-  (if (< (-> b :history :version) (-> b :history :items count dec))
-    (let [newversion (-> b :history :version inc)
-          item ((-> b :history :items) newversion)]
-      (merge b {:cursor (:cursor-end item)
-                :lines (:lines item)
-                :history 
-                {:items (-> b :history :items) 
-                 :version newversion}}))
-    b))
-
-(defn col-count
-  "Take row number return count length of a row."
-  [b row]
-  (count ((:lines b) row)))
 
 (defn pt-push
   "set pt to next BOL if it is EOL"
@@ -245,18 +163,6 @@
     ;(pprint suffix)
     {:lines newlines
      :cursor newcur}))
-
-(defn cursor-sort [cur1 cur2]
-  (let [{r1 :row c1 :col} cur1
-        {r2 :row c2 :col} cur2]
-        (if (or (< r1 r2) (and (= r1 r2) (<= c1 c2)))
-          [cur1 cur2]
-          [cur2 cur1])))
-
-(defn bound-range[v s e]
-  (cond (<= v s) s
-        (>= v e) e
-        :else v))
 
 (defn buf-replace 
   "It's exclusive (not include cur)"
@@ -340,24 +246,12 @@
                                                  (-> (dec row) lines count dec))])]
                   (recur ncnt nrow ncol))))))))))
 
-(defn line-next-re
-  "Move to next charactor match by re." 
-  [line col re]
-  (let [subline (subs line col)
-        m (re-matcher re subline)]
-    (if (.find m)
-      [(-> m .start (+ col)) (-> m .end (+ col))]
-      nil)))
+(defn cursor-match-brace[b]
+  (let [b1 (cursor-next-re b #"[\(\[\{\)\]\}]" #"[\(\[\{\)\]\}]")]
+    (buf-match-brace b1 (:cursor b1))))
 
 (defn buf-line[b row]
   (-> b :lines (get row)))
-
-(defn cursor-line-end
-  "The \"$\" motion"
-  [b]
-  (let [col (-> b :lines (get (-> b :cursor :row)) count dec)
-        col1 (if (neg? col) 0 col)]
-      (buf-change-cursor-col b col1)))
 
 ;for "dw" or "cw"
 (defn buf-line-next-re
@@ -375,21 +269,6 @@
 
 (defn buf-line-next-WORD[b]
   (buf-line-next-re b re-WORD-start))
-
-(defn line-back-re
-  "Move to back charactor match by re. col=-1 means match whole line" 
-  [line col re]
-  (let [subline (if (= -1 col)
-                  line
-                  (subs line 0 col))
-        m (re-matcher re subline)]
-    (if (.find m)
-      (loop [m1 m]
-        (let [matched [(.start m1) (.end m1)]]
-          (if (.find m1)
-            (recur m1)
-            matched)))
-      nil)))
 
 (defn word-under-cursor
   "Find next word end, then find word start back from that end."
@@ -420,310 +299,7 @@
                    "" false)
       :else b)))
 
-
-(defn calc-col [b row col lastcol]
-  "set col to lastcol if length is avaliable"
-  (let [cnt (col-count b row)]
-    (cond 
-      (> cnt lastcol) lastcol
-      (< cnt 1) 0
-      :else (dec cnt))))
-
 ;(calc-col test-buf 4 30 30)
-
-(defn cursor-to-point [{row :row col :col}]
-  {:row row :col col})
-
-(defn cursor-move-start
-  "Move to beginning of a buffer"
-  [b]
-  (assoc b :cursor {:row 0 :col 0 :lastcol 0 :vprow 0}))
-
-(defn cursor-move-end
-  "Move to first char of last line"
-  [b]
-  (assoc b :cursor
-         {:row (-> b :lines count dec dec) :col 0 :lastcol 0 :vprow (-> @window :viewport :h dec)}))
-
-(defn lines-next-re[{lines :lines cursor :cursor} re re-line-start]
-  (loop [row (:row cursor)
-         col (:col cursor)
-         re-current re]
-    (if (< row (count lines))
-      (let [line (lines row)
-            matched (line-next-re line col re-current)]
-        (if (not matched)
-          (recur (inc row) 0 re-line-start)
-          [[{:row row :col (matched 0)} {:row row :col (matched 1)}]
-           {:row row
-            :vprow (-> row 
-                       (- (:row cursor)) 
-                       (+ (:vprow cursor))
-                       (bound-range 0 (-> @window :viewport :h dec)))
-            :col (matched 0)
-            :lastcol (matched 0)}]))
-      [nil cursor])))
-
-(defn lines-back-re[{lines :lines cursor :cursor} re]
-  (loop [row (:row cursor)
-         col (:col cursor)]
-    (if (>= row 0)
-      (let [line (lines row)
-            matched (line-back-re line col re)]
-        (if (not matched)
-          (recur (dec row) -1)
-          [[{:row row :col (matched 0)} {:row row :col (matched 1)}]
-           {:row row
-            :vprow (-> row 
-                       (- (:row cursor)) 
-                       (+ (:vprow cursor))
-                       (bound-range 0 (-> @window :viewport :h dec)))
-            :col (matched 0)
-            :lastcol (matched 0)}]))
-      [nil cursor])))
-
-(defn cursor-next-re
-  "Match re line by line (re not match multiple lines), don't change cursor if nothing is found"
-  [b re re-line-start]
-  (let [[matched newcursor] (lines-next-re b re re-line-start)]
-    (if (nil? matched)
-      b
-      (assoc b :cursor newcursor))))
-
-(defn cursor-back-re
-  "Match re line by line in reverse"
-  [b re]
-  (loop [row (-> b :cursor :row)
-         col (-> b :cursor :col)]
-    (if (>= row 0)
-      (let [line (-> b :lines (get row))
-            matched (line-back-re line col re)]
-        (if (nil? matched)
-          (recur (dec row) -1)
-          (-> b 
-              (assoc-in [:cursor :row] row)
-              (assoc-in [:cursor :vprow] (-> (-> b :cursor :vprow)
-                                             (- (-> b :cursor :row)) 
-                                             (+ row)
-                                             (bound-range 0 (-> @window :viewport :h dec))))
-              (assoc-in [:cursor :col] (matched 0))
-              (assoc-in [:cursor :lastcol] (matched 0)))))
-      b)))
-
-(defn cursor-back-word
-  "The \"b\" motion."
-  [b]
-  (cursor-back-re b re-word-start-back))
-
-(defn cursor-back-WORD
-  "The \"B\" motion."
-  [b]
-  (cursor-back-re b re-WORD-start-back))
-
-
-(defn cursor-next-word
-  "The \"w\" motion. Difference from vim's \"w\" is this motion will skip empty lines"
-  [b]
-  (cursor-next-re b 
-                  re-word-start
-                  re-word-start-line-start))
-
-(defn cursor-next-WORD
-  "The \"W\" motion"
-  [b]
-  (cursor-next-re b 
-                  re-WORD-start
-                  re-WORD-start-line-start))
-
-(defn cursor-word-end
-  "The \"e\" motion."
-  [b]
-  (-> b 
-      inc-col
-      (cursor-next-re re-word-end re-word-end)))
-
-(defn cursor-WORD-end
-  "The \"E\" motion."
-  [b]
-  (-> b 
-      inc-col
-      (cursor-next-re re-WORD-end re-WORD-end)))
-
-(defn cursor-line-first
-  "The \"0\" motion"
-  [b]
-  (if (-> b :cursor :col zero?)
-    b
-    (buf-change-cursor-col b 0)))
-
-(defn cursor-line-start
-  "The \"^\" motion"
-  [b]
-  (let [line (-> b :lines (get (-> b :cursor :row)))
-        [start end] (if (= 1 (count line))
-                        [nil nil]
-                        (line-next-re line 0 #"^\S|(?<=\s)\S"))]
-    (if (nil? start)
-      (buf-change-cursor-col b start)
-      b)))
-
-(defn cursor-match-brace[b]
-  (let [b1 (cursor-next-re b #"[\(\[\{\)\]\}]" #"[\(\[\{\)\]\}]")]
-    (buf-match-brace b1 (:cursor b1))))
-
-(defn quote-pattern[ch]
-  (java.util.regex.Pattern/quote ch))
-
-(defn cursor-next-char
-  [b ch]
-  (let [line (-> b :lines (get (-> b :cursor :row)))
-        col (-> b :cursor :col inc)
-        re (str "(?=" (quote-pattern ch) ")")
-        [matched newcol] (line-next-re line col (re-pattern re))]
-    (if matched
-      (buf-change-cursor-col b newcol)
-      b)))
-
-(defn cursor-back-char
-  [b ch]
-  (let [line (-> b :lines (get (-> b :cursor :row)))
-        col (-> b :cursor :col)
-        re (str "(?=" (quote-pattern ch) ")")
-        matched (line-back-re line col (re-pattern re))]
-    (if (not (nil? matched))
-      (buf-change-cursor-col b (matched 0))
-      b)))
-
-(defn cursor-move-char
-  "Move one character. Direction 0,1,2,3 -> left,right,up,down
-    In normal mode the cursor should never go to \n"
-  [b direction]
-  (let [{row :row col :col lastcol :lastcol vprow :vprow } (:cursor b)]
-    (assoc b :cursor 
-           (merge (:cursor b) 
-                  (cond 
-                    ;move left
-                    (and (= direction 0) (pos? col))
-                    (let [c (dec col)]
-                      {:col c :lastcol c})
-
-                    ;move right
-                    (and (= direction 1) (> (col-count b row) (inc col)))
-                    (let [c (inc col)]
-                      {:col c :lastcol c})
-
-                    ;move up
-                    (and (= direction 2) (pos? row))
-                    (let [newvprow 
-                          (if (-> vprow dec neg?)
-                            0
-                            (dec vprow))]
-                      {:row (dec row) :col (calc-col b (dec row) col lastcol) :vprow newvprow})
-
-                    ;move down
-                    (and (= direction 3) (> (-> b :lines count dec) (inc row)))
-                    (let [newvprow 
-                          (if (< vprow (-> @window :viewport :h dec))
-                            (inc vprow)
-                            (-> @window :viewport :h dec))]
-                      {:row (inc row) :col (calc-col b (inc row) col lastcol) :vprow newvprow})
-
-                    :else (:cursor b))))))
-
-(defn cursor-simple-next-str
-  "no wrap to beginning, no highlights"
-  [b s]
-  (let [re (re-pattern s)
-        [matched newcur] (lines-next-re (inc-col b) re re)]
-    (if (nil? matched) 
-      b
-      (assoc b :cursor newcur))))
-
-(defn cursor-simple-back-str
-  [b s]
-  (let [re (re-pattern s)
-        [matched newcur] (lines-back-re b re)]
-    (if (nil? matched) 
-      b
-      (assoc b :cursor newcur))))
-
-(defn cursor-next-str
-  "The \"n\" command"
-  [b s]
-  (if (empty? s)
-    b
-    (let [re (re-pattern s)
-          [matched newcur] (lines-next-re (inc-col b) re re)]
-      (if (nil? matched) ;not found, wrap back and searh again
-        (let [[matched2 newcur2] (lines-next-re (cursor-move-start b) re re)]
-          (if matched2
-            (-> b 
-                (assoc :highlights matched2)
-                (assoc :cursor newcur2))
-            b))
-        (-> b 
-            (assoc :highlights matched)
-            (assoc :cursor newcur))))))
-
-(defn cursor-back-str
-  "The \"N\" motion"
-  [b s]
-  (if (empty? s)
-    b
-    (let [re (re-pattern s)
-          [matched newcur] (lines-back-re b re)]
-      (if (nil? matched) ;not found, wrap back and searh again
-        (let [[matched2 newcur2] (lines-back-re (cursor-move-end b) re)]
-          (if matched2
-            (-> b 
-                (assoc :highlights matched2)
-                (assoc :cursor newcur2))
-            b))
-        (-> b 
-            (assoc :highlights matched)
-            (assoc :cursor newcur))))))
-
-(defn first-nonspace-pos
-  "Return index of first non-space char"
-  [line]
-  (let [m (re-matcher #"\S" line)]
-    (if (.find m)
-      (.start m)
-      0)))
-
-(defn round-to-zero
-  "(round-to-zero -9.1) = -9; (round-to-zero 9.1) = 9"
-  [i]
-  (if (> i 0)
-    (int i)
-    (- (int (- i)))))
-
-(defn cursor-move-viewport
-  "Jump cursor by viewport height, deps to window's :viewport, keep cursor's viewport row unchanged."
-  [b factor]
-  (let [d (round-to-zero (* (:h (:viewport @window)) factor))
-        row (+ (-> b :cursor :row) d)
-        newrow (cond 
-                 (< row 0)
-                 0
-
-                 (>= row (-> b :lines count))
-                 (-> b :lines count dec)
-
-                 :else
-                 row)
-        newcol (first-nonspace-pos ((:lines b) newrow))]
-    (assoc b :cursor 
-           (merge (:cursor b) 
-                  {:row newrow :col newcol :lastcol newcol}))))
-
-
-(defn cursor-center-viewport[b]
-  (assoc b :cursor 
-         (merge (:cursor b) 
-                {:vprow (int (/ (-> @window :viewport :h) 2))})))
-
-
 (defn write-buffer
   "Write buffer to disk. This operation MUST be atomic."
   [b]

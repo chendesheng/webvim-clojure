@@ -1,6 +1,8 @@
 (ns webvim.core-test
   (:require [clojure.test :refer :all]
             [webvim.keymap :refer :all]
+            [webvim.history :refer :all]
+            [webvim.cursor :refer :all]
             [webvim.global :refer :all]
             [webvim.test-util :refer :all]
             [webvim.buffer :refer :all])

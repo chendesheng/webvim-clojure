@@ -1,7 +1,9 @@
 (ns webvim.motion-test
   (:require [clojure.test :refer :all]
             [webvim.test-util :refer :all]
+            [webvim.cursor :refer :all]
             [webvim.buffer :refer :all]
+            [webvim.history :refer :all]
             [webvim.global :refer :all])
   (:use clojure.pprint))
 
