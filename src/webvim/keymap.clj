@@ -253,6 +253,14 @@
 (defn- buf-info[b]
   (assoc b :message (str "\"" (:name b) "\" " (count (:lines b)) "L")))
 
+(defn- buf-cursor-info[b]
+  (let [{nm :name 
+         {r :row c :col} :cursor
+         lines :lines} b
+        cnt (count lines)
+        percent (int (-> r (/ cnt) (* 100)))]
+    (assoc b :message (str "\"" nm "\" line " r " of " (count lines) " --" percent "%-- col " c))))
+
 (def ex-commands
   {"write" (fn[b _ _]
              (write-buffer b))
@@ -754,6 +762,7 @@
           "c+r" history-redo
           "c+o" #(move-to-jumplist % jump-prev)
           "c+i" #(move-to-jumplist % jump-next)
+          "c+g" buf-cursor-info
           "esc" set-normal-mode
           "v" (merge
                 @visual-mode-keymap
