@@ -346,8 +346,9 @@
   (println (str "inclusive:" inclusive))
   (println (str "cursor:" cur))
   (println (str "cursor2:" (:cursor b)))
-  (swap! (:registers b) assoc "\"" (buf-copy-range b cur (:cursor b) inclusive))
-  b)
+  (let [reg (or (-> b :context :register) "\"")]
+    (swap! (:registers b) assoc reg (buf-copy-range b cur (:cursor b) inclusive))
+  b))
 
 (defn same-pos? 
   "return true if :row and :col are equal"
@@ -390,6 +391,14 @@
       (let [inclusive (inclusive? keycode)]
         (buf-copy-range-lastbuf b lastcur inclusive)
         lastbuf))))
+
+(defn start-register[b keycode]
+  (let [m (re-find #"[0-9a-zA-Z/*#%.:+=\-]" keycode)]
+    (if (not (nil? m))
+      (-> b 
+          (assoc-in [:context :register] keycode)
+          (serve-keymap (select-keys @normal-mode-keymap ["y" "d" "c" "p" "P"]) keycode)))))
+
 
 (defn visual-mode-select[b keycode]
   (println "visual-mode-select:")
@@ -789,8 +798,8 @@
                  ;"k" delete-line
                  "d" delete-line})
           "x" cut-char
-          "p" #(put-from-register-append % "\"")
-          "P" #(put-from-register % "\"")
+          "p" #(put-from-register-append % (-> % :context :register))
+          "P" #(put-from-register % (-> % :context :register))
           "D" delete-line
           "J" (fn[b]
                 (-> b 
@@ -805,7 +814,10 @@
                 @motion-keymap
                 {:before save-lastbuf
                  :after yank-motion})
+          "\"" {:else start-register}
           :before (fn [b keycode]
-                    (assoc-in b [:context :lastbuf] b))
+                    (-> b
+                        (assoc-in [:context :lastbuf] b)
+                        (assoc-in [:context :register] "\"")))
           :after normal-mode-after})
 (reset! root-keymap @normal-mode-keymap))
