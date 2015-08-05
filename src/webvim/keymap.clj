@@ -320,7 +320,7 @@
 (defn save-lastbuf[b keycode]
   (-> b (assoc-in [:context :lastbuf] b)))
 
-(defonce map-key-inclusive 
+(def map-key-inclusive 
   {"h" false
    "l" false
    "w" false 
@@ -334,7 +334,7 @@
    "t" true
    "T" false
    "/" false
-   "$" true})
+   "$" false})
 
 (defn inclusive? [keycode]
   (let [res (map-key-inclusive keycode)]
@@ -381,6 +381,15 @@
             (buf-copy-range-lastbuf lastcur inclusive)
             (buf-replace lastcur "" inclusive)
             (serve-keymap (@normal-mode-keymap "i") keycode))))))
+
+(defn yank-motion[b keycode]
+  (let [lastbuf (-> b :context :lastbuf)
+        lastcur (lastbuf :cursor)]
+    (if (or (nil? lastbuf) (same-pos? (:cursor b) lastcur))
+      b
+      (let [inclusive (inclusive? keycode)]
+        (buf-copy-range-lastbuf b lastcur inclusive)
+        lastbuf))))
 
 (defn visual-mode-select[b keycode]
   (println "visual-mode-select:")
@@ -792,6 +801,10 @@
                 @motion-keymap
                 {:before save-lastbuf
                  :after change-motion})
+          "y" (merge
+                @motion-keymap
+                {:before save-lastbuf
+                 :after yank-motion})
           :before (fn [b keycode]
                     (assoc-in b [:context :lastbuf] b))
           :after normal-mode-after})
