@@ -401,12 +401,14 @@
 
 
 (defn visual-mode-select[b keycode]
-  (println "visual-mode-select:")
-  (assoc-in b [:visual :ranges 1]
-            (-> b 
-                :cursor 
-                cursor-inc-col 
-                cursor-to-point)))
+  (let [m (re-find #"[cd]" keycode)] ;don't change cursor position if not motion
+    (if (nil? m)
+      (assoc-in b [:visual :ranges 1]
+                (-> b 
+                    :cursor 
+                    cursor-inc-col 
+                    cursor-to-point))
+      b)))
 
 (defn autocompl-start[b]
   (let [word (buffer-word-before-cursor b)
@@ -500,6 +502,19 @@
     buf-save-cursor
     buf-delete-line
     history-save))
+
+(defn delete-range[b]
+  (-> b
+      (assoc :last-cursor (-> b :context :lastbuf :cursor))
+      buf-delete-range
+      history-save))
+
+(defn change-range[b]
+  (-> b 
+      (assoc :last-cursor (-> b :context :lastbuf :cursor))
+      buf-delete-range
+      (set-insert-mode "c")
+      (serve-keymap (@normal-mode-keymap "i") "c")))
 
 (defn move-next-same-word[b]
   (let [[word start] (word-under-cursor (:lines b) (:cursor b))
@@ -784,11 +799,15 @@
           "esc" set-normal-mode
           "v" (merge
                 @visual-mode-keymap
-                {:enter (fn[b keycode] (set-visual-mode b))
-                 :leave (fn[b keycode]
-                          (set-normal-mode b))
-                 :continue #(not (or (= "esc" %2) (= "v" %2) (= "y" %2)))
-                 :after visual-mode-select})
+                {:enter (fn[b keycode] 
+                          (-> b
+                              set-visual-mode
+                              (assoc-in [:context :lastbuf] b)))
+                 :leave (fn[b keycode] (set-normal-mode b))
+                 :continue #(not (or (= "d" %2) (= "c" %2) (= "esc" %2) (= "v" %2) (= "y" %2)))
+                 :after visual-mode-select
+                 "d" delete-range
+                 "c" change-range})
           "z" {"z" cursor-center-viewport }
           "d" (merge 
                 @motion-keymap
