@@ -90,13 +90,15 @@ pre {
 	background:#007ACC;
 }
 
-.status-bar.buffer-unsaved:after{
-	content:'unsaved';
+.status-bar .buf-name{
 	position:absolute;
 	top:0;
 	right:10px;
 	bottom:0;
 	display:block;
+}
+.status-bar .buf-name.buf-unsaved{
+	opacity:0.7;
 }
 
 .status-bar .ongoing-keys {

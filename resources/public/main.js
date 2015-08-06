@@ -141,7 +141,7 @@ function render(buf) {
 	}
 
 	//render unsaved
-	$('.status-bar').toggleClass('buffer-unsaved', !!buf.unsaved);
+	$('.status-bar .buf-name').toggleClass('buf-unsaved', !!buf.unsaved);
 
 	//render ongoing keys
 	if (buf.keys && buf.keys.length > 0) {
@@ -240,6 +240,7 @@ function render(buf) {
 	//title
 	if (buf.name) {
 		document.title = buf.name;
+		$('.status-bar .buf-name').text(buf.name);
 	}
 }
 
