@@ -45,6 +45,11 @@
 (defn cursor-inc-col [cursor]
   (update-in cursor [:col] inc))
 
+(defn cursor-dec-col [cursor]
+  (if (pos? (cursor :col))
+    (update-in cursor [:col] dec)
+    cursor))
+
 (defn inc-col [b]
   (update-in b [:cursor] cursor-inc-col))
 
@@ -58,3 +63,5 @@
   [b row]
   (count ((:lines b) row)))
 
+(defn equal-pt[pt1 pt2]
+  (and (= (pt1 :col) (pt2 :col)) (= (pt1 :row) (pt2 :row))))

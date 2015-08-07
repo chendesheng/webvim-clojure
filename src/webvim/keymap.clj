@@ -401,14 +401,13 @@
 
 
 (defn visual-mode-select[b keycode]
-  (let [m (re-find #"[cd]" keycode)] ;don't change cursor position if not motion
+  (let [m (re-find #"[ocd]" keycode)] ;don't change cursor position if not motion
     (if (nil? m)
       (assoc-in b [:visual :ranges 1]
                 (-> b 
                     :cursor 
                     cursor-inc-col 
-                    cursor-to-point))
-      b)))
+                    cursor-to-point)) b)))
 
 (defn autocompl-start[b]
   (let [word (buffer-word-before-cursor b)
@@ -807,7 +806,20 @@
                  :continue #(not (or (= "d" %2) (= "c" %2) (= "esc" %2) (= "v" %2) (= "y" %2)))
                  :after visual-mode-select
                  "d" delete-range
-                 "c" change-range})
+                 "c" change-range
+                 "o" (fn[b]
+                       (let [{r :row c :col} (b :cursor)
+                             [pt1 pt2] (-> b :visual :ranges)
+                             pt11 (if (cursor-compare pt2 pt1);pt1 is right end
+                                   (cursor-dec-col pt1) pt1)
+                             {r1 :row c1 :col} pt11
+                             newb (-> b 
+                                      (assoc-in [:cursor :col] c1)
+                                      (assoc-in [:cursor :lastcol] c1)
+                                      (assoc-in [:cursor :row] r1)
+                                      (update-in [:visual :ranges] 
+                                                 (fn[[a b]][b a])))]
+                         (assoc-in newb [:context :lastbuf] newb)))})
           "z" {"z" cursor-center-viewport }
           "d" (merge 
                 @motion-keymap

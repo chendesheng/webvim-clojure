@@ -19,12 +19,19 @@
 (def re-word-end #"(?=\S$)|(?=\w\W)|(?=[^\s\w][\s\w])")
 (def re-WORD-end #"(?=\S$)|(?=\S\s)")
 
+(defn cursor-compare 
+  "true if cur1 \"<=\" cur2"
+  [{r1 :row c1 :col}
+   {r2 :row c2 :col}]
+  (or (< r1 r2) (and (= r1 r2) (<= c1 c2))))
+
 (defn cursor-sort [cur1 cur2]
-  (let [{r1 :row c1 :col} cur1
-        {r2 :row c2 :col} cur2]
-        (if (or (< r1 r2) (and (= r1 r2) (<= c1 c2)))
-          [cur1 cur2]
-          [cur2 cur1])))
+  (if (cursor-compare cur1 cur2)
+    [cur1 cur2]
+    [cur2 cur1]))
+
+(defn cursor-sort-range [rg]
+  (cursor-sort (rg 0) (rg 1)))
 
 (defn cursor-to-point [{row :row col :col}]
   {:row row :col col})

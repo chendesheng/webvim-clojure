@@ -303,9 +303,7 @@
       :else b)))
 
 (defn buf-delete-range[b]
-  (let [[pt1 pt2] (cursor-sort 
-                    (-> b :visual :ranges (get 0)) 
-                    (-> b :visual :ranges (get 1)))
+  (let [[pt1 pt2] (apply cursor-sort (-> b :visual :ranges))
         {lines :lines newcur :cursor} (replace-range (:lines b) pt1 pt2 "")]
     (-> b 
         (update-in [:cursor] merge newcur)
