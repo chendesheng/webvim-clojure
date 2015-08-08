@@ -110,13 +110,30 @@
                                :id)))
 (restart-key-server)
 
+(defn update-scroll-top[b]
+  (let [st (-> b :context :scroll-top)]
+    (if (nil? st)
+      (assoc b :scroll-top 
+             (let [row (-> b :cursor :row)
+                   {h :h scroll-top :scroll-top} (@window :viewport)
+                   newst (cond 
+                           (< row scroll-top) row
+                           (< row (+ scroll-top h)) scroll-top
+                           (neg? (-> row (- h) inc)) 0
+                           :else (-> row (- h) inc))]
+               (swap! window assoc-in [:viewport :scroll-top] newst)
+               newst))
+      (let []
+        (swap! window assoc-in [:viewport :scroll-top] st)
+        (assoc b :scroll-top st)))))
+
 (defn edit [keycode]
   (let [before (active-buffer)]
     (async/>!! (:chan-in before) keycode)
     (let [after (async/<!! (:chan-out before))]
       (swap! buffer-list assoc (:id after) after)
       ;Always write (active-buffer) back because active-buffer-id may change by current key
-      (render before (active-buffer)))))
+      (render before (update-scroll-top (active-buffer))))))
 
 (defn parse-int [s]
   (Integer. (re-find #"\d+" s)))
@@ -137,9 +154,9 @@
 
 (defroutes main-routes
   (GET "/" [request] (homepage request))
-  (GET "/buf" [] (render nil (active-buffer)))
+  (GET "/buf" [] (render nil (assoc (active-buffer) :scroll-top (-> @window :viewport :scroll-top))))
   (GET "/resize/:w/:h" [w h] 
-       (swap! window assoc :viewport {:w (parse-int w) :h (parse-int h)}))
+       (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)}))
   (GET "/key" {{keycode :code} :params} (edit keycode)))
 
 

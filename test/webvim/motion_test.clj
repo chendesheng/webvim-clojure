@@ -12,7 +12,7 @@
   (testing ""
     (let [b (-> empty-buf 
                 (buf-insert "aaa bbb")
-                (assoc :cursor {:row 0 :col 0 :lastcol 0 :vprow 0})
+                (assoc :cursor {:row 0 :col 0 :lastcol 0})
                 (cursor-next-word))]
       (is (check-cursor (:cursor b) [0 4 4 0])))))
 
@@ -20,7 +20,7 @@
   (testing ""
     (let [b (-> empty-buf 
                 (buf-insert "aaa   bbb")
-                (assoc :cursor {:row 0 :col 3 :lastcol 3 :vprow 0})
+                (assoc :cursor {:row 0 :col 3 :lastcol 3})
                 (cursor-next-word))]
       (is (check-cursor (:cursor b) [0 6 6 0])))))
 
@@ -29,7 +29,7 @@
     (let [_ (swap! window assoc :viewport {:w 1 :h 3})
           b (-> empty-buf 
                 (buf-insert "aaa   bbb\nccc")
-                (assoc :cursor {:row 0 :col 6 :lastcol 6 :vprow 0})
+                (assoc :cursor {:row 0 :col 6 :lastcol 6})
                 (cursor-next-word))]
       (is (check-cursor (:cursor b) [1 0 0 1])))))
 
@@ -40,7 +40,7 @@
     (let [_ (swap! window assoc :viewport {:w 1 :h 3})
           b (-> empty-buf 
                 (buf-insert "bbb\n\n@ccc")
-                (assoc :cursor {:row 1 :col 0 :lastcol 0 :vprow 0})
+                (assoc :cursor {:row 1 :col 0 :lastcol 0})
                 (cursor-next-word))]
       (is (check-cursor (:cursor b) [2 0 0 1])))))
 

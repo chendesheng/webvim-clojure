@@ -162,7 +162,7 @@
     (let [b (-> empty-buf
                 (assoc :viewport {:w 1 :h 3})
                 (buf-insert "hello\n\n\n\n")
-                (buf-replace {:row 1 :col 0 :lastcol 0 :vprow 0} "" false))]
+                (buf-replace {:row 1 :col 0 :lastcol 0} "" false))]
       (is (check-cursor (:cursor b) [0 6 6 0])))))
 
 ;(buf-delete-up-cross-viewport-test)
@@ -175,7 +175,7 @@
                 (cursor-move-char 2)
                 (cursor-move-char 2)
                 (cursor-move-char 2)
-                (buf-replace {:row 3 :col 0 :lastcol 0 :vprow 0} "" false))]
+                (buf-replace {:row 3 :col 0 :lastcol 0} "" false))]
       (is (check-cursor (:cursor b) [0 1 1 0])))))
 ;(buf-delete-down-cross-viewport-test)
 
@@ -377,7 +377,7 @@
 
 (deftest buf-indent-line-test
   (testing ""
-    (let [b {:lines ["  hello" "h" ""] :cursor {:row 1 :col 0 :lastcol 0 :vprow 0}}
+    (let [b {:lines ["  hello" "h" ""] :cursor {:row 1 :col 0 :lastcol 0}}
           b1 (buf-indent-new-line b)]
       (is (= "  h" (-> b1 :lines (get 1)))))))
 
@@ -385,7 +385,7 @@
 
 (deftest buf-indent-empty-line-test
   (testing ""
-    (let [b {:lines ["  hello" "\n" ""] :cursor {:row 1 :col 0 :lastcol 0 :vprow 0}}
+    (let [b {:lines ["  hello" "\n" ""] :cursor {:row 1 :col 0 :lastcol 0}}
           b1 (buf-indent-new-line b)]
       (is (= "  \n" (-> b1 :lines (get 1)))))))
 (buf-indent-empty-line-test)

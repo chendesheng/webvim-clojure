@@ -113,7 +113,9 @@
   (async/thread 
     (loop[b1 b]
       (if (not (nil? b1))
-        (recur (key-server-inner b1 keymap)))))
+        (recur (key-server-inner 
+                 (update-in b1 [:context] dissoc :scroll-top) ;remove :context :scroll-top
+                 keymap)))))
   b)
 
 (defn set-normal-mode[b]
@@ -169,7 +171,7 @@
       buf-insert-line-after
       buf-indent-new-line))
 
-;(set-insert-new-line {:lines ["       aa" "ccc"] :cursor {:row 0 :col 0 :lastcol 0 :vprow 0}} "a")
+;(set-insert-new-line {:lines ["       aa" "ccc"] :cursor {:row 0 :col 0 :lastcol 0}} "a")
 
 (defn set-ex-mode[b]
   (merge b {:mode ex-mode :ex ":" :message nil :keys nil}))
@@ -238,7 +240,6 @@
 (defn move-to-line[b row]
   (-> b 
       (assoc-in [:cursor :row] row)
-      (assoc-in [:cursor :vprow] (-> @window :viewport :h (/ 2) int))
       (cursor-line-start)))
 
 (defn highlight-all-matches[b re]
@@ -610,18 +611,7 @@
       (-> b 
           (assoc :cursor {:row (:row cur1)
                           :col (:col cur1)
-                          :lastcol (:col cur1)
-                          :vprow (bound-range 
-                                   (+ (-> b :cursor :vprow) 
-                                      (- (:row cur1) (-> b :cursor :row)))
-                                   0 
-                                   (-> @window :viewport :h))})))))
-
-(defn cursor-bound-vprow[cur]
-  (update-in cur [:vprow]
-             bound-range 
-             0 
-             (-> @window :viewport :h)))
+                          :lastcol (:col cur1)})))))
 
 (defn inside? [lines {r :row c :col}]
   (and (< r (count lines)) (< c (count (lines r)))))
@@ -638,7 +628,7 @@
           ;pos is avaliable
           (if (inside? (newb :lines) (pos :cursor))
             (let [newid (newb :id)
-                  newcur (cursor-bound-vprow (pos :cursor))]
+                  newcur (pos :cursor)]
               (if (= newid @active-buffer-id) 
                 ;update pos inside current buffer
                 (assoc b :cursor newcur)
@@ -732,11 +722,7 @@
                    (let [cur (cursor-match-brace b1)]
                      (if (nil? cur) 
                        b1
-                       (let [newcur (-> cur 
-                                        (assoc :lastcol (:col cur))
-                                        (assoc :vprow (+ (-> b1 :cursor :vprow)
-                                                         (- (:row cur) (-> b1 :cursor :row))))
-                                        cursor-bound-vprow)]
+                       (let [newcur (assoc cur :lastcol (:col cur))]
                          (assoc b1 :cursor newcur))))))
            "c+u" #(cursor-move-viewport %1 -0.5) 
            "c+d" #(cursor-move-viewport %1 0.5)})

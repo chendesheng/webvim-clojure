@@ -29,7 +29,7 @@
            ;Each line is a standard java String
            :lines (split-lines-all txt)
            ;row, col, lastcol, viewport row (row from top of current viewport)
-           :cursor {:row 0 :col 0 :lastcol 0 :vprow 0}
+           :cursor {:row 0 :col 0 :lastcol 0}
            ;For client display matched braces: [{:row :col} {:row :col}]
            ;If any of them equal to :cursor draw cursor only
            ;TODO set initial value
@@ -178,12 +178,7 @@
         cur3 (if inclusive (cursor-inc-col cur2) cur2)
         {lines :lines cursor :cursor} (replace-range (:lines b) cur1 cur3 txt)]
     (merge b {:lines lines
-              :cursor (merge cursor 
-                             {:lastcol (:col cursor)
-                              :vprow (-> (:row cursor)
-                                         (- (:row cur1)) 
-                                         (+ (:vprow cur1))
-                                         (bound-range 0 (-> @window :viewport :h dec)))})})))
+              :cursor (assoc cursor :lastcol (:col cursor))})))
 
 (defn char-under-cursor[{lines :lines cursor :cursor}]
   (let [{row :row col :col} cursor]
@@ -291,11 +286,11 @@
 (defn buf-delete
   "Delete cursor left char"
   [b]
-  (let [{row :row col :col vprow :vprow} (:cursor b)] 
+  (let [{row :row col :col} (:cursor b)] 
     (cond 
       (and (= col 0) (> row 0))
       (buf-replace b (merge (:cursor b) 
-                            {:row (dec row) :col (dec (col-count b (dec row))) :vprow (dec vprow)})
+                            {:row (dec row) :col (dec (col-count b (dec row)))})
                    "" false)
       (> col 0)
       (buf-replace b (assoc (:cursor b) :col (dec col))
@@ -370,7 +365,6 @@
   "Delete line under cursor and put cursor to next line"
   [b]
   (let [row (-> b :cursor :row)
-        vprow (-> b :cursor :vprow)
         line (-> b :lines (get row))
         {lines :lines cursor :cursor} (replace-range (:lines b)
                                                      {:row row :col 0}
@@ -393,8 +387,7 @@
                       (subvec lines 0 (inc row))
                       ["\n"]
                       (subvec lines (inc row)))))
-        (assoc :cursor {:row (inc row) :col 0 :lastcol 0 
-                        :vprow (-> b :cursor :vprow inc (bound-range 0 (-> @window :viewport :h dec)))}))))
+        (assoc :cursor {:row (inc row) :col 0 :lastcol 0}))))
 
 (defn trim-left-space[line]
   (.replaceAll line "^ +" ""))
@@ -417,7 +410,7 @@
               (assoc :lines (assoc lines row (str s (trim-left-space line))))
               (buf-change-cursor-col (.length s)))))))))
 
-;(buf-indent-new-line {:lines ["  hello" "\n" ""] :cursor {:row 1 :col 0 :lastcol 0 :vprow 0}})
+;(buf-indent-new-line {:lines ["  hello" "\n" ""] :cursor {:row 1 :col 0 :lastcol 0}})
 
 (defn buf-copy-range[b p1 p2 inclusive]
   (let [[{r1 :row c1 :col} cur2] (cursor-sort p1 p2)

@@ -191,7 +191,7 @@ function render(buf) {
 		renderSelections($('.lines .highlight-brace-pair'), ranges);
 	}
 
-	scrollToCursor(buf.cursor);
+	scrollToCursor(buf['scroll-top'] || 0);
 
 	//render autocompl suggestions
 	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
@@ -245,27 +245,15 @@ function render(buf) {
 }
 
 var aligntop = true;
-function scrollToCursor(cursor) {
+function scrollToCursor(scrollTopRow) {
 	var el = $('.cursor')[0];
 	var lines = $('.lines');
-	var scrtop = lines.scrollTop();
 	var scrleft = lines.scrollLeft();
 	var width = lines.width();
 	var height = lines.height();
 
-	var vpheight = Math.round(height/21);
-	//var aligntop = cursor.vprow < vpheight/2; //true from top or false from bottom
-	if (cursor.vprow == vpheight-1)
-		aligntop = false;
-	if (cursor.vprow == 0)
-		aligntop = true;
-	if (aligntop) {
-		var srctop = 21*(cursor.row - cursor.vprow);
-		lines.scrollTop(srctop+1);
-	} else {
-		var srctop = 21*cursor.row - (height-21*(vpheight - cursor.vprow));
-		lines.scrollTop(srctop+1);
-	}
+	lines.scrollTop(scrollTopRow * 21);
+
 
 	if (el.offsetLeft+el.offsetWidth > scrleft+width) {
 		lines.scrollLeft(el.offsetLeft+el.offsetWidth-width);

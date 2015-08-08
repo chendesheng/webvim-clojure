@@ -5,7 +5,7 @@
             [webvim.jumplist :refer :all])
   (:use clojure.pprint))
 
-(def testbuf {:id 1 :lines ["aaa"] :cursor {:row 0 :col 0 :lastcol 0 :vprow 0}})
+(def testbuf {:id 1 :lines ["aaa"] :cursor {:row 0 :col 0 :lastcol 0}})
 
 (deftest jump-push-test
   (testing ""

@@ -6,8 +6,7 @@
 (defn check-cursor [cur [r c lc vr]]
   (and (= r (cur :row))
        (= c (cur :col))
-       (= lc (cur :lastcol))
-       (= vr (cur :vprow))))
+       (= lc (cur :lastcol))))
 
 (defn check-range [ranges [[r1 c1] [r2 c2]]]
   (and (= r1 ((ranges 0) :row))

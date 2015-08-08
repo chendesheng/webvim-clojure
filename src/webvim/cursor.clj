@@ -84,10 +84,6 @@
           (recur (inc row) 0 re-line-start)
           [[{:row row :col (matched 0)} {:row row :col (matched 1)}]
            {:row row
-            :vprow (-> row 
-                       (- (:row cursor)) 
-                       (+ (:vprow cursor))
-                       (bound-range 0 (-> @window :viewport :h dec)))
             :col (matched 0)
             :lastcol (matched 0)}]))
       [nil cursor])))
@@ -102,10 +98,6 @@
           (recur (dec row) -1)
           [[{:row row :col (matched 0)} {:row row :col (matched 1)}]
            {:row row
-            :vprow (-> row 
-                       (- (:row cursor)) 
-                       (+ (:vprow cursor))
-                       (bound-range 0 (-> @window :viewport :h dec)))
             :col (matched 0)
             :lastcol (matched 0)}]))
       [nil cursor])))
@@ -123,10 +115,6 @@
           (recur (dec row) -1)
           (-> b 
               (assoc-in [:cursor :row] row)
-              (assoc-in [:cursor :vprow] (-> (-> b :cursor :vprow)
-                                             (- (-> b :cursor :row)) 
-                                             (+ row)
-                                             (bound-range 0 (-> @window :viewport :h dec))))
               (assoc-in [:cursor :col] (matched 0))
               (assoc-in [:cursor :lastcol] (matched 0)))))
       b)))
@@ -143,13 +131,13 @@
 (defn cursor-move-start
   "Move to beginning of a buffer"
   [b]
-  (assoc b :cursor {:row 0 :col 0 :lastcol 0 :vprow 0}))
+  (assoc b :cursor {:row 0 :col 0 :lastcol 0}))
 
 (defn cursor-move-end
   "Move to first char of last line"
   [b]
   (assoc b :cursor
-         {:row (-> b :lines count dec dec) :col 0 :lastcol 0 :vprow (-> @window :viewport :h dec)}))
+         {:row (-> b :lines count dec dec) :col 0 :lastcol 0}))
 
 (defn cursor-back-word
   "The \"b\" motion."
@@ -242,7 +230,7 @@
   "Move one character. Direction 0,1,2,3 -> left,right,up,down
     In normal mode the cursor should never go to \n"
   [b direction]
-  (let [{row :row col :col lastcol :lastcol vprow :vprow } (:cursor b)]
+  (let [{row :row col :col lastcol :lastcol} (:cursor b)]
     (assoc b :cursor 
            (merge (:cursor b) 
                   (cond 
@@ -258,19 +246,11 @@
 
                     ;move up
                     (and (= direction 2) (pos? row))
-                    (let [newvprow 
-                          (if (-> vprow dec neg?)
-                            0
-                            (dec vprow))]
-                      {:row (dec row) :col (calc-col b (dec row) col lastcol) :vprow newvprow})
+                    {:row (dec row) :col (calc-col b (dec row) col lastcol)}
 
                     ;move down
                     (and (= direction 3) (> (-> b :lines count dec) (inc row)))
-                    (let [newvprow 
-                          (if (< vprow (-> @window :viewport :h dec))
-                            (inc vprow)
-                            (-> @window :viewport :h dec))]
-                      {:row (inc row) :col (calc-col b (inc row) col lastcol) :vprow newvprow})
+                    {:row (inc row) :col (calc-col b (inc row) col lastcol)}
 
                     :else (:cursor b))))))
 
@@ -342,27 +322,24 @@
     (int i)
     (- (int (- i)))))
 
+(defn negzero[n]
+  (if (neg? n) 0 n))
+
 (defn cursor-move-viewport
-  "Jump cursor by viewport height, deps to window's :viewport, keep cursor's viewport row unchanged."
+  "Jump cursor by viewport height, deps to window's :viewport"
   [b factor]
   (let [d (round-to-zero (* (:h (:viewport @window)) factor))
-        row (+ (-> b :cursor :row) d)
-        newrow (cond 
-                 (< row 0)
-                 0
-
-                 (>= row (-> b :lines count))
-                 (-> b :lines count dec)
-
-                 :else
-                 row)
-        newcol (first-nonspace-pos ((:lines b) newrow))]
-    (assoc b :cursor 
-           (merge (:cursor b) 
-                  {:row newrow :col newcol :lastcol newcol}))))
-
+        {h :h scroll-top :scroll-top} (@window :viewport)
+        row (-> b :cursor :row)
+        vrow (- row scroll-top)
+        newrow (bound-range (+ row d) 0 (-> b :lines count dec dec))
+        newcol (first-nonspace-pos ((:lines b) newrow))
+        newst (-> newrow (- vrow) negzero)]
+    (-> b
+        (assoc-in [:context :scroll-top] newst)
+        (assoc :cursor {:row newrow :col newcol :lastcol newcol}))))
 
 (defn cursor-center-viewport[b]
-  (assoc b :cursor 
-         (merge (:cursor b) 
-                {:vprow (int (/ (-> @window :viewport :h) 2))})))
+  (assoc-in b [:context :scroll-top] 
+            (-> b :cursor :row 
+                (- (int (/ (-> @window :viewport :h) 2))))))
