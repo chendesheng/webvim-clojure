@@ -77,9 +77,6 @@ function lineid(i) {
 function render(buf) {
 	if (!buf) return;
 
-	var cr = parseInt(buf.cursor.row)
-	var cc = parseInt(buf.cursor.col)
-
 	//render lines
 	if (buf.lines) {
 		$('.lines').empty();
@@ -95,38 +92,80 @@ function render(buf) {
 	}
 
 	if (buf.difflines) {
-		var lines = buf.difflines;
-		$(lines).each(function(i, line) {
-			if (line) {
-				$(lineid(i)+' pre').text(line);
+		var diff = buf.difflines;
+		var row = diff.row;
+		var add = diff.add;
+		var sub = diff.sub;
+		var oldcnt = parseInt($('.gutter :last-child').text());
+		var newcnt = oldcnt+add.length-sub;
+
+		//update gutter
+		if (newcnt > oldcnt) {
+			for (var i = oldcnt; i < newcnt; i++) {
+				$('.gutter').append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
 			}
+		} else if (newcnt < oldcnt) {
+			for (var i = 0; i < oldcnt-newcnt; i++) {
+				$('.gutter :last-child').remove();
+			}
+		}
+
+		//setup space for adding
+		if (add.length < sub) {
+			//shift left
+			var shiftcnt = sub-add.length;
+			for (var i = row+shiftcnt; i < oldcnt; i++) {
+				var line = $(lineid(i)+' :first-child').remove();
+				$(lineid(i-shiftcnt)).empty().append(line);
+			}
+		} else if (add.length > sub) {
+			//shift right
+			var shiftcnt = add.length-sub;
+			//make sure lines enough
+			for (var i = 0; i < shiftcnt; i++) {
+				$('.lines').append(replaceBinding(lineTemplate, {row:i+oldcnt, line:""}, false));
+			}
+			for (var i = oldcnt; i >= row; i--) {
+				var line = $(lineid(i)+' :first-child').remove();
+				$(lineid(i+shiftcnt)).empty().append(line);
+			}
+		}
+		
+		//apply add lines
+		$(add).each(function(i, line) {
+			var i1 = i+row;
+			$(lineid(i1)).empty().append('<pre>'+htmlEncode(line)+'<pre>');
 		});
 	} 
 
-	var cline = $('#line-'+cr)[0].textContent;
 	
 	//render cursor
-	if (!$('.lines .cursor').get(0)) {
-		$('.lines').append('<div class="cursor"></div>');
-	}
+	if (typeof buf.cursor != 'undefined') {
+		var cr = parseInt(buf.cursor.row);
+		var cc = parseInt(buf.cursor.col);
 
-	var x = 0;
-	for (var i = 0; i < cc; i++) {
-		if (cline[i] == '\t') {
-			x += (4-x%4)*9.57
-		} else if (isChinese(cline[i])) {
-			x+=16;
-		} else {
-			x+=9.57;
+		var cline = $('#line-'+cr)[0].textContent;
+		if (!$('.lines .cursor').get(0)) {
+			$('.lines').append('<div class="cursor"></div>');
 		}
+
+		var x = 0;
+		for (var i = 0; i < cc; i++) {
+			if (cline[i] == '\t') {
+				x += (4-x%4)*9.57
+			} else if (isChinese(cline[i])) {
+				x+=16;
+			} else {
+				x+=9.57;
+			}
+		}
+		var y = cr*21+1;
+		var w = 9.57;
+		if (isChinese(cline[cc])) {
+			w = 16;
+		}
+		$('.cursor').attr('style', 'left:'+x+'px;top:'+y+'px;width:'+w+'px;');
 	}
-	var y = cr*21+1;
-	var w = 9.57;
-	if (isChinese(cline[cc])) {
-		w = 16;
-	}
-	$('.cursor').attr('style', 'left:'+x+'px;top:'+y+'px;width:'+w+'px;');
-	
 
 	//render ex
 	if (buf.ex && buf.ex.length > 0) {
@@ -144,16 +183,18 @@ function render(buf) {
 	$('.status-bar .buf-name').toggleClass('buf-unsaved', !!buf.unsaved);
 
 	//render ongoing keys
-	if (buf.keys && buf.keys.length > 0) {
-		var keysstr = '';
-		for (var i = 0; i < buf.keys.length; i++) {
-			var k = buf.keys[i];
-			if (k.length > 1) k = '<'+k+'>';
-			keysstr += k;
+	if (typeof buf.keys != 'undefined') {
+		if (buf.keys && buf.keys.length > 0) {
+			var keysstr = '';
+			for (var i = 0; i < buf.keys.length; i++) {
+				var k = buf.keys[i];
+				if (k.length > 1) k = '<'+k+'>';
+				keysstr += k;
+			}
+			$('.status-bar .ongoing-keys').text(keysstr);
+		} else {
+			$('.status-bar .ongoing-keys').empty();
 		}
-		$('.status-bar .ongoing-keys').text(keysstr);
-	} else {
-		$('.status-bar .ongoing-keys').empty();
 	}
 
 	//render visual
@@ -180,11 +221,17 @@ function render(buf) {
 		if (!$('.lines .highlight-brace-pair').get(0)) {
 			$('.lines').append('<div class="highlight-brace-pair"></div>');
 		}
+		var cr, cc;
+		if (buf.cursor) {
+			cr = parseInt(buf.cursor.row);
+			cc = parseInt(buf.cursor.col);
+		}
+
 		var ranges = [];
 		for (var i = 0; i < buf.braces.length; i++) {
 			var pt = buf.braces[i];
 			//skip cursor, don't draw twice in same point
-			if (pt.row == cr && pt.col == cc) continue; 
+			if (buf.cursor && pt.row == cr && pt.col == cc) continue; 
 
 			ranges.push(pt, {row:pt.row, col:pt.col+1});
 		}

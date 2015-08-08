@@ -13,56 +13,91 @@
         ring.util.response
         ring.middleware.json))
 
-(defn dissoc-emtpy[b ks]
+(defn dissoc-empty[b ks]
   (if (empty? (get-in b ks))
     (if (= 1 (count ks))
       (dissoc b (first ks))
       (recur (update-in b (pop ks) dissoc (peek ks)) (pop ks)))
     b))
 
-;diff line by line
-;TODO more advanced diff algorithm
+(defn dissoc-nil[b k]
+  (if (nil? (b k))
+    (dissoc b k)
+    b))
+
 (defn diff-lines [after before]
   (let [lines1 (:lines before)
         lines2 (:lines after)]
     (cond 
       (= lines1 lines2)
       (dissoc after :lines)
-      (= (count lines1) (count lines2))
-      (-> after
-          (dissoc :lines)
-          (assoc :difflines 
-                 (vec (map (fn[l1 l2]
-                             (if (= l1 l2)
-                               nil
-                               (let[]
-                                 (autocompl-words-remove l1)
-                                 (autocompl-words-parse l2)
-                                 l2))) lines1 lines2))))
       :else
-      (let[]
-        (autocompl-words-remove-buffer before)
-        (autocompl-words-parse-buffer after)
-        after))))
+      ;assume we only change single continuous lines block
+      (let [c1 (count lines1)
+            c2 (count lines2)
+            start (loop [i 0];top-down
+                    (if (and (> c1 i) (> c2 i) (= (lines1 i) (lines2 i)))
+                      (recur (inc i))
+                      i))
+            end (loop [i 1];bottom-up, end is inclusive
+                  (let [i1 (- c1 i)
+                        i2 (- c2 i)]
+                    (if (and (< 0 i1) (< 0 i2) (< start i2) (= (lines1 i1) (lines2 i2)))
+                      (recur (inc i))
+                      i2)))
+            add-lines (subvec lines2 start (inc end))
+            ;c1+count(add-lines)-count(sub-lines)=c2
+            sub-lines (-> c1 (+ (count add-lines)) (- c2))]
+        (if (pos? sub-lines)
+          (autocompl-words-remove-lines (subvec lines1 start (+ start sub-lines))))
+        (autocompl-words-parse-lines add-lines)
+        (-> after
+            (dissoc :lines)
+            (assoc :difflines {:row start :sub sub-lines :add add-lines}))))))
 
-(defn- remove-server-only-fields[b]
-  (-> b 
-      (dissoc :history :txt-cache :context :last-cursor 
-          :macro :chan-in :chan-out :registers)
-      (dissoc-emtpy [:highlights])
-      (dissoc-emtpy [:autocompl :suggestions])))
+(defn- track-unsaved[b]
+  (if (buf-lines-unsaved? b)
+    (assoc b :unsaved 1)
+    (assoc b :unsaved 0)))
 
 (defn- remove-visual-mode[b]
   (if (empty? (-> b :visual :ranges))
     (dissoc b :visual)
     b))
 
-(defn- track-unsaved[b]
-  (if (buf-lines-unsaved? b)
-    (-> b 
-        (dissoc :last-saved-lines)
-        (assoc :unsaved 1))
-    (dissoc b :last-saved-lines)))
+(defn- remove-autocompl[b]
+  (if (empty? (-> b :autocompl :suggestions))
+    (dissoc b :autocompl)
+    b))
+
+(defn- equal-cursor?[c1 c2]
+  (if (= c1 c2)
+    true
+    (and (= (:row c1) (:row c2))
+         (= (:col c1) (:col c2))
+         (= (:lastcol c1) (:lastcol c2)))))
+
+(defn- dissoc-cursor[after before]
+  (let [braces (vec (filter ;remove brace if equal to :cursor
+                            #(not (equal-pt? % (after :cursor))) 
+                            (after :braces)))
+        b (if (empty? braces)
+            after
+            (assoc after :braces braces))]
+    ;dissoc :cursor if not change
+    (if (equal-cursor? (:cursor before) (:cursor b))
+      (dissoc b :cursor)
+      b)))
+
+(defn- remove-fields[b]
+  (-> b 
+      track-unsaved
+      (dissoc :history :txt-cache :context :last-cursor 
+          :macro :chan-in :chan-out :registers :last-saved-lines)
+      (dissoc-empty [:highlights])
+      (dissoc-nil :keys)
+      remove-visual-mode
+      remove-autocompl))
 
 (defn- dissoc-if-equal[after before k]
   (if (= (before k) (after k))
@@ -75,14 +110,18 @@
   (let [b (cond (= before after)
                 ""
                 (or (nil? before) (not (= (:id before) (:id after))))
-                (remove-server-only-fields after)
+                (-> after
+                    (dissoc-cursor nil)
+                    remove-fields)
                 :else
                 (-> after
-                    track-unsaved
-                    remove-visual-mode
-                    remove-server-only-fields
+                    remove-fields
                     (diff-lines before)
+                    (dissoc-cursor before)
                     (dissoc-if-equal before :mode)
+                    (dissoc-if-equal before :braces)
+                    (dissoc-if-equal before :keys)
+                    (dissoc-if-equal before :name)
                     (dissoc-if-equal before :ex)
                     (dissoc-if-equal before :message)))]
     (response b)))

@@ -3,7 +3,7 @@
             [webvim.buffer :refer :all])
   (:use clojure.pprint))
 
-(defn check-cursor [cur [r c lc vr]]
+(defn check-cursor [cur [r c lc]]
   (and (= r (cur :row))
        (= c (cur :col))
        (= lc (cur :lastcol))))

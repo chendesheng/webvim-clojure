@@ -66,13 +66,12 @@
 
 ;(remove-words {"aa" 2 "bb" 1} {"aa" 3 "bb" 1 "cc" 2})
 
-(defn autocompl-words-parse-buffer
+(defn autocompl-words-parse-lines
   "Parse a buffer lines split to words and save to global autocompl-words"
-  [b]
+  [lines]
   (reset! autocompl-words 
           (reduce (fn[words line]
-                    (merge-words words (autocompl-parse line))) @autocompl-words (:lines b)))
-  b)
+                    (merge-words words (autocompl-parse line))) @autocompl-words lines)))
 
 (defn autocompl-words-remove[txt]
   (swap! autocompl-words 
@@ -84,11 +83,10 @@
   [txt]
   (swap! autocompl-words merge-words (autocompl-parse txt)))
 
-(defn autocompl-words-remove-buffer[b]
+(defn autocompl-words-remove-lines[lines]
   (reset! autocompl-words 
           (reduce (fn[words line]
-                    (remove-words words (autocompl-parse line))) @autocompl-words (:lines b)))
-  b)
+                    (remove-words words (autocompl-parse line))) @autocompl-words lines)))
 
 (defn autocompl-suggest [words subject]
   (reduce #(conj %1 (last %2)) []

@@ -64,5 +64,5 @@
   [b row]
   (count ((:lines b) row)))
 
-(defn equal-pt[pt1 pt2]
+(defn equal-pt?[pt1 pt2]
   (and (= (pt1 :col) (pt2 :col)) (= (pt1 :row) (pt2 :row))))

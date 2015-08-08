@@ -122,7 +122,7 @@
   (println "set-normal-mode:")
   (merge b {:ex "" 
             :mode normal-mode 
-            :keys nil 
+            :keys nil
             :visual {:type 0 :ranges []}
             :autocompl {:suggestions nil 
                         :suggestions-index 0}}))

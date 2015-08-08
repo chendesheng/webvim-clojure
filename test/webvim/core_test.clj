@@ -5,6 +5,7 @@
             [webvim.cursor :refer :all]
             [webvim.global :refer :all]
             [webvim.test-util :refer :all]
+            [webvim.core :refer :all]
             [webvim.buffer :refer :all])
   (:use clojure.pprint))
 
@@ -388,4 +389,62 @@
     (let [b {:lines ["  hello" "\n" ""] :cursor {:row 1 :col 0 :lastcol 0}}
           b1 (buf-indent-new-line b)]
       (is (= "  \n" (-> b1 :lines (get 1)))))))
-(buf-indent-empty-line-test)
+;(buf-indent-empty-line-test)
+
+(deftest diff-lines-subonly-test
+  (testing ""
+    (let [before {:lines ["aa" "bb"]}
+          after {:lines ["aa"]}
+          diff (diff-lines after before)]
+      (pprint diff)
+      (is (= (-> diff :difflines :row) 1))
+      (is (= (-> diff :difflines :sub) 1)))))
+;(diff-lines-subonly-test)
+
+(deftest diff-lines-addonly-test
+  (testing ""
+    (let [before {:lines ["aa"]}
+          after {:lines ["aa" "bb"]}
+          diff (diff-lines after before)]
+      (pprint diff)
+      (is (= (-> diff :difflines :row) 1))
+      (is (= (-> diff :difflines :sub) 0))
+      (is (= (-> diff :difflines :add) ["bb"])))))
+
+;(diff-lines-addonly-test)
+
+(deftest diff-lines-change-test
+  (testing ""
+    (let [before {:lines ["aa" "cc" "dd"]}
+          after {:lines ["aa" "bb" "cc"]}
+          diff (diff-lines after before)]
+      (pprint diff)
+      (is (= (-> diff :difflines :row) 1))
+      (is (= (-> diff :difflines :sub) 2))
+      (is (= (-> diff :difflines :add) ["bb" "cc"])))))
+
+;(diff-lines-change-test)
+
+(deftest diff-lines-addsub-test
+  (testing ""
+    (let [before {:lines ["aa" "dd" "ee" "cc"]}
+          after {:lines ["aa" "bb" "cc"]}
+          diff (diff-lines after before)]
+      (pprint diff)
+      (is (= (-> diff :difflines :row) 1))
+      (is (= (-> diff :difflines :sub) 2))
+      (is (= (-> diff :difflines :add) ["bb"])))))
+
+;(diff-lines-addsub-test)
+
+(deftest diff-lines-morelines-test
+  (testing ""
+    (let [before {:lines ["aa" "dd" "ee" "cc" "dd"]}
+          after {:lines ["aa" "de" "cc" "dd"]}
+          diff (diff-lines after before)]
+      (pprint diff)
+      (is (= (-> diff :difflines :row) 1))
+      (is (= (-> diff :difflines :sub) 2))
+      (is (= (-> diff :difflines :add) ["de"])))))
+
+;(diff-lines-morelines-test)

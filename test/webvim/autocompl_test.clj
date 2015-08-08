@@ -48,7 +48,7 @@
 
 (deftest autocompl-suggest-test
   (testing ""
-    (let [suggestions (autocompl-suggest @autocompl-words "co")]
+    (let [suggestions (autocompl-suggest test-words "co")]
       (is 
         (same-seq? ["co" "completely" "computer" "continuous" "cool" "correlation" "could" "cloud" "clouds"] suggestions)))))
 
