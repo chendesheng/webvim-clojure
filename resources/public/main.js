@@ -299,8 +299,14 @@ function scrollToCursor(scrollTopRow) {
 	var width = lines.width();
 	var height = lines.height();
 
-	lines.scrollTop(scrollTopRow * 21);
-
+	//lines.scrollTop(scrollTopRow * 21);
+	var oldst = lines.scrollTop();
+	var newst = scrollTopRow * 21;
+	if (Math.abs(oldst - newst) > 3*21) {
+		lines.animate({ scrollTop: newst}, 60);
+	} else {
+		lines.scrollTop(newst);
+	}
 
 	if (el.offsetLeft+el.offsetWidth > scrleft+width) {
 		lines.scrollLeft(el.offsetLeft+el.offsetWidth-width);
