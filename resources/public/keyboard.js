@@ -1,3 +1,4 @@
+var inputQueue = [];
 $(document).keydown(function(event) {
 	var key = KEYCODE_KEYDOWN[event.keyCode];
 	if (key || event.ctrlKey || event.altKey) {
@@ -21,9 +22,10 @@ $(document).keydown(function(event) {
 		}
 
 		if (key) {
-			$.getJSON('key?code='+encodeURIComponent(key), function(resp) {
-				render(resp);
-			});
+			inputQueue.push(key);
+			if (inputQueue.length == 1) {
+				sendQueue();
+			}
 		}
 	}
 });
@@ -34,8 +36,21 @@ $(document).keypress(function(event) {
 
 	var ch = String.fromCharCode(code)
 	if (ch) {
-		$.getJSON('key?code='+encodeURIComponent(ch), function(resp) {
-			render(resp);
-		});
+		inputQueue.push(ch);
+		if (inputQueue.length == 1) {
+			sendQueue();
+		}
 	}
 });
+
+function sendQueue() {
+	if (inputQueue.length > 0) {
+		var key = inputQueue[0];
+		$.getJSON('key?code='+encodeURIComponent(key), function(resp) {
+			render(resp);
+
+			inputQueue.shift();
+			sendQueue();
+		});
+	}
+}

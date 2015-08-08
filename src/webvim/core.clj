@@ -171,6 +171,7 @@
     (async/>!! (:chan-in before) keycode)
     (let [after (async/<!! (:chan-out before))]
       (swap! buffer-list assoc (:id after) after)
+      ;(Thread/sleep 100)
       ;Always write (active-buffer) back because active-buffer-id may change by current key
       (render before (update-scroll-top (active-buffer))))))
 
