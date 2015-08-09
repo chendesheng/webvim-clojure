@@ -35,6 +35,7 @@
       ;assume we only change single continuous lines block
       (let [c1 (count lines1)
             c2 (count lines2)
+            ;_ (println "c1:" c1 " c2:" c2)
             start (loop [i 0];top-down
                     (if (and (> c1 i) (> c2 i) (= (lines1 i) (lines2 i)))
                       (recur (inc i))
@@ -42,9 +43,15 @@
             end (loop [i 1];bottom-up, end is inclusive
                   (let [i1 (- c1 i)
                         i2 (- c2 i)]
-                    (if (and (< 0 i1) (< 0 i2) (< start i2) (= (lines1 i1) (lines2 i2)))
+                    ;(println "(<= start i1)" (<= start i1))
+                    ;(println "(<= start i2)" (<= start i2))
+                    ;(println "(lines1 i1) == (lines2 i2):" (= (lines1 i1) (lines2 i2)))
+                    (if (and (< 0 i1) (< 0 i2) (<= start i1) (<= start i2) (= (lines1 i1) (lines2 i2)))
                       (recur (inc i))
-                      i2)))
+                      (let[]
+                        (println "i1:" i1)
+                        i2))))
+            ;_ (println "start:" start " end:" end)
             add-lines (subvec lines2 start (inc end))
             ;c1+count(add-lines)-count(sub-lines)=c2
             sub-lines (-> c1 (+ (count add-lines)) (- c2))]
