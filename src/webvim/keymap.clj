@@ -782,6 +782,7 @@
           "c+i" #(move-to-jumplist % jump-next)
           "c+g" buf-cursor-info
           "esc" set-normal-mode
+          "c+l" #(dissoc % :highlights) 
           "v" (merge
                 @visual-mode-keymap
                 {:enter (fn[b keycode] 

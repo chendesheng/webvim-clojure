@@ -84,11 +84,10 @@ function render(buf) {
 		var lines = buf.lines;
 		$(lines).each(function(i, line) {
 			if (line) {
-				$('.lines').append(replaceBinding(lineTemplate, {row:i, line:line}, true));
+				$('.lines').append(replaceBinding(lineTemplate, {row:i, line:parseLine(line)}, false));
 				$('.gutter').append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
 			}
 		});
-		
 	}
 
 	if (buf.difflines) {
@@ -110,32 +109,35 @@ function render(buf) {
 			}
 		}
 
-		//setup space for adding
-		if (add.length < sub) {
+
+		//remove sub
+		for (var i = row; i < row+sub; i++) {
+			$(lineid(i)).remove();
+		}
+
+		var shiftcnt = -sub+add.length;
+		if (shiftcnt < 0) {
 			//shift left
-			var shiftcnt = sub-add.length;
-			for (var i = row+shiftcnt; i < oldcnt; i++) {
-				var line = $(lineid(i)+' :first-child').remove();
-				$(lineid(i-shiftcnt)).empty().append(line);
+			for (var i = row+sub; i < oldcnt; i++) {
+				$(lineid(i)).attr('id', 'line-'+(i+shiftcnt));
 			}
-		} else if (add.length > sub) {
+		} else if (shiftcnt > 0) {
 			//shift right
-			var shiftcnt = add.length-sub;
-			//make sure lines enough
-			for (var i = 0; i < shiftcnt; i++) {
-				$('.lines').append(replaceBinding(lineTemplate, {row:i+oldcnt, line:""}, false));
-			}
-			for (var i = oldcnt; i >= row; i--) {
-				var line = $(lineid(i)+' :first-child').remove();
-				$(lineid(i+shiftcnt)).empty().append(line);
+			for (var i = oldcnt; i >= row+sub; i--) {
+				$(lineid(i)).attr('id', 'line-'+(i+shiftcnt));
 			}
 		}
-		
-		//apply add lines
-		$(add).each(function(i, line) {
-			var i1 = i+row;
-			$(lineid(i1)).empty().append('<pre>'+htmlEncode(line)+'<pre>');
-		});
+
+		//insert add
+		for (var i = 0; i < add.length; i++) {
+			var line = parseLine(add[i]);
+			$(replaceBinding(lineTemplate, {row:row+i, line:line}, false)).insertAfter($(lineid(row+i-1)));
+		}
+
+
+		for (var i = newcnt; i < oldcnt; i++) {
+			$(lineid(i)).remove();
+		}
 	} 
 
 	

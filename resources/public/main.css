@@ -150,3 +150,25 @@ pre {
 	height:21px;
 	z-index:1000;
 }
+
+.lines .keyword {
+	color:#63B132;
+}
+
+.lines .colon-keyword {
+	color:#E92672;
+}
+
+.lines .comment {
+	color:#606D5E;
+}
+
+.lines .string {
+	color:#E6D75F;
+}
+.lines .regexp {
+	color:#E6D75F;
+}
+.lines .number {
+	color:#AB7FFB;
+}
