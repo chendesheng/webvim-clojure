@@ -82,9 +82,10 @@ function render(buf) {
 		$('.lines').empty();
 		$('.gutter').empty();
 		var lines = buf.lines;
+		states = new Array(lines.length+1);
 		$(lines).each(function(i, line) {
 			if (line) {
-				$('.lines').append(replaceBinding(lineTemplate, {row:i, line:parseLine(line)}, false));
+				$('.lines').append(replaceBinding(lineTemplate, {row:i, line:parseLine(line, i)}, false));
 				$('.gutter').append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
 			}
 		});
@@ -93,6 +94,7 @@ function render(buf) {
 	if (buf.difflines) {
 		var diff = buf.difflines;
 		var row = diff.row;
+		var rowstate = states[row];
 		var add = diff.add;
 		var sub = diff.sub;
 		var oldcnt = parseInt($('.gutter :last-child').text());
@@ -113,6 +115,8 @@ function render(buf) {
 		//remove sub
 		for (var i = row; i < row+sub; i++) {
 			$(lineid(i)).remove();
+
+			states.splice(i, 1);
 		}
 
 		var shiftcnt = -sub+add.length;
@@ -130,10 +134,19 @@ function render(buf) {
 
 		//insert add
 		for (var i = 0; i < add.length; i++) {
-			var line = parseLine(add[i]);
-			$(replaceBinding(lineTemplate, {row:row+i, line:line}, false)).insertAfter($(lineid(row+i-1)));
+			states.splice(row, 0, []);
 		}
 
+		//recover row state
+		states[row] = rowstate;
+		for (var i = 0; i < add.length; i++) {
+			var i1 = row + i;
+			var line = parseLine(add[i], i1);
+			$(replaceBinding(lineTemplate, {row:i1, line:line}, false)).insertAfter($(lineid(row+i-1)));
+		}
+
+		//continue parse braces until equal state or EOF
+		updateBraces(row+add.length, newcnt);
 
 		for (var i = newcnt; i < oldcnt; i++) {
 			$(lineid(i)).remove();

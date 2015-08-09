@@ -172,3 +172,27 @@ pre {
 .lines .number {
 	color:#AB7FFB;
 }
+
+.lines .brace-0 {
+	color:#ff0000;
+}
+
+.lines .brace-1 {
+	color:#ff9c00;
+}
+
+.lines .brace-2 {
+	color:#eeff00;
+}
+
+.lines .brace-3 {
+	color:#1eff00;
+}
+
+.lines .brace-4 {
+	color:#00beff;
+}
+
+.lines .brace-5 {
+	color:#9900c9;
+}
