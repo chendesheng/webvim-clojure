@@ -142,7 +142,16 @@ function render(buf) {
 		for (var i = 0; i < add.length; i++) {
 			var i1 = row + i;
 			var line = parseLine(add[i], i1);
-			$(replaceBinding(lineTemplate, {row:i1, line:line}, false)).insertAfter($(lineid(row+i-1)));
+
+			if (i1 > 0) {
+				$(replaceBinding(lineTemplate, {row:i1, line:line}, false)).insertAfter($(lineid(i1-1)));
+			} else {
+				if (i1 < oldcnt-1) {
+					$(replaceBinding(lineTemplate, {row:i1, line:line}, false)).insertBefore($(lineid(i1+1)));
+				} else {
+					$(replaceBinding(lineTemplate, {row:i1, line:line}, false)).insertBefore($('.lines :first-child'));
+				}
+			}
 		}
 
 		//continue parse braces until equal state or EOF
