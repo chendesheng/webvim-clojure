@@ -39,7 +39,7 @@
            ;save :lines object when write buffer to disk, check if lines unsaved
            :last-saved-lines nil
            ;:type =0 visual =1 visual line =2 visual block
-           ;:ranges is a vector of point pairs (unordered): [{:row :col} {:row :col}]. Always contains even number of points. Right end is exclusive.
+           ;:ranges is a vector of point pairs (unordered): [{:row :col} {:row :col}]. Always contains even number of points. Both end are inclusive
            :visual {:type 0 :ranges []}
            ;=0 normal mode =1 insert mode =2 ex mode =3 visual mode
            :mode 0
@@ -325,7 +325,8 @@
       :else b)))
 
 (defn buf-delete-range[b]
-  (let [[pt1 pt2] (apply cursor-sort (-> b :visual :ranges))
+  (let [[pt1 tmp] (apply cursor-sort (-> b :visual :ranges))
+        pt2 (cursor-inc-col tmp)
         {lines :lines newcur :cursor} (replace-range (:lines b) pt1 pt2 "")]
     (-> b 
         (update-in [:cursor] merge newcur)

@@ -69,3 +69,17 @@
 
 (defn quote-pattern[ch]
   (java.util.regex.Pattern/quote (str ch)))
+
+(defn cursor-compare 
+  "true if cur1 \"<=\" cur2"
+  [{r1 :row c1 :col}
+   {r2 :row c2 :col}]
+  (or (< r1 r2) (and (= r1 r2) (<= c1 c2))))
+
+(defn cursor-sort [cur1 cur2]
+  (if (cursor-compare cur1 cur2)
+    [cur1 cur2]
+    [cur2 cur1]))
+
+(defn cursor-sort-range [rg]
+  (cursor-sort (rg 0) (rg 1)))

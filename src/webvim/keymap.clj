@@ -131,7 +131,7 @@
   (println "set-visual-mode:")
   (let [cur (-> b :cursor cursor-to-point)]
     (merge b {:ex "" :mode visual-mode :keys nil 
-              :visual {:type 0 :ranges [cur (cursor-inc-col cur)]}})))
+              :visual {:type 0 :ranges [cur cur]}})))
 
 (defn set-insert-mode[b keycode]
   (println "set-insert-mode")
@@ -407,7 +407,6 @@
       (assoc-in b [:visual :ranges 1]
                 (-> b 
                     :cursor 
-                    cursor-inc-col 
                     cursor-to-point)) b)))
 
 (defn autocompl-start[b]
@@ -606,7 +605,7 @@
 
 (defn yank-visual[b]
   (let [[p1 p2] (-> b :visual :ranges)]
-    (swap! (:registers b) assoc "\"" (buf-copy-range b p1 p2 false))
+    (swap! (:registers b) assoc "\"" (buf-copy-range b p1 p2 true))
     (let [[cur1 _] (apply cursor-sort (-> b :visual :ranges))]
       (-> b 
           (assoc :cursor {:row (:row cur1)
@@ -797,9 +796,7 @@
                  "o" (fn[b]
                        (let [{r :row c :col} (b :cursor)
                              [pt1 pt2] (-> b :visual :ranges)
-                             pt11 (if (cursor-compare pt2 pt1);pt1 is right end
-                                   (cursor-dec-col pt1) pt1)
-                             {r1 :row c1 :col} pt11
+                             {r1 :row c1 :col} pt1
                              newb (-> b 
                                       (assoc-in [:cursor :col] c1)
                                       (assoc-in [:cursor :lastcol] c1)
