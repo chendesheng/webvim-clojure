@@ -66,3 +66,6 @@
 
 (defn equal-pt?[pt1 pt2]
   (and (= (pt1 :col) (pt2 :col)) (= (pt1 :row) (pt2 :row))))
+
+(defn quote-pattern[ch]
+  (java.util.regex.Pattern/quote (str ch)))

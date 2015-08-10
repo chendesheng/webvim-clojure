@@ -376,6 +376,30 @@
 
 ;(cursor-match-brace-not-found-test)
 
+(deftest cursor-match-next-cross-line
+  (testing ""
+    (let [pos (let [b (-> empty-buf  
+                         (buf-insert "(hello\nhello)")
+                         (assoc-in [:cursor :col] 0)
+                         (assoc-in [:cursor :row] 0))]
+               (cursor-match-brace b))]
+      (is (= 1 (pos :row)))
+      (is (= 5 (pos :col))))))
+
+;(cursor-match-next-cross-line)
+
+(deftest cursor-match-back-cross-line
+  (testing ""
+    (let [pos (let [b (-> empty-buf  
+                         (buf-insert "(hello\nhello)")
+                         (assoc-in [:cursor :col] 5))]
+               (cursor-match-brace b))]
+      (is (= 0 (pos :row)))
+      (is (= 0 (pos :col))))))
+
+;(cursor-match-back-cross-line)
+
+
 (deftest buf-indent-line-test
   (testing ""
     (let [b {:lines ["  hello" "h" ""] :cursor {:row 1 :col 0 :lastcol 0}}

@@ -200,49 +200,76 @@
       (.charAt line col)
       0)))
 
+;http://stackoverflow.com/questions/21191045/get-string-indices-from-the-result-of-re-seq
+(defn re-seq-pos [pattern string start] 
+  (let [m (re-matcher pattern (subs string start))] 
+    ((fn step [] 
+      (when (. m find) 
+        (cons {:start (+ (. m start) start) :end (+ (. m end) start) :group (. m group)} 
+          (lazy-seq (step))))))))
+
 (defn buf-match-brace[b pt]
   (let [brace (buf-char-at b pt)
         m (all-braces brace)
         lines (:lines b)
-        left? (contains? left-braces brace)]
+        left? (contains? left-braces brace)
+        re (re-pattern (str  (quote-pattern brace) "|" (quote-pattern m)))]
     (if (nil? m) nil
       (if left?
         (loop[cnt 0
-              row (:row pt)
-              col (:col pt)]
-          (if (< row (-> lines count)) ;EOF
-            (let [ch (lines-char-at lines row col)
-                  ncnt (cond (= brace ch)
-                             (inc cnt)
-                             (= m ch)
-                             (dec cnt)
-                             :else cnt)]
-              (if (zero? ncnt) ;find match
-                {:row row :col col}
-                (let [[nrow ncol] (if (< col (-> row lines count dec))
-                                    [row (inc col)]
-                                    [(inc row) 0])]
-                  (recur ncnt nrow ncol))))
-            nil))
+              {row :row col :col} pt]
+          ;(println "row:" row ",col:" col)
+          (let [line (lines row)
+                matches (re-seq-pos re line col)
+                [ncnt, col] (reduce 
+                              (fn [[cnt, _] match]
+                                (let [{start :start group :group} match
+                                      ch (.charAt group 0)
+                                      ncnt (if (= brace ch)
+                                             (inc cnt)
+                                             (dec cnt))]
+                                  ;(println "start:" start ",ncnt:" ncnt, ",ch:" ch)
+                                  (if (zero? ncnt) 
+                                    (reduced [0, start])
+                                    [ncnt, start])))
+                              [cnt (-> line count dec)], matches)]
+            ;(println ncnt)
+            (cond (zero? ncnt)
+                  {:row row :col col}
+                  (>= (inc row) (count lines))
+                  nil
+                  :else
+                  (recur ncnt {:row (inc row) :col 0}))))
         (loop[cnt 0
-              row (:row pt)
-              col (:col pt)]
-          (if (< row 0) ;EOF
-            nil
-            (let [ch (lines-char-at lines row col)
-                  ncnt (cond (= brace ch)
-                             (inc cnt)
-                             (= m ch)
-                             (dec cnt)
-                             :else cnt)]
-              (if (zero? ncnt) ;find match
-                {:row row :col col}
-                (let [[nrow ncol] (if (> col 0)
-                                    [row (dec col)]
-                                    [(dec row) (if (not (pos? row))
-                                                 0
-                                                 (-> (dec row) lines count dec))])]
-                  (recur ncnt nrow ncol))))))))))
+              row (pt :row)
+              col (-> pt :col inc)]
+          ;(println "right")
+          ;(pprint pt)
+          ;(println "row:" row ",col:" col)
+          (let [line (lines row)
+                subline (if (= col -1)
+                          line
+                          (subs line 0 col))
+                matches (reverse (re-seq-pos re subline 0))
+                [ncnt, col] (reduce 
+                              (fn [[cnt, _] match]
+                                (let [{start :start group :group} match
+                                      ch (.charAt group 0)
+                                      ncnt (if (= brace ch)
+                                             (inc cnt)
+                                             (dec cnt))]
+                                  ;(println "start:" start ",ncnt:" ncnt, ",ch:" ch)
+                                  (if (zero? ncnt) 
+                                    (reduced [0, start])
+                                    [ncnt, start])))
+                              [cnt (-> line count dec)], matches)]
+            ;(println ncnt)
+            (cond (zero? ncnt)
+                  {:row row :col col}
+                  (zero? row) 
+                  nil
+                  :else
+                  (recur ncnt (dec row) -1))))))))
 
 (defn cursor-match-brace[b]
   (let [b1 (cursor-next-re b #"[\(\[\{\)\]\}]" #"[\(\[\{\)\]\}]")]

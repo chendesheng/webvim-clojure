@@ -203,9 +203,6 @@
         col1 (if (neg? col) 0 col)]
       (buf-change-cursor-col b col1)))
 
-(defn quote-pattern[ch]
-  (java.util.regex.Pattern/quote ch))
-
 (defn cursor-next-char
   [b ch]
   (let [line (-> b :lines (get (-> b :cursor :row)))
