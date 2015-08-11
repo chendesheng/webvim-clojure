@@ -187,7 +187,9 @@
              (= "backspace" keycode)
              (buf-delete b)
              (= "enter" keycode)
-             (buf-insert b "\n")
+             (-> b 
+                 (buf-insert "\n")
+                 buf-indent-new-line)
              (= "space" keycode)
              (buf-insert b " ")
              (= "tab" keycode)
