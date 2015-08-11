@@ -9,6 +9,8 @@
         webvim.cursor
         webvim.global))
 
+(def re-braces #"\(|\[|\{|\}|\]|\)")
+
 (defn split-lines-all 
   "Split by \\n and keep \\n. Always has a extra empty string after last \\n.
 => (split-lines-all \"\")
@@ -436,6 +438,82 @@
             (buf-change-cursor-col (.length indent)))))))
 
 ;(buf-indent-new-line {:lines ["  hello" "\n" ""] :cursor {:row 1 :col 0 :lastcol 0}})
+
+(defn count-left-spaces[line]
+  (count (re-find #"^\s*" line)))
+
+(def tab-size 2)
+
+
+(defn re-test[re s]
+  (.find (re-matcher re s)))
+
+(def indent-tab-size #{"def" "defn" "if" "fn" "let"})
+(defn get-indent[line brace-pos]
+  (cond 
+    (= 1 (count (.trim line)))
+    1
+    (re-test #"\(\s*[^,\s]+[\s,]+[^,\s]+" line)
+    (let [w (re-find #"[^ ]+" (trim-left-space (subs line (inc brace-pos))))]
+      (if (contains? indent-tab-size w)
+        (+ brace-pos tab-size)
+        (let [m (re-matcher #"\(\s*[^,\s]+[\s,]*([^,\s]+)" line)]
+          (.find m)
+          (.start m 1))))
+;    (re-test #"\(\s*[^,\s]+[\s,]*$" line)
+;    tab-size
+    :else
+    (+ brace-pos tab-size)))
+
+
+(defn smart-indent-clojure
+  "Indent by brace parsing"
+  [lines row]
+  (if (zero? row)
+    0
+    (loop [current (dec row)
+           braces []]
+      (pprint2 braces "braces:")
+      (let [line (lines current)
+            ;_ (println line)
+            nbraces (reduce 
+                      (fn[stack pt]
+                        (let [ch (-> pt :group first) ]
+                          ;(println "ch:" ch)
+                          (if (and (not (empty? stack))
+                                   (= (-> stack last :group first) (all-braces ch)))
+                            (pop stack)
+                            (conj stack pt))))
+                      braces (reverse (re-seq-pos re-braces line 0)))]
+        (println "current:" current)
+        (pprint2 nbraces "nbraces:")
+        (println "line:")
+        (println line)
+        (cond (empty? nbraces)
+              (count-left-spaces line)
+              (contains? left-braces (-> nbraces first :group first))
+              (let [m (first nbraces)
+                    ch (-> m :group first)]
+                (if (= ch \()
+                  (get-indent line (m :start)) 
+                  (inc (m :start))))
+              (zero? current) 0
+              :else (recur (dec current) nbraces))))))
+
+(defn repeat-space[n]
+  (reduce (fn[s _]
+            (str s " ")) 
+          ""
+          (range 0 n)))
+
+(defn buf-smart-indent-clojure
+  [b]
+  (let [row (-> b :cursor :row)
+        indent (smart-indent-clojure (b :lines) row)
+        line (buf-line b row)]
+    (-> b
+        (assoc-in [:lines row] (str (repeat-space indent) (trim-left-space line)))
+        (buf-change-cursor-col indent))))
 
 (defn buf-copy-range[b p1 p2 inclusive]
   (let [[{r1 :row c1 :col} cur2] (cursor-sort p1 p2)
