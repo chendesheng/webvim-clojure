@@ -421,7 +421,7 @@
   (.replaceAll line "^ +" ""))
 
 (defn buf-indent-new-line
-  "auto indent, append same space as previous line"
+  "Auto indent for current line. Indent same space/tab as previous line"
   [b]
   (let [lines (b :lines)
         row (-> b :cursor :row)
@@ -429,14 +429,11 @@
     (if (zero? row)
       b
       (let [pline (lines (dec row))
-            prefix (re-find #"( +)[^ ]" pline)
+            indent (or (re-find #"^\s*" pline) "")
             line (lines row)]
-        (if (nil? prefix)
-          b
-          (let [s (prefix 1)] 
-            (-> b
-              (assoc :lines (assoc lines row (str s (trim-left-space line))))
-              (buf-change-cursor-col (.length s)))))))))
+        (-> b
+            (assoc :lines (assoc lines row (str indent (trim-left-space line))))
+            (buf-change-cursor-col (.length indent)))))))
 
 ;(buf-indent-new-line {:lines ["  hello" "\n" ""] :cursor {:row 1 :col 0 :lastcol 0}})
 
