@@ -474,31 +474,36 @@
     (loop [current (dec row)
            braces []]
       (pprint2 braces "braces:")
-      (let [line (lines current)
-            ;_ (println line)
-            nbraces (reduce 
-                      (fn[stack pt]
-                        (let [ch (-> pt :group first) ]
-                          ;(println "ch:" ch)
-                          (if (and (not (empty? stack))
-                                   (= (-> stack last :group first) (all-braces ch)))
-                            (pop stack)
-                            (conj stack pt))))
-                      braces (reverse (re-seq-pos re-braces line 0)))]
-        (println "current:" current)
-        (pprint2 nbraces "nbraces:")
-        (println "line:")
-        (println line)
-        (cond (empty? nbraces)
-              (count-left-spaces line)
-              (contains? left-braces (-> nbraces first :group first))
-              (let [m (first nbraces)
-                    ch (-> m :group first)]
-                (if (= ch \()
-                  (get-indent line (m :start)) 
-                  (inc (m :start))))
-              (zero? current) 0
-              :else (recur (dec current) nbraces))))))
+      (cond 
+        (neg? row)
+        0
+        (clojure.string/blank? (lines current))
+        (recur (dec current) braces)
+        :else
+        (let [line (lines current)
+              ;_ (println line)
+              nbraces (reduce 
+                        (fn[stack pt]
+                          (let [ch (-> pt :group first) ]
+                            ;(println "ch:" ch)
+                            (if (and (not (empty? stack))
+                                     (= (-> stack last :group first) (all-braces ch)))
+                              (pop stack)
+                              (conj stack pt))))
+                        braces (reverse (re-seq-pos re-braces line 0)))]
+          (println "current:" current)
+          (pprint2 nbraces "nbraces:")
+          (println "line:")
+          (println line)
+          (cond (empty? nbraces)
+                (count-left-spaces line)
+                (contains? left-braces (-> nbraces first :group first))
+                (let [m (first nbraces)
+                      ch (-> m :group first)]
+                  (if (= ch \()
+                    (get-indent line (m :start)) 
+                    (inc (m :start))))
+                :else (recur (dec current) nbraces)))))))
 
 (defn repeat-space[n]
   (reduce (fn[s _]
