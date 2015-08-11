@@ -39,7 +39,7 @@ function parseLine(line, row) {
 				state.pop();
 				cls = 'brace brace-'+state.length%6;
 			} else {
-				cls = 'brace';
+				cls = 'brace brace-miss';
 			}
 		} else {
 			cls = 'keyword';
@@ -57,8 +57,8 @@ function parseLine(line, row) {
 
 function replaceBracesClass(ele, cls) {
 	var oldcls = ele.className;
-	if (/brace-\d/.test(oldcls)) {
-		ele.className = oldcls.replace(/brace-\d/, cls);
+	if (/brace-(\d|miss)/.test(oldcls)) {
+		ele.className = oldcls.replace(/brace-(\d|miss)/, cls);
 	} else {
 		ele.className += ' ' + cls;
 	}
@@ -80,7 +80,7 @@ function updateBraces(row, cnt) {
 					state.pop();
 					replaceBracesClass(braces[j],'brace-'+state.length%6);
 				} else {
-					replaceBracesClass(braces[j],'');
+					replaceBracesClass(braces[j],'brace-miss');
 				}
 			}
 		}

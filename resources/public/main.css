@@ -173,6 +173,10 @@ pre {
 	color:#AB7FFB;
 }
 
+.lines .brace-miss {
+	text-decoration:line-through;
+}
+
 .lines .brace-0 {
 	color:#ff0000;
 }
