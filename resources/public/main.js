@@ -39,15 +39,20 @@ function isChinese(c) {
 	return /[\ufe30-\uffa0\u4e00-\u9eff\u3000-\u303F]/.test(c);
 }
 
+//TODO use regexp
 function textWidth(txt, a, b) {
 	var x = 0;
+	var vx = a;
 	for (var i = a; i < b; i++) {
 		if (txt[i] == '\t') {
-			x += (4-x%4)*9.57
+			x += (4-vx%4)*9.57;
+			vx += (4-vx%4);
 		} else if (isChinese(txt[i])) {
 			x+=16;
+			vx++;
 		} else {
 			x+=9.57;
+			vx++;
 		}
 	}
 	return x;
@@ -173,16 +178,7 @@ function render(buf) {
 			$('.lines').append('<div class="cursor"></div>');
 		}
 
-		var x = 0;
-		for (var i = 0; i < cc; i++) {
-			if (cline[i] == '\t') {
-				x += (4-x%4)*9.57
-			} else if (isChinese(cline[i])) {
-				x+=16;
-			} else {
-				x+=9.57;
-			}
-		}
+		var x = textWidth(cline, 0, cc);
 		var y = cr*21+1;
 		var w = 9.57;
 		if (isChinese(cline[cc])) {
