@@ -3,7 +3,7 @@
             [clojure.core.async :as async]
             [clojure.java.io :as io])
   (:use clojure.pprint
-        (clojure [string :only (join split)])
+        (clojure [string :only (join split blank?)])
         webvim.autocompl
         webvim.history
         webvim.cursor
@@ -461,7 +461,7 @@
       (cond 
         (neg? row)
         ""
-        (clojure.string/blank? (lines current))
+        (blank? (lines current))
         (recur (dec current) braces)
         :else
         (let [line (lines current)
@@ -489,12 +489,20 @@
                     (repeat-space (inc (m :start)))))
                 :else (recur (dec current) nbraces)))))))
 
+(defn prev-non-blank-line[lines row]
+  (loop [i (dec row)]
+    (let [line (lines i)]
+      (if (blank? line)
+        (recur (dec i))
+        i))))
+
 (defn auto-indent [lines row]
-  (let [line (lines row)]
-    (if (zero? row)
-      ""
-      (let [pline (lines (dec row))]
-        (or (re-find #"^\s*" pline) "")))))
+  (if (zero? row)
+    ""
+    (let [line (lines row)
+          prow (prev-non-blank-line lines row)
+          pline (lines prow)]
+      (or (re-find #"^\s*" pline) ""))))
 
 (defn buf-indent-current-line
   [b]
