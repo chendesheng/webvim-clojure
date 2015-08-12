@@ -498,11 +498,13 @@
       b)))
 
 (defn delete-line[b]
-  (-> b
-    (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
-    buf-save-cursor
-    buf-delete-line
-    history-save))
+  (let [{row :row col :col} (b :cursor)]
+    (swap! (:registers b) assoc "\"" (buf-copy-range b {:row row :col 0} {:row row :col (col-count b row)} false))
+    (-> b
+      (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
+      buf-save-cursor
+      buf-delete-line
+      history-save)))
 
 (defn delete-range[b]
   (-> b
