@@ -119,7 +119,7 @@
   b)
 
 (defn set-normal-mode[b]
-  (println "set-normal-mode:")
+  ;(println "set-normal-mode:")
   (merge b {:ex "" 
             :mode normal-mode 
             :keys nil
@@ -134,7 +134,7 @@
               :visual {:type 0 :ranges [cur cur]}})))
 
 (defn set-insert-mode[b keycode]
-  (println "set-insert-mode")
+  ;(println "set-insert-mode")
   (-> b 
       (merge {:ex "" :mode insert-mode :message nil :keys nil})
       buf-save-cursor))
@@ -582,7 +582,7 @@
         lastbuf (-> b :context :lastbuf)]
     (if (not (nil? (motions-push-jumps keycode)))
       (jump-push lastbuf))
-    (println "normal-mode-after, recording-keys" (-> b :macro :recording-keys))
+    ;(println "normal-mode-after, recording-keys" (-> b :macro :recording-keys))
     ;if nothing changed there is no need to overwrite "." register
     ;so keys like i<esc> won't affect, this also exclude all motions.
     (if (not (or (= (:lines lastbuf) (:lines b))

@@ -48,9 +48,7 @@
                     ;(println "(lines1 i1) == (lines2 i2):" (= (lines1 i1) (lines2 i2)))
                     (if (and (< 0 i1) (< 0 i2) (<= start i1) (<= start i2) (= (lines1 i1) (lines2 i2)))
                       (recur (inc i))
-                      (let[]
-                        (println "i1:" i1)
-                        i2))))
+                        i2)))
             ;_ (println "start:" start " end:" end)
             add-lines (subvec lines2 start (inc end))
             ;c1+count(add-lines)-count(sub-lines)=c2
