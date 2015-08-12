@@ -506,6 +506,15 @@
       buf-delete-line
       history-save)))
 
+(defn delete-to-line-end[b]
+  (let [{row :row col :col} (b :cursor)]
+    (swap! (:registers b) assoc "\"" (buf-copy-range b {:row row :col col} {:row row :col (-> b (col-count row) dec)} false))
+    (-> b
+      (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
+      buf-save-cursor
+      (buf-delete-range2 {:row row :col col} {:row row :col (-> b (col-count row) dec)})
+      history-save)))
+
 (defn delete-range[b]
   (-> b
       (assoc :last-cursor (-> b :context :lastbuf :cursor))
@@ -819,7 +828,7 @@
           "x" cut-char
           "p" #(put-from-register-append % (-> % :context :register))
           "P" #(put-from-register % (-> % :context :register))
-          "D" delete-line
+          "D" delete-to-line-end
           "J" (fn[b]
                 (-> b 
                     buf-save-cursor

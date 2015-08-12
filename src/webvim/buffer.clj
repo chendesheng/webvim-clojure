@@ -336,6 +336,15 @@
         (assoc :lines lines)
         (assoc-in [:cursor :lastcol] (newcur :col)))))
 
+(defn buf-delete-range2[b pt1 pt2]
+  (let [[from to] (cursor-sort pt1 pt2)
+	    {lines :lines newcur :cursor} (replace-range (:lines b) from to "")]
+    (-> b 
+        (update-in [:cursor] merge newcur)
+        (assoc-in [:visual :ranges] [])
+        (assoc :lines lines)
+        (assoc-in [:cursor :lastcol] (newcur :col)))))
+
 (defn buf-lines-unsaved?
   "if :lines unsaved after last save"
   [b]
