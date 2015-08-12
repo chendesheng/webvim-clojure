@@ -10,6 +10,8 @@
         webvim.global))
 
 (def re-braces #"\(|\[|\{|\}|\]|\)")
+(declare smart-indent-clojure)
+(declare auto-indent)
 
 (defn split-lines-all 
   "Split by \\n and keep \\n. Always has a extra empty string after last \\n.
@@ -27,7 +29,16 @@
     b1))
 
 (defn create-buf[bufname txt]
-  (let [b {:name bufname
+  (let [languages {".clj" {:name "Clojure"
+                           :fn-indent smart-indent-clojure}
+                   ".js" {:name "JavaScript"
+                          :fn-indent auto-indent}
+                   ".css" {:name "CSS"
+                           :fn-indent auto-indent}
+                   :else {:name "Plain Text"
+                          :fn-indent auto-indent}}
+        ext (re-find #"\.\w+$" bufname)
+        b {:name bufname
            ;Each line is a standard java String
            :lines (split-lines-all txt)
            ;row, col, lastcol, viewport row (row from top of current viewport)
@@ -72,10 +83,15 @@
                        :suggestions nil
                        ;0 means selection nothing (don't highlight any suggestion item)
                        ;> 0 means highlight the nth suggestion item
-                       :suggestions-index 0}}]
+                       :suggestions-index 0}
+           ;programming language specific configs
+           ;detect language by file ext name
+           ;TODO detect language by file content
+           :language (get languages ext (languages :else))}]
+    (pprint (b :language))
 
     (autocompl-words-parse-lines (b :lines))
-    ;The undo/redo function takes advantage of clojure's persistent data structure, just save everything we needs. Consider change to save keystrokes if memory usage is too high.
+    ;The undo/redo function takes advantage of clojure's persistent data structure, just save everything we needs. TODO save changes
     ;Each history item holds two cursors: one is cursor pos when edit begins and the other is when edit ends. Perform undo action will recover cursor to cursor-begin and perform redo action recover cursor to cursor-end. 
     (-> b
         (assoc :last-saved-lines (b :lines))
@@ -419,35 +435,6 @@
                       (subvec lines (inc row)))))
         (assoc :cursor {:row (inc row) :col 0 :lastcol 0}))))
 
-(defn trim-left-space[line]
-  (.replaceAll line "^ +" ""))
-
-(defn buf-indent-new-line
-  "Auto indent for current line. Indent same space/tab as previous line"
-  [b]
-  (let [lines (b :lines)
-        row (-> b :cursor :row)
-        line (lines row)]
-    (if (zero? row)
-      b
-      (let [pline (lines (dec row))
-            indent (or (re-find #"^\s*" pline) "")
-            line (lines row)]
-        (-> b
-            (assoc :lines (assoc lines row (str indent (trim-left-space line))))
-            (buf-change-cursor-col (.length indent)))))))
-
-;(buf-indent-new-line {:lines ["  hello" "\n" ""] :cursor {:row 1 :col 0 :lastcol 0}})
-
-(defn count-left-spaces[line]
-  (count (re-find #"^\s*" line)))
-
-(def tab-size 2)
-
-
-(defn re-test[re s]
-  (.find (re-matcher re s)))
-
 (def indent-tab-size #{"def" "defn" "if" "fn" "let"})
 (defn get-indent[line brace-pos]
   (cond 
@@ -456,15 +443,12 @@
     (re-test #"\(\s*[^,\s]+[\s,]+[^,\s]+" line)
     (let [w (re-find #"[^ ]+" (trim-left-space (subs line (inc brace-pos))))]
       (if (contains? indent-tab-size w)
-        (+ brace-pos tab-size)
+        (+ brace-pos 2)
         (let [m (re-matcher #"\(\s*[^,\s]+[\s,]*([^,\s]+)" line)]
           (.find m)
           (.start m 1))))
-;    (re-test #"\(\s*[^,\s]+[\s,]*$" line)
-;    tab-size
     :else
-    (+ brace-pos tab-size)))
-
+    (+ brace-pos 2)))
 
 (defn smart-indent-clojure
   "Indent by brace parsing"
@@ -476,7 +460,7 @@
       (pprint2 braces "braces:")
       (cond 
         (neg? row)
-        0
+        ""
         (clojure.string/blank? (lines current))
         (recur (dec current) braces)
         :else
@@ -491,34 +475,35 @@
                               (pop stack)
                               (conj stack pt))))
                         braces (reverse (re-seq-pos re-braces line 0)))]
-          (println "current:" current)
-          (pprint2 nbraces "nbraces:")
-          (println "line:")
-          (println line)
+          ;(println "current:" current)
+          ;(pprint2 nbraces "nbraces:")
+          ;(println "line:")
+          ;(println line)
           (cond (empty? nbraces)
-                (count-left-spaces line)
+                (repeat-space (count-left-spaces line))
                 (contains? left-braces (-> nbraces first :group first))
                 (let [m (first nbraces)
                       ch (-> m :group first)]
                   (if (= ch \()
-                    (get-indent line (m :start)) 
-                    (inc (m :start))))
+                    (repeat-space (get-indent line (m :start)))
+                    (repeat-space (inc (m :start)))))
                 :else (recur (dec current) nbraces)))))))
 
-(defn repeat-space[n]
-  (reduce (fn[s _]
-            (str s " ")) 
-          ""
-          (range 0 n)))
+(defn auto-indent [lines row]
+  (let [line (lines row)]
+    (if (zero? row)
+      ""
+      (let [pline (lines (dec row))]
+        (or (re-find #"^\s*" pline) "")))))
 
-(defn buf-smart-indent-clojure
+(defn buf-indent-current-line
   [b]
   (let [row (-> b :cursor :row)
-        indent (smart-indent-clojure (b :lines) row)
+        indent ((-> b :language :fn-indent) (b :lines) row)
         line (buf-line b row)]
     (-> b
-        (assoc-in [:lines row] (str (repeat-space indent) (trim-left-space line)))
-        (buf-change-cursor-col indent))))
+        (assoc-in [:lines row] (str indent (trim-left-space line)))
+        (buf-change-cursor-col (count indent)))))
 
 (defn buf-copy-range[b p1 p2 inclusive]
   (let [[{r1 :row c1 :col} cur2] (cursor-sort p1 p2)

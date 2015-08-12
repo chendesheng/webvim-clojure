@@ -83,3 +83,18 @@
 
 (defn cursor-sort-range [rg]
   (cursor-sort (rg 0) (rg 1)))
+
+(defn re-test[re s]
+  (.find (re-matcher re s)))
+
+(defn trim-left-space[line]
+  (.replaceAll line "^ +" ""))
+
+(defn count-left-spaces[line]
+  (count (re-find #"^\s*" line)))
+
+(defn repeat-space[n]
+  (reduce (fn[s _]
+            (str s " ")) 
+          ""
+          (range 0 n)))

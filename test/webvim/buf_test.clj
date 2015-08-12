@@ -14,7 +14,7 @@
     (let [b (-> empty-buf
                 (buf-insert "(hello\nhello"))
           indent (smart-indent-clojure (b :lines) 1)]
-      (is (= tab-size indent)))))
+      (is (= 2 indent)))))
 
 ;(smart-indent-clojure-parenthesis-test)
 
@@ -34,7 +34,7 @@
           indent1 (smart-indent-clojure (b :lines) 2)
           indent2 (smart-indent-clojure (b :lines) 1)]
       (is (= 3 indent1))
-      (is (= tab-size indent2)))))
+      (is (= 2 indent2)))))
 
 ;(smart-indent-clojure-equal-test)
 (deftest smart-indent-clojure-right-test
@@ -47,7 +47,7 @@
 ;3 ....(println x)
 ;4 ....(println y)))
 "(defn helloworld[]\n(let[x 1\ny 2]\n(println x)\n(println y)))"))
-          result [0 tab-size 7 (* 2 tab-size) (* 2 tab-size)]]
+          result [0 2 7 4 4]]
       (reduce (fn[buf i]
                 (println "row:" i)
                 (let [indent (smart-indent-clojure (buf :lines) i)]

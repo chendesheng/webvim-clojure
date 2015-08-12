@@ -169,7 +169,7 @@
   (-> b 
       (set-insert-mode keycode)
       buf-insert-line-after
-      buf-smart-indent-clojure))
+      buf-indent-current-line))
 
 ;(set-insert-new-line {:lines ["       aa" "ccc"] :cursor {:row 0 :col 0 :lastcol 0}} "a")
 
@@ -189,7 +189,7 @@
              (= "enter" keycode)
              (-> b 
                  (buf-insert "\n")
-                 buf-smart-indent-clojure)
+                 buf-indent-current-line)
              (= "space" keycode)
              (buf-insert b " ")
              (= "tab" keycode)
