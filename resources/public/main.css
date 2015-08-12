@@ -13,14 +13,21 @@ body {
 	white-space:nowrap;
 }
 
+.buffer {
+	position:absolute;
+	top:0;
+	left:0;
+	right:0;
+	bottom:30px;
+	overflow:auto;
+}
+
 .lines {
 	position:absolute;
 	top:0;
 	left:50px;
 	right:0;
-	bottom:30px;
 	overflow:auto;
-	z-index:1;
 }
 
 .selections .line-selected {
@@ -31,7 +38,6 @@ body {
 .gutter {
 	position:absolute;
 	top:0;
-	bottom:30px;
 	left:0;
 	width:40px;
 	padding-right:10px;
@@ -79,7 +85,7 @@ pre {
 
 
 .status-bar {
-	position:absolute;
+	position:fixed;
 	left:0;
 	right:0;
 	bottom:0;
@@ -105,7 +111,7 @@ pre {
 	padding-left:30px;
 }
 
-.status-bar::-webkit-scrollbar, .lines::-webkit-scrollbar, .autocompl::-webkit-scrollbar{
+.buffer::-webkit-scrollbar, .status-bar::-webkit-scrollbar, .lines::-webkit-scrollbar, .autocompl::-webkit-scrollbar{
         display: none;
 }
 

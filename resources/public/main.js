@@ -7,12 +7,6 @@ $(document).ready(function() {
 			waitForFinalEvent(setSize, 500, "resize window");
 		});
 	});
-
-	//scroll position
-	$('.lines').scroll(function() {
-		var current = $(this).scrollTop();
-		$('.gutter').scrollTop(current);
-	});
 });
 
 //https://stackoverflow.com/questions/2854407/javascript-jquery-window-resize-how-to-fire-after-the-resize-is-completed/4541963#4541963
@@ -30,8 +24,8 @@ var waitForFinalEvent = (function () {
 })();
 
 function setSize() {
-	var view = $('.lines')[0];
-	var w = Math.round(view.offsetWidth/9.57), h = Math.round(view.offsetHeight/21);
+	var w = Math.round($('.lines')[0].offsetWidth/9.57);
+	var h = Math.round($('.buffer')[0].offsetHeight/21);
 	$.getJSON('resize/'+w+'/'+h);
 }
 
@@ -314,24 +308,24 @@ function render(buf) {
 var aligntop = true;
 function scrollToCursor(scrollTopRow) {
 	var el = $('.cursor')[0];
-	var lines = $('.lines');
-	var scrleft = lines.scrollLeft();
-	var width = lines.width();
-	var height = lines.height();
+	var $lines = $('.lines');
+	var $buf = $('.buffer');
+    
+	var scrleft = $lines.scrollLeft();
+	var width = $lines.width();
 
-	//lines.scrollTop(scrollTopRow * 21);
-	var oldst = lines.scrollTop();
+	var oldst = $buf.scrollTop();
 	var newst = scrollTopRow * 21;
 	if (Math.abs(oldst - newst) > 3*21) {
-		lines.animate({ scrollTop: newst}, 60);
+		$buf.animate({ scrollTop: newst}, 60);
 	} else {
-		lines.scrollTop(newst);
+		$buf.scrollTop(newst);
 	}
 
 	if (el.offsetLeft+el.offsetWidth > scrleft+width) {
-		lines.scrollLeft(el.offsetLeft+el.offsetWidth-width);
+		$lines.scrollLeft(el.offsetLeft+el.offsetWidth-width);
 	} else if (el.offsetLeft < scrleft) {
-		lines.scrollLeft(el.offsetLeft);
+		$lines.scrollLeft(el.offsetLeft);
 	}
 }
 

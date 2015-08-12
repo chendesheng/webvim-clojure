@@ -199,8 +199,9 @@
      [:script {:src "highlight.js" :type "text/javascript"}]
      [:link {:href "main.css" :rel "stylesheet"}]]
     [:body
-     [:div.gutter]
-     [:div.lines]
+     [:div.buffer
+      [:div.gutter]
+      [:div.lines]]
      [:div.status-bar [:span.ex] [:span.ongoing-keys] [:span.buf-name]]]))
 
 (defroutes main-routes
