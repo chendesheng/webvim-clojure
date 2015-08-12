@@ -12,6 +12,7 @@
 (def re-braces #"\(|\[|\{|\}|\]|\)")
 (declare smart-indent-clojure)
 (declare auto-indent)
+(declare clang-indent)
 
 (defn split-lines-all 
   "Split by \\n and keep \\n. Always has a extra empty string after last \\n.
@@ -32,9 +33,9 @@
   (let [languages {".clj" {:name "Clojure"
                            :fn-indent smart-indent-clojure}
                    ".js" {:name "JavaScript"
-                          :fn-indent auto-indent}
+                          :fn-indent clang-indent}
                    ".css" {:name "CSS"
-                           :fn-indent auto-indent}
+                           :fn-indent clang-indent}
                    :else {:name "Plain Text"
                           :fn-indent auto-indent}}
         ext (re-find #"\.\w+$" bufname)
@@ -503,6 +504,17 @@
           prow (prev-non-blank-line lines row)
           pline (lines prow)]
       (or (re-find #"^\s*" pline) ""))))
+
+(defn clang-indent [lines row]
+  (if (zero? row)
+    ""
+    (let [line (lines row)
+          prow (prev-non-blank-line lines row)
+          pline (lines prow)
+          pindent (or (re-find #"^\s*" pline) "")]
+      (if (re-test #"\{\s*$" pline)
+        (str pindent "\t")
+        pindent))))
 
 (defn buf-indent-current-line
   [b]
