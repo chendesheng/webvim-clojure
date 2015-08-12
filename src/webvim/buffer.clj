@@ -351,23 +351,14 @@
   (not (= (b :lines) (b :last-saved-lines))))
 
 ;(calc-col test-buf 4 30 30)
+
+;TODO make write atomic
 (defn write-buffer
-  "Write buffer to disk. This operation MUST be atomic."
   [b]
   (try 
     (let [lines (:lines b)
-          f (:name b)
-          tmp (str (fs/tmpdir) (fs/base-name f))]
-      (if (fs/exists? tmp)
-        (fs/delete tmp))
-      (fs/create (fs/file tmp))
-      (with-open [wrtr (io/writer (fs/file tmp))]
-        (doseq [line lines]
-          (.write wrtr line)))
-      ;TODO handle line break
-      ;TODO fsync before rename
-      ;TODO Windows?
-      (fs/rename tmp f)
+          f (:name b)]
+      (spit f (join lines))
       (-> b
           (assoc :message (str "\"" f "\" " (count lines) "L written"))
           (assoc :last-saved-lines (b :lines))))
