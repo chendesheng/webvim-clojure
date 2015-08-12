@@ -655,14 +655,14 @@
   (let [b1 (cursor-simple-next-str b "^[^\n]")
         b2 (cursor-simple-next-str b1 "^\n") ]
     (if (or (= b b1) (= b1 b2))
-      b
+      (cursor-move-end b)
       b2)))
 
 (defn move-back-empty-line[b]
   (let [b1 (cursor-simple-back-str b "^[^\n]")
         b2 (cursor-simple-back-str b1 "^\n") ]
     (if (or (= b b1) (= b1 b2))
-      b
+      (cursor-move-start b)
       b2)))
 
 (defn- nop[b] b)
