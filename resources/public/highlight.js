@@ -77,7 +77,7 @@ function hlclojure() {
 			} else {
 				cls = 'keyword';
 			}
-			html += '<span class="'+cls+'">'+result+'</span>';
+			html += '<span class="'+cls+'">'+htmlEncode(result)+'</span>';
 	
 			lasti = keywords.lastIndex;
 		}
@@ -188,7 +188,7 @@ function hljavascript() {
 			} else {
 				cls = 'keyword';
 			}
-			html += '<span class="'+cls+'">'+result+'</span>';
+			html += '<span class="'+cls+'">'+htmlEncode(result)+'</span>';
 	
 			lasti = keywords.lastIndex;
 		}
