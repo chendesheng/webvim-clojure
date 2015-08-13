@@ -13,8 +13,8 @@
   (testing ""
     (let [b (-> empty-buf
                 (buf-insert "(hello\nhello"))
-          indent (smart-indent-clojure (b :lines) 1)]
-      (is (= 2 indent)))))
+          indent (clojure-indent (b :lines) 1)]
+      (is (= 2 (count indent))))))
 
 ;(smart-indent-clojure-parenthesis-test)
 
@@ -22,8 +22,8 @@
   (testing ""
     (let [b (-> empty-buf
                 (buf-insert "[hello\nhello"))
-          indent (smart-indent-clojure (b :lines) 1)]
-      (is (= 1 indent)))))
+          indent (clojure-indent (b :lines) 1)]
+      (is (= 1 (count indent))))))
 
 ;(smart-indent-clojure-bracket-test)
 
@@ -31,10 +31,10 @@
   (testing ""
     (let [b (-> empty-buf
                 (buf-insert "(defn helloworld[]\n   (println \"hello\")\nhello"))
-          indent1 (smart-indent-clojure (b :lines) 2)
-          indent2 (smart-indent-clojure (b :lines) 1)]
-      (is (= 3 indent1))
-      (is (= 2 indent2)))))
+          indent1 (clojure-indent (b :lines) 2)
+          indent2 (clojure-indent (b :lines) 1)]
+      (is (= 3 (count indent1)))
+      (is (= 2 (count indent2))))))
 
 ;(smart-indent-clojure-equal-test)
 (deftest smart-indent-clojure-right-test
@@ -50,9 +50,9 @@
           result [0 2 7 4 4]]
       (reduce (fn[buf i]
                 (println "row:" i)
-                (let [indent (smart-indent-clojure (buf :lines) i)]
-                  (is (= (result i) indent))
-                  (pprint2 (update-in buf [:lines i] #(str (repeat-space indent) %)) "buf:")))
+                (let [indent (clojure-indent (buf :lines) i)]
+                  (is (= (result i) (count indent)))
+                  (update-in buf [:lines i] #(str indent %))))
               b (range 1 5)))))
 
 ;(smart-indent-clojure-right-test)

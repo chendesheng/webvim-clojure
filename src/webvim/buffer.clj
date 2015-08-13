@@ -444,19 +444,18 @@
         (assoc :cursor {:row (inc row) :col 0 :lastcol 0}))))
 
 (def indent-tab-size #{"def" "defn" "if" "fn" "let"})
-(defn get-indent[line brace-pos]
+(defn get-indent[line]
   (cond 
     (= 1 (count (.trim line)))
     1
     (re-test #"\(\s*[^,\s]+[\s,]+[^,\s]+" line)
-    (let [w (re-find #"[^ ]+" (trim-left-space (subs line (inc brace-pos))))]
+    (let [w (re-find #"[^\s\[\{\(]+" (trim-left-space (subs line 1)))]
       (if (contains? indent-tab-size w)
-        (+ brace-pos 2)
+        2
         (let [m (re-matcher #"\(\s*[^,\s]+[\s,]*([^,\s]+)" line)]
           (.find m)
           (.start m 1))))
-    :else
-    (+ brace-pos 2)))
+    :else 2))
 
 (defn clojure-indent
   "Indent by brace parsing"
@@ -482,6 +481,7 @@
                                      (= (-> stack last :group first) (all-braces ch)))
                               (pop stack)
                               (conj stack pt))))
+                        ;from right to left
                         braces (reverse (re-seq-pos re-braces line 0)))]
           ;(println "current:" current)
           ;(pprint2 nbraces "nbraces:")
@@ -491,9 +491,11 @@
                 (repeat-space (count-left-spaces line))
                 (contains? left-braces (-> nbraces first :group first))
                 (let [m (first nbraces)
-                      ch (-> m :group first)]
+                      ch (-> m :group first)
+                      start (m :start)]
+                  ;(println "start:" start)
                   (if (= ch \()
-                    (repeat-space (get-indent line (m :start)))
+                    (repeat-space (+ (get-indent (subs line start)) start))
                     (repeat-space (inc (m :start)))))
                 :else (recur (dec current) nbraces)))))))
 
@@ -539,7 +541,7 @@
   [b row]
   (let [r (-> b :cursor :row)
         [r1 r2] (if (> r row) [row r] [r row])]
-    (println "buf-indent-lines:" r1 r2)
+    ;(println "buf-indent-lines:" r1 r2)
     (loop[i r1
           b1 b]
       (cond 
