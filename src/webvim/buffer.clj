@@ -14,6 +14,11 @@
 (declare auto-indent)
 (declare clang-indent)
 
+;trim leading spaces but not '\n'
+;only use in indent function
+(defn trim-left-space[line]
+  (.replaceAll line "^[ \t]+" ""))
+
 (defn split-lines-all 
   "Split by \\n and keep \\n. Always has a extra empty string after last \\n.
 => (split-lines-all \"\")
@@ -33,9 +38,11 @@
   (let [languages {".clj" {:name "Clojure"
                            :fn-indent smart-indent-clojure}
                    ".js" {:name "JavaScript"
-                          :fn-indent clang-indent}
+                          :fn-indent clang-indent
+                          :indent-triggers #"}"}
                    ".css" {:name "CSS"
-                           :fn-indent clang-indent}
+                           :fn-indent clang-indent
+                           :indent-triggers #"}"}
                    :else {:name "Plain Text"
                           :fn-indent auto-indent}}
         ext (re-find #"\.\w+$" bufname)
@@ -458,7 +465,7 @@
     0
     (loop [current (dec row)
            braces []]
-      (pprint2 braces "braces:")
+      ;(pprint2 braces "braces:")
       (cond 
         (neg? row)
         ""
@@ -512,8 +519,13 @@
           prow (prev-non-blank-line lines row)
           pline (lines prow)
           pindent (or (re-find #"^\s*" pline) "")]
-      (if (re-test #"\{\s*$" pline)
+      (println "pindent:" (count pindent))
+      (cond 
+        (re-test #"^\s*\}\s*$" line)
+        (if (empty? pindent) "" (subs pindent 1))
+        (re-test #"[\{\)]\s*$" pline)
         (str pindent "\t")
+        :else
         pindent))))
 
 (defn buf-indent-current-line

@@ -198,15 +198,18 @@
              (buf-insert b keycode)
              :else
              b)
-        b2 (buf-update-highlight-brace-pair b1 (:cursor (dec-col b1)))]
-    (if (empty? (-> b2 :autocompl :suggestions))
-      b2
-      (let [word (buffer-word-before-cursor b2)
+        b2 (buf-update-highlight-brace-pair b1 (:cursor (dec-col b1)))
+        b3 (if (re-test (-> b2 :language :indent-triggers) keycode)
+             (-> b2 buf-indent-current-line inc-col)
+             b2)]
+    (if (empty? (-> b3 :autocompl :suggestions))
+      b3
+      (let [word (buffer-word-before-cursor b3)
             suggestions (autocompl-suggest @autocompl-words word)]
         (if (= 1 (count suggestions))
-          (assoc-in b2 [:autocompl :suggestions] [])
-          (assoc b2 :autocompl 
-                 (merge (:autocompl b2) 
+          (assoc-in b3 [:autocompl :suggestions] [])
+          (assoc b3 :autocompl 
+                 (merge (:autocompl b3) 
                         {:suggestions suggestions
                          :suggestions-index 0})))))))
 
