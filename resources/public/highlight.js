@@ -139,7 +139,7 @@ function hljavascript() {
 
 	var rightBraces = {'{':'}'};
 	var leftBraces = {'}':'{'};
-	var keywords = /(\/\/.*|\/[^/]+\/|"[^"]*"|'[^']*'|\{|\}|%\d+|-[\d.]+(?![\w-])|\b[\d.]+(?![\w-])|&&|\|\||\+|>=|<=|>|<|\*|-|\b\/|==|=|%|\bfunction(?![\w-])|\bthis(?![\w-])|\bconsole(?![\w-])|\bfor(?![\w-])|\belse(?![\w-])|\breturn(?![\w-])|\bArray(?![\w-])|\bvar(?![\w-])|\btrue(?![\w-])|\bcase(?![\w-])|\bswitch(?![\w-])|\bfalse(?![\w-])|\bdocument(?![\w-])|\bwindow(?![\w-])|\bif(?![\w-])|\bwhile(?![\w-])|\bnull(?![\w-])|\bbreak(?![\w-]))/g;
+	var keywords = /(\/\/.*|\/[^/]+\/|"[^"]*"|'[^']*'|\{|\}|-[\d.]+\b|\b[\d.]+\b|&&|\|\||\+|>=|<=|>|<|\*|-|\b\/|==|=|%|\bfunction\b|\bthis\b|\bconsole\b|\bfor\b|\belse\b|\breturn\b|\bArray\b|\bvar\b|\btrue\b|\bcase\b|\bswitch\b|\bfalse\b|\bdocument\b|\bwindow\b|\bif\b|\bwhile\b|\bnull\b|\bbreak\b)/g;
 	var states = [];
 	var hl = {};
 
