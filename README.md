@@ -2,8 +2,8 @@
 
 A toy vim clone and it's a web app.
 
-## License
+## Get Start
 
-Copyright © 2015 chendesheng
+lein repl
 
-Distributed under the MIT License.
+open http://localhost:8080
