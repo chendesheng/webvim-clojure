@@ -33,6 +33,8 @@ function hlclojure() {
 	var leftBraces = {')':'(', ']':'[', '}':'{'};
 	var keywords = /(;.*|#"[^"]*"|:[\w-]+|@[\w-]+|"[^"]*"|\(|\)|\[|\]|\{|\}|%\d+|-[\d.]+(?![\w-])|\b[\d.]+(?![\w-])|->|->>|\+|>=|<=|>|<|\*|-|\b\/|==|=|%|\bprint(?![\w-])|\bprintln(?![\w-])|\bdefonce(?![\w-])|\batom(?![\w-])|\bref(?![\w-])|\bagent(?![\w-])|\bdec(?![\w-])|\binc(?![\w-])|\bfn(?![\w-])|\bdefn(?![\w-])|\bif(?![\w-])|\blet(?![\w-])|\bcond(?![\w-])|\bcount(?![\w-])|\bdef(?![\w-])|\bdo(?![\w-])|\bdoseq(?![\w-])|\bloop(?![\w-])|\brecur(?![\w-])|\bstr(?![\w-])|\btry(?![\w-])|\bcatch(?![\w-])|\bmerge(?![\w-])|\bupdate(?![\w-])|\bassoc(?![\w-])|\bupdate-in(?![\w-])|\bdissoc(?![\w-])|\bnil\?(?![\w-])|\bnil(?![\w-])|\btrue(?![\w-])|\bswap!(?![\w-])|\bfalse(?![\w-])|\bsubs(?![\w-])|\bsubvec(?![\w-])|\bvec(?![\w-])|\bvec\?(?![\w-])|\bmap\?(?![\w-])|\bfn\?(?![\w-])|\btrue\?(?![\w-])|\bmap(?![\w-]))/g;
 	var hl = {};	
+
+	hl.states = states;
 	hl.parseLine = function parseLine(line, row) {
 		var lasti = 0;
 		var html = '';
@@ -135,15 +137,14 @@ function hljavascript() {
 		}
 	}
 
-	//each line has a start state
-	//each state is a stack of open braces before this line
-	//TODO Expand this strategy to general increment syntax parsing. Save syntax parser state to each line, if one line changes start parse syntax from that line until meet equal state or EOF (or stop parse when pass screen boundary)
-	var states = [];
-
 	var rightBraces = {'{':'}'};
 	var leftBraces = {'}':'{'};
 	var keywords = /(\/\/.*|\/[^/]+\/|"[^"]*"|'[^']*'|\{|\}|%\d+|-[\d.]+(?![\w-])|\b[\d.]+(?![\w-])|&&|\|\||\+|>=|<=|>|<|\*|-|\b\/|==|=|%|\bfunction(?![\w-])|\bthis(?![\w-])|\bconsole(?![\w-])|\bfor(?![\w-])|\belse(?![\w-])|\breturn(?![\w-])|\bArray(?![\w-])|\bvar(?![\w-])|\btrue(?![\w-])|\bcase(?![\w-])|\bswitch(?![\w-])|\bfalse(?![\w-])|\bdocument(?![\w-])|\bwindow(?![\w-])|\bif(?![\w-])|\bwhile(?![\w-])|\bnull(?![\w-])|\bbreak(?![\w-]))/g;
+	var states = [];
 	var hl = {};
+
+	hl.states = states;
+
 	hl.parseLine = function parseLine(line, row) {
 		var lasti = 0;
 		var html = '';
@@ -247,13 +248,13 @@ function hldefault() {
 }
 
 var highlights = {
-	'Clojure': hlclojure(),
-	'JavaScript': hljavascript(),
-	'CSS': hljavascript(),
-	'default': hldefault()
+	'Clojure': hlclojure,
+	'JavaScript': hljavascript,
+	'CSS': hljavascript,
+	'default': hldefault
 };
 
-function getHighlight(lang) {
-	return highlights[lang] || highlights['default'];
+function newHighlight(lang) {
+	var fn = highlights[lang] || highlights['default'];
+	return fn();
 }
-	

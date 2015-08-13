@@ -73,34 +73,37 @@ function lineid(i) {
 	return '#line-'+i;
 }
 
-var hlcurrent = getHighlight();
+//local states for each buffer, doesn't contains text content since it might be too large.
+var buffers = {};
 
 function render(buf) {
 	if (!buf) return;
 	
-	if (buf.lang) {
-		hlcurrent = getHighlight(buf.lang);
-	}
-		
+	var hl;
 
 	//render lines
 	if (buf.lines) {
+		hl = newHighlight(buf.lang);
+		buffers[buf.id] = { hl: hl };
+
 		$('.lines').empty();
 		$('.gutter').empty();
 		var lines = buf.lines;
-		states = new Array(lines.length+1);
+		hl.states = new Array(lines.length+1);
 		$(lines).each(function(i, line) {
 			if (line) {
-				$('.lines').append(replaceBinding(lineTemplate, {row:i, line:hlcurrent.parseLine(line, i)}, false));
+				$('.lines').append(replaceBinding(lineTemplate, {row:i, line:hl.parseLine(line, i)}, false));
 				$('.gutter').append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
 			}
 		});
 	}
 
+	hl = hl || buffers[buf.id].hl;
+
 	if (buf.difflines) {
 		var diff = buf.difflines;
 		var row = diff.row;
-		var rowstate = states[row];
+		var rowstate = hl.states[row];
 		var add = diff.add;
 		var sub = diff.sub;
 		var oldcnt = parseInt($('.gutter :last-child').text());
@@ -122,7 +125,7 @@ function render(buf) {
 		for (var i = row; i < row+sub; i++) {
 			$(lineid(i)).remove();
 
-			states.splice(i, 1);
+			hl.states.splice(i, 1);
 		}
 
 		var shiftcnt = -sub+add.length;
@@ -140,14 +143,14 @@ function render(buf) {
 
 		//insert add
 		for (var i = 0; i < add.length; i++) {
-			states.splice(row, 0, []);
+			hl.states.splice(row, 0, []);
 		}
 
 		//recover row state
-		states[row] = rowstate;
+		hl.states[row] = rowstate;
 		for (var i = 0; i < add.length; i++) {
 			var i1 = row + i;
-			var line = hlcurrent.parseLine(add[i], i1);
+			var line = hl.parseLine(add[i], i1);
 
 			if (i1 > 0) {
 				$(replaceBinding(lineTemplate, {row:i1, line:line}, false)).insertAfter($(lineid(i1-1)));
@@ -161,7 +164,7 @@ function render(buf) {
 		}
 
 		//continue parse until equal state or EOF
-		hlcurrent.refreshLines(row+add.length, newcnt);
+		hl.refreshLines(row+add.length, newcnt);
 
 		for (var i = newcnt; i < oldcnt; i++) {
 			$(lineid(i)).remove();
