@@ -66,13 +66,13 @@ function hlclojure() {
 			} else if (/^-?[\d.]+$/.test(result)) {
 				cls = 'number';
 			} else if (/\(|\[|\{/.test(firstchar)) {
-				cls = 'brace brace-'+state.length%6;
+				cls = 'brace brace-'+state.length%7;
 				state.push(firstchar);
 			} else if (/\)|\]|\}/.test(firstchar)) {
 				var ch = leftBraces[firstchar];
 				if (state.peek() == ch) {
 					state.pop();
-					cls = 'brace brace-'+state.length%6;
+					cls = 'brace brace-'+state.length%7;
 				} else {
 					cls = 'brace brace-miss';
 				}
@@ -100,12 +100,12 @@ function hlclojure() {
 			for (var j = 0; j < braces.length; j++) {
 				var ch = braces[j].textContent[0];
 				if (/\(|\[|\{/.test(ch)) {
-					replaceBracesClass(braces[j],'brace-'+state.length%6);
+					replaceBracesClass(braces[j],'brace-'+state.length%7);
 					state.push(ch);
 				} else if (/\)|\]|\}/.test(ch)) {
 					if (state.peek() == leftBraces[ch]) {
 						state.pop();
-						replaceBracesClass(braces[j],'brace-'+state.length%6);
+						replaceBracesClass(braces[j],'brace-'+state.length%7);
 					} else {
 						replaceBracesClass(braces[j],'brace-miss');
 					}
@@ -176,13 +176,13 @@ function hljavascript() {
 			} else if (/^-?[\d.]+$/.test(result)) {
 				cls = 'number';
 			} else if (/\{/.test(firstchar)) {
-				cls = 'brace brace-'+state.length%6;
+				cls = 'brace brace-'+state.length%7;
 				state.push(firstchar);
 			} else if (/\}/.test(firstchar)) {
 				var ch = leftBraces[firstchar];
 				if (state.peek() == ch) {
 					state.pop();
-					cls = 'brace brace-'+state.length%6;
+					cls = 'brace brace-'+state.length%7;
 				} else {
 					cls = 'brace brace-miss';
 				}
@@ -210,12 +210,12 @@ function hljavascript() {
 			for (var j = 0; j < braces.length; j++) {
 				var ch = braces[j].textContent[0];
 				if (/\{/.test(ch)) {
-					replaceBracesClass(braces[j],'brace-'+state.length%6);
+					replaceBracesClass(braces[j],'brace-'+state.length%7);
 					state.push(ch);
 				} else if (/|\}/.test(ch)) {
 					if (state.peek() == leftBraces[ch]) {
 						state.pop();
-						replaceBracesClass(braces[j],'brace-'+state.length%6);
+						replaceBracesClass(braces[j],'brace-'+state.length%7);
 					} else {
 						replaceBracesClass(braces[j],'brace-miss');
 					}

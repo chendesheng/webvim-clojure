@@ -10,7 +10,7 @@
         webvim.global))
 
 (def re-braces #"\(|\[|\{|\}|\]|\)")
-(declare smart-indent-clojure)
+(declare clojure-indent)
 (declare auto-indent)
 (declare clang-indent)
 
@@ -36,7 +36,7 @@
 
 (defn create-buf[bufname txt]
   (let [languages {".clj" {:name "Clojure"
-                           :fn-indent smart-indent-clojure}
+                           :fn-indent clojure-indent}
                    ".js" {:name "JavaScript"
                           :fn-indent clang-indent
                           :indent-triggers #"}"}
@@ -458,7 +458,7 @@
     :else
     (+ brace-pos 2)))
 
-(defn smart-indent-clojure
+(defn clojure-indent
   "Indent by brace parsing"
   [lines row]
   (if (zero? row)

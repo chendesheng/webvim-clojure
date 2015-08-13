@@ -160,7 +160,7 @@ pre {
 }
 
 .lines .keyword {
-	color:#63B132;
+	color:#00A725;
 }
 
 .lines .colon-keyword {
@@ -185,26 +185,38 @@ pre {
 	text-decoration:line-through;
 }
 
+/*next 7 colors came from OSX's Reminders App*/
 .lines .brace-0 {
-	color:#ff0000;
+	/*red*/
+	color:#E30054;
 }
 
 .lines .brace-1 {
-	color:#ff9c00;
+	/*orange*/
+	color:#E37519;
 }
 
 .lines .brace-2 {
-	color:#eeff00;
+	/*yellow*/
+	color:#DEA724;
 }
 
 .lines .brace-3 {
-	color:#1eff00;
+	/*green*/
+	color:#00A725;
 }
 
 .lines .brace-4 {
-	color:#00beff;
+	/*blue*/
+	color:#0091D1;
 }
 
 .lines .brace-5 {
-	color:#9900c9;
+	/*purple*/
+	color:#B654BC;
+}
+
+.lines .brace-6 {
+	/*brown*/
+	color:#8F6C4D;
 }
