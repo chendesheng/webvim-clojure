@@ -528,14 +528,29 @@
         :else
         pindent))))
 
-(defn buf-indent-current-line
-  [b]
-  (let [row (-> b :cursor :row)
-        indent ((-> b :language :fn-indent) (b :lines) row)
+(defn buf-indent-line[b row]
+  (let [indent ((-> b :language :fn-indent) (b :lines) row)
         line (buf-line b row)]
     (-> b
-        (assoc-in [:lines row] (str indent (trim-left-space line)))
-        (buf-change-cursor-col (count indent)))))
+        (assoc-in [:lines row] (str indent (trim-left-space line))))))
+
+(defn buf-indent-lines 
+  "indent from cursor row to row both inclusive"
+  [b row]
+  (let [r (-> b :cursor :row)
+        [r1 r2] (if (> r row) [row r] [r row])]
+    (println "buf-indent-lines:" r1 r2)
+    (loop[i r1
+          b1 b]
+      (cond 
+        (> i r2) (-> b1 
+                    (assoc-in [:cursor :row] r1))
+        :else
+        (recur (inc i) (buf-indent-line b1 i))))))
+
+(defn buf-indent-current-line
+  [b]
+  (buf-indent-lines b (-> b :cursor :row)))
 
 (defn buf-copy-range[b p1 p2 inclusive]
   (let [[{r1 :row c1 :col} cur2] (cursor-sort p1 p2)

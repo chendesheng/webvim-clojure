@@ -362,8 +362,8 @@
   (and (= (:row cur1) (:row cur2)) (= (:col cur1) (:col cur2))))
 
 (defn delete-motion[b keycode]
-  (println (str "delete-motion:" keycode))
-  (println (str "inclusive:" (inclusive? keycode)))
+  ;(println (str "delete-motion:" keycode))
+  ;(println (str "inclusive:" (inclusive? keycode)))
   (let [lastbuf (-> b :context :lastbuf)]
     (if (or (nil? lastbuf) (same-pos? (:cursor b) (:cursor lastbuf))) ;don't do anything if cursor doesn't change
       b
@@ -375,11 +375,11 @@
           history-save))))
 
 (defn change-motion[b keycode]
-  (println "change-motion:" keycode)
+  ;(println "change-motion:" keycode)
   (let [lastbuf (-> b :context :lastbuf)
-        lastcur (lastbuf :cursor)]
-    (pprint lastcur)
-    (pprint (:cursor b))
+        lastcur (:cursor lastbuf)]
+    ;(pprint lastcur)
+    ;(pprint (:cursor b))
     (if (or (nil? lastbuf) (same-pos? (:cursor b) lastcur))
       b
       (let [inclusive (inclusive? keycode)]
@@ -391,12 +391,22 @@
 
 (defn yank-motion[b keycode]
   (let [lastbuf (-> b :context :lastbuf)
-        lastcur (lastbuf :cursor)]
+        lastcur (:cursor lastbuf)]
     (if (or (nil? lastbuf) (same-pos? (:cursor b) lastcur))
       b
       (let [inclusive (inclusive? keycode)]
         (buf-copy-range-lastbuf b lastcur inclusive)
         lastbuf))))
+
+(defn indent-motion[b keycode]
+  (let [lastbuf (-> b :context :lastbuf)
+        lastcur (:cursor lastbuf)]
+    (if (or (nil? lastbuf) (same-pos? (:cursor b) lastcur))
+      b
+      (-> b 
+          buf-save-cursor
+          (buf-indent-lines (lastcur :row))
+          (history-save)))))
 
 (defn start-register[b keycode]
   (let [m (re-find #"[0-9a-zA-Z/*#%.:+=\-]" keycode)]
@@ -786,6 +796,15 @@
                 @insert-mode-keymap
                 {:enter set-insert-new-line})
           "." dot-repeat
+          "=" (merge 
+                @motion-keymap
+                {"=" #(-> % 
+                         (update-in [:context] dissoc :lastbuf)
+                         buf-save-cursor
+                         buf-indent-current-line
+                         history-save)
+                 :before save-lastbuf
+                 :after indent-motion})
           ":" (merge
                 @ex-mode-keymap
                 {"enter" execute
