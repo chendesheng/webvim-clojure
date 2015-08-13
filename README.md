@@ -2,8 +2,8 @@
 
 A toy vim clone and it's a web app.
 
-## Get Start
-
+## Usage
+```sh
 lein repl
-
 open http://localhost:8080
+```
