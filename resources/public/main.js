@@ -73,8 +73,15 @@ function lineid(i) {
 	return '#line-'+i;
 }
 
+var hlcurrent = getHighlight();
+
 function render(buf) {
 	if (!buf) return;
+	
+	if (buf.lang) {
+		hlcurrent = getHighlight(buf.lang);
+	}
+		
 
 	//render lines
 	if (buf.lines) {
@@ -84,7 +91,7 @@ function render(buf) {
 		states = new Array(lines.length+1);
 		$(lines).each(function(i, line) {
 			if (line) {
-				$('.lines').append(replaceBinding(lineTemplate, {row:i, line:parseLine(line, i)}, false));
+				$('.lines').append(replaceBinding(lineTemplate, {row:i, line:hlcurrent.parseLine(line, i)}, false));
 				$('.gutter').append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
 			}
 		});
@@ -140,7 +147,7 @@ function render(buf) {
 		states[row] = rowstate;
 		for (var i = 0; i < add.length; i++) {
 			var i1 = row + i;
-			var line = parseLine(add[i], i1);
+			var line = hlcurrent.parseLine(add[i], i1);
 
 			if (i1 > 0) {
 				$(replaceBinding(lineTemplate, {row:i1, line:line}, false)).insertAfter($(lineid(i1-1)));
@@ -153,8 +160,8 @@ function render(buf) {
 			}
 		}
 
-		//continue parse braces until equal state or EOF
-		updateBraces(row+add.length, newcnt);
+		//continue parse until equal state or EOF
+		hlcurrent.refreshLines(row+add.length, newcnt);
 
 		for (var i = newcnt; i < oldcnt; i++) {
 			$(lineid(i)).remove();

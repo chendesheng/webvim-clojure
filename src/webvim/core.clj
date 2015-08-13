@@ -120,6 +120,7 @@
                 (or (nil? before) (not (= (:id before) (:id after))))
                 (-> after
                     (dissoc-cursor nil)
+                    (assoc :lang (-> after :language :name))
                     remove-fields)
                 :else
                 (-> after
@@ -193,8 +194,8 @@
      [:script {:src "http://libs.baidu.com/jquery/2.0.3/jquery.js" :type "text/javascript"}]
      [:script {:src "keycode.js" :type "text/javascript"}]
      [:script {:src "keyboard.js" :type "text/javascript"}]
-     [:script {:src "main.js" :type "text/javascript"}]
      [:script {:src "highlight.js" :type "text/javascript"}]
+     [:script {:src "main.js" :type "text/javascript"}]
      [:link {:href "main.css" :rel "stylesheet"}]]
     [:body
      [:div.buffer
