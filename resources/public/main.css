@@ -79,8 +79,10 @@ pre {
 
 .status-bar .cursor {
 	position:relative;
+	display:inline-block;
 	opacity:1;
 	background:#fff;
+	top:5px;
 }
 
 
