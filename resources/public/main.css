@@ -160,7 +160,8 @@ pre {
 }
 
 .lines .keyword {
-	color:#00A725;
+	/*color:#00A725;*/
+	color:#E92672;
 }
 
 .lines .colon-keyword {
@@ -181,8 +182,20 @@ pre {
 	color:#AB7FFB;
 }
 
+.lines .escape {
+	color:#E6D75F;
+}
+
+.lines .buildin {
+	color:#0091D1;
+}
+
 .lines .brace-miss {
 	text-decoration:line-through;
+}
+
+.lines .title {
+	color:#B654BC;
 }
 
 /*next 7 colors came from OSX's Reminders App*/

@@ -43,6 +43,8 @@
                    ".css" {:name "CSS"
                            :fn-indent clang-indent
                            :indent-triggers #"}"}
+                   ".html" {:name "XML"
+                           :fn-indent auto-indent}
                    :else {:name "Plain Text"
                           :fn-indent auto-indent}}
         ext (re-find #"\.\w+$" bufname)
