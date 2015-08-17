@@ -20,6 +20,14 @@ Array.prototype.equal = function(arr) {
 	return true;
 };
 
+Array.prototype.map = function(fn) {
+	var cp = new Array(this.length);
+	this.each(function(item, i) {
+		cp[i] = fn(item);
+	});
+	return cp;
+};
+
 Array.prototype.toSet = function () {
 	var set = {};
 	this.each(function(s) {
@@ -179,39 +187,6 @@ function hlcompile(ROOT) {
 		return (re && re.source) || re;
 	}
 
-	function contains2re(mode) {
-		var all = [];
-		//illegal is similar with end with higher priority and can be used as an exit pattern
-		//nested language use illegal to back to parent when match "language end pattern" (like </script>)
-		if (mode.illegal) {
-			if (!(mode.illegal instanceof Array)) {
-				mode.illegal = [mode.illegal];
-			}
-
-			var illegals = []
-			mode.illegal.each(function(re) {
-				illegals.push(reStr(re));
-			});
-			mode.reIllegal = new RegExp(illegals.join('|'));
-
-			all = all.concat(illegals);
-		}
-
-		if (mode.contains) {
-			mode.contains.each(function(c) {
-				if(c.begin) {
-					all.push(reStr(c.begin));
-				}
-			});
-		}
-		//it's greedy so end is the last one
-		if (mode.end) {
-			all.push(reStr(mode.end));
-		}
-
-		return new RegExp(all.join('|'), 'g');
-	}
-
 	function compileError(msg) {
 		return 'Compile Error: ' + msg;
 	}
@@ -234,11 +209,6 @@ function hlcompile(ROOT) {
 		if (mode.begin) {
 			mode.rebegin = new RegExp('^'+reStr(mode.begin));
 		}
-
-		if (mode.starts) {
-			mode.starts = compile(mode.starts);
-		}
-
 		if (mode.contains) {
 			mode.contains.each(function(c) {
 				compile(c);
@@ -255,16 +225,45 @@ function hlcompile(ROOT) {
 			if (submode.illegal) {
 				mode.illegal = concatArray(mode.illegal, submode.illegal);
 			}
+		} else {
+			mode.contains = [];
 		}
 
-		if (mode.contains || mode.end || mode.illegal) {
-			//recontains is stateful and will be reused in next parsing over and over
-			//so it MUST reset lastIndex before use it.
-			mode.recontains = contains2re(mode);
+		if (mode.starts) {
+			mode.starts = compile(mode.starts);
+		}
+
+		//merge illegal and end into contains set terminator=true
+		if (mode.illegal) {
+			if (!(mode.illegal instanceof Array)) {
+				mode.illegal = [mode.illegal];
+			}
+			var begin = mode.illegal.map(reStr).join('|');
+			mode.contains.unshift(compile({
+				className: mode.className,
+				begin: begin,
+				beginCapture: mode.illegalCapture,
+				terminator: true
+			}));
 		}
 
 		if (mode.end) {
-			mode.reend = new RegExp('^'+reStr(mode.end)+'$');
+			var endmode = compile({
+				className: mode.className,
+				begin: mode.end,
+				beginCapture: mode.endCapture,
+				terminator: true
+			});
+
+			mode.contains.push(endmode)
+		}
+
+		if (mode.contains.length > 0) {
+			//recontains is stateful and will be reused in next parsing over and over
+			//so it MUST reset lastIndex before use it.
+			mode.recontains = new RegExp(mode.contains
+					.map(function(c) { return reStr(c.begin); })
+					.join('|'), 'g');
 		}
 
 		return mode;
@@ -273,9 +272,13 @@ function hlcompile(ROOT) {
 	var rootCompiled = compile(ROOT);
 
 	function writeOutput(ctx, className, text) {
+		if (!text) {
+			return;
+		}
+
 		var prev = ctx.output.peek();
 		if (prev && prev[0] == className) {
-			//merge to previous item if same className (this can reduce about 3% nodes on testfile.clj file)
+			//merge to previous item if same className (this can reduce about 100 nodes on testfile.clj file)
 			prev[1] += text;
 		} else {
 			ctx.output.push([className, text]);
@@ -287,25 +290,21 @@ function hlcompile(ROOT) {
 	//while(not EOF) {
 	//	mode = ctx.peek()
 	//	if (captured=ctx.matchcontains_end()) {
-	//		if (ctx.matchIllegal) {
-	//			writeOutput
-	//			var lastmode = ctx.pop()
-	//		} else if (ctx.matchend) {
-	//			writeOutput
-	//			var lastmode = ctx.pop()
-	//			ctx.push(lastmode.starts)
-	//		} else {
-	//			for submode in ctx.submodes {
-	//				if (submode.matchbegin(captured) {
-	//					writeOutput
-	//					ctx.push(submode)
+	//		for submode in ctx.submodes {
+	//			if (submode.matchbegin(captured) {
+	//				if (termintor) {
+	//					ctx.pop()
+	//					if (mode.starts) ctx.push(mode.starts)
 	//					break
 	//				}
+	//				writeOutput
+	//				ctx.push(submode)
+	//				break
 	//			}
 	//		}
 	//	} else {
-	//		update ctx.index
 	//		writeOutput
+	//		set EOF
 	//	}
 	//}
 	function parse(ctx) {
@@ -317,45 +316,34 @@ function hlcompile(ROOT) {
 
 			if((result = recontains.exec(line)) != null) {
 				var captured = result[0];
-				if (mode.reIllegal && mode.reIllegal.test(captured)) {
-					var className = mode.illegalCapture?mode.illegalCapture(ctx, captured):mode.className;
-					writeOutput(ctx, className, line.substring(ctx.index, recontains.lastIndex));
-					ctx.index = recontains.lastIndex;
-					ctx.modes.pop();
-				} else if (mode.reend && mode.reend.test(captured)) {
-					var className = mode.endCapture?mode.endCapture(ctx, captured):mode.className;
-					writeOutput(ctx, className, line.substring(ctx.index, recontains.lastIndex));
-					ctx.index = recontains.lastIndex;
-					var nextmode = ctx.modes.pop().starts;
-					//starts next mode after pop()
-					if (nextmode) {
-						ctx.modes.push(nextmode);
-					}
-				} else {
-					var matched = false;
-					for (var i = 0; i < mode.contains.length; i++) {
-						var c = mode.contains[i];
-						if (c.rebegin.test(captured)) {
-							matched = true;
-							ctx.output.push([mode.className, line.substring(ctx.index, recontains.lastIndex-captured.length)]);
-							ctx.index = recontains.lastIndex;
-							if (c.beginCapture) {
-								writeOutput(ctx, c.beginCapture(ctx, captured), captured);
-							} else {
-								writeOutput(ctx, c.className, captured);
-							}
-
-							if (c.recontains) { 
-								ctx.modes.push(c);
-							}
-
-							break;
+				var matched = false;
+				for (var i = 0; i < mode.contains.length; i++) {
+					var c = mode.contains[i];
+					if (c.rebegin.test(captured)) {
+						matched = true;
+						writeOutput(ctx, mode.className, line.substring(ctx.index, recontains.lastIndex-captured.length));
+						ctx.index = recontains.lastIndex;
+						if (c.beginCapture) {
+						      writeOutput(ctx, c.beginCapture(ctx, captured), captured);
+						} else {
+						      writeOutput(ctx, c.className, captured);
 						}
-					}
 
-					if (!matched) {
-						throw 'Something wrong inside contains2re, should never reach here';
+						if (c.terminator) {
+							ctx.modes.pop();
+							if (mode.starts) {
+								ctx.modes.push(mode.starts);
+							}
+						} else if (c.recontains) { 
+							ctx.modes.push(c);
+						}
+						break;
 					}
+				}
+
+				//match recontains MUST match one of contains[i].rebegin too
+				if (!matched) {
+					throw 'Something wrong with syntax descriptor, should never reach here';
 				}
 			} else {
 				if (ctx.index < line.length) {
