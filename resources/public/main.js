@@ -52,15 +52,11 @@ function textWidth(txt, a, b) {
 	return x;
 }
 
-function htmlEncode(value) {
-    return $('<div/>').text(value).html();
-}
-
 function replaceBinding(html, data, ifEncode) {
 	for (var p in data) {
 		if (data.hasOwnProperty(p)) {
 			var v = data[p];
-			html = html.replace(new RegExp('{' + p + '}', 'g'), ifEncode ? htmlEncode(v) : v);
+			html = html.replace(new RegExp('{' + p + '}', 'g'), v);
 		}
 	}
 	return html;
@@ -92,7 +88,7 @@ function render(buf) {
 		hl.states = new Array(lines.length+1);
 		$(lines).each(function(i, line) {
 			if (line) {
-				$('.lines').append(replaceBinding(lineTemplate, {row:i, line:hl.parseLine(line, i)}, false));
+				$('.lines').append(renderLine(i, hl.parseLine(line, i)));
 				$('.gutter').append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
 			}
 		});
@@ -148,23 +144,25 @@ function render(buf) {
 
 		//recover row state
 		hl.states[row] = rowstate;
-		for (var i = 0; i < add.length; i++) {
-			var i1 = row + i;
-			var line = hl.parseLine(add[i], i1);
-
-			if (i1 > 0) {
-				$(replaceBinding(lineTemplate, {row:i1, line:line}, false)).insertAfter($(lineid(i1-1)));
+		for (var i = row,len=row+add.length; i < len; i++) {
+			var line = renderLine(i, hl.parseLine(add[i-row], i));
+			if (i > 0) {
+				$(line).insertAfter($(lineid(i-1)));
 			} else {
-				if (i1 < oldcnt-1) {
-					$(replaceBinding(lineTemplate, {row:i1, line:line}, false)).insertBefore($(lineid(i1+1)));
+				if (i < oldcnt-1) {
+					$(line).insertBefore(lineid(i+1));
 				} else {
-					$(replaceBinding(lineTemplate, {row:i1, line:line}, false)).insertBefore($('.lines :first-child'));
+					$(line).insertBefore('.lines :first-child');
 				}
 			}
 		}
 
 		//continue parse until equal state or EOF
-		hl.refreshLines(row+add.length, newcnt);
+		hl.refreshLines(row+add.length, newcnt, function(row, items) {
+			var pre = renderLineInner(items);
+			var line = document.getElementById('line-'+row);
+			line.replaceChild(pre, line.firstChild);
+		});
 
 		for (var i = newcnt; i < oldcnt; i++) {
 			$(lineid(i)).remove();
@@ -313,6 +311,31 @@ function render(buf) {
 		document.title = buf.name;
 		$('.status-bar .buf-name').text(buf.name);
 	}
+}
+
+function renderLineInner(items) {
+	var pre = document.createElement('PRE');
+	items.each(function(item){
+		var className = item[0];
+		var text = item[1];
+		var node;
+		if (className) {
+			node = document.createElement('SPAN');
+			node.className = className;
+			node.textContent = text;
+		} else {
+			node = document.createTextNode(text);
+		}
+		pre.appendChild(node);
+	});
+	return pre;
+}
+
+function renderLine(row, items) {
+	var line = document.createElement('DIV');
+	line.id = 'line-'+row;
+	line.appendChild(renderLineInner(items));
+	return line;
 }
 
 var aligntop = true;

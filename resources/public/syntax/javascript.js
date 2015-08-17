@@ -102,7 +102,7 @@ function hljavascript(hljs) {
 			if (keywords[captured]) {
 				return 'keyword';
 			} else {
-				var i = ctx.mode.recontains.lastIndex;
+				var i = ctx.index;
 				var line = ctx.line.substr(i);
 				if (ctx.line[i-captured.length-1]=='.'){
 					return 'title';

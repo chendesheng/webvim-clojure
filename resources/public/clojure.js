@@ -73,11 +73,11 @@ function hlclojure(hljs) {
 
 
 	function openBrace(ctx) {
-		return 'brace-'+ctx.depth%7;
+		return 'brace-'+(ctx.modes.length-1)%7;
 	}
 
 	function closeBrace(ctx) {
-		return 'brace-'+(ctx.depth-1)%7;
+		return 'brace-'+(ctx.modes.length-2)%7;
 	}
 
 	var VECTOR = {

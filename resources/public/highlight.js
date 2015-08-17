@@ -169,7 +169,7 @@ function hlcompile(ROOT) {
 	if (!ROOT) {
 		return {
 			parseLine: function(line, row) {
-				return htmlEncode(line);
+				return [[null, line]];
 			},
 			refreshLines: function() {}
 		};
@@ -272,128 +272,106 @@ function hlcompile(ROOT) {
 
 	var rootCompiled = compile(ROOT);
 
-	function buildSPAN(className, text) {
-		if (text.length == 0) return '';
-		else if (!className) return htmlEncode(text);
-		return '<span class="'+className+'">'+htmlEncode(text)+'</span>';
+	function writeOutput(ctx, className, text) {
+		var prev = ctx.output.peek();
+		if (prev && prev[0] == className) {
+			//merge to previous item if same className (this can reduce about 3% nodes on testfile.clj file)
+			prev[1] += text;
+		} else {
+			ctx.output.push([className, text]);
+		}
 	}
 
 	//Pesudo code:
 	//fun parse(ctx) {
-	//	if (ctx.needRestore()) {
-	//		ctx.depth++
-	//		parse(ctx)
-	//		ctx.depth--
-	//	}
-	//
-	//	while (captured=ctx.matchcontains_end()) {
+	//while(not EOF) {
+	//	mode = ctx.peek()
+	//	if (captured=ctx.matchcontains_end()) {
 	//		if (ctx.matchIllegal) {
-	//			ctx.output += buildSPAN(illegal)
+	//			writeOutput
 	//			var lastmode = ctx.pop()
-	//			return
 	//		} else if (ctx.matchend) {
-	//			ctx.output += buildSPAN(end)
+	//			writeOutput
 	//			var lastmode = ctx.pop()
-	//			parseNext(lastmode.starts)
-	//			return
+	//			ctx.push(lastmode.starts)
 	//		} else {
 	//			for submode in ctx.submodes {
 	//				if (submode.matchbegin(captured) {
-	//					ctx.output += buildSPAN(submode.begin)
-	//					parseNext(submode)
+	//					writeOutput
+	//					ctx.push(submode)
+	//					break
 	//				}
 	//			}
 	//		}
+	//	} else {
+	//		update ctx.index
+	//		writeOutput
 	//	}
-	//	ctx.output += rest
 	//}
-	//TODO: Convert recur to loop, this should be easy because ctx.modes stack is already there
-	//TODO: Separent parse and html generate, parse only outputs array of nodes
 	function parse(ctx) {
 		var line = ctx.line;
-		var mode = ctx.mode;
-		if (ctx.modes.length > ctx.depth) {
-			//recover modes back
-			ctx.mode = ctx.modes[ctx.depth];
-			ctx.depth++;
-			parse(ctx);
-			ctx.depth--;
-		}
+		while(ctx.index < line.length) {
+			var mode = ctx.modes.peek();
+			var recontains = mode.recontains;
+			recontains.lastIndex = ctx.index;
 
-		var recontains = mode.recontains;
-		recontains.lastIndex = ctx.index;
-		while((result = recontains.exec(line)) != null) {
-			var captured = result[0];
-			if (mode.reIllegal && mode.reIllegal.test(captured)) {
-				var className = mode.illegalCapture?mode.illegalCapture(ctx, captured):mode.className;
-				ctx.output += buildSPAN(className, line.substring(ctx.index, recontains.lastIndex));
-				ctx.index = recontains.lastIndex;
-				ctx.modes.pop();
-				return;
-			} else if (mode.reend && mode.reend.test(captured)) {
-				var className = mode.endCapture?mode.endCapture(ctx, captured):mode.className;
-				ctx.output += buildSPAN(className, line.substring(ctx.index, recontains.lastIndex));
-				ctx.index = recontains.lastIndex;
-				var nextmode = ctx.modes.pop().starts;
-				//starts next mode after pop()
-				if (nextmode) {
-					parseNext(ctx, nextmode);
-				}
-				return;
-			} else {
-				var matched = false;
-				for (var i = 0; i < mode.contains.length; i++) {
-					var c = mode.contains[i];
-					if (c.rebegin.test(captured)) {
-						matched = true;
-						ctx.output += buildSPAN(mode.className, line.substring(ctx.index, recontains.lastIndex-captured.length));
-						if (c.beginCapture) {
-							ctx.output += buildSPAN(c.beginCapture(ctx, captured), captured);
-						} else {
-							ctx.output += buildSPAN(c.className, captured);
-						}
-						if (c.recontains || c.reend) { 
+			if((result = recontains.exec(line)) != null) {
+				var captured = result[0];
+				if (mode.reIllegal && mode.reIllegal.test(captured)) {
+					var className = mode.illegalCapture?mode.illegalCapture(ctx, captured):mode.className;
+					writeOutput(ctx, className, line.substring(ctx.index, recontains.lastIndex));
+					ctx.index = recontains.lastIndex;
+					ctx.modes.pop();
+				} else if (mode.reend && mode.reend.test(captured)) {
+					var className = mode.endCapture?mode.endCapture(ctx, captured):mode.className;
+					writeOutput(ctx, className, line.substring(ctx.index, recontains.lastIndex));
+					ctx.index = recontains.lastIndex;
+					var nextmode = ctx.modes.pop().starts;
+					//starts next mode after pop()
+					if (nextmode) {
+						ctx.modes.push(nextmode);
+					}
+				} else {
+					var matched = false;
+					for (var i = 0; i < mode.contains.length; i++) {
+						var c = mode.contains[i];
+						if (c.rebegin.test(captured)) {
+							matched = true;
+							ctx.output.push([mode.className, line.substring(ctx.index, recontains.lastIndex-captured.length)]);
 							ctx.index = recontains.lastIndex;
-							parseNext(ctx, c);
-						} else {
-							ctx.index = recontains.lastIndex;
+							if (c.beginCapture) {
+								writeOutput(ctx, c.beginCapture(ctx, captured), captured);
+							} else {
+								writeOutput(ctx, c.className, captured);
+							}
+
+							if (c.recontains) { 
+								ctx.modes.push(c);
+							}
+
+							break;
 						}
-						break;
+					}
+
+					if (!matched) {
+						throw 'Something wrong inside contains2re, should never reach here';
 					}
 				}
-
-				if (!matched) {
-					throw 'Something wrong inside contains2re, should never reach here';
+			} else {
+				if (ctx.index < line.length) {
+					writeOutput(ctx, mode.className, line.substring(ctx.index));
+					ctx.index = line.length;
 				}
-
-				recontains.lastIndex = ctx.index;
 			}
 		}
-
-		if (ctx.index < line.length) {
-			ctx.output += buildSPAN(mode.className, line.substring(ctx.index));
-			ctx.index = line.length;
-		}
 	}
 
-	function parseNext(ctx, mode) {
-		var saved = ctx.mode;
-		ctx.modes.push(mode);
-		ctx.mode = mode;
-		ctx.depth++;
-		parse(ctx);
-		ctx.depth--;
-		ctx.mode = saved;
-	}
-
-	function doParse(line, rootMode, lastModes) {
+	function doParse(line, startModes) {
 		var ctx = {
 			line: line, 
 			index: 0,
-			mode: rootMode,
-			modes: lastModes,
-			output: '',
-			depth:0
+			modes: startModes.slice(),
+			output: [] //[[className, text], [className, text]...]
 		};
 		parse(ctx);
 		return ctx;
@@ -402,29 +380,33 @@ function hlcompile(ROOT) {
 	var hl = {};
 	hl.states; //caller should init states before call parseLine
 
+	//var nodeCount = 0;
 	//parse one line and save end state to next line
 	//call this function when line changes
 	hl.parseLine = function(line, row) {
 		var states = hl.states;
-		if (!states[row]) {
-			states[row] = [];
+		if (states[row]==null) {
+			states[row] = [rootCompiled];
 		}
-		//logmodes(row);
-		var ctx = doParse(line, rootCompiled, states[row].slice());
+		var ctx = doParse(line, states[row]);
 		states[row+1] = ctx.modes;
+		//logmodes(row+1);
+		
+		//nodeCount += ctx.output.length;
+		//console.log('output count:' + nodeCount);
 		return ctx.output;
 	};
 
 	//These lines' text are not changed but syntax affected by previous lines change
-	hl.refreshLines = function(row, cnt) {
+	hl.refreshLines = function(row, cnt, renderLine) {
 		var states = hl.states;
 		for (var i = row; i < cnt; i++) {
 			var $line = $('#line-'+i+' pre');
 			var line = $line[0].textContent;
 
 			//logmodes(i);
-			var ctx = doParse(line, rootCompiled, states[i].slice());
-			$line.html(ctx.output);
+			var ctx = doParse(line, states[i]);
+			renderLine(i, ctx.output);
 			if (states[i+1].equal(ctx.modes)) {
 				//doParse has 3 arguments, in next lines none of them changed
 				//so no syntax will be changed in next lines
@@ -432,6 +414,7 @@ function hlcompile(ROOT) {
 			} else {
 				states[i+1] = ctx.modes;
 			}
+			//logmodes(i+1);
 		}
 	};
 
