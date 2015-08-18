@@ -194,7 +194,7 @@
      [:script {:src "http://libs.baidu.com/jquery/2.0.3/jquery.js" :type "text/javascript"}]
      [:script {:src "keycode.js" :type "text/javascript"}]
      [:script {:src "keyboard.js" :type "text/javascript"}]
-     [:script {:src "clojure.js" :type "text/javascript"}]
+     [:script {:src "syntax/clojure.js" :type "text/javascript"}]
      [:script {:src "syntax/css.js" :type "text/javascript"}]
      [:script {:src "syntax/xml.js" :type "text/javascript"}]
      [:script {:src "syntax/javascript.js" :type "text/javascript"}]

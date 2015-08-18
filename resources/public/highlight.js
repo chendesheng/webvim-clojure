@@ -242,6 +242,7 @@ function hlcompile(ROOT) {
 		}
 
 		if (mode.starts) {
+			mode.starts.root = true;
 			mode.starts = compile(mode.starts);
 		}
 

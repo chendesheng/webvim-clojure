@@ -89,7 +89,7 @@ function hlclojure(hljs) {
 	var NAME = {
 		begin: SYMBOL_RE,
 		beginCapture: function(ctx, capture) {
-			return iskeywords(ctx, capture) || 'keyword';
+			return iskeywords(ctx, capture) || 'brace-3';
 		},
 		starts: BODY
 	};
