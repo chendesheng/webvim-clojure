@@ -46,10 +46,12 @@ function hljavascript(hljs) {
 		className: 'number',
 		begin: hljs.C_NUMBER_RE
 	},
+  hljs.inherit(hljs.QUOTE_STRING_MODE,
 	{
 		className: 'regexp',
-		begin: /\/[^\/]*\/(?![\d\s])[ig]*/,
-	},
+		begin: /\//,
+    end:/\//
+	}),
       //{
       //  begin: '\\b(0[bB][01]+)', //TODO: support variants
       //  className: 'number',
