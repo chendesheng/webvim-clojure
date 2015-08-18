@@ -175,12 +175,11 @@
   "The \"^\" motion"
   [b]
   (let [line (-> b :lines (get (-> b :cursor :row)))
-        [start end] (if (= 1 (count line))
-                        [nil nil]
-                        (line-next-re line 0 #"^\S|(?<=\s)\S"))]
+        [start end] (line-next-re line 0 #"\S")]
+    (println start end)    
     (if (nil? start)
-      (buf-change-cursor-col b start)
-      b)))
+      (buf-change-cursor-col b (-> line count dec))
+      (buf-change-cursor-col b start))))
 
 (defn cursor-line-end
   "The \"$\" motion"

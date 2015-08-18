@@ -548,7 +548,8 @@
           b1 b]
       (cond 
         (> i r2) (-> b1 
-                    (assoc-in [:cursor :row] r1))
+                    (assoc-in [:cursor :row] r1)
+                    (cursor-line-start))
         :else
         (recur (inc i) (buf-indent-line b1 i))))))
 
