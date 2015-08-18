@@ -39,17 +39,20 @@ function hlclojure(hljs) {
 	var SYMBOL_RE = '[' + SYMBOLSTART + '][' + SYMBOLSTART + '0-9/;:]*';
 	var SIMPLE_NUMBER_RE = '[-+]?\\d+(\\.\\d+)?';
 
+	function iskeywords(ctx, capture) {
+		if (keywords[capture]) {
+			return 'brace-4';
+		}
+	}
+
 	var SYMBOL = {
 		begin: SYMBOL_RE,
-		beginCapture: function(ctx, capture) {
-			if (keywords[capture]) {
-				return 'brace-4';
-			} else {
-				//JavaScript's regexp do not support lookBehind
-				//ctx.line[-1] is undefined
-				return ctx.line[ctx.index-1]=='(' ? 'brace-3': '';
-			}
-		}
+		beginCapture: iskeywords
+	};
+
+	var LITERAL = {
+		className: 'keyword',
+		begin: /\b(true|false|nil)\b/
 	};
 
 	var NUMBER = {
@@ -71,6 +74,25 @@ function hlclojure(hljs) {
 		begin: '[:@]' + SYMBOL_RE,
 	};
 
+	var HINT = {
+		className: 'comment',
+		begin: '\\^' + SYMBOL_RE
+	};
+
+	var HINT_COL = hljs.COMMENT('\\^\\{', '\\}');
+
+	var BODY = {
+		endsWithParent: true,
+		relevance: 0
+	};
+
+	var NAME = {
+		begin: SYMBOL_RE,
+		beginCapture: function(ctx, capture) {
+			return iskeywords(ctx, capture) || 'keyword';
+		},
+		starts: BODY
+	};
 
 	function openBrace(ctx) {
 		return 'brace-'+(ctx.modes.length-1)%7;
@@ -98,13 +120,14 @@ function hlclojure(hljs) {
 		beginCapture: openBrace,
 		endCapture: closeBrace
 	};
-
-	var DEFAULT_CONTAINS = [COMMENT, LIST, VECTOR, MAP, REGEXP, STRING, KEY, NUMBER, SYMBOL];
+	
+	var DEFAULT_CONTAINS = [LIST, STRING, HINT, HINT_COL, COMMENT, KEY, MAP, VECTOR, NUMBER, LITERAL, SYMBOL];
 	VECTOR.contains = DEFAULT_CONTAINS;
 	MAP.contains = DEFAULT_CONTAINS;
-	LIST.contains = DEFAULT_CONTAINS;
+	LIST.contains = [hljs.COMMENT('comment', ''), NAME, LIST, STRING, HINT, HINT_COL, COMMENT, KEY, MAP, VECTOR, NUMBER, LITERAL, SYMBOL];
+	BODY.contains = DEFAULT_CONTAINS;
 
-	return {
-		contains: [COMMENT, LIST, VECTOR, MAP, REGEXP, STRING, KEY, NUMBER]
+	return { 
+		contains: [LIST, STRING, HINT, HINT_COL, COMMENT, KEY, MAP, VECTOR, NUMBER, LITERAL]
 	};
 }
