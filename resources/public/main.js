@@ -201,6 +201,7 @@ function render(buf) {
 	} else {
 		if (typeof buf.mode != 'undefined' && buf.mode < MODES.length) {
 			$('.status-bar .ex').empty().text(MODES[buf.mode]);
+			keymap = keymaps[buf.mode];
 		}
 	}
 

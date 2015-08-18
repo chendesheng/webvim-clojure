@@ -17,16 +17,12 @@ $(document).keydown(function(event) {
 			}
 		}
 
-		if (key == 'c+[') {
-			key = 'esc';
-		}
-
-		if (key) {
+		keymap(key, function(key) {
 			inputQueue.push(key);
 			if (inputQueue.length == 1) {
 				sendQueue();
 			}
-		}
+		});
 	}
 });
 
@@ -35,12 +31,12 @@ $(document).keypress(function(event) {
 	var code = event.keyCode || event.charCode || event.which;;
 
 	var ch = String.fromCharCode(code)
-	if (ch) {
-		inputQueue.push(ch);
+	keymap(ch, function(key) {
+		inputQueue.push(key);
 		if (inputQueue.length == 1) {
 			sendQueue();
 		}
-	}
+	});
 });
 
 function sendQueue() {
@@ -54,3 +50,63 @@ function sendQueue() {
 		});
 	}
 }
+
+
+var ongoingkeys = [];
+var ongoingkeysTimer;
+
+
+//map key to another get return from callback
+function imap(key, callback) {
+	if (!key) {
+		return;
+	}
+
+	if (key == 'c+[') {
+		callback('esc');
+		return;
+	}
+
+	if (key == 'j') {
+		if (ongoingkeys.length == 0) {
+			//$('.lines .cursor').text('j');
+			ongoingkeysTimer = setTimeout(function() {
+				callback('j');
+				ongoingkeys = [];
+			}, 1000);
+
+			ongoingkeys.push(key);
+		} else {
+			//press twice 'j'
+			if (ongoingkeysTimer != null) {
+				clearTimeout(ongoingkeysTimer);
+				ongoingkeysTimer = null;
+			}
+
+			ongoingkeys = [];
+			callback('esc');
+		}
+	} else {
+		if (ongoingkeysTimer != null) {
+			clearTimeout(ongoingkeysTimer);
+			ongoingkeysTimer = null;
+		}
+
+		ongoingkeys.push(key);
+		ongoingkeys.each(function(key){
+			callback(key);
+		});
+
+		ongoingkeys = [];
+	}
+}
+
+function nmap(key, callback) {
+	callback(key);
+}
+
+var vmap = nmap;
+
+var keymaps = [nmap, imap, vmap];
+
+var keymap = nmap;
