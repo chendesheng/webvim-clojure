@@ -242,7 +242,6 @@ function hlcompile(ROOT) {
 		}
 
 		if (mode.starts) {
-			mode.starts.root = true;
 			mode.starts = compile(mode.starts);
 		}
 
@@ -342,6 +341,11 @@ function hlcompile(ROOT) {
 		var line = ctx.line;
 		while(ctx.index < line.length) {
 			var mode = ctx.modes.peek();
+//			console.log(mode.begin);
+//			console.log(mode.line);
+//			console.log(mode.rebegin);
+//			console.log(mode.recontains);
+
 			var recontains = modeReContains(mode, ctx.index);
 
 			if(recontains && (result = recontains.exec(line)) != null) {
@@ -366,6 +370,10 @@ function hlcompile(ROOT) {
 							}
 						} else if (c.recontains) { 
 							ctx.modes.push(c);
+						} else {
+							if (c.starts) {
+								ctx.modes.push(c.starts);
+							}
 						}
 						break;
 					}
@@ -373,12 +381,9 @@ function hlcompile(ROOT) {
 
 				//match recontains MUST match one of contains[i].rebegin too
 				if (!matched) {
-					console.log(mode.begin);
-					console.log(mode.line);
-					console.log(mode.rebegin);
-					console.log(mode.recontains);
 					throw 'Something wrong with syntax descriptor, should never reach here';
 				}
+
 			} else {
 				if (ctx.index < line.length) {
 					writeOutput(ctx, (mode||{}).className, line.substring(ctx.index));

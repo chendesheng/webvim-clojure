@@ -81,19 +81,6 @@ function hlclojure(hljs) {
 
 	var HINT_COL = hljs.COMMENT('\\^\\{', '\\}');
 
-	var BODY = {
-		endsWithParent: true,
-		relevance: 0
-	};
-
-	var NAME = {
-		begin: SYMBOL_RE,
-		beginCapture: function(ctx, capture) {
-			return iskeywords(ctx, capture) || 'brace-3';
-		},
-		starts: BODY
-	};
-
 	function openBrace(ctx) {
 		return 'brace-'+(ctx.modes.length-1)%7;
 	}
@@ -108,23 +95,39 @@ function hlclojure(hljs) {
 		beginCapture: openBrace,
 		endCapture: closeBrace
 	};
+
 	var MAP = {
 		begin: '\\{',
 		end: '\\}',
 		beginCapture: openBrace,
 		endCapture: closeBrace
 	};
-	var LIST = {
-		begin: '\\(', 
-		end: '\\)',
-		beginCapture: openBrace,
-		endCapture: closeBrace
+
+	var NAME = {
+		begin: SYMBOL_RE,
+		beginCapture: function(ctx, capture) {
+			return iskeywords(ctx, capture) || 'brace-3';
+		}
 	};
-	
+
+
+	var BODY = {
+		end: /\)/,
+		endCapture: closeBrace,
+		relevance: 0
+	};
+
+	var LIST = {
+		begin: /\(\s*/,
+		contains: [NAME],
+		end: /\s|,|\b|\B/,
+		beginCapture: openBrace,
+		starts:BODY
+	};
+
 	var DEFAULT_CONTAINS = [LIST, STRING, HINT, HINT_COL, COMMENT, KEY, MAP, VECTOR, NUMBER, LITERAL, SYMBOL];
 	VECTOR.contains = DEFAULT_CONTAINS;
 	MAP.contains = DEFAULT_CONTAINS;
-	LIST.contains = [hljs.COMMENT('comment', ''), NAME, LIST, STRING, HINT, HINT_COL, COMMENT, KEY, MAP, VECTOR, NUMBER, LITERAL, SYMBOL];
 	BODY.contains = DEFAULT_CONTAINS;
 
 	return { 
