@@ -23,7 +23,18 @@ Array.prototype.equal = function(arr) {
 Array.prototype.map = function(fn) {
 	var cp = new Array(this.length);
 	this.each(function(item, i) {
-		cp[i] = fn(item);
+		var res = fn(item);
+		cp[i] = res;
+	});
+	return cp;
+};
+
+Array.prototype.filter = function(fn) {
+	var cp = [];
+	this.each(function(item, i) {
+		if (fn(item)) {
+			cp.push(item);
+		}
 	});
 	return cp;
 };
@@ -205,10 +216,6 @@ function hlcompile(ROOT) {
 		//prevent circle reference
 		if (mode.compiled) return mode;
 		mode.compiled = true;
-
-		if (mode.begin) {
-			mode.rebegin = new RegExp('^'+reStr(mode.begin));
-		}
 		if (mode.contains) {
 			mode.contains.each(function(c) {
 				compile(c);
@@ -218,6 +225,7 @@ function hlcompile(ROOT) {
 			if (!lang) {
 				throw compileError('Refer an unexsits language "'+mode.subLanguage+'".');
 			}
+			lang.root = true;
 			var submode = compile(lang);
 			mode.contains = submode.contains;
 
@@ -227,6 +235,10 @@ function hlcompile(ROOT) {
 			}
 		} else {
 			mode.contains = [];
+		}
+
+		if (mode.begin) {
+			mode.rebegin = new RegExp('^'+reStr(mode.begin));
 		}
 
 		if (mode.starts) {
@@ -261,14 +273,23 @@ function hlcompile(ROOT) {
 		if (mode.contains.length > 0) {
 			//recontains is stateful and will be reused in next parsing over and over
 			//so it MUST reset lastIndex before use it.
-			mode.recontains = new RegExp(mode.contains
-					.map(function(c) { return reStr(c.begin); })
-					.join('|'), 'g');
+			var str = mode.contains
+				.filter(function(c) {return c.begin})
+				.map(function(c) { return reStr(c.begin)})
+				.join('|');
+			mode.recontains = new RegExp(str, 'g');
+
+			//language root doesn't have begin but submodes must have one
+			if (!mode.root && !mode.begin) {
+				mode.begin = str;
+				mode.rebegin = new RegExp('^'+str);
+			}
 		}
 
 		return mode;
 	}
 
+	ROOT.root = true;
 	var rootCompiled = compile(ROOT);
 
 	function writeOutput(ctx, className, text) {
@@ -307,14 +328,22 @@ function hlcompile(ROOT) {
 	//		set EOF
 	//	}
 	//}
+	function modeReContains(mode, index) {
+		if (!mode) return null;
+
+		var recontains = mode.recontains;
+		if (!recontains) return null;
+
+		recontains.lastIndex = index;
+		return recontains;
+	}
 	function parse(ctx) {
 		var line = ctx.line;
 		while(ctx.index < line.length) {
 			var mode = ctx.modes.peek();
-			var recontains = mode.recontains;
-			recontains.lastIndex = ctx.index;
+			var recontains = modeReContains(mode, ctx.index);
 
-			if((result = recontains.exec(line)) != null) {
+			if(recontains && (result = recontains.exec(line)) != null) {
 				var captured = result[0];
 				var matched = false;
 				for (var i = 0; i < mode.contains.length; i++) {
@@ -343,11 +372,15 @@ function hlcompile(ROOT) {
 
 				//match recontains MUST match one of contains[i].rebegin too
 				if (!matched) {
+					console.log(mode.begin);
+					console.log(mode.line);
+					console.log(mode.rebegin);
+					console.log(mode.recontains);
 					throw 'Something wrong with syntax descriptor, should never reach here';
 				}
 			} else {
 				if (ctx.index < line.length) {
-					writeOutput(ctx, mode.className, line.substring(ctx.index));
+					writeOutput(ctx, (mode||{}).className, line.substring(ctx.index));
 					ctx.index = line.length;
 				}
 			}
