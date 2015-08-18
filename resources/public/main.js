@@ -11,18 +11,18 @@ $(document).ready(function() {
 
 //https://stackoverflow.com/questions/2854407/javascript-jquery-window-resize-how-to-fire-after-the-resize-is-completed/4541963#4541963
 var waitForFinalEvent = (function () {
-  var timers = {};
-  return function (callback, ms, uniqueId) {
-    if (!uniqueId) {
-      uniqueId = "Don't call this twice without a uniqueId";
-    }
-    if (timers[uniqueId]) {
-      clearTimeout (timers[uniqueId]);
-    }
-    timers[uniqueId] = setTimeout(callback, ms);
-  };
+	var timers = {};
+	return function (callback, ms, uniqueId) {
+		if (!uniqueId) {
+			uniqueId = "Don't call this twice without a uniqueId";
+		}
+		if (timers[uniqueId]) {
+			clearTimeout (timers[uniqueId]);
+		}
+		timers[uniqueId] = setTimeout(callback, ms);
+	};
 })();
-
+		
 function setSize() {
 	var w = Math.floor($('.lines')[0].offsetWidth/9.57);
 	var h = Math.floor($('.buffer')[0].offsetHeight/21);
@@ -262,7 +262,7 @@ function render(buf) {
 		renderSelections($('.lines .highlight-brace-pair'), ranges);
 	}
 
-	scrollToCursor(buf['scroll-top'] || 0);
+	scrollToCursor(buf['scroll-top'] || 0, buf.lines);
 
 	//render autocompl suggestions
 	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
@@ -341,7 +341,7 @@ function renderLine(row, items) {
 }
 
 var aligntop = true;
-function scrollToCursor(scrollTopRow) {
+function scrollToCursor(scrollTopRow, instant) {
 	var el = $('.cursor')[0];
 	var $lines = $('.lines');
 	var $buf = $('.buffer');
@@ -351,7 +351,7 @@ function scrollToCursor(scrollTopRow) {
 
 	var oldst = $buf.scrollTop();
 	var newst = scrollTopRow * 21;
-	if (Math.abs(oldst - newst) > 3*21) {
+	if (!instant && Math.abs(oldst - newst) > 3*21) {
 		$buf.animate({ scrollTop: newst}, 60);
 	} else {
 		$buf.scrollTop(newst);
