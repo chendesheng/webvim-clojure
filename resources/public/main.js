@@ -24,9 +24,11 @@ var waitForFinalEvent = (function () {
 })();
 
 function setSize() {
-	var w = Math.round($('.lines')[0].offsetWidth/9.57);
-	var h = Math.round($('.buffer')[0].offsetHeight/21);
+	var w = Math.floor($('.lines')[0].offsetWidth/9.57);
+	var h = Math.floor($('.buffer')[0].offsetHeight/21);
 	$.getJSON('resize/'+w+'/'+h);
+	
+	$('.lines').css('padding-bottom', (h-1)*21); //scroll beyond last line, leave at least one line
 }
 
 function isChinese(c) {
