@@ -11,8 +11,7 @@
 
 
 ;one server only serve one window at one time
-;:scroll-top is a row number
-(defonce window (atom{:viewport {:w 0 :h 0 :scroll-top 0}}))
+(defonce window (atom{:viewport {:w 0 :h 0}}))
 
 ;generate buffer id and buffer id only
 (defonce gen-buf-id (atom 0))

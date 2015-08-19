@@ -98,7 +98,8 @@
           (async/close! out)
           (-> b
               (serve-keys keymap keycode)
-              (buffer-reset-keys)
+              buffer-reset-keys
+              buf-bound-scroll-top
               (send-out out))))
       (catch Exception e
         (let [err (str "caught exception: " e)]
@@ -114,7 +115,7 @@
     (loop[b1 b]
       (if (not (nil? b1))
         (recur (key-server-inner 
-                 (update-in b1 [:context] dissoc :scroll-top) ;remove :context :scroll-top
+                 b1
                  keymap)))))
   b)
 

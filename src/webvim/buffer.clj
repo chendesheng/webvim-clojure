@@ -94,6 +94,8 @@
                        ;0 means selection nothing (don't highlight any suggestion item)
                        ;> 0 means highlight the nth suggestion item
                        :suggestions-index 0}
+           ;screen scrollTop row number, update after every key press
+           :scroll-top 0
            ;programming language specific configs
            ;detect language by file ext name
            ;TODO detect language by file content
@@ -593,3 +595,16 @@
             (buf-replace {:row (inc r) :col col} " " false)
             dec-col))
       b)))
+
+(defn buf-bound-scroll-top
+  "Change scroll top make cursor inside viewport"
+  [b]
+  (let [st (-> b :scroll-top)]
+    (assoc b :scroll-top 
+           (let [row (-> b :cursor :row)
+                 h (-> @window :viewport :h)]
+             (cond 
+               (< row st) row
+               (< row (+ st h)) st
+               (neg? (-> row (- h) inc)) 0
+               :else (-> row (- h) inc))))))

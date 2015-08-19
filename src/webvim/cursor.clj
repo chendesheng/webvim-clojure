@@ -311,17 +311,18 @@
   "Jump cursor by viewport height, deps to window's :viewport"
   [b factor]
   (let [d (round-to-zero (* (:h (:viewport @window)) factor))
-        {h :h scroll-top :scroll-top} (@window :viewport)
+        scroll-top (b :scroll-top)
+        h (-> @window :viewport :h)
         row (-> b :cursor :row)
         vrow (- row scroll-top)
         newrow (bound-range (+ row d) 0 (-> b :lines count dec dec))
         newcol (first-nonspace-pos ((:lines b) newrow))
         newst (-> newrow (- vrow) negzero)]
     (-> b
-        (assoc-in [:context :scroll-top] newst)
+        (assoc :scroll-top newst)
         (assoc :cursor {:row newrow :col newcol :lastcol newcol}))))
 
 (defn cursor-center-viewport[b]
-  (assoc-in b [:context :scroll-top] 
+  (assoc b :scroll-top 
             (-> b :cursor :row 
                 (- (int (/ (-> @window :viewport :h) 2))))))
