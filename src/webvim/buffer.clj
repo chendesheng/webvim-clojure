@@ -9,7 +9,7 @@
         webvim.cursor
         webvim.global))
 
-(def re-braces #"\(|\[|\{|\}|\]|\)")
+(def re-braces #"(?<!\\)(\(|\[|\{|\}|\]|\))")
 (declare clojure-indent)
 (declare auto-indent)
 (declare clang-indent)
@@ -470,7 +470,7 @@
            braces []]
       ;(pprint2 braces "braces:")
       (cond 
-        (neg? row)
+        (neg? current)
         ""
         (blank? (lines current))
         (recur (dec current) braces)
