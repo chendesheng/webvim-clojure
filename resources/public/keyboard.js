@@ -17,12 +17,14 @@ $(document).keydown(function(event) {
 			}
 		}
 
-		keymap(key, function(key) {
-			inputQueue.push(key);
-			if (inputQueue.length == 1) {
-				sendQueue();
-			}
-		});
+		if (key) {
+			keymap(key, function(key) {
+				inputQueue.push(key);
+				if (inputQueue.length == 1) {
+					sendQueue();
+				}
+			});
+		}
 	}
 });
 
