@@ -51,8 +51,8 @@ function hlclojure(hljs) {
 	};
 
 	var LITERAL = {
-		className: 'keyword',
-		begin: /\b(true|false|nil)\b/
+		className: 'number',
+		begin: /\\\(|\\\[|\\\{|\\\}|\\\]|\\\)|\\\w|\b(true|false|nil)\b/
 	};
 
 	var NUMBER = {
@@ -125,12 +125,12 @@ function hlclojure(hljs) {
 		starts:BODY
 	};
 
-	var DEFAULT_CONTAINS = [LIST, STRING, HINT, HINT_COL, COMMENT, KEY, MAP, VECTOR, NUMBER, LITERAL, SYMBOL];
+	var DEFAULT_CONTAINS = [LIST, STRING, REGEXP, HINT, HINT_COL, COMMENT, KEY, MAP, VECTOR, NUMBER, LITERAL, SYMBOL];
 	VECTOR.contains = DEFAULT_CONTAINS;
 	MAP.contains = DEFAULT_CONTAINS;
 	BODY.contains = DEFAULT_CONTAINS;
 
 	return { 
-		contains: [LIST, STRING, HINT, HINT_COL, COMMENT, KEY, MAP, VECTOR, NUMBER, LITERAL]
+		contains: [LIST, STRING, REGEXP, HINT, HINT_COL, COMMENT, KEY, MAP, VECTOR, NUMBER, LITERAL]
 	};
 }
