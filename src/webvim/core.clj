@@ -1,5 +1,6 @@
 (ns webvim.core
-  (:require [ring.adapter.jetty :as jetty]
+  (:require [me.raynes.fs :as fs]
+            [ring.adapter.jetty :as jetty]
             [clojure.core.async :as async]
             [ring.util.response :as response])
   (:use clojure.pprint
@@ -170,11 +171,18 @@
 (defn parse-int [s]
   (Integer. (re-find #"\d+" s)))
 
+;I don't like include js library directly, but also don't want download it again and again.
+(defonce cache-jquery
+  (let [path "resources/public/jquery.js"]
+    (or 
+      (fs/exists? path)
+      (spit path (slurp "http://libs.baidu.com/jquery/2.0.3/jquery.js")))))
+
 (defn homepage
   [request]
   (html5 
     [:head
-     [:script {:src "http://libs.baidu.com/jquery/2.0.3/jquery.js" :type "text/javascript"}]
+     [:script {:src "jquery.js" :type "text/javascript"}]
      [:script {:src "keycode.js" :type "text/javascript"}]
      [:script {:src "keyboard.js" :type "text/javascript"}]
      [:script {:src "syntax/clojure.js" :type "text/javascript"}]
