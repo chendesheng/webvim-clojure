@@ -75,6 +75,10 @@ function lineid(i) {
 //local states for each buffer, doesn't contains text content since it might be too large.
 var buffers = {};
 
+//TODO: Future improvements: 
+//1. put syntax highlight to a dedicate web worker (or just use setTimeout)
+//2. only render “visible” parts and still make scrolling fast
+//3. render difflines into an offline DOM object first
 function render(buf) {
 	if (!buf) return;
 	
@@ -85,18 +89,34 @@ function render(buf) {
 		hl = newHighlight(buf.lang);
 		buffers[buf.id] = { hl: hl };
 
-		$('.lines').empty();
-		$('.gutter').empty();
+		var css = $('.lines').remove().attr('style');
+		var $lines = document.createElement('DIV');
+		$lines.className = 'lines';
+		$lines.style.cssText = css;
+
+		$('.gutter').remove();
+		var $gutter = document.createElement('DIV');
+		$gutter.className = 'gutter';
+
 		var lines = buf.lines;
 		hl.states = new Array(lines.length+1);
-		$(lines).each(function(i, line) {
+		lines.each(function(line, i) {
 			if (line) {
-				$('.lines').append(renderLine(i, hl.parseLine(line, i)));
-				$('.gutter').append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
+				$lines.appendChild(renderLine(i, hl.parseLine(line, i)));
+
+				var g = document.createElement('DIV');
+				g.id = 'line-num-'+i;
+				g.className = 'line-num';
+				g.textContent = i+1;
+				$gutter.appendChild(g);
 			}
 		});
+
+		$('.buffer').append($gutter);
+		$('.buffer').append($lines);
 	}
 
+	var $gutter = $('.gutter');
 	hl = hl || buffers[buf.id].hl;
 
 	if (buf.difflines) {
@@ -105,17 +125,17 @@ function render(buf) {
 		var rowstate = hl.states[row];
 		var add = diff.add;
 		var sub = diff.sub;
-		var oldcnt = parseInt($('.gutter :last-child').text());
+		var oldcnt = parseInt($gutter.find(':last-child').text());
 		var newcnt = oldcnt+add.length-sub;
 
 		//update gutter
 		if (newcnt > oldcnt) {
 			for (var i = oldcnt; i < newcnt; i++) {
-				$('.gutter').append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
+				$gutter.append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
 			}
 		} else if (newcnt < oldcnt) {
 			for (var i = 0; i < oldcnt-newcnt; i++) {
-				$('.gutter :last-child').remove();
+				$gutter.find(':last-child').remove();
 			}
 		}
 

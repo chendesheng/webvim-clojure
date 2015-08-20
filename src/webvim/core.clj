@@ -193,9 +193,7 @@
      [:script {:src "main.js" :type "text/javascript"}]
      [:link {:href "main.css" :rel "stylesheet"}]]
     [:body
-     [:div.buffer
-      [:div.gutter]
-      [:div.lines]]
+     [:div.buffer]
      [:div.status-bar [:span.ex] [:span.ongoing-keys] [:span.buf-name]]]))
 
 (defroutes main-routes
