@@ -152,11 +152,7 @@ function render(buf) {
 			if (i > 0) {
 				$(line).insertAfter($(lineid(i-1)));
 			} else {
-				if (i < oldcnt-1) {
-					$(line).insertBefore(lineid(i+1));
-				} else {
-					$(line).insertBefore('.lines :first-child');
-				}
+				$('.lines').prepend(line);
 			}
 		}
 
