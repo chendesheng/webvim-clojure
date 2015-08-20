@@ -10,6 +10,7 @@
         webvim.global))
 
 (def re-braces #"(?<!\\)(\(|\[|\{|\}|\]|\))")
+(def re-js-statements #"\b(if|while|switch|for)\s*\(.*?\)\s*$")
 (declare clojure-indent)
 (declare auto-indent)
 (declare clang-indent)
@@ -505,10 +506,12 @@
 
 (defn prev-non-blank-line[lines row]
   (loop [i (dec row)]
-    (let [line (lines i)]
-      (if (blank? line)
-        (recur (dec i))
-        i))))
+    (if (neg? i)
+      -1
+      (let [line (lines i)]
+        (if (blank? line)
+          (recur (dec i))
+          i)))))
 
 (defn auto-indent [lines row]
   (if (zero? row)
@@ -518,21 +521,73 @@
           pline (lines prow)]
       (or (re-find #"^\s*" pline) ""))))
 
+
+(defn prev-not-blank-and-not-comment-line[lines row]
+  (loop [i (dec row)]
+    (if (neg? i)
+      -1
+      (let [line (lines i)]
+        (if (or (blank? line) (re-test #"^\s*//" line))
+          (recur (dec i))
+          i)))))
+
+;1. indent -1: line contains brace but pline not
+;   if {
+;       aaaa    <- pline
+;   }           <- line 
+;
+;2. indent +1: pline contains brace but line not
+;   if {        <- pline
+;       aaaa    <- line
+;   }
+;
+;3. keep indent: both contains braces or both not
+;   if {        <- pline
+;   }           <- line
+;   if {
+;       aaaa    <- pline
+;       bbbb    <- line
+;   }
+;
+;4. indent +1
+;   if (aa==bb) <- pline
+;       aaaaa;  <- line
+;
+;5. indent -1
+;   if (aa==bb) <- ppline
+;       aaaaa;  <- pline
+;   bbbbb;      <- line
+;
+;6. function {
+;       hello(aa==bb)  <- ppline
+;   }                  <- pline
+;   aaaa               <- line
 (defn clang-indent [lines row]
   (if (zero? row)
     ""
     (let [line (lines row)
-          prow (prev-non-blank-line lines row)
-          pline (lines prow)
-          pindent (or (re-find #"^\s*" pline) "")]
-      (println "pindent:" (count pindent))
-      (cond 
-        (re-test #"^\s*\}\s*$" line)
-        (if (empty? pindent) "" (subs pindent 1))
-        (re-test #"[\{\)]\s*$" pline)
-        (str pindent "\t")
-        :else
-        pindent))))
+          prow (prev-not-blank-and-not-comment-line lines row)
+          pline (or (get lines prow) "")
+          pindent (re-find #"^\s*" pline)
+
+          pbrace? (re-test #"[\{]\s*$" pline)
+          brace? (re-test #"^\s*\}" line)]
+      (cond (and (not pbrace?) brace?)
+            (if (empty? pindent) "" (subs pindent 1))
+            (and pbrace? (not brace?))
+            (str pindent "\t")
+            (and pbrace? brace?)
+            pindent
+            (re-test re-js-statements pline)
+            (str pindent "\t")
+            :else
+            (let [pprow (prev-not-blank-and-not-comment-line lines prow)
+                  ppline (or (get lines pprow) "")
+                  ppindent (re-find #"^\s*" ppline)]
+              (if (and (re-test re-js-statements ppline)
+                       (not (re-test #"[\}]\s*$" pline)))
+                ppindent
+                pindent))))))
 
 (defn buf-indent-line[b row]
   (let [indent ((-> b :language :fn-indent) (b :lines) row)
