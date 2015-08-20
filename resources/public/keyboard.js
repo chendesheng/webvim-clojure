@@ -49,6 +49,9 @@ function sendQueue() {
 
 			inputQueue.shift();
 			sendQueue();
+		}).fail(function() {
+			//some keys do nothing returns empty string
+			inputQueue = [];  
 		});
 	}
 }
