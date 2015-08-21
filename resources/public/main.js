@@ -124,6 +124,12 @@ function render(buf) {
 		var row = diff.row;
 		var rowstate = hl.states[row];
 		var add = diff.add;
+		if (add && add.length > 0) {
+			if (add[add.length-1] == '') {
+				add.pop();
+			}
+		}
+
 		var sub = diff.sub;
 		var oldcnt = parseInt($gutter.find(':last-child').text());
 		var newcnt = oldcnt+add.length-sub;
@@ -187,6 +193,12 @@ function render(buf) {
 			$(lineid(i)).remove();
 		}
 	} 
+
+	//emtpy file has 1 line too
+	if ($gutter[0].firstChild==null) { 
+		$gutter.append(replaceBinding(gutterLineTemplate, {row:0,incrow:1}));
+	}
+
 
 	if (typeof buf.cursor != 'undefined') {
 		renderCursor(buf);
