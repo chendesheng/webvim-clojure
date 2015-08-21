@@ -1,8 +1,10 @@
 (ns webvim.keymap
-  (:require [ring.adapter.jetty :as jetty]
+  (:require [me.raynes.fs :as fs]
+            [ring.adapter.jetty :as jetty]
             [clojure.core.async :as async]
             [ring.util.response :as response])
   (:use clojure.pprint
+        (clojure [string :only (join blank?)])
         webvim.buffer
         webvim.history
         webvim.cursor
@@ -263,42 +265,97 @@
         percent (int (-> r (/ cnt) (* 100)))]
     (assoc b :message (str "\"" nm "\" line " r " of " (count lines) " --" percent "%-- col " c))))
 
+(defn find-buffer [buffers f]
+  (reduce-kv 
+    (fn [matches _ b]
+      (let [indexes (fuzzy-match (fs/base-name (b :name)) f)]
+        (if (empty? indexes)
+          matches
+          (conj matches b)))) 
+    [] buffers))
+
+(defn change-active-buffer[id]
+  (swap! registers assoc "#" @active-buffer-id)
+  (reset! active-buffer-id id)
+  (swap! registers assoc "%" id))
+
 (def ex-commands
-  {"write" (fn[b _ _]
-             (write-buffer b))
+  (array-map 
+    "write" (fn[b _ file]
+              (if (not (blank? file))
+                (-> b (assoc :name file) write-buffer)
+                (if (nil? (b :name))
+                  (assoc b :message "No file name")
+                  (write-buffer b))))
    "nohlsearch" (fn[b _ _]
                   (dissoc b :highlights))
    "edit" (fn[b excmd file]
             (println "file:" file)
-            (if (or (empty? file) (= file (:name b)))
-              b ;TODO maybe we should refresh something when reopen same file?
-              (let [newid (-> file
-                             open-file
-                             buf-info
-                             buffer-list-save
-                             ;start a new thread handle this file
-                             (key-server @root-keymap)
-                             (get :id))]
-                (reset! active-buffer-id newid)
-                (jump-push b)
-                b)))
+            (if (some #(= % file) (map :name @buffer-list))
+              b
+              (if (or (empty? file) (= file (:name b)))
+                b ;TODO maybe we should refresh something when reopen same file?
+                (let [newid (-> file
+                                open-file
+                                buf-info
+                                buffer-list-save
+                                ;start a new thread handle this file
+                                (key-server @root-keymap)
+                                (get :id))]
+                  (change-active-buffer newid)
+                  (jump-push b)
+                  b))))
+   "buffer" (fn [b execmd file]
+              (let [matches (find-buffer @buffer-list file)
+                    cnt (count matches)
+                    equals (filter #(= (-> % :name fs/base-name) file) matches)]
+                (cond 
+                  (= (count equals) 1)
+                  (let[id (-> equals first :id)]
+                    (change-active-buffer id)
+                    (if (not (= id (b :id)))
+                      (jump-push b))
+                    b)
+                  (= 0 (count matches))
+                  (assoc b :message "No file match")
+                  (= 1 (count matches))
+                  (let[id (-> matches first :id)]
+                    (change-active-buffer id)
+                    (if (not (= id (b :id)))
+                      (jump-push b))
+                    b)
+                  (> (count matches) 1)
+                  ;display matched buffers at most 5 buffers
+                  (assoc b :message (str "which one? " (join ", " (map #(-> % :name fs/base-name) (take 5 matches))))))))
    "bnext" (fn[b execmd args]
              (let [id (-> b :id inc)
                    newid (if (> id @gen-buf-id) 1 id)]
-               (reset! active-buffer-id newid)
+               (change-active-buffer newid)
                (jump-push b)
                b))
    "bprev" (fn[b execmd args]
              (let [id (-> b :id dec)
                    newid (if (< id 1) @gen-buf-id id)]
-               (reset! active-buffer-id newid)
+               (change-active-buffer newid)
                (jump-push b)
                b))
+   "bdelete" (fn[b execmd args]
+               (let [lastid (@registers "#")]
+                 (if (nil? lastid)
+                   (let[]
+                     (change-active-buffer ((open-file "") :id))
+                     b)
+                   (let []
+                     (swap! buffer-list dissoc (b :id))
+                     (reset! active-buffer-id lastid)
+                     (swap! registers assoc "%" lastid)
+                     (swap! registers assoc "#" (-> @buffer-list first :id))
+                     b))))
    #"^(\d+)$" (fn[b row _]
                 (println "row:" row)
                 (jump-push b)
                 (let [row (bound-range (dec (Integer. row)) 0 (-> b :lines count dec))]
-                  (move-to-line b row)))})
+                  (move-to-line b row)))))
 
 (defn handle-search[b]
   (swap! (:registers b) assoc "/" (b :ex))
@@ -315,7 +372,8 @@
                                       (if (zero? (.indexOf cmd excmd)) handler nil)
                                       (let [m (re-find cmd excmd)]
                                         (if (not (nil? m)) handler nil)))) ex-commands))]
-        (if (= 1 (count handlers))
+        (println handlers)
+        (if (>= (count handlers) 1)
           ((first handlers) b excmd args)
           (assoc b :message "unknown command"))))))
 
@@ -602,6 +660,7 @@
     ;prevent cursor on top of EOL in normal mode
     (let [b1 (if (and (> col 0)
                       (>= col (dec (col-count b row)))
+                      (-> b :lines vector?)
                       (< row (-> b :lines count dec)))
                (update-in b [:cursor :col] dec)
                b)]
@@ -656,7 +715,7 @@
                 ;update pos inside current buffer
                 (assoc b :cursor newcur)
                 (let []
-                  (reset! active-buffer-id newid)
+                  (change-active-buffer newid)
                   (swap! buffer-list assoc-in [newid :cursor] newcur)
                   b)))
             ;buffer has been modifed and cursor is no longer inside, ignore

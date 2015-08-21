@@ -1,40 +1,11 @@
 (ns webvim.autocompl
   (:require [clojure.set :as set])
   (:use clojure.pprint
+        webvim.global
         (clojure [string :only (split)])))
 
 ;Keep reference count of each word: {"w1" 1 "w2" 3}
 (defonce autocompl-words (atom {}))
-
-(defn fuzzy-match 
-  "return true if word \"contains\" subject. length of subject must longer than 2"
-  [word subject]
-  (let [indexes (reduce (fn[indexes ch]
-                          (let [i (.indexOf word (int ch) 
-                                             (if (empty? indexes)
-                                               0
-                                               (-> indexes last inc)))]
-                            (if (neg? i)
-                              (reduced [])
-                              (conj indexes i)))) [] subject)]
-    (if (empty? indexes)
-      []
-      (let [rindexes (loop [i (-> indexes last dec)
-                            j (-> subject count dec dec)
-                            rindexes (list (last indexes))]
-                       (cond 
-                         (neg? i)
-                         []
-                         (neg? j)
-                         rindexes
-                         :else
-                         (if (= (.charAt word i) (.charAt subject j)) 
-                           (recur (dec i) (dec j) (conj rindexes i))
-                           (recur (dec i) j rindexes))))]
-        (if (= (count indexes) (count rindexes))
-          rindexes
-          indexes)))))
-
 
 (defn split-words 
   "split text to word vector"

@@ -48,7 +48,7 @@
                            :fn-indent auto-indent}
                    :else {:name "Plain Text"
                           :fn-indent auto-indent}}
-        ext (re-find #"\.\w+$" bufname)
+        ext (if (nil? bufname) "" (re-find #"\.\w+$" bufname))
         b {:name bufname
            ;Each line is a standard java String
            :lines (split-lines-all txt)
@@ -119,7 +119,8 @@
 (defn open-file
   "Create buffer from a file by slurp, return emtpy buffer if file not exists"
   [f]
-  (if (fs/exists? f)
+  (if (and (not (blank? f))
+           (fs/exists? f))
     (create-buf f (slurp f))
     ;set :last-saved-lines make buffer start as unsaved
     (assoc (create-buf f "") :last-saved-lines nil)))
