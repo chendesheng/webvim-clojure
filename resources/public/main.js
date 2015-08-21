@@ -188,26 +188,10 @@ function render(buf) {
 		}
 	} 
 
-	
-	//render cursor
 	if (typeof buf.cursor != 'undefined') {
-		var cr = parseInt(buf.cursor.row);
-		var cc = parseInt(buf.cursor.col);
-
-		var cline = $('#line-'+cr)[0].textContent;
-		if (!$('.lines .cursor').get(0)) {
-			$('.lines').append('<div class="cursor"></div>');
-		}
-
-		var x = textWidth(cline, 0, cc);
-		var y = cr*21+1;
-		var w = 9.57;
-		if (isChinese(cline[cc])) {
-			w = 16;
-		}
-		$('.cursor').attr('style', 'left:'+x+'px;top:'+y+'px;width:'+w+'px;');
+		renderCursor(buf);
 	}
-
+	
 	//render ex
 	if (buf.ex && buf.ex.length > 0) {
 		$('.status-bar .ex').empty().text(buf.ex);
@@ -440,6 +424,28 @@ function renderSelection($p, s, e, reverseTextColor) {
 
 		$p.append(line);
 	}
+}
+
+function renderCursor(buf) {
+	if (!$('.lines .cursor').get(0)) {
+		$('.lines').append('<div class="cursor"></div>');
+	}
+
+	var cr = parseInt(buf.cursor.row);
+	var cc = parseInt(buf.cursor.col);
+	if (document.getElementById('line-0') == null) {
+		x = 0, y = 0, w = 9.57;
+	} else {
+		var cline = $('#line-'+cr)[0].textContent;
+
+		var x = textWidth(cline, 0, cc);
+		var y = cr*21+1;
+		var w = 9.57;
+		if (isChinese(cline[cc])) {
+			w = 16;
+		}
+	}
+	$('.cursor').attr('style', 'left:'+x+'px;top:'+y+'px;width:'+w+'px;');
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];

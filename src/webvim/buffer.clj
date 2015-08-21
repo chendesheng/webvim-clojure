@@ -117,9 +117,22 @@
         (assoc :txt-cache {:lines (:lines b)  :txt txt}))))
 
 (defn open-file
-  "Create buffer from a file by slurp."
+  "Create buffer from a file by slurp, return emtpy buffer if file not exists"
   [f]
-  (create-buf f (slurp f)))
+  (if (fs/exists? f)
+    (create-buf f (slurp f))
+    ;set :last-saved-lines make buffer start as unsaved
+    (assoc (create-buf f "") :last-saved-lines nil)))
+
+(defn buf-emtpy?[b]
+  (and (= 1 (-> b :lines count))
+       (zero? (-> b :lines (get 0) count))))
+
+(defn buf-info[b]
+  (if (and (buf-emtpy? b)
+           (not (fs/exists? (b :name))))
+    (assoc b :message (str "[New File] " (b :name)))
+    (assoc b :message (str "\"" (:name b) "\" " (count (:lines b)) "L"))))
 
 (defn buf-refresh-txt-cache
   "Call this function concate whole buffer into a single string and save to :txt-cache"
@@ -387,6 +400,10 @@
   (try 
     (let [lines (:lines b)
           f (:name b)]
+      (if (not (fs/exists? f))
+        (do
+          (-> f fs/parent fs/mkdirs)
+          (-> f fs/file fs/create)))
       (spit f (join lines))
       (-> b
           (assoc :message (str "\"" f "\" " (count lines) "L written"))
@@ -663,3 +680,4 @@
                (< row (+ st h)) st
                (neg? (-> row (- h) inc)) 0
                :else (-> row (- h) inc))))))
+

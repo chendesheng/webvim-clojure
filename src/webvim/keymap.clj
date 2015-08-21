@@ -255,9 +255,6 @@
       (let [b2 (cursor-next-str b1 re)]
         (recur b2 (concat hls (:highlights b2)))))))
 
-(defn- buf-info[b]
-  (assoc b :message (str "\"" (:name b) "\" " (count (:lines b)) "L")))
-
 (defn- buf-cursor-info[b]
   (let [{nm :name 
          {r :row c :col} :cursor
