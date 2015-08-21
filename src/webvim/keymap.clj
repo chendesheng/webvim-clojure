@@ -599,7 +599,7 @@
                  (contains? #{".", "u", "c+r", "p", "P", ":"} keycode)))
       (swap! (:registers b) assoc "." (-> b :macro :recording-keys)))
     ;alwasy clear :recording-keys
-    ;prevent cursor on top of EOF in normal mode
+    ;prevent cursor on top of EOL in normal mode
     (let [b1 (if (and (> col 0) (>= col (dec (col-count b row))))
                (update-in b [:cursor :col] dec)
                b)]

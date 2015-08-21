@@ -199,7 +199,6 @@
                            :col newcol} newlines)
                  {:row newrow
                   :col newcol})]
-
     ;(print "prefix:")
     ;(pprint prefix)
     ;(println (str "l1:" l1))
@@ -208,8 +207,14 @@
     ;(pprint middle)
     ;(print "suffix:")
     ;(pprint suffix)
-    {:lines newlines
-     :cursor newcur}))
+    (if (and (empty? suffix)
+             (not (empty? (last newlines))))
+      {:lines (-> newlines
+                  (update-in [(-> newlines count dec)] #(str % "\n"))
+                  (conj ""))
+       :cursor newcur}
+      {:lines newlines
+       :cursor newcur})))
 
 (defn buf-replace 
   "It's exclusive (not include cur)"
