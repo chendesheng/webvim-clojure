@@ -342,8 +342,9 @@
    "bdelete" (fn[b execmd args]
                (let [lastid (@registers "#")]
                  (if (nil? lastid)
-                   (let[]
-                     (change-active-buffer ((open-file "") :id))
+                   (let[newbuf (open-file "untitled")]
+                     (swap! buffer-list assoc (newbuf :id) newbuf)
+                     (change-active-buffer (newbuf :id))
                      b)
                    (let []
                      (swap! buffer-list dissoc (b :id))
