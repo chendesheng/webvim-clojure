@@ -600,7 +600,9 @@
       (swap! (:registers b) assoc "." (-> b :macro :recording-keys)))
     ;alwasy clear :recording-keys
     ;prevent cursor on top of EOL in normal mode
-    (let [b1 (if (and (> col 0) (>= col (dec (col-count b row))))
+    (let [b1 (if (and (> col 0)
+                      (>= col (dec (col-count b row)))
+                      (< row (-> b :lines count dec)))
                (update-in b [:cursor :col] dec)
                b)]
       (-> b1 

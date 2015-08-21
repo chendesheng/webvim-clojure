@@ -231,7 +231,7 @@
                     {:row (dec row) :col (calc-col b (dec row) col lastcol)}
 
                     ;move down
-                    (and (= direction 3) (> (-> b :lines count dec) (inc row)))
+                    (and (= direction 3) (> (-> b :lines count dec) row))
                     {:row (inc row) :col (calc-col b (inc row) col lastcol)}
 
                     :else (:cursor b))))))
