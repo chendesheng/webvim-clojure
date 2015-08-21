@@ -64,22 +64,21 @@
       (nil? f)
       (call-if-fn b (:else keymap) keycode))))
 
+(defn send-out
+  "write buffer to out channel"
+  [obj out]
+  (println "send-out")
+  (let[b (buf-bound-scroll-top obj)]
+    (async/>!! out b)
+    b))
+
 (defn loop-serve-keys[b keymap]
   (let [keycode (async/<!! (:chan-in b))
         b1 (serve-keys b keymap keycode)]
     (if (and (fn? (:continue keymap))
              ((:continue keymap) b1 keycode))
-      (let[]
-        (async/>!! (:chan-out b1) b1)
-        (recur b1 keymap))
+      (recur (send-out b1 (:chan-out b1)) keymap)
       [b1 keycode])))
-
-(defn send-out
-  "write to out channel then return first argument"
-  [obj out]
-  (let[]
-    (async/>!! out obj)
-    obj))
 
 (defn serve-keymap[b keymap keycode]
   (let [b1 (-> b
@@ -99,7 +98,6 @@
           (-> b
               (serve-keys keymap keycode)
               buffer-reset-keys
-              buf-bound-scroll-top
               (send-out out))))
       (catch Exception e
         (let [err (str "caught exception: " e)]
