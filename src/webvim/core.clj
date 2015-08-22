@@ -163,9 +163,9 @@
     (async/>!! (:chan-in before) keycode)
     (let [after (async/<!! (:chan-out before))]
       ;nil means already deleted
-      (if (contains? @buffer-list (:id after))
-        (swap! buffer-list assoc (:id after) after))
-
+      (swap! buffer-list 
+             #(if (contains? % (:id after))
+                             (assoc % (:id after) after)))
       ;(Thread/sleep 100)
       ;Always write (active-buffer) back because active-buffer-id may change by current key
       (render before (active-buffer)))))
