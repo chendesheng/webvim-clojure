@@ -17,7 +17,7 @@ function hlclojure(hljs) {
 'iterate range merge zipmap declare line-seq sort comparator sort-by dorun doall nthnext '+
 'nthrest partition eval doseq await await-for let agent atom send send-off release-pending-sends '+
 'add-watch mapv filterv remove-watch agent-error restart-agent set-error-handler error-handler '+
-'set-error-mode! error-mode shutdown-agents quote var fn loop recur throw try monitor-enter '+
+'set-error-mode! error-mode shutdown-agents quote var fn loop recur throw try catch monitor-enter '+
 'monitor-exit defmacro defn defn- macroexpand macroexpand-1 for dosync and or '+
 'when when-not when-let comp juxt partial sequence memoize constantly complement identity assert '+
 'peek pop doto proxy defstruct first rest cons defprotocol cast coll deftype defrecord last butlast '+
