@@ -161,16 +161,20 @@
                      buffer-list-save
                      :id))))
 
+(defn update-buffer [b]
+  ;not contains? means already deleted
+  (swap! buffer-list 
+         #(if (contains? % (:id b))
+            (assoc % (:id b) b) %)))
+  
 (restart-key-server)
 (defn edit [keycode]
   (let [before (active-buffer)]
     (async/>!! (:chan-in before) keycode)
     (let [after (async/<!! (:chan-out before))]
-      ;not contains? means already deleted
-      (swap! buffer-list 
-             #(if (contains? % (:id after))
-                (assoc % (:id after) after) %))
-      (println "render")
+      (if (not (= (before :lines) (after :lines)))
+        (dissoc after :highlights) after)
+      (update-buffer after)
       ;Always write (active-buffer) back because active-buffer-id may change by current key
       (render before (active-buffer)))))
 

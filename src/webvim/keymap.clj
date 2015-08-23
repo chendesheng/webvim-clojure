@@ -29,6 +29,7 @@
 
 (declare serve-keymap)
 (declare map-fn-else)
+(declare ex-commands)
 
 (defn call-if-fn [b f & args]
   (if (fn? f)
@@ -213,6 +214,19 @@
                         {:suggestions suggestions
                          :suggestions-index 0})))))))
 
+(defn save-lastbuf[b keycode]
+  (-> b (assoc-in [:context :lastbuf] b)))
+
+(defn ex-tab-complete [ex]
+  (if (re-test #"^:\S+\s*$" ex)
+    (first 
+      (filter 
+        (fn[k]
+          (zero? (.indexOf k ex)))
+        (map 
+          #(str ":" (first %)) 
+          (filter #(-> % first string?) ex-commands)))) ex))
+
 (defn ex-mode-default[b keycode]
   (let [ex (:ex b)
         newex (cond 
@@ -220,6 +234,8 @@
                 (str ex " ")
                 (= keycode "backspace")
                 (subs ex 0 (-> ex count dec))
+                (= keycode "tab")
+                (ex-tab-complete ex)
                 (= 1 (count keycode))
                 (str ex keycode)
                 :else ex)]
@@ -228,14 +244,14 @@
       (let [lb (-> b :context :lastbuf)
             newb (-> lb
                      (assoc :ex newex)
-                     (assoc-in [:context :lastbuf] lb))] ;keep lastbuf avaiable on stack
+                     save-lastbuf)] ;keep lastbuf avaiable on stack
         (try (cursor-next-str newb (subs newex 1))
              (catch Exception e newb)))
       (= \? (first newex))
       (let [lb (-> b :context :lastbuf)
             newb (-> lb
                      (assoc :ex newex)
-                     (assoc-in [:context :lastbuf] lb))]
+                     save-lastbuf)]
         (try (cursor-back-str newb (subs newex 1))
              (catch Exception e newb)))
       :else
@@ -300,15 +316,12 @@
    "nohlsearch" (fn[b _ _]
                   (dissoc b :highlights))
    "edit" (fn[b excmd file]
-            (println "file:" file)
-            (if (some #(= % file) (map :filepath @buffer-list))
-              b
-              (if (or (empty? file) (= file (:filepath b)))
-                b ;TODO maybe we should refresh something when reopen same file?
-                (let [newid (-> file new-file buf-info :id)]
-                  (change-active-buffer newid)
-                  (jump-push b)
-                  b))))
+            (if (or (empty? file) (= file (:filepath b)))
+              b ;TODO maybe we should refresh something when reopen same file?
+              (let [newid (-> file new-file buf-info :id)]
+                (change-active-buffer newid)
+                (jump-push b)
+                b)))
    "buffer" (fn [b execmd file]
               (let [matches (find-buffer @buffer-list file)
                     cnt (count matches)
@@ -388,9 +401,6 @@
         (if (>= (count handlers) 1)
           ((first handlers) b excmd args)
           (assoc b :message "unknown command"))))))
-
-(defn save-lastbuf[b keycode]
-  (-> b (assoc-in [:context :lastbuf] b)))
 
 (def map-key-inclusive 
   {"h" false
