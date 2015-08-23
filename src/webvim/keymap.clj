@@ -69,7 +69,6 @@
 (defn send-out
   "write buffer to out channel"
   [obj out]
-  (println "send-out")
   (let[b (buf-bound-scroll-top obj)]
     (async/>!! out b)
     b))
@@ -259,16 +258,17 @@
 
 (defn- buf-cursor-info[b]
   (let [{nm :name 
+         path :filepath
          {r :row c :col} :cursor
          lines :lines} b
         cnt (count lines)
         percent (int (-> r (/ cnt) (* 100)))]
-    (assoc b :message (str "\"" nm "\" line " r " of " (count lines) " --" percent "%-- col " c))))
+    (assoc b :message (str "\"" (or path nm) "\" line " r " of " (count lines) " --" percent "%-- col " c))))
 
 (defn find-buffer [buffers f]
   (reduce-kv 
     (fn [matches _ b]
-      (let [indexes (fuzzy-match (fs/base-name (b :name)) f)]
+      (let [indexes (fuzzy-match (b :name) f)]
         (if (empty? indexes)
           matches
           (conj matches b)))) 
@@ -279,36 +279,40 @@
   (reset! active-buffer-id id)
   (swap! registers assoc "%" id))
 
+(defn new-file[f]
+  (-> f
+      open-file
+      buffer-list-save
+      ;start a new thread handle this file
+      (key-server @root-keymap)))
+
 (def ex-commands
   (array-map 
     "write" (fn[b _ file]
               (if (not (blank? file))
-                (-> b (assoc :name file) write-buffer)
-                (if (nil? (b :name))
+                (-> b 
+                    (assoc :name (fs/base-name file)) 
+                    (assoc :filepath file) 
+                    write-buffer)
+                (if (nil? (b :filepath))
                   (assoc b :message "No file name")
                   (write-buffer b))))
    "nohlsearch" (fn[b _ _]
                   (dissoc b :highlights))
    "edit" (fn[b excmd file]
             (println "file:" file)
-            (if (some #(= % file) (map :name @buffer-list))
+            (if (some #(= % file) (map :filepath @buffer-list))
               b
-              (if (or (empty? file) (= file (:name b)))
+              (if (or (empty? file) (= file (:filepath b)))
                 b ;TODO maybe we should refresh something when reopen same file?
-                (let [newid (-> file
-                                open-file
-                                buf-info
-                                buffer-list-save
-                                ;start a new thread handle this file
-                                (key-server @root-keymap)
-                                (get :id))]
+                (let [newid (-> file new-file buf-info :id)]
                   (change-active-buffer newid)
                   (jump-push b)
                   b))))
    "buffer" (fn [b execmd file]
               (let [matches (find-buffer @buffer-list file)
                     cnt (count matches)
-                    equals (filter #(= (-> % :name fs/base-name) file) matches)]
+                    equals (filter #(= (% :name) file) matches)]
                 (cond 
                   (= (count equals) 1)
                   (let[id (-> equals first :id)]
@@ -326,32 +330,39 @@
                     b)
                   (> (count matches) 1)
                   ;display matched buffers at most 5 buffers
-                  (assoc b :message (str "which one? " (join ", " (map #(-> % :name fs/base-name) (take 5 matches))))))))
+                  (assoc b :message (str "which one? " (join ", " (map :name (take 5 matches))))))))
    "bnext" (fn[b execmd args]
-             (let [id (-> b :id inc)
-                   newid (if (> id @gen-buf-id) 1 id)]
-               (change-active-buffer newid)
-               (jump-push b)
+             (let [id (b :id)
+                   nextid (or
+                            ;get next id larger than current
+                            (->> @buffer-list   (map #(-> % last :id)) (filter #(> % id)) sort first)
+                            (-> @buffer-list first last :id))]
+               (println "nextid:" nextid)
+               (if (not (= nextid id))
+                 (do
+                   (change-active-buffer nextid)
+                   (jump-push b)))
                b))
    "bprev" (fn[b execmd args]
-             (let [id (-> b :id dec)
-                   newid (if (< id 1) @gen-buf-id id)]
-               (change-active-buffer newid)
-               (jump-push b)
+             (let [id (b :id)
+                   nextid (or
+                            (->> @buffer-list   (map #(-> % last :id)) (filter #(> % id)) sort first)
+                            (-> @buffer-list first last :id))]
+               (if (not (= nextid id))
+                 (do
+                   (change-active-buffer nextid)
+                   (jump-push b)))
                b))
    "bdelete" (fn[b execmd args]
-               (let [lastid (@registers "#")]
-                 (if (nil? lastid)
-                   (let[newbuf (open-file "untitled")]
-                     (swap! buffer-list assoc (newbuf :id) newbuf)
-                     (change-active-buffer (newbuf :id))
-                     b)
-                   (let []
-                     (swap! buffer-list dissoc (b :id))
-                     (reset! active-buffer-id lastid)
-                     (swap! registers assoc "%" lastid)
-                     (swap! registers assoc "#" (-> @buffer-list first :id))
-                     b))))
+               (swap! buffer-list dissoc (b :id))
+               (let [lastid (@registers "#")
+                     nextid (if (nil? lastid)
+                              (-> "" new-file :id)
+                              lastid)]
+                 (reset! active-buffer-id nextid)
+                 (swap! registers assoc "%" nextid)
+                 (swap! registers assoc "#" (-> @buffer-list first :id)))
+               b)
    #"^(\d+)$" (fn[b row _]
                 (println "row:" row)
                 (jump-push b)

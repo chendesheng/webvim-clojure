@@ -34,6 +34,7 @@
 (defn jump-current-pos[]
   ((@jump-list :positions) (@jump-list :current)))
 
+;TODO: handle not exist buffer
 (defn jump-next
   "If not newest, save current position then jump to next"
   [b]

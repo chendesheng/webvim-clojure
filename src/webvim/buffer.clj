@@ -35,7 +35,7 @@
     (reset! buffer-list (assoc @buffer-list id b1))
     b1))
 
-(defn create-buf[bufname txt]
+(defn create-buf[bufname filepath txt]
   (let [languages {".clj" {:name "Clojure"
                            :fn-indent clojure-indent}
                    ".js" {:name "JavaScript"
@@ -50,6 +50,8 @@
                           :fn-indent auto-indent}}
         ext (if (nil? bufname) "" (re-find #"\.\w+$" bufname))
         b {:name bufname
+           ;= nil if it is a special buffer like [New File] or [Quick Fix]
+           :filepath filepath 
            ;Each line is a standard java String
            :lines (split-lines-all txt)
            ;row, col, lastcol, viewport row (row from top of current viewport)
@@ -121,9 +123,9 @@
   [f]
   (if (and (not (blank? f))
            (fs/exists? f))
-    (create-buf f (slurp f))
+    (create-buf (fs/base-name f) f (slurp f))
     ;set :last-saved-lines make buffer start as unsaved
-    (assoc (create-buf f "") :last-saved-lines nil)))
+    (assoc (create-buf "untitled" nil "") :last-saved-lines nil)))
 
 (defn buf-emtpy?[b]
   (and (= 1 (-> b :lines count))
@@ -131,9 +133,9 @@
 
 (defn buf-info[b]
   (if (and (buf-emtpy? b)
-           (not (fs/exists? (b :name))))
-    (assoc b :message (str "[New File] " (b :name)))
-    (assoc b :message (str "\"" (:name b) "\" " (count (:lines b)) "L"))))
+           (not (fs/exists? (b :filepath))))
+    (assoc b :message (str "[New File] " (b :filepath)))
+    (assoc b :message (str "\"" (:filepath b) "\" " (count (:lines b)) "L"))))
 
 (defn buf-refresh-txt-cache
   "Call this function concate whole buffer into a single string and save to :txt-cache"
@@ -405,7 +407,7 @@
   [b]
   (try 
     (let [lines (:lines b)
-          f (:name b)]
+          f (:filepath b)]
       (if (not (fs/exists? f))
         (do
           (-> f fs/parent fs/mkdirs)

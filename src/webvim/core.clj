@@ -153,20 +153,24 @@
 ;TODO How to run code only in repl env? Conditional compile?
 ;only for testing on repl
 (defonce open-test-file
-  (reset! active-buffer-id (-> "testfile.clj"
-                               open-file
-                               buffer-list-save
-                               :id)))
+  (swap! registers 
+         assoc "%" 
+         (reset! active-buffer-id 
+                 (-> "testfile.clj"
+                     open-file
+                     buffer-list-save
+                     :id))))
+
 (restart-key-server)
 (defn edit [keycode]
   (let [before (active-buffer)]
     (async/>!! (:chan-in before) keycode)
     (let [after (async/<!! (:chan-out before))]
-      ;nil means already deleted
+      ;not contains? means already deleted
       (swap! buffer-list 
              #(if (contains? % (:id after))
-                             (assoc % (:id after) after)))
-      ;(Thread/sleep 100)
+                (assoc % (:id after) after) %))
+      (println "render")
       ;Always write (active-buffer) back because active-buffer-id may change by current key
       (render before (active-buffer)))))
 
