@@ -147,7 +147,7 @@ function render(buf) {
 
 
 		//remove sub
-		for (var i = row; i < row+sub; i++) {
+		for (var i = row+sub-1; i >= row; i--) {
 			$(lineid(i)).remove();
 
 			hl.states.splice(i, 1);
