@@ -244,14 +244,14 @@
       (let [lb (-> b :context :lastbuf)
             newb (-> lb
                      (assoc :ex newex)
-                     save-lastbuf)] ;keep lastbuf avaiable on stack
+                     (save-lastbuf ""))] ;keep lastbuf avaiable on stack
         (try (cursor-next-str newb (subs newex 1))
              (catch Exception e newb)))
       (= \? (first newex))
       (let [lb (-> b :context :lastbuf)
             newb (-> lb
                      (assoc :ex newex)
-                     save-lastbuf)]
+                     (save-lastbuf ""))]
         (try (cursor-back-str newb (subs newex 1))
              (catch Exception e newb)))
       :else
@@ -279,7 +279,7 @@
          lines :lines} b
         cnt (count lines)
         percent (int (-> r (/ cnt) (* 100)))]
-    (assoc b :message (str "\"" (or path nm) "\" line " r " of " (count lines) " --" percent "%-- col " c))))
+    (assoc b :message (str "\"" (or path nm) "\" line " (inc r) " of " (count lines) " --" percent "%-- col " c))))
 
 (defn find-buffer [buffers f]
   (reduce-kv 
