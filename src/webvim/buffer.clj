@@ -464,26 +464,26 @@
   "The \"o\" command"
   [b]
   (let [lines (:lines b)
-        row (-> b :cursor :row)]
+        row (-> b :cursor :row inc)]
     (-> b
         (assoc :lines 
                (vec (concat
-                      (subvec lines 0 (inc row))
+                      (subvec lines 0 row)
                       ["\n"]
-                      (subvec lines (inc row)))))
-        (assoc :cursor {:row (inc row) :col 0 :lastcol 0}))))
+                      (subvec lines row))))
+        (assoc :cursor {:row row :col 0 :lastcol 0}))))
 
 (defn buf-insert-line-before [b]
   (if (zero? (-> b :cursor :row))
     (let [lines (b :lines)]
       (-> b
-          (assoc :lines (concat [["\n"]] lines))
+          (assoc :lines (vec (concat ["\n"] lines)))
           (assoc :cursor {:row 0 :col 0 :lastcol 0})))
     (-> b
         (update-in [:cursor :row] dec)
         buf-insert-line-after)))
 
-(def indent-tab-size #{"def" "defn" "if" "fn" "let"})
+(def indent-tab-size #{"def" "defn" "if" "fn" "let" "cond" "loop"})
 (defn get-indent[line]
   (cond 
     (= 1 (count (.trim line)))
@@ -501,7 +501,7 @@
   "Indent by brace parsing"
   [lines row]
   (if (zero? row)
-    0
+    ""
     (loop [current (dec row)
            braces []]
       ;(pprint2 braces "braces:")
