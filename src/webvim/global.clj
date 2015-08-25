@@ -2,13 +2,23 @@
 (ns webvim.global
   (:require [me.raynes.fs :as fs]
             [clojure.core.async :as async]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [snipsnap.core :as clipboard])
   (:use clojure.pprint
         (clojure [string :only (join split)])))
 
 ;global registers. Don't access this directly, always access buffer's :registers
 (defonce registers (atom {}))
 
+(defn registers-get [regs ch]
+  (if (= ch "+")
+    (clipboard/get-text)
+    (@regs ch)))
+
+(defn registers-put [regs ch text]
+  (if (= ch "+")
+    (clipboard/set-text! text)
+    (swap! regs assoc ch text)))
 
 ;one server only serve one window at one time
 (defonce window (atom{:viewport {:w 0 :h 0}}))
