@@ -360,7 +360,7 @@ function renderLine(row, items) {
 
 var aligntop = true;
 function scrollToCursor(scrollTopRow, instant) {
-	var el = $('.cursor')[0];
+	var el = $('.lines .cursor')[0];
 	var $lines = $('.lines');
 	var $buf = $('.buffer');
     
@@ -462,7 +462,7 @@ function renderCursor(buf) {
 			w = 16;
 		}
 	}
-	$('.cursor').attr('style', 'left:'+x+'px;top:'+y+'px;width:'+w+'px;');
+	$('.lines .cursor').attr('style', 'left:'+x+'px;top:'+y+'px;width:'+w+'px;');
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];
