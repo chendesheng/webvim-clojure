@@ -201,7 +201,8 @@
      [:script {:src "syntax/javascript.js" :type "text/javascript"}]
      [:script {:src "highlight.js" :type "text/javascript"}]
      [:script {:src "main.js" :type "text/javascript"}]
-     [:link {:href "main.css" :rel "stylesheet"}]]
+     [:link {:href "main.css" :rel "stylesheet"}]
+     [:link {:href "monokai.css" :rel "stylesheet"}]]
     [:body
      [:div.buffer]
      [:div.status-bar [:span.ex] [:span.ongoing-keys] [:span.buf-name]]]))

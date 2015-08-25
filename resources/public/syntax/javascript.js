@@ -17,7 +17,7 @@ var keywords = hljs.toSet(
 	'Uint8Array Uint8ClampedArray ArrayBuffer DataView JSON Intl arguments require ' +
 	'module console window document Symbol Set Map WeakSet WeakMap Proxy Reflect ' +
 	'Promise import class'+
-	' + - * / = == <= >= < > || && & | ? :');
+	' + - * / = == <= >= < > || && & | ? : $');
 
 	function openBrace(ctx) {
 		return 'brace-'+(ctx.modes.length-1)%7;

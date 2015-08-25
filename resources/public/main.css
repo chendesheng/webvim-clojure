@@ -5,7 +5,6 @@ body {
 	color:#ddd;
 	width:100%;
 	height:100%;
-	background:#1d1d1d;
 }
 
 .line {
@@ -145,8 +144,6 @@ pre {
 }
 
 .highlights .line-selected {
-	/*background:#ffd58e;
-	background:#33CCCC;*/
 	background:#ffdb9e;
 	color:#000;
 }
@@ -157,45 +154,6 @@ pre {
 	width:9.57px;
 	height:21px;
 	z-index:1000;
-}
-
-.lines .keyword {
-	/*color:#00A725;*/
-	color:#E92672;
-}
-
-.lines .colon-keyword {
-	color:#E92672;
-}
-
-.lines .comment {
-	color:#606D5E;
-}
-
-.lines .string {
-	color:#E6D75F;
-}
-.lines .regexp {
-	color:#E6D75F;
-}
-.lines .number {
-	color:#AB7FFB;
-}
-
-.lines .escape {
-	color:#E6D75F;
-}
-
-.lines .buildin {
-	color:#0091D1;
-}
-
-.lines .brace-miss {
-	text-decoration:line-through;
-}
-
-.lines .title {
-	color:#B654BC;
 }
 
 /*next 7 colors came from OSX's Reminders App*/
