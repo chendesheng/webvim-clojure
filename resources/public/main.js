@@ -118,6 +118,8 @@ function render(buf) {
 
 	var $gutter = $('.gutter');
 	hl = hl || buffers[buf.id].hl;
+	var cursor = buf.cursor || buffers[buf.id].cursor;
+	buffers[buf.id].cursor = cursor;
 
 	if (buf.difflines) {
 		var diff = buf.difflines;
@@ -293,6 +295,8 @@ function render(buf) {
 
 		var selectedIndex = parseInt(buf.autocompl['suggestions-index']);
 		var currentWord = buf.autocompl.suggestions[selectedIndex];
+		var x = $('.lines .cursor')[0].offsetLeft;
+		var y = $('.lines .cursor')[0].offsetTop;
 		$autocompl.empty().css('left', x-currentWord.length*9.57-10+'px')
 		$(buf.autocompl.suggestions).each(function(i, word) {
 			if (i > 0) {
@@ -445,6 +449,7 @@ function renderCursor(buf) {
 
 	var cr = parseInt(buf.cursor.row);
 	var cc = parseInt(buf.cursor.col);
+	var x, y, w;
 	if (document.getElementById('line-0') == null) {
 		x = 0, y = 0, w = 9.57;
 	} else {
