@@ -473,6 +473,16 @@
                       (subvec lines (inc row)))))
         (assoc :cursor {:row (inc row) :col 0 :lastcol 0}))))
 
+(defn buf-insert-line-before [b]
+  (if (zero? (-> b :cursor :row))
+    (let [lines (b :lines)]
+      (-> b
+          (assoc :lines (concat [["\n"]] lines))
+          (assoc :cursor {:row 0 :col 0 :lastcol 0})))
+    (-> b
+        (update-in [:cursor :row] dec)
+        buf-insert-line-after)))
+
 (def indent-tab-size #{"def" "defn" "if" "fn" "let"})
 (defn get-indent[line]
   (cond 

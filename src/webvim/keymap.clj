@@ -172,7 +172,11 @@
       buf-insert-line-after
       buf-indent-current-line))
 
-;(set-insert-new-line {:lines ["       aa" "ccc"] :cursor {:row 0 :col 0 :lastcol 0}} "a")
+(defn set-insert-new-line-before[b keycode]
+  (-> b 
+      (set-insert-mode keycode)
+      buf-insert-line-before
+      buf-indent-current-line))
 
 (defn set-ex-mode[b]
   (merge b {:mode ex-mode :ex ":" :message nil :keys nil}))
@@ -871,6 +875,9 @@
           "s" (merge
                 @insert-mode-keymap
                 {:enter set-insert-remove-char})
+          "O" (merge
+                @insert-mode-keymap
+                {:enter set-insert-new-line-before})
           "o" (merge
                 @insert-mode-keymap
                 {:enter set-insert-new-line})
