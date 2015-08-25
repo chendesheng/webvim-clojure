@@ -13,20 +13,13 @@ body {
 	color:#75715E;
 }
 
-.lines .string {
-	color:#E6DB74;
-}
+.lines .string,
 .lines .regexp {
 	color:#E6DB74;
 }
-.lines .number {
-	color:#AE81FF;
-}
 
-.lines .escape {
-	color:#E6D75F;
-}
-
+.lines .number,
+.lines .escape,
 .lines .buildin {
 	color:#AE81FF;
 }
@@ -34,9 +27,15 @@ body {
 .lines .title {
 	color:#A6E22E;
 }
-.cursor {
+.highlight-brace-pair .line-selected, .cursor {
 	background:#F8F8F0;
-	opacity:0.6;
+}
+.cursor {
+	opacity:0.5;
+}
+.status-bar {
+	background:#565656;
+	border-top:solid 1px #323232;
 }
 /*
  * Textmate monokai theme
