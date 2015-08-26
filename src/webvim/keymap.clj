@@ -380,6 +380,12 @@
                  (swap! registers assoc "%" nextid)
                  (swap! registers assoc "#" (-> @buffer-list first :id)))
                b)
+   "eval" (fn[b execmd args]
+            (->> args
+                 read-string
+                 eval
+                 str
+                 (assoc b :message)))
    #"^(\d+)$" (fn[b row _]
                 (println "row:" row)
                 (jump-push b)
