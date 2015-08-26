@@ -1,15 +1,15 @@
 (ns webvim.keymap
   (:require [me.raynes.fs :as fs]
             [ring.adapter.jetty :as jetty]
-            [clojure.core.async :as async]
-            [ring.util.response :as response])
+            [clojure.core.async :as async])
   (:use clojure.pprint
-        (clojure [string :only (join blank?)])
         webvim.buffer
         webvim.history
         webvim.cursor
         webvim.global
         webvim.jumplist
+        webvim.ex
+        webvim.serve
         webvim.autocompl))
 
 (defonce motion-keymap (atom {}))
@@ -18,106 +18,6 @@
 (defonce visual-mode-keymap (atom {}))
 (defonce insert-mode-keymap (atom {}))
 (defonce ex-mode-keymap (atom {}))
-
-;enter point of key sequence parser
-(defonce root-keymap (atom {}))
-
-(defonce normal-mode 0)
-(defonce insert-mode 1)
-(defonce visual-mode 2)
-(defonce ex-mode 3)
-
-(declare serve-keymap)
-(declare map-fn-else)
-(declare ex-commands)
-
-(defn call-if-fn [b f & args]
-  (if (fn? f)
-    (apply f b args)
-    b))
-
-(defn- record-keys[b keycode]
-  (if (nil? (#{"c+n" "c+p" "c+a" "c+x"} keycode)) ;Don't record keycode for these commands
-    (update-in b [:macro :recording-keys] conj keycode)
-    b))
-
-;two types: key (leaf), keymap (internal node)
-;when visit a keymap call :enter :leave 
-; keymap is repetitive if :continue return true
-;when visit a key call :before :after
-(defn serve-keys
-  "Serve a sequence of keys until end of keymap. Recusivly walk through keymap tree (works like sytax parser)"
-  [b keymap keycode]
-  (let [f (keymap keycode)]
-    (if (or (fn? f) (map? f) (fn? (:else keymap)))
-      (-> b
-          (record-keys keycode)
-          (call-if-fn (:before keymap) keycode)
-          (map-fn-else keymap keycode)
-          (call-if-fn (:after keymap) keycode))
-      b)))
-
-(defn map-fn-else[b keymap keycode]
-  (let [f (keymap keycode)]
-    (cond
-      (map? f)
-      (serve-keymap b f keycode)
-      (fn? f)
-      (f b)
-      (nil? f)
-      (call-if-fn b (:else keymap) keycode))))
-
-(defn send-out
-  "write buffer to out channel"
-  [obj out]
-  (let[b (buf-bound-scroll-top obj)]
-    (async/>!! out b)
-    b))
-
-(defn loop-serve-keys[b keymap]
-  (let [keycode (async/<!! (:chan-in b))
-        b1 (serve-keys b keymap keycode)]
-    (if (and (fn? (:continue keymap))
-             ((:continue keymap) b1 keycode))
-      (recur (send-out b1 (:chan-out b1)) keymap)
-      [b1 keycode])))
-
-(defn serve-keymap[b keymap keycode]
-  (let [b1 (-> b
-               (buffer-append-keys keycode)
-               (call-if-fn (:enter keymap) keycode)
-               (send-out (:chan-out b)))
-        [b2 leave-keycode] (loop-serve-keys b1 keymap)]
-    (call-if-fn b2 (:leave keymap) leave-keycode)))
-
-
-(defn key-server-inner[b keymap]
-  (let [{in :chan-in out :chan-out} b]
-    (try
-      (let [keycode (async/<!! in)]
-        (if (nil? keycode)
-          (async/close! out)
-          (-> b
-              (serve-keys keymap keycode)
-              buffer-reset-keys
-              (send-out out))))
-      (catch Exception e
-        (let [err (str "caught exception: " e)]
-          (println err)
-          (.printStackTrace e)
-          (send-out (merge b {:ex "" :mode 0 :message err}) 
-                    out))))))
-
-(defn key-server
-  "Start a dedicate thread handle input keys. Close :chan-in will stop this thread."
-  [b keymap]
-  (async/thread 
-    (loop[b1 b]
-      (if (not (nil? b1))
-        (recur (key-server-inner 
-                 b1
-                 keymap)))))
-  b)
 
 (defn set-normal-mode[b]
   ;(println "set-normal-mode:")
@@ -178,15 +78,6 @@
       buf-insert-line-before
       buf-indent-current-line))
 
-(defn set-ex-mode[b]
-  (merge b {:mode ex-mode :ex ":" :message nil :keys nil}))
-
-(defn set-ex-search-mode[b keycode]
-  (println "set-ex-search-mode")
-  (-> b 
-      (merge {:ex keycode :message nil :keys nil})
-      (assoc-in [:context :lastbuf] b)))
-
 (defn insert-mode-default[b keycode]
   (let [b1 (cond 
              (= "backspace" keycode)
@@ -218,55 +109,6 @@
                         {:suggestions suggestions
                          :suggestions-index 0})))))))
 
-(defn save-lastbuf[b keycode]
-  (-> b (assoc-in [:context :lastbuf] b)))
-
-(defn ex-tab-complete [ex]
-  (if (re-test #"^:\S+\s*$" ex)
-    (first 
-      (filter 
-        (fn[k]
-          (zero? (.indexOf k ex)))
-        (map 
-          #(str ":" (first %)) 
-          (filter #(-> % first string?) ex-commands)))) ex))
-
-(defn ex-mode-default[b keycode]
-  (let [ex (:ex b)
-        newex (cond 
-                (= keycode "space")
-                (str ex " ")
-                (= keycode "backspace")
-                (subs ex 0 (-> ex count dec))
-                (= keycode "tab")
-                (ex-tab-complete ex)
-                (= 1 (count keycode))
-                (str ex keycode)
-                :else ex)]
-    (cond 
-      (= \/ (first newex))
-      (let [lb (-> b :context :lastbuf)
-            newb (-> lb
-                     (assoc :ex newex)
-                     (save-lastbuf ""))] ;keep lastbuf avaiable on stack
-        (try (cursor-next-str newb (subs newex 1))
-             (catch Exception e newb)))
-      (= \? (first newex))
-      (let [lb (-> b :context :lastbuf)
-            newb (-> lb
-                     (assoc :ex newex)
-                     (save-lastbuf ""))]
-        (try (cursor-back-str newb (subs newex 1))
-             (catch Exception e newb)))
-      :else
-      (assoc b :ex newex))))
-
-
-(defn move-to-line[b row]
-  (-> b 
-      (assoc-in [:cursor :row] row)
-      (cursor-line-start)))
-
 (defn highlight-all-matches[b re]
   (loop [b1 (cursor-next-str b re)
          hls (:highlights b1)]
@@ -285,134 +127,12 @@
         percent (int (-> r (/ cnt) (* 100)))]
     (assoc b :message (str "\"" (or path nm) "\" line " (inc r) " of " (count lines) " --" percent "%-- col " c))))
 
-(defn find-buffer [buffers f]
-  (reduce-kv 
-    (fn [matches _ b]
-      (let [indexes (fuzzy-match (b :name) f)]
-        (if (empty? indexes)
-          matches
-          (conj matches b)))) 
-    [] buffers))
-
-(defn change-active-buffer[id]
-  (swap! registers assoc "#" @active-buffer-id)
-  (reset! active-buffer-id id)
-  (swap! registers assoc "%" id))
-
-(defn new-file[f]
-  (-> f
-      open-file
-      buffer-list-save
-      ;start a new thread handle this file
-      (key-server @root-keymap)))
-
-(def ex-commands
-  (array-map 
-    "write" (fn[b _ file]
-              (if (not (blank? file))
-                (-> b 
-                    (assoc :name (fs/base-name file)) 
-                    (assoc :filepath file) 
-                    write-buffer)
-                (if (nil? (b :filepath))
-                  (assoc b :message "No file name")
-                  (write-buffer b))))
-   "nohlsearch" (fn[b _ _]
-                  (dissoc b :highlights))
-   "edit" (fn[b excmd file]
-            (if (or (empty? file) (= file (:filepath b)))
-              b ;TODO maybe we should refresh something when reopen same file?
-              (let [newid (-> file new-file buf-info :id)]
-                (change-active-buffer newid)
-                (jump-push b)
-                b)))
-   "buffer" (fn [b execmd file]
-              (let [matches (find-buffer @buffer-list file)
-                    cnt (count matches)
-                    equals (filter #(= (% :name) file) matches)]
-                (cond 
-                  (= (count equals) 1)
-                  (let[id (-> equals first :id)]
-                    (change-active-buffer id)
-                    (if (not (= id (b :id)))
-                      (jump-push b))
-                    b)
-                  (= 0 (count matches))
-                  (assoc b :message "No file match")
-                  (= 1 (count matches))
-                  (let[id (-> matches first :id)]
-                    (change-active-buffer id)
-                    (if (not (= id (b :id)))
-                      (jump-push b))
-                    b)
-                  (> (count matches) 1)
-                  ;display matched buffers at most 5 buffers
-                  (assoc b :message (str "which one? " (join ", " (map :name (take 5 matches))))))))
-   "bnext" (fn[b execmd args]
-             (let [id (b :id)
-                   nextid (or
-                            ;get next id larger than current
-                            (->> @buffer-list   (map #(-> % last :id)) (filter #(> % id)) sort first)
-                            (-> @buffer-list first last :id))]
-               (println "nextid:" nextid)
-               (if (not (= nextid id))
-                 (do
-                   (change-active-buffer nextid)
-                   (jump-push b)))
-               b))
-   "bprev" (fn[b execmd args]
-             (let [id (b :id)
-                   nextid (or
-                            (->> @buffer-list   (map #(-> % last :id)) (filter #(> % id)) sort first)
-                            (-> @buffer-list first last :id))]
-               (if (not (= nextid id))
-                 (do
-                   (change-active-buffer nextid)
-                   (jump-push b)))
-               b))
-   "bdelete" (fn[b execmd args]
-               (swap! buffer-list dissoc (b :id))
-               (let [lastid (@registers "#")
-                     nextid (if (nil? lastid)
-                              (-> "" new-file :id)
-                              lastid)]
-                 (reset! active-buffer-id nextid)
-                 (swap! registers assoc "%" nextid)
-                 (swap! registers assoc "#" (-> @buffer-list first :id)))
-               b)
-   "eval" (fn[b execmd args]
-            (->> args
-                 read-string
-                 eval
-                 str
-                 (assoc b :message)))
-   #"^(\d+)$" (fn[b row _]
-                (println "row:" row)
-                (jump-push b)
-                (let [row (bound-range (dec (Integer. row)) 0 (-> b :lines count dec))]
-                  (move-to-line b row)))))
 
 (defn handle-search[b]
   (registers-put (:registers b) "/" (b :ex))
   (-> b
       (highlight-all-matches (subs (b :ex) 1))
       (assoc :ex "")))
-
-(defn execute [b]
-  (let [[_ excmd args] (re-find #"\s*:([^\s]+)\s*(.*)\s*" (:ex b))]
-    (if (nil? excmd)
-      b
-      (let [handlers (filter fn?
-                             (map (fn[[cmd handler]]
-                                    ;(println cmd)
-                                    (if (string? cmd)
-                                      (if (zero? (.indexOf cmd excmd)) handler nil)
-                                      (let [m (re-find cmd excmd)]
-                                        (if (not (nil? m)) handler nil)))) ex-commands))]
-        (println handlers)
-        (if (>= (count handlers) 1)
-          ((first handlers) b excmd args)
-          (assoc b :message "unknown command"))))))
 
 (def map-key-inclusive 
   {"h" false

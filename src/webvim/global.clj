@@ -29,6 +29,11 @@
 ;key: buffer id, value: buffer map
 (defonce buffer-list (atom {}))
 
+(defonce normal-mode 0)
+(defonce insert-mode 1)
+(defonce visual-mode 2)
+(defonce ex-mode 3)
+
 ;the current editting buffer, when receving keys from client send keycode to this buffer's :chan-in
 ;switch to another buffer is very easy, just do (reset! actvive-buffer b)
 ;TODO Serve more than one client at once, make eash session different active-buffer
@@ -135,4 +140,9 @@
         (if (= (count indexes) (count rindexes))
           rindexes
           indexes)))))
+
+(defn call-if-fn [b f & args]
+  (if (fn? f)
+    (apply f b args)
+    b))
 

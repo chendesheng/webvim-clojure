@@ -699,3 +699,6 @@
                (neg? (-> row (- h) inc)) 0
                :else (-> row (- h) inc))))))
 
+(defn save-lastbuf[b keycode]
+  (-> b (assoc-in [:context :lastbuf] b)))
+
