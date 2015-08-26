@@ -388,7 +388,9 @@
 
 (defn handle-search[b]
   (registers-put (:registers b) "/" (b :ex))
-  (highlight-all-matches b (subs (b :ex) 1)))
+  (-> b
+      (highlight-all-matches (subs (b :ex) 1))
+      (assoc :ex "")))
 
 (defn execute [b]
   (let [[_ excmd args] (re-find #"\s*:([^\s]+)\s*(.*)\s*" (:ex b))]

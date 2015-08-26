@@ -217,6 +217,7 @@ function render(buf) {
 			$('.status-bar .ex').empty().text(MODES[buf.mode]);
 			keymap = keymaps[buf.mode];
 		}
+		$('.status-bar .cursor').remove();
 	}
 
 	//render unsaved
