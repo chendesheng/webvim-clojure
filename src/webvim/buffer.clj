@@ -703,3 +703,6 @@
 (defn save-lastbuf[b keycode]
   (-> b (assoc-in [:context :lastbuf] b)))
 
+(defn buf-replace-char [b ch]
+  (let [{lines :lines} (replace-range (b :lines) (b :cursor) (cursor-inc-col (b :cursor)) ch)]
+    (assoc b :lines lines)))

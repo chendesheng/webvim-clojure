@@ -623,6 +623,26 @@
                 {"enter" execute
                  :enter (fn[b keycode] (set-ex-mode b))
                  :leave (fn[b keycode] (set-normal-mode b))})
+          "r" {"esc" nop
+               "enter" (fn [b]
+                         (-> b
+                             buf-save-cursor
+                             (buf-replace-char "\n")
+                             (assoc-in [:cursor :col] 0)
+                             (update-in [:cursor :row] inc)
+                             buf-indent-current-line
+                             history-save))
+               :else (fn[b keycode]
+                       (let [ch (cond
+                                  (= keycode "space")
+                                  " "
+                                  :else keycode)]
+                         (if (= (count ch) 1)
+                           (-> b 
+                               buf-save-cursor
+                               (buf-replace-char ch)
+                               history-save)
+                               b)))}
           "u" history-undo
           "c+r" history-redo
           "c+o" #(move-to-jumplist % jump-prev)
