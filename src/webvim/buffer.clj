@@ -121,11 +121,12 @@
 (defn open-file
   "Create buffer from a file by slurp, return emtpy buffer if file not exists"
   [f]
-  (if (and (not (blank? f))
-           (fs/exists? f))
-    (create-buf (fs/base-name f) f (slurp f))
-    ;set :last-saved-lines make buffer start as unsaved
-    (assoc (create-buf "untitled" nil "") :last-saved-lines nil)))
+  (let [nm (if (nil? f) "" (fs/base-name f))]
+    (if (and (not (blank? f))
+             (fs/exists? f))
+      (create-buf nm f (slurp f))
+      ;set :last-saved-lines make buffer start as unsaved
+      (assoc (create-buf nm f "") :last-saved-lines nil))))
 
 (defn buf-emtpy?[b]
   (and (= 1 (-> b :lines count))

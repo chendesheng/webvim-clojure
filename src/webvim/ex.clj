@@ -135,7 +135,7 @@
                (swap! buffer-list dissoc (b :id))
                (let [lastid (@registers "#")
                      nextid (if (nil? lastid)
-                              (-> "" new-file :id)
+                              (-> nil new-file :id)
                               lastid)]
                  (reset! active-buffer-id nextid)
                  (swap! registers assoc "%" nextid)

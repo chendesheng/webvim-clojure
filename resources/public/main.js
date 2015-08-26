@@ -328,7 +328,7 @@ function render(buf) {
 	}
 
 	//title
-	if (buf.name) {
+	if (typeof buf.name != 'undefined') {
 		document.title = buf.name;
 		$('.status-bar .buf-name').text(buf.name);
 	}
