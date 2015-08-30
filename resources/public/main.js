@@ -88,6 +88,20 @@ String.prototype.eachLine = function(fn) {
 	}
 };
 
+String.prototype.count = function(ch) {
+	var i = 0;
+	var cnt = 0;
+	while(true) {
+		var nexti = this.indexOf(ch, i);
+		if (nexti == -1)
+			break;
+		i = nexti+ch.length;
+		cnt++;
+	}
+
+	return cnt;
+}
+
 String.prototype.eachBlock = function(fn, n) {
 	var str = this;
 	var num = 0;
@@ -222,16 +236,22 @@ function render(buf) {
 		$gutter.className = 'gutter';
 
 		hl.states = [];
-		buf.str.eachBlock(function(line, i) {
+		var linenum = 0;
+		buf.str.eachBlock(function(block, i) {
 			hl.states.push(null);
-			if (line) {
-				$lines.appendChild(renderLine(hl.parseLine(line, i)));
+			if (block) {
+				$lines.appendChild(renderLine(hl.parseLine(block, i)));
 
-				var g = document.createElement('DIV');
-				g.id = 'line-num-'+i;
-				g.className = 'line-num';
-				g.textContent = i+1;
-				$gutter.appendChild(g);
+				var num = block.count('\n');
+				for (var j = 0; j < num; j++) {
+					var g = document.createElement('DIV');
+					g.id = 'line-num-'+linenum;
+					g.className = 'line-num';
+					g.textContent = linenum+1;
+					$gutter.appendChild(g);
+
+					linenum++;
+				}
 			}
 		}, 100);
 		buffers[buf.id].currentBlock = $lines.firstChild;
@@ -263,6 +283,26 @@ function render(buf) {
 			ele = b.currentBlock.nextSibling;
 			if (!outOfRange(ele) && !oldstate.equal(hl.states[res.num+1])) {
 				hl.refresh(refreshIter(res.num+1, ele, hl.states, lineParent));
+			}
+			//render gutter
+			var $gutter = $('.gutter');
+			var linenumdiff = newtxt.count('\n') - oldtxt.count('\n');
+			var linenum = parseInt($gutter.find(':last-child').text());
+			if (linenumdiff > 0) {
+				for (var j = 0; j < linenumdiff; j++) {
+					var g = document.createElement('DIV');
+					g.id = 'line-num-'+linenum;
+					g.className = 'line-num';
+					g.textContent = linenum+1;
+					$gutter.append(g);
+
+					linenum++;
+				}
+			} else {
+				for (var j = 0; j < -linenumdiff; j++) {
+					$('#line-num-'+(linenum-1)).remove();
+					linenum--;
+				}
 			}
 		});
 	}
