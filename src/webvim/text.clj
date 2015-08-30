@@ -38,7 +38,7 @@
     (.useTransparentBounds m1 true)
     (.useAnchoringBounds m false)
     (.useAnchoringBounds m1 false)
-    (loop [offset (dec pos)]
+    (loop [offset pos]
       (println "offset:" offset)
       (if (neg? offset)
         nil
@@ -58,15 +58,15 @@
   [pos s re]
   (pos-re-forward (inc pos) s re))
 
-;(defn- pos-re-backward 
-;  "return backward range matches, exclude current position"
-;  [pos s re]
-;  (pos-re-backward (dec pos) s re))
+(defn- pos-re-next-backward 
+  "return backward range matches, exclude current position"
+  [pos s re]
+  (pos-re-backward (dec pos) s re))
 
 ;function name start with pos take pos as first argument and return newpos
 ;these can be combined in one motion command
 (defn- pos-eol-backward[pos s]
-  (or (first (pos-re-backward pos s re-line-break)) -1))
+  (or (first (pos-re-next-backward pos s re-line-break)) -1))
 
 (defn- pos-eol-forward[pos s]
   (or (first (pos-re-forward pos s re-line-break)) (count s)))
@@ -139,7 +139,8 @@
   "Update :x"
   [t]
   (let [pos (t :pos)
-        lastEOL (pos-re-backward pos (t :str) re-line-break)]
+        s (t :str)
+        lastEOL (pos-re-next-backward pos s re-line-break)]
     (assoc t :x (if (nil? lastEOL) pos (- pos (last lastEOL))))))
 
 (defn text-update-pos[t newpos]
@@ -277,13 +278,13 @@
   (text-re t re-word-start-border pos-re-next-forward))
 
 (defn word-backward[t]
-  (text-re t re-word-start-border pos-re-backward))
+  (text-re t re-word-start-border pos-re-next-backward))
 
 (defn WORD-forward[t]
   (text-re t re-WORD-start-border pos-re-next-forward))
 
 (defn WORD-backward[t]
-  (text-re t re-WORD-start-border pos-re-backward))
+  (text-re t re-WORD-start-border pos-re-next-backward))
 
 (defn word-end-forward[t]
   (text-re t re-word-end-border pos-re-next-forward))
