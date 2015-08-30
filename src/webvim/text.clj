@@ -20,18 +20,25 @@
           matched)))
     nil))
 
-(defn- re-forward
-  [s pos re]
+
+(defn- pos-re-forward
+  "return forward range matches"
+  [pos s re]
   (let [m (re-matcher re s)]
     (find-first m pos)))
 
-(defn- re-backward
-  [s pos re]
+(defn- pos-re-backward
+  "return backward range matches"
+  [pos s re]
+  (println s)
+  (println re)
   (let [m (re-matcher (re-pattern (str "(?=" re ")")) s)
         m1 (re-matcher re s)]
     (.useTransparentBounds m true)
     (.useTransparentBounds m1 true)
-    (loop [offset pos]
+    (.useAnchoringBounds m false)
+    (.useAnchoringBounds m1 false)
+    (loop [offset (dec pos)]
       (println "offset:" offset)
       (if (neg? offset)
         nil
@@ -46,11 +53,33 @@
               (recur (dec a))
               (find-first m1 (first matches)))))))))
 
-(defn- re-next-forward [s pos re]
-  (re-forward s (inc pos) re))
+(defn- pos-re-next-forward 
+  "return forward range matches, exclude current position"
+  [pos s re]
+  (pos-re-forward (inc pos) s re))
 
-(defn- re-next-backward [s pos re]
-  (re-backward s (dec pos) re))
+;(defn- pos-re-backward 
+;  "return backward range matches, exclude current position"
+;  [pos s re]
+;  (pos-re-backward (dec pos) s re))
+
+;function name start with pos take pos as first argument and return newpos
+;these can be combined in one motion command
+(defn- pos-eol-backward[pos s]
+  (or (first (pos-re-backward pos s re-line-break)) -1))
+
+(defn- pos-eol-forward[pos s]
+  (or (first (pos-re-forward pos s re-line-break)) (count s)))
+
+(defn- pos-re[pos s re re-fn]
+  (or (first (re-fn pos s re)) pos))
+
+(defn- pos-end-re[pos s re re-fn]
+  (or (last (re-fn pos s re)) pos))
+
+(defn- pos-line-first[pos s]
+  (pos-re pos s #"((?<=\n)[\s\S])|^" pos-re-backward))
+
 
 (defn text-subs
   ([s l r]
@@ -66,33 +95,33 @@
           n
           (recur (text-subs s1 (+ i cnt)) (inc n)))))))
 
-(defn text-offset-pos
-  [t offset]
-  (if (zero? offset) t
-    (let [pos (t :pos)
-          s (t :str)]
-      (if (pos? offset)
-        (let[len (count s)
-             l pos
-             tmpr (+ l offset)
-             r (if (> tmpr len)
-                 len
-                 tmpr)
-             sub (text-subs s l r)
-             lastEOL (re-next-backward (t :str) r re-line-break)]
-          (-> t
-              (assoc :pos r)
-              (assoc :x (if (nil? lastEOL) r (- r (last lastEOL))))
-              (assoc :y (+ (t :y) (count-lines sub)))))
-        (let[r pos
-             tmpl (+ r offset)
-             l (if (neg? tmpl) 0 tmpl)
-             sub (text-subs s l r)
-             lastEOL (re-next-backward (t :str) l re-line-break)]
-          (-> t
-              (assoc :pos l)
-              (assoc :x (if (nil? lastEOL) l (- l (last lastEOL))))
-              (assoc :y (- (t :y) (count-lines sub)))))))))
+;(defn text-offset-pos
+;  [t offset]
+;  (if (zero? offset) t
+;    (let [pos (t :pos)
+;          s (t :str)]
+;      (if (pos? offset)
+;        (let[len (count s)
+;             l pos
+;             tmpr (+ l offset)
+;             r (if (> tmpr len)
+;                 len
+;                 tmpr)
+;             sub (text-subs s l r)
+;             lastEOL (pos-re-backward r (t :str) re-line-break)]
+;          (-> t
+;              (assoc :pos r)
+;              (assoc :x (if (nil? lastEOL) r (- r (last lastEOL))))
+;              (assoc :y (+ (t :y) (count-lines sub)))))
+;        (let[r pos
+;             tmpl (+ r offset)
+;             l (if (neg? tmpl) 0 tmpl)
+;             sub (text-subs s l r)
+;             lastEOL (pos-re-backward l (t :str) re-line-break)]
+;          (-> t
+;              (assoc :pos l)
+;              (assoc :x (if (nil? lastEOL) l (- l (last lastEOL))))
+;              (assoc :y (- (t :y) (count-lines sub)))))))))
 
 (defn text-size
   "How many chars and lines s contains"
@@ -110,7 +139,7 @@
   "Update :x"
   [t]
   (let [pos (t :pos)
-        lastEOL (re-next-backward (t :str) pos re-line-break)]
+        lastEOL (pos-re-backward pos (t :str) re-line-break)]
     (assoc t :x (if (nil? lastEOL) pos (- pos (last lastEOL))))))
 
 (defn text-update-pos[t newpos]
@@ -176,19 +205,13 @@
           (assoc :pos newpos)
           (update-in [:x] inc))))) 
 
-(defn eol-backward[s pos]
-  (or (first (re-next-backward s pos re-line-break)) -1))
-
-(defn eol-forward[s pos]
-  (or (first (re-forward s pos re-line-break)) (count s)))
-
 (defn line-backward [t vx]
   (let [{pos :pos
          s :str
          y :y} t]
-    (let [eol (eol-backward s pos)]
+    (let [eol (pos-eol-backward pos s)]
       (if (neg? eol) t
-        (let [eol2 (eol-backward s eol)
+        (let [eol2 (pos-eol-backward eol s)
               len (- eol eol2)
               x (bound-range vx 0 (dec len))]
           (-> t
@@ -200,9 +223,9 @@
   (let [{pos :pos
          s :str
          y :y} t]
-    (let [eol (eol-forward s pos)]
+    (let [eol (pos-eol-forward pos s)]
       (if (= eol (count s)) t
-        (let [eol2 (eol-forward s (inc eol))
+        (let [eol2 (pos-eol-forward (inc eol) s)
               len (- eol2 eol)
               x (bound-range vx 0 (dec len))]
           (-> t
@@ -221,12 +244,10 @@
 (defn text-start[t]
   (merge t {:x 0 :y 0 :pos 0}))
 
-(defn move-re[t re re-fn]
+(defn text-re[t re re-fn]
   (let [{pos :pos
-         s :str
-         y :y} t
-        newpos (or (first (re-fn s pos re)) pos)]
-    (println "newpos:" newpos)
+         s :str} t
+        newpos (pos-re pos s re re-fn)]
     (text-update-pos t newpos)))
 
 (def word-chars "a-zA-Z_\\-!.?+*=<>&#\\':0-9")
@@ -238,51 +259,51 @@
 
 (def re-word-start-border
   (re-pattern 
-    (str "(?<=[" not-word-chars "])[" word-chars "]|(?<=[" not-punctuation-chars "])[" punctuation-chars "]")))
+    (str "(?<=[" not-word-chars "]|^)[" word-chars "]|(?<=[" not-punctuation-chars "]|^)[" punctuation-chars "]")))
 
 (def re-WORD-start-border
   (re-pattern 
-    (str "(?<=[" space-chars "])[" not-space-chars "]")))
+    (str "(?<=[" space-chars "]|^)[" not-space-chars "]")))
 
 (def re-word-end-border
   (re-pattern 
-    (str "[" word-chars "](?=[" not-word-chars "])|[" punctuation-chars "](?=[" not-punctuation-chars "])")))
+    (str "[" word-chars "](?=[" not-word-chars "]|$)|[" punctuation-chars "](?=[" not-punctuation-chars "]|$)")))
 
 (def re-WORD-end-border
   (re-pattern 
-    (str "[" not-space-chars "](?=[" space-chars "])")))
+    (str "[" not-space-chars "](?=[" space-chars "]|$)")))
 
 (defn word-forward[t]
-  (println "word-forward")
-  (move-re t re-word-start-border re-next-forward))
+  (text-re t re-word-start-border pos-re-next-forward))
 
 (defn word-backward[t]
-  (move-re t re-word-start-border re-next-backward))
+  (text-re t re-word-start-border pos-re-backward))
 
 (defn WORD-forward[t]
-  (move-re t re-WORD-start-border re-next-forward))
+  (text-re t re-WORD-start-border pos-re-next-forward))
 
 (defn WORD-backward[t]
-  (move-re t re-WORD-start-border re-next-backward))
+  (text-re t re-WORD-start-border pos-re-backward))
 
 (defn word-end-forward[t]
-  (move-re t re-word-end-border re-next-forward))
+  (text-re t re-word-end-border pos-re-next-forward))
 
 (defn WORD-end-forward[t]
-  (move-re t re-WORD-end-border re-next-forward))
+  (text-re t re-WORD-end-border pos-re-next-forward))
 
 (defn line-first[t]
   (let [s (t :str)
         pos (t :pos)
-        newpos (inc (eol-backward s pos))]
+        newpos (pos-line-first pos s)]
     (text-update-pos t newpos)))
 
-;(def re-line-start #"^\s*?\S|\n\s*?\S")
-
 (defn line-start[t]
-  (-> t
-      line-first
-      (move-re #"(?<=\s)[\S\n]" re-forward)))
+  (let [pos (t :pos)
+        s (t :str)
+        newpos (-> pos
+                   (pos-line-first s)
+                   (pos-re s #"[\S\n]|((?<=\s)[\S\n])" pos-re-forward))]
+        (text-update-pos t newpos)))
 
 (defn line-end[t]
-  (move-re t #"\n|$" re-forward))
+  (text-re t #"\n|$" pos-re-forward))
