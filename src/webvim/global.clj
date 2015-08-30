@@ -111,7 +111,7 @@
             (str s " ")) 
           ""
           (range 0 n)))
-
+ 
 (defn fuzzy-match 
   "return char indexs if word \"contains\" subject. length of subject must longer than 2"
   [word subject]

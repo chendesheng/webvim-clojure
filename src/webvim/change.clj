@@ -22,8 +22,8 @@
 (defn apply-changes[b changes]
   ())
 
-(defn c+[& changes]
+(defn change-merge[& changes]
   ())
 
-(defn c~[change]
-  ())
+(defn change-reverse[change]
+  {:from (change :to) :to (change :from) :pos (change :pos)})

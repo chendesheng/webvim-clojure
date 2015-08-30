@@ -130,6 +130,7 @@
                     (diff-lines before)
                     (dissoc-cursor before)
                     (dissoc-if-equal before :mode)
+                    (dissoc-if-equal before :str)
                     (dissoc-if-equal before :braces)
                     (dissoc-if-equal before :keys)
                     (dissoc-if-equal before :name)
@@ -173,9 +174,10 @@
   (let [before (active-buffer)]
     (async/>!! (:chan-in before) keycode)
     (let [after (async/<!! (:chan-out before))]
-      (if (not (= (before :lines) (after :lines)))
-        (dissoc after :highlights) after)
-      (update-buffer after)
+      (update-buffer 
+        (if (= (before :lines) (after :lines))
+          after (dissoc after :highlights)))
+
       ;Always write (active-buffer) back because active-buffer-id may change by current key
       (render before (active-buffer)))))
 

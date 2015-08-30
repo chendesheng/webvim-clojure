@@ -67,7 +67,7 @@ function hlclojure(hljs) {
 
 	var STRING = hljs.inherit(hljs.QUOTE_STRING_MODE, {illegal:null});
 
-	var COMMENT = hljs.COMMENT(';', '$',{illegal:/\n/});
+	var COMMENT = hljs.COMMENT(';', '\n');
 
 	var KEY = {
 		className: 'keyword',

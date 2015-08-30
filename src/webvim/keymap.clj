@@ -10,6 +10,7 @@
         webvim.jumplist
         webvim.ex
         webvim.serve
+        webvim.text
         webvim.autocompl))
 
 (defonce motion-keymap (atom {}))
@@ -411,12 +412,20 @@
       (registers-put (:registers b) "." (-> b :macro :recording-keys)))
     ;alwasy clear :recording-keys
     ;prevent cursor on top of EOL in normal mode
-    (let [b1 (if (and (> col 0)
-                      (>= col (dec (col-count b row)))
-                      (-> b :lines vector?)
-                      (< row (-> b :lines count dec)))
-               (update-in b [:cursor :col] dec)
-               b)]
+    (let [ch (text-char-at (b :str) (b :pos))
+          b1  (if (= ch \newline)
+                (if (or (zero? (b :pos)) 
+                        (= (text-char-at (b :str) (dec (b :pos))) \newline))
+                  b (-> b 
+                        (update-in [:pos] dec)
+                        (update-in [:x] dec)))
+                b)]
+    ;(let [b1 (if (and (> col 0)
+    ;                  (>= col (dec (col-count b row)))
+    ;                  (-> b :lines vector?)
+    ;                  (< row (-> b :lines count dec)))
+    ;           (update-in b [:cursor :col] dec)
+    ;           b)]
       (-> b1 
           (assoc-in [:macro :recording-keys] [])
           (buf-update-highlight-brace-pair (:cursor b1))))))
@@ -501,21 +510,23 @@
            :else ex-mode-default})
 
   (reset! motion-keymap
-          {"h" #(cursor-move-char % 0)
-           "l" #(cursor-move-char % 1)
-           "k" #(cursor-move-char % 2)
-           "j" #(cursor-move-char % 3)
-           "g" {"g" cursor-move-start}
+          {;"h" #(cursor-move-char % 0)
+           ;"l" #(cursor-move-char % 1)
+           "h" char-backward
+           "l" char-forward
+           "k" #(lines-backward % 1)
+           "j" #(lines-forward % 1)
+           "g" {"g" text-start}
            "G" cursor-move-end
-           "w" buf-line-next-word
-           "W" buf-line-next-WORD
-           "b" cursor-back-word
-           "B" cursor-back-WORD
-           "e" cursor-word-end
-           "E" cursor-WORD-end
-           "0" cursor-line-first
-           "^" cursor-line-start
-           "$" cursor-line-end
+           "w" word-forward
+           "W" WORD-forward
+           "b" word-backward
+           "B" WORD-backward
+           "e" word-end-forward
+           "E" WORD-end-forward
+           "0" line-first
+           "^" line-start
+           "$" line-end
            "f" {"esc" nop
                 :else move-to-next-char }
            "F" {"esc" nop
@@ -586,8 +597,8 @@
   (reset! normal-mode-keymap @motion-keymap)
   (swap! normal-mode-keymap 
          merge 
-         {"w" cursor-next-word
-          "W" cursor-next-WORD
+         {"w" word-forward
+          "W" WORD-forward
 
           "i" @insert-mode-keymap
           "a" (merge

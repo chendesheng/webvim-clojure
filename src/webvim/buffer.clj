@@ -6,6 +6,7 @@
         (clojure [string :only (join split blank?)])
         webvim.autocompl
         webvim.history
+        webvim.text
         webvim.cursor
         webvim.global))
 
@@ -54,6 +55,11 @@
            :filepath filepath 
            ;Each line is a standard java String
            :lines (split-lines-all txt)
+           :str txt
+           :pos 0  ;offset from first char
+           :x 0    ;charactor offset from previous line break
+           :y 0    ;num of line breaks from first char
+           :vx 0   ;saved x
            ;row, col, lastcol, viewport row (row from top of current viewport)
            :cursor {:row 0 :col 0 :lastcol 0}
            ;For client display matched braces: [{:row :col} {:row :col}]
@@ -692,13 +698,13 @@
   [b]
   (let [st (-> b :scroll-top)]
     (assoc b :scroll-top 
-           (let [row (-> b :cursor :row)
+           (let [y (b :y)
                  h (-> @window :viewport :h)]
              (cond 
-               (< row st) row
-               (< row (+ st h)) st
-               (neg? (-> row (- h) inc)) 0
-               :else (-> row (- h) inc))))))
+               (< y st) y
+               (< y (+ st h)) st
+               (neg? (-> y (- h) inc)) 0
+               :else (-> y (- h) inc))))))
 
 (defn save-lastbuf[b keycode]
   (-> b (assoc-in [:context :lastbuf] b)))

@@ -72,6 +72,22 @@ function lineid(i) {
 	return '#line-'+i;
 }
 
+String.prototype.eachLine = function(fn) {
+	var str = this;
+	var num = 0;
+	while(true) {
+		var i = str.indexOf('\n')+1;
+		if (i == 0) {
+			fn(str, num);
+			break;
+		} else {
+			fn(str.substring(0, i), num);
+			str = str.substring(i);
+		}
+		num++;
+	}
+};
+
 //local states for each buffer, doesn't contains text content since it might be too large.
 var buffers = {};
 
@@ -85,7 +101,7 @@ function render(buf) {
 	var hl;
 
 	//render lines
-	if (buf.lines) {
+	if (typeof buf.str != 'undefined') {
 		hl = newHighlight(buf.lang);
 		buffers[buf.id] = { hl: hl };
 
@@ -98,9 +114,9 @@ function render(buf) {
 		var $gutter = document.createElement('DIV');
 		$gutter.className = 'gutter';
 
-		var lines = buf.lines;
-		hl.states = new Array(lines.length+1);
-		lines.each(function(line, i) {
+		hl.states = [];
+		buf.str.eachLine(function(line, i) {
+			hl.states.push(null);
 			if (line) {
 				$lines.appendChild(renderLine(i, hl.parseLine(line, i)));
 
@@ -111,6 +127,7 @@ function render(buf) {
 				$gutter.appendChild(g);
 			}
 		});
+		hl.states.push(null);
 
 		$('.buffer').append($gutter);
 		$('.buffer').append($lines);
@@ -119,7 +136,7 @@ function render(buf) {
 	var $gutter = $('.gutter');
 	hl = hl || buffers[buf.id].hl;
 	var cursor = buf.cursor || buffers[buf.id].cursor;
-	buffers[buf.id].cursor = cursor;
+	//buffers[buf.id].cursor = cursor;
 
 	if (buf.difflines) {
 		var diff = buf.difflines;
@@ -202,9 +219,10 @@ function render(buf) {
 	}
 
 
-	if (typeof buf.cursor != 'undefined') {
-		renderCursor(buf);
-	}
+//	if (typeof buf.cursor != 'undefined') {
+//		renderCursor(buf);
+//	}
+	renderCursor(buf);
 	
 	//render ex
 	if (buf.ex && buf.ex.length > 0) {
@@ -448,8 +466,8 @@ function renderCursor(buf) {
 		$('.lines').append('<div class="cursor"></div>');
 	}
 
-	var cr = parseInt(buf.cursor.row);
-	var cc = parseInt(buf.cursor.col);
+	var cr = buf.y;
+	var cc = buf.x;
 	var x, y, w;
 	if (document.getElementById('line-0') == null) {
 		x = 0, y = 0, w = 9.57;
