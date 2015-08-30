@@ -60,6 +60,7 @@
            :x 0    ;charactor offset from previous line break
            :y 0    ;num of line breaks from first char
            :vx 0   ;saved x
+           :changes [];changes of current command
            ;row, col, lastcol, viewport row (row from top of current viewport)
            :cursor {:row 0 :col 0 :lastcol 0}
            ;For client display matched braces: [{:row :col} {:row :col}]

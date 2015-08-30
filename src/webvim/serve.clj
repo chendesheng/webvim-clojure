@@ -19,7 +19,7 @@
   [obj out]
   (let[b (buf-bound-scroll-top obj)]
     (async/>!! out b)
-    b))
+    (assoc b :changes [])))
 
 ;two types: key (leaf), keymap (internal node)
 ;when visit a keymap call :enter :leave 

@@ -88,8 +88,115 @@ String.prototype.eachLine = function(fn) {
 	}
 };
 
+String.prototype.eachBlock = function(fn, n) {
+	var str = this;
+	var num = 0;
+	while(true) {
+		var i = str.substring(n).search(/\s/)+1;
+
+		if (i==0) {
+			fn(str, num);
+			break;
+		} else {
+			i += n;
+			fn(str.substring(0, i), num);
+			str = str.substring(i);
+		}
+		num++;
+	}
+};
+
 //local states for each buffer, doesn't contains text content since it might be too large.
 var buffers = {};
+
+function outOfRange(ele) {
+	return ele == null || !/\bcode\b/.test(ele.className);
+}
+
+function getElementByPos(buf, pos) {
+	var i = buf.pos;
+	var ele = buf.currentBlock;
+	var num = buf.currentBlockNumber;
+	if (i <= pos) {
+		while (!outOfRange(ele)) {
+			var j = i + ele.textContent.length;
+			if (i <= pos && pos < j) {
+				buf.currentBlock = ele;
+				buf.pos = i;
+				buf.currentBlockNumber = num;
+				return {e: ele, pos: i, num: num}
+			}
+
+			i = j;
+			num++;
+			ele = ele.nextSibling;
+		}
+	} else {
+		while (true) {
+			num--;
+			ele = ele.previousSibling;
+			if (outOfRange(ele)) {
+				break;
+			}
+
+			var j = i - ele.textContent.length;
+
+			if (j <= pos && pos < i) {
+				buf.currentBlock = ele;
+				buf.pos = j;
+				buf.currentBlockNumber = num;
+				return {e: ele, pos: j, num: num}
+			}
+
+			i = j;
+		}
+	}
+
+	return null;
+}
+
+function getLineByPos(buf, pos) {
+	var res = getElementByPos(buf, pos);
+	var ele = res.e;
+	var elepos = res.pos;
+	var txt = ele.textContent.substring(0, pos-elepos);
+	var line = ''
+	while(true) {
+		var br = txt.indexOf('\n');
+		line = txt.substring(br+1) + line;
+		if (br == -1) {
+			break;
+		}
+		ele = ele.previousSibling;
+		if (ele == null) break;
+		txt = ele.textContent;
+	}
+
+	return line;
+}
+
+function refreshIter(index, currentBlock, states, parentNode) {
+	var i = index;
+	var ele = currentBlock;
+	return {
+		text: function() {
+			return ele.textContent;
+		},
+		index: function() {
+			return i;
+		},
+		render: function(items) {
+			var newele = renderLine(items);
+			parentNode.replaceChild(newele, ele);
+			ele = newele;
+		},
+		next: function() {
+			ele = ele.nextSibling;
+			i++;
+			return !outOfRange(ele);
+		}
+	}
+}
 
 //TODO: Future improvements: 
 //1. put syntax highlight to a dedicate web worker (or just use setTimeout)
@@ -115,10 +222,10 @@ function render(buf) {
 		$gutter.className = 'gutter';
 
 		hl.states = [];
-		buf.str.eachLine(function(line, i) {
+		buf.str.eachBlock(function(line, i) {
 			hl.states.push(null);
 			if (line) {
-				$lines.appendChild(renderLine(i, hl.parseLine(line, i)));
+				$lines.appendChild(renderLine(hl.parseLine(line, i)));
 
 				var g = document.createElement('DIV');
 				g.id = 'line-num-'+i;
@@ -126,7 +233,10 @@ function render(buf) {
 				g.textContent = i+1;
 				$gutter.appendChild(g);
 			}
-		});
+		}, 100);
+		buffers[buf.id].currentBlock = $lines.firstChild;
+		buffers[buf.id].currentBlockNumber = 0;
+		buffers[buf.id].pos = 0;
 		hl.states.push(null);
 
 		$('.buffer').append($gutter);
@@ -137,6 +247,25 @@ function render(buf) {
 	hl = hl || buffers[buf.id].hl;
 	var cursor = buf.cursor || buffers[buf.id].cursor;
 	//buffers[buf.id].cursor = cursor;
+	
+	if (buf.changes) {
+		var b = buffers[buf.id];
+		var lineParent = $('.lines')[0];
+		buf.changes.each(function(c) {
+			var res = getElementByPos(b, c.pos);
+			var ele = res.e;
+			var offset = c.pos - res.pos;
+			var oldtxt = ele.textContent;
+			var newtxt = oldtxt.substring(0, offset) + c.to + oldtxt.substring(offset+c.len);
+			var oldstate = hl.states[res.num+1]
+			b.currentBlock = renderLine(hl.parseLine(newtxt, res.num));
+			lineParent.replaceChild(b.currentBlock, ele);
+			ele = b.currentBlock.nextSibling;
+			if (!outOfRange(ele) && !oldstate.equal(hl.states[res.num+1])) {
+				hl.refresh(refreshIter(res.num+1, ele, hl.states, lineParent));
+			}
+		});
+	}
 
 	if (buf.difflines) {
 		var diff = buf.difflines;
@@ -193,7 +322,7 @@ function render(buf) {
 		//recover row state
 		hl.states[row] = rowstate;
 		for (var i = row,len=row+add.length; i < len; i++) {
-			var line = renderLine(i, hl.parseLine(add[i-row], i));
+			var line = renderLine(hl.parseLine(add[i-row], i));
 			if (i > 0) {
 				$(line).insertAfter($(lineid(i-1)));
 			} else {
@@ -276,26 +405,26 @@ function render(buf) {
 
 	//render matched brace pair
 	$('.lines .highlight-brace-pair').empty();
-	if (buf.braces) {
-		if (!$('.lines .highlight-brace-pair').get(0)) {
-			$('.lines').append('<div class="highlight-brace-pair"></div>');
-		}
-		var cr, cc;
-		if (buf.cursor) {
-			cr = parseInt(buf.cursor.row);
-			cc = parseInt(buf.cursor.col);
-		}
+	//if (buf.braces) {
+	//	if (!$('.lines .highlight-brace-pair').get(0)) {
+	//		$('.lines').append('<div class="highlight-brace-pair"></div>');
+	//	}
+	//	var cr, cc;
+	//	if (buf.cursor) {
+	//		cr = parseInt(buf.cursor.row);
+	//		cc = parseInt(buf.cursor.col);
+	//	}
 
-		var ranges = [];
-		for (var i = 0; i < buf.braces.length; i++) {
-			var pt = buf.braces[i];
-			//skip cursor, don't draw twice in same point
-			if (buf.cursor && pt.row == cr && pt.col == cc) continue; 
+	//	var ranges = [];
+	//	for (var i = 0; i < buf.braces.length; i++) {
+	//		var pt = buf.braces[i];
+	//		//skip cursor, don't draw twice in same point
+	//		if (buf.cursor && pt.row == cr && pt.col == cc) continue; 
 
-			ranges.push(pt, {row:pt.row, col:pt.col+1});
-		}
-		renderSelections($('.lines .highlight-brace-pair'), ranges);
-	}
+	//		ranges.push(pt, {row:pt.row, col:pt.col+1});
+	//	}
+	//	renderSelections($('.lines .highlight-brace-pair'), ranges);
+	//}
 
 	scrollToCursor(buf['scroll-top'] || 0, buf.lines);
 
@@ -352,8 +481,7 @@ function render(buf) {
 	}
 }
 
-function renderLineInner(items) {
-	var pre = document.createElement('PRE');
+function renderLineInner(items, parentNode) {
 	items.each(function(item){
 		var className = item[0];
 		var text = item[1];
@@ -365,16 +493,15 @@ function renderLineInner(items) {
 		} else {
 			node = document.createTextNode(text);
 		}
-		pre.appendChild(node);
+		parentNode.appendChild(node);
 	});
-	return pre;
 }
 
-function renderLine(row, items) {
-	var line = document.createElement('DIV');
-	line.id = 'line-'+row;
-	line.appendChild(renderLineInner(items));
-	return line;
+function renderLine(items) {
+	var block = document.createElement('SPAN');
+	block.className = 'code';
+	renderLineInner(items, block);
+	return block;
 }
 
 var aligntop = true;
@@ -469,18 +596,18 @@ function renderCursor(buf) {
 	var cr = buf.y;
 	var cc = buf.x;
 	var x, y, w;
-	if (document.getElementById('line-0') == null) {
-		x = 0, y = 0, w = 9.57;
-	} else {
-		var cline = $('#line-'+cr)[0].textContent;
+	//if (document.getElementById('line-0') == null) {
+	//	x = 0, y = 0, w = 9.57;
+	//} else {
+	var cline = getLineByPos(buffers[buf.id], buf.pos) //getElementByPos(buffers[buf.id], buf.pos).e.textContent;//$('#line-'+cr)[0].textContent;
 
-		var x = textWidth(cline, 0, cc);
-		var y = cr*21+1;
-		var w = 9.57;
-		if (isChinese(cline[cc])) {
-			w = 16;
-		}
+	var x = textWidth(cline, 0, cc);
+	var y = cr*21+1;
+	var w = 9.57;
+	if (isChinese(cline[cc])) {
+		w = 16;
 	}
+	//}
 	$('.lines .cursor').attr('style', 'left:'+x+'px;top:'+y+'px;width:'+w+'px;');
 }
 

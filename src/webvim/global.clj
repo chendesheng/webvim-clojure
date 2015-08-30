@@ -98,6 +98,9 @@
 (defn cursor-sort-range [rg]
   (cursor-sort (rg 0) (rg 1)))
 
+(defn sort2[a b]
+  (if (< a b) [a b] [b a]))
+
 (defn re-test[re s]
   (if (nil? re)
     false

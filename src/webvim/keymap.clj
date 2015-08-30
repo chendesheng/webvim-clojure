@@ -82,17 +82,15 @@
 (defn insert-mode-default[b keycode]
   (let [b1 (cond 
              (= "backspace" keycode)
-             (buf-delete b)
+             (text-delete-offset b -1)
              (= "enter" keycode)
-             (-> b 
-                 (buf-insert "\n")
-                 buf-indent-current-line)
+             (text-insert b "\n")
              (= "space" keycode)
-             (buf-insert b " ")
+             (text-insert b " ")
              (= "tab" keycode)
-             (buf-insert b "\t") 
+             (text-insert b "\t") 
              (= 1 (count keycode))
-             (buf-insert b keycode)
+             (text-insert b keycode)
              :else
              b)
         b2 (buf-update-highlight-brace-pair b1 (:cursor (dec-col b1)))

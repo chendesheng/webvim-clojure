@@ -111,9 +111,9 @@ var highlights = (function() {
 		});
 		return mode;
 	};
-	hljs.C_LINE_COMMENT_MODE = hljs.COMMENT('//', '$');
+	hljs.C_LINE_COMMENT_MODE = hljs.COMMENT('//', '\n');
 	hljs.C_BLOCK_COMMENT_MODE = hljs.COMMENT('/\\*', '\\*/');
-	hljs.HASH_COMMENT_MODE = hljs.COMMENT('#', '$');
+	hljs.HASH_COMMENT_MODE = hljs.COMMENT('#', '\n');
 	hljs.NUMBER_MODE = {
 		className: 'number',
 		begin: hljs.NUMBER_RE,
@@ -424,10 +424,30 @@ function hlcompile(ROOT) {
 		return ctx.output;
 	};
 
-	//These lines' text are not changed but syntax affected by previous lines change
-	hl.refreshLines = function(row, cnt, renderLine) {
+	hl.refresh = function(iter) {
 		var states = hl.states;
-		for (var i = row; i < cnt; i++) {
+		while(true) {
+			var i = iter.index();
+			var ctx = doParse(iter.text(), states[i]);
+			iter.render(ctx.output);
+			if (states[i+1].equal(ctx.modes)) {
+				//doParse has 3 arguments, in next lines none of them changed
+				//so no syntax will be changed in next lines
+				return;
+			} else {
+				states[i+1] = ctx.modes;
+			}
+
+			if (!iter.next()) {
+				break;
+			}
+		}
+	}
+
+	//These lines' text are not changed but syntax affected by previous lines change
+	hl.refreshLines = function(index, cnt, renderLine) {
+		var states = hl.states;
+		for (var i = index; i < cnt; i++) {
 			var $line = $('#line-'+i+' pre');
 			var line = $line[0].textContent;
 
@@ -445,9 +465,9 @@ function hlcompile(ROOT) {
 		}
 	};
 
-	function logmodes(row) {
-		var out = [row];
-		hl.states[row].each(function(c) {
+	function logmodes(index) {
+		var out = [index];
+		hl.states[index].each(function(c) {
 			out.push(c.begin);
 		});
 		console.log(out);

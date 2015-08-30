@@ -27,6 +27,7 @@ body {
 	left:50px;
 	right:0;
 	overflow:auto;
+	white-space:pre;
 }
 
 .selections .line-selected {

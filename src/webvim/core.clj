@@ -123,14 +123,15 @@
                 (-> after
                     (dissoc-cursor nil)
                     (assoc :lang (-> after :language :name))
+                    (dissoc :changes)
                     remove-fields)
                 :else
                 (-> after
                     remove-fields
+                    (dissoc :str)
                     (diff-lines before)
                     (dissoc-cursor before)
                     (dissoc-if-equal before :mode)
-                    (dissoc-if-equal before :str)
                     (dissoc-if-equal before :braces)
                     (dissoc-if-equal before :keys)
                     (dissoc-if-equal before :name)

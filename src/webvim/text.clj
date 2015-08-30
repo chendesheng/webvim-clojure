@@ -143,7 +143,7 @@
         lastEOL (pos-re-next-backward pos s re-line-break)]
     (assoc t :x (if (nil? lastEOL) pos (- pos (last lastEOL))))))
 
-(defn text-update-pos[t newpos]
+(defn- text-update-pos[t newpos]
   (let [pos (t :pos)
         s (t :str)]
     (cond 
@@ -157,27 +157,63 @@
           text-x)
       :else t)))
 
-(defn text-replace [t l from to]
-  (let [s (t :str)
-        pos (t :pos)
-        r (+ l (count from))
-        prefix (text-subs s 0 l)
-        suffix (text-subs s r)
-        news (str prefix to suffix)
-        newt (assoc t :str news)]
-    (cond 
-      (< pos l)
-      newt
-      (>= pos r)
-      (-> newt
-          (text-op-size - (text-size from))
-          (text-op-size + (text-size to))
-          text-x)
-      :else
-      (-> newt
-          (text-op-size - (text-size (text-subs s l pos)))
-          (text-op-size + (text-size to))
-          text-x))))
+(defn- text-save-change[t pos from to]
+  (update-in t [:changes] conj {:pos pos :len (count from) :to to}))
+
+(defn str-replace
+  [s l r to]
+  (str
+    (text-subs s 0 l)
+    to
+    (text-subs s r)))
+
+(defn- text-replace-inner 
+  ([t l from to]
+   (let [s (t :str)
+         pos (t :pos)
+         r (+ l (count from))
+         news (str-replace s l r to)
+         newt (assoc t :str news)]
+     (cond 
+       (< pos l)
+       newt
+       (>= pos r)
+       (-> newt
+           (text-op-size - (text-size from))
+           (text-op-size + (text-size to))
+           text-x)
+       :else
+       (-> newt
+           (text-op-size - (text-size (text-subs s l pos)))
+           (text-op-size + (text-size to))
+           text-x)))))
+
+(defn text-replace 
+  ([t l r to]
+   (let [s (t :str)
+         from (text-subs s l r)]
+     (-> t
+         (text-replace-inner l from to)
+         (text-save-change l from to)))))
+
+(defn text-insert
+  ([t l txt]
+   (text-replace t l l txt))
+  ([t txt]
+   (text-insert t (t :pos) txt)))
+
+(defn text-delete
+  ([t l r]
+   (text-replace t l r ""))
+  ([t pt]
+   (let [pos (t :pos)
+         [a b] (sort2 pos pt)]
+     (text-delete t a b))))
+
+(defn text-delete-offset[t offset] 
+  (let [pos (t :pos)
+        newpos (+ pos offset)]
+        (text-delete t newpos)))
 
 (defn text-char-at
   "return nil if out of range"
