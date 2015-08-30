@@ -9,6 +9,7 @@
         webvim.cursor
         webvim.serve
         webvim.jumplist
+        webvim.text
         webvim.global)) 
 
 (declare ex-commands)
@@ -171,14 +172,14 @@
             newb (-> lb
                      (assoc :ex newex)
                      (save-lastbuf ""))] ;keep lastbuf avaiable on stack
-        (try (cursor-next-str newb (subs newex 1))
+        (try (re-forward newb (re-pattern (subs newex 1)))
              (catch Exception e newb)))
       (= \? (first newex))
       (let [lb (-> b :context :lastbuf)
             newb (-> lb
                      (assoc :ex newex)
                      (save-lastbuf ""))]
-        (try (cursor-back-str newb (subs newex 1))
+        (try (re-backward newb (re-pattern (subs newex 1)))
              (catch Exception e newb)))
       :else
       (assoc b :ex newex))))

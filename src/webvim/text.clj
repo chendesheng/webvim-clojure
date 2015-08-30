@@ -281,7 +281,7 @@
 (defn text-start[t]
   (merge t {:x 0 :y 0 :pos 0}))
 
-(defn text-re[t re re-fn]
+(defn- text-re[t re re-fn]
   (let [{pos :pos
          s :str} t
         newpos (pos-re pos s re re-fn)]
@@ -310,23 +310,29 @@
   (re-pattern 
     (str "[" not-space-chars "](?=[" space-chars "]|$)")))
 
+(defn re-forward[t re]
+  (text-re t re pos-re-next-forward))
+
+(defn re-backward[t re]
+  (text-re t re pos-re-next-backward))
+
 (defn word-forward[t]
-  (text-re t re-word-start-border pos-re-next-forward))
+  (re-forward t re-word-start-border))
 
 (defn word-backward[t]
-  (text-re t re-word-start-border pos-re-next-backward))
+  (re-backward t re-word-start-border))
 
 (defn WORD-forward[t]
-  (text-re t re-WORD-start-border pos-re-next-forward))
+  (re-forward t re-WORD-start-border))
 
 (defn WORD-backward[t]
-  (text-re t re-WORD-start-border pos-re-next-backward))
+  (re-backward t re-WORD-start-border))
 
 (defn word-end-forward[t]
-  (text-re t re-word-end-border pos-re-next-forward))
+  (re-forward t re-word-end-border))
 
 (defn WORD-end-forward[t]
-  (text-re t re-WORD-end-border pos-re-next-forward))
+  (re-forward t re-WORD-end-border))
 
 (defn line-first[t]
   (let [s (t :str)
