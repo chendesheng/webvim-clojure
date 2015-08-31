@@ -11,6 +11,7 @@
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [ring "1.4.0"]]
   :source-paths ["src" "src/webvim"]
+  :resource-paths ["thirdparty/*", "resources"]
   :main webvim.core)
 
 

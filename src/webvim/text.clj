@@ -1,7 +1,7 @@
 (ns webvim.text
   (:use clojure.pprint
-        webvim.global
-        (clojure [string :only (join split blank?)])))
+        webvim.global)
+  (:import (org.ahmadsoft.ropes RopeBuilder)))
 
 (def line-break "\n")
 (def re-line-break (re-pattern line-break))
@@ -20,11 +20,14 @@
           matched)))
     nil))
 
+(defn text-new[s]
+  (let [builder (RopeBuilder.)]
+    (.build builder s)))
 
 (defn- pos-re-forward
   "return forward range matches"
   [pos s re]
-  (let [m (re-matcher re s)]
+  (let [m (.matcher s re)]
     (find-first m pos)))
 
 (defn- pos-re-backward
@@ -32,8 +35,8 @@
   [pos s re]
   ;(println s)
   ;(println re)
-  (let [m (re-matcher (re-pattern (str "(?=" re ")")) s)
-        m1 (re-matcher re s)]
+  (let [m (.matcher s (re-pattern (str "(?=" re ")")))
+        m1 (.matcher s re)]
     (.useTransparentBounds m true)
     (.useTransparentBounds m1 true)
     (.useAnchoringBounds m false)
@@ -83,14 +86,16 @@
 
 (defn text-subs
   ([s l r]
-   (subs s l r))
+   (.subSequence s l r))
   ([s l]
-   (subs s l)))
+   (.subSequence s l (.length s))))
 
 (defn count-lines[s]
   (let [cnt (count line-break)]
     (loop[s1 s n 0]
-      (let [i (.indexOf s1 line-break)]
+      (let [i (if (empty? s1)
+                -1
+                (.indexOf s1 line-break))]
         (if (= i -1)
           n
           (recur (text-subs s1 (+ i cnt)) (inc n)))))))
@@ -162,10 +167,9 @@
 
 (defn str-replace
   [s l r to]
-  (str
-    (text-subs s 0 l)
-    to
-    (text-subs s r)))
+  (-> s
+    (.delete l r)
+    (.insert l to)))
 
 (defn- text-replace-inner 
   ([t l from to]

@@ -102,7 +102,7 @@
 (defn- remove-fields[b]
   (-> b 
       track-unsaved
-      (dissoc :history :txt-cache :context :last-cursor :language
+      (dissoc :history :txt-cache :context :last-cursor :language :filepath
           :macro :chan-in :chan-out :registers :last-saved-lines)
       (dissoc-empty [:highlights])
       (dissoc-nil :keys)
@@ -117,10 +117,12 @@
 (defn render 
   "Write changes to browser."
   [before after]
-  (let [b (cond (= before after)
+  (let [txt (after :str)
+        b (cond (= before after)
                 ""
                 (or (nil? before) (not (= (:id before) (:id after))))
                 (-> after
+                    (assoc :str (str txt))
                     (dissoc-cursor nil)
                     (assoc :lang (-> after :language :name))
                     (dissoc :changes)

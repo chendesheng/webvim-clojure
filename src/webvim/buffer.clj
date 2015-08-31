@@ -55,7 +55,7 @@
            :filepath filepath 
            ;Each line is a standard java String
            :lines (split-lines-all txt)
-           :str txt
+           :str (text-new txt)
            :pos 0  ;offset from first char
            :x 0    ;charactor offset from previous line break
            :y 0    ;num of line breaks from first char
