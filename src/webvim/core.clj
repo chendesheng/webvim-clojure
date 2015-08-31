@@ -70,10 +70,7 @@
 (defn- remove-visual-mode[b]
   (if (empty? (-> b :visual :ranges))
     (dissoc b :visual)
-    (update-in b [:visual :ranges]
-               (fn[rg]
-                 (let [[p0 p1] (cursor-sort-range rg)]
-                   [p0 (cursor-inc-col p1)])))))
+    b))
 
 (defn- remove-autocompl[b]
   (if (empty? (-> b :autocompl :suggestions))

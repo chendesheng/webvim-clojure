@@ -367,3 +367,19 @@
 
 (defn line-end[t]
   (text-re t #"\n|$" pos-re-forward))
+
+(defn re-forward-highlight[t re]
+  (let [pos (t :pos)
+        s (t :str)
+        [a b] (pos-re-next-forward pos s re)]
+    (-> t
+        (text-update-pos a)
+        (update-in [:highlights] conj a (dec b)))))
+
+(defn re-backward-highlight[t re]
+  (let [pos (t :pos)
+        s (t :str)
+        [a b] (pos-re-next-backward pos s re)]
+    (-> t
+        (text-update-pos a)
+        (update-in [:highlights] conj a (dec b)))))

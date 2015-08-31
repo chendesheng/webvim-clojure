@@ -31,9 +31,9 @@
 
 (defn set-visual-mode[b]
   (println "set-visual-mode:")
-  (let [cur (-> b :cursor cursor-to-point)]
+  (let [pos (b :pos)]
     (merge b {:ex "" :mode visual-mode :keys nil 
-              :visual {:type 0 :ranges [cur cur]}})))
+              :visual {:type 0 :ranges [pos pos]}})))
 
 (defn set-insert-mode[b keycode]
   ;(println "set-insert-mode")
@@ -109,13 +109,13 @@
                          :suggestions-index 0})))))))
 
 (defn highlight-all-matches[b re]
-  (loop [b1 (re-forward b re)
-         hls (:highlights b1)]
-    (if (and (= (-> b1 :cursor :row) (-> b :cursor :row))
-             (= (-> b1 :cursor :col) (-> b :cursor :col)))
-      (assoc b :highlights (vec hls))
-      (let [b2 (re-forward b1 re)]
-        (recur b2 (concat hls (:highlights b2)))))))
+  b)
+  ;(loop [b1 (re-forward-highlight b re)
+  ;       hls (:highlights b1)]
+  ;  (if (= (b1 :pos) (b :pos))
+  ;    (assoc b :highlights (vec hls))
+  ;    (let [b2 (re-forward-highlight b1 re)]
+  ;      (recur b2 (concat hls (:highlights b2)))))))
 
 (defn- buf-cursor-info[b]
   (let [{nm :name 
@@ -226,9 +226,7 @@
   (let [m (re-find #"[ocd]" keycode)] ;don't change cursor position if not motion
     (if (nil? m)
       (assoc-in b [:visual :ranges 1]
-                (-> b 
-                    :cursor 
-                    cursor-to-point)) b)))
+                (b :pos)) b)))
 
 (defn autocompl-start[b]
   (let [word (buffer-word-before-cursor b)
@@ -353,7 +351,7 @@
     (registers-put (:registers b) "/" (str "/" re))
     (-> b 
         (assoc-in [:cursor :col] start)
-        (re-forward re)
+        (re-forward-highlight re)
         (highlight-all-matches re))))
 
 (defn move-back-same-word[b]
@@ -362,7 +360,7 @@
     (registers-put (:registers b) "/" (str "?" re))
     (-> b 
         (assoc-in [:cursor :col] start)
-        (re-backward re)
+        (re-backward-highlight re)
         (highlight-all-matches re))))
 
 (defn buf-close-chan-in[b]
@@ -532,15 +530,17 @@
            "n" #(let[s (or (registers-get (:registers %) "/") "/")
                      dir (first s)
                      re (re-pattern (subs s 1))
-                     fnsearch (if (= \/ dir) re-forward re-backward)]
+                     fnsearch (if (= \/ dir) re-forward-highlight re-backward-highlight)]
                   (-> % 
+                      (dissoc :highlights)
                       (fnsearch re)
                       (highlight-all-matches re)))
            "N" #(let[s (or (registers-get (:registers %) "/") "?")
                      dir (or (first s) "")
                      re (re-pattern (subs s 1))
-                     fnsearch (if (= \/ dir) re-backward re-forward)]
+                     fnsearch (if (= \/ dir) re-backward-highlight re-forward-highlight)]
                   (-> % 
+                      (dissoc :highlights)
                       (fnsearch re)
                       (highlight-all-matches re)))
            "}" paragraph-forward

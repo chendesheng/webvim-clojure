@@ -38,6 +38,8 @@ function isChinese(c) {
 
 //TODO use regexp
 function textWidth(txt, a, b) {
+	a = a || 0;
+	b = b || txt.length;
 	var x = 0;
 	var vx = a;
 	for (var i = a; i < b; i++) {
@@ -131,6 +133,7 @@ function getElementByPos(buf, pos) {
 	var i = buf.pos;
 	var ele = buf.currentBlock;
 	var num = buf.currentBlockNumber;
+	var linenum = buf.currentLineNumber;
 	if (i <= pos) {
 		while (!outOfRange(ele)) {
 			var j = i + ele.textContent.length;
@@ -138,28 +141,32 @@ function getElementByPos(buf, pos) {
 				buf.currentBlock = ele;
 				buf.pos = i;
 				buf.currentBlockNumber = num;
-				return {e: ele, pos: i, num: num}
+				buf.currentLineNumber = linenum;
+				return {e: ele, pos: i, num: num, linenum: linenum}
 			}
 
 			i = j;
 			num++;
+			linenum += ele.textContent.count('\n');
 			ele = ele.nextSibling;
 		}
 	} else {
 		while (true) {
-			num--;
-			ele = ele.previousSibling;
 			if (outOfRange(ele)) {
 				break;
 			}
 
+			num--;
+			ele = ele.previousSibling;
+			linenum -= ele.textContent.count('\n');
 			var j = i - ele.textContent.length;
 
 			if (j <= pos && pos < i) {
 				buf.currentBlock = ele;
 				buf.pos = j;
 				buf.currentBlockNumber = num;
-				return {e: ele, pos: j, num: num}
+				buf.currentLineNumber = linenum;
+				return {e: ele, pos: j, num: num, linenum: linenum}
 			}
 
 			i = j;
@@ -176,13 +183,13 @@ function getLineByPos(buf, pos) {
 	var txt = ele.textContent.substring(0, pos-elepos);
 	var line = ''
 	while(true) {
-		var br = txt.indexOf('\n');
+		var br = txt.lastIndexOf('\n');
 		line = txt.substring(br+1) + line;
-		if (br == -1) {
+		if (br != -1) {
 			break;
 		}
 		ele = ele.previousSibling;
-		if (ele == null) break;
+		if (outOfRange(ele)) break;
 		txt = ele.textContent;
 	}
 
@@ -256,6 +263,7 @@ function render(buf) {
 		}, 100);
 		buffers[buf.id].currentBlock = $lines.firstChild;
 		buffers[buf.id].currentBlockNumber = 0;
+		buffers[buf.id].currentLineNumber = 0;
 		buffers[buf.id].pos = 0;
 		hl.states.push(null);
 
@@ -307,81 +315,6 @@ function render(buf) {
 		});
 	}
 
-	if (buf.difflines) {
-		var diff = buf.difflines;
-		var row = diff.row;
-		var rowstate = hl.states[row];
-		var add = diff.add;
-		if (add && add.length > 0) {
-			if (add[add.length-1] == '') {
-				add.pop();
-			}
-		}
-
-		var sub = diff.sub;
-		var oldcnt = parseInt($gutter.find(':last-child').text());
-		var newcnt = oldcnt+add.length-sub;
-
-		//update gutter
-		if (newcnt > oldcnt) {
-			for (var i = oldcnt; i < newcnt; i++) {
-				$gutter.append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
-			}
-		} else if (newcnt < oldcnt) {
-			for (var i = 0; i < oldcnt-newcnt; i++) {
-				$gutter.find(':last-child').remove();
-			}
-		}
-
-
-		//remove sub
-		for (var i = row+sub-1; i >= row; i--) {
-			$(lineid(i)).remove();
-
-			hl.states.splice(i, 1);
-		}
-
-		var shiftcnt = -sub+add.length;
-		if (shiftcnt < 0) {
-			//shift left
-			for (var i = row+sub; i < oldcnt; i++) {
-				$(lineid(i)).attr('id', 'line-'+(i+shiftcnt));
-			}
-		} else if (shiftcnt > 0) {
-			//shift right
-			for (var i = oldcnt; i >= row+sub; i--) {
-				$(lineid(i)).attr('id', 'line-'+(i+shiftcnt));
-			}
-		}
-
-		//insert add
-		for (var i = 0; i < add.length; i++) {
-			hl.states.splice(row, 0, []);
-		}
-
-		//recover row state
-		hl.states[row] = rowstate;
-		for (var i = row,len=row+add.length; i < len; i++) {
-			var line = renderLine(hl.parseLine(add[i-row], i));
-			if (i > 0) {
-				$(line).insertAfter($(lineid(i-1)));
-			} else {
-				$('.lines').prepend(line);
-			}
-		}
-
-		//continue parse until equal state or EOF
-		hl.refreshLines(row+add.length, newcnt, function(row, items) {
-			var pre = renderLineInner(items);
-			var line = document.getElementById('line-'+row);
-			line.replaceChild(pre, line.firstChild);
-		});
-
-		for (var i = newcnt; i < oldcnt; i++) {
-			$(lineid(i)).remove();
-		}
-	} 
-
 	//emtpy file has 1 line too
 	if ($gutter[0].firstChild==null) { 
 		$gutter.append(replaceBinding(gutterLineTemplate, {row:0,incrow:1}));
@@ -426,21 +359,18 @@ function render(buf) {
 	}
 
 	//render visual
-	$('.lines .selections').empty();
+	$('.lines .selections').remove();
 	if (buf.visual) {
 		if (!$('.lines .selections').get(0)) {
 			$('.lines').append('<div class="selections"></div>');
 		}
-		renderSelections($('.lines .selections'), buf.visual.ranges)
+		$(renderSelections(buffers[buf.id], buf.visual.ranges)).addClass('selections').appendTo('.lines');
 	}
 
 	//render hlsearch
-	$('.lines .highlights').empty();
+	$('.lines .highlights').remove();
 	if (buf.highlights) {
-		if (!$('.lines .highlights').get(0)) {
-			$('.lines').append('<div class="highlights"></div>');
-		}
-		renderSelections($('.lines .highlights'), buf.highlights, true)
+		$(renderSelections(buffers[buf.id], buf.highlights, true)).addClass('highlights').appendTo('.lines');
 	}
 
 	//render matched brace pair
@@ -568,64 +498,77 @@ function scrollToCursor(scrollTopRow, instant) {
 	}
 }
 
-function renderSelections($p, ranges, reverseTextColor) {
+function renderSelections(buf, ranges, reverseTextColor) {
+	var div = document.createElement('DIV');
 	for (var i = 0; i < ranges.length; i+=2) {
-		var s = ranges[i];
-		var e = ranges[i+1];
-		renderSelection($p, s, e, reverseTextColor);
+		var a = ranges[i];
+		var b = ranges[i+1];
+		renderSelection(div, a, b, reverseTextColor, buf);
 	}
+	return div;
+}
+
+//extract text from DOM: [a, b)
+function substring(buf, a, b) {
+	if (a == b) return '';
+	if (a > b) throw "a must smaller or equal than b";
+
+	var res = getElementByPos(buf, a);
+	var ele = res.e;
+
+	var txt = '';
+	var start  = res.pos;  //pos of block
+	//keep [a, b)
+	while(true) {
+		if (a >= b) {
+			break;
+		}
+
+		txt += ele.textContent.substring(a-start, b-start);
+		ele = ele.nextSibling;
+		start = start + ele.textContent.length;
+		a = start;
+	}
+
+	return txt;
 }
 
 //if reverseTextColor==true copy text from lines append to line-selected
-function renderSelection($p, s, e, reverseTextColor) {
+function renderSelection($p, a, b, reverseTextColor, buf) {
 	//sort
-	if (s.row > e.row || (s.row == e.row && s.col > e.col)) {
-		var t = s;
-		s = e;
-		e = t;
+	if (a > b) {
+		var t = a;
+		a = b;
+		b = t;
 	}
+	b++;
 
-	for (var i = s.row; i <= e.row; i++) {
-		var line = $('<div class="line-selected"></div>');
-		var w = 0;
-		var l = 0;
-		var cline = $('#line-'+i)[0].textContent;
+	var div = document.createElement('DIV');
 
-		if (i == s.row) {
-			w = textWidth(cline, s.col, (e.row==i)?e.col:cline.length);
-			l = textWidth(cline, 0, s.col);
-		} else if (i == e.row) {
-			w = textWidth(cline, 0, e.col);
-			l = 0;
-		} else if (cline.length==0) {
-			//empty line always contains '\n'
-			w = 9.57;
-			l = 0;
+	var res = getElementByPos(buf, a);
+	var startLine = getLineByPos(buf, a)
+	var startLineNum = res.linenum + res.e.textContent.substring(0, a-res.pos).count('\n');
+
+	var txt = substring(buf, a, b);
+	txt.eachLine(function(line, i) {
+		var $line = document.createElement('DIV');
+		$line.className = 'line-selected';
+
+		if (i == 0) {
+			$line.style.left = textWidth(startLine) + 'px';
 		} else {
-			w = textWidth(cline, 0, cline.length);
-			l = 0;
+			$line.style.left = '0px';
 		}
 
-		line.css('left', l+'px')
-			.css('top', (i*21+1)+'px')
-			.css('width', w+'px');
+		$line.style.top = ((startLineNum+i)*21+1) + 'px';
 
+		var w = textWidth(line);
+		$line.style.width = w+'px';
 		if (reverseTextColor) {
-			var txt;
-			if (i == s.row) {
-				txt = cline.substring(s.col, (e.row==i)?e.col:cline.length);
-			} else if (i == e.row) {
-				txt = cline.substring(0, e.col);
-			} else if (cline.length==0) {
-				txt = '\n';
-			} else {
-				txt = cline;
-			}
-			line.append(txt);
+			$line.textContent = line;
 		}
-
-		$p.append(line);
-	}
+		$p.appendChild($line);
+	});
 }
 
 function renderCursor(buf) {
@@ -635,11 +578,7 @@ function renderCursor(buf) {
 
 	var cr = buf.y;
 	var cc = buf.x;
-	var x, y, w;
-	//if (document.getElementById('line-0') == null) {
-	//	x = 0, y = 0, w = 9.57;
-	//} else {
-	var cline = getLineByPos(buffers[buf.id], buf.pos) //getElementByPos(buffers[buf.id], buf.pos).e.textContent;//$('#line-'+cr)[0].textContent;
+	var cline = getLineByPos(buffers[buf.id], buf.pos)
 
 	var x = textWidth(cline, 0, cc);
 	var y = cr*21+1;

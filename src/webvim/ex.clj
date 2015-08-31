@@ -171,15 +171,17 @@
       (let [lb (-> b :context :lastbuf)
             newb (-> lb
                      (assoc :ex newex)
+                     (dissoc :highlights)
                      (save-lastbuf ""))] ;keep lastbuf avaiable on stack
-        (try (re-forward newb (re-pattern (subs newex 1)))
+        (try (re-forward-highlight newb (re-pattern (subs newex 1)))
              (catch Exception e newb)))
       (= \? (first newex))
       (let [lb (-> b :context :lastbuf)
             newb (-> lb
                      (assoc :ex newex)
+                     (dissoc :highlights)
                      (save-lastbuf ""))]
-        (try (re-backward newb (re-pattern (subs newex 1)))
+        (try (re-backward-highlight newb (re-pattern (subs newex 1)))
              (catch Exception e newb)))
       :else
       (assoc b :ex newex))))
