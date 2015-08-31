@@ -30,8 +30,8 @@
 (defn- pos-re-backward
   "return backward range matches"
   [pos s re]
-  (println s)
-  (println re)
+  ;(println s)
+  ;(println re)
   (let [m (re-matcher (re-pattern (str "(?=" re ")")) s)
         m1 (re-matcher re s)]
     (.useTransparentBounds m true)
@@ -39,7 +39,7 @@
     (.useAnchoringBounds m false)
     (.useAnchoringBounds m1 false)
     (loop [offset pos]
-      (println "offset:" offset)
+      ;(println "offset:" offset)
       (if (neg? offset)
         nil
         (let[[a b] (if (< offset 1)
@@ -47,8 +47,8 @@
                      [(- offset 1) offset])]
           (.region m a b)
           (let [matches (find-last m)]
-            (println matches)
-            (println a b)
+            ;(println matches)
+            ;(println a b)
             (if (nil? matches)
               (recur (dec a))
               (find-first m1 (first matches)))))))))
@@ -333,6 +333,12 @@
 
 (defn WORD-end-forward[t]
   (re-forward t re-WORD-end-border))
+
+(defn paragraph-forward[t]
+  (re-forward t #"(?<=\n)\n[^\n]"))
+
+(defn paragraph-backward[t]
+  (re-backward t #"(?<=\n)\n[^\n]"))
 
 (defn line-first[t]
   (let [s (t :str)

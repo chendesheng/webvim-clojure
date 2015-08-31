@@ -216,7 +216,7 @@
   (GET "/buf" [] (render nil (active-buffer)))
   (GET "/resize/:w/:h" [w h] 
        (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)}))
-  (GET "/key" {{keycode :code} :params} (edit keycode)))
+  (GET "/key" {{keycode :code} :params} (time (edit keycode))))
 
 
 (def app

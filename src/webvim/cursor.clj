@@ -324,5 +324,5 @@
 
 (defn cursor-center-viewport[b]
   (assoc b :scroll-top 
-            (-> b :cursor :row 
+            (-> b :y
                 (- (int (/ (-> @window :viewport :h) 2))))))
