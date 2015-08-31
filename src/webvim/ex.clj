@@ -16,7 +16,7 @@
 
 (defn move-to-line[b row]
   (-> b 
-      (assoc-in [:cursor :row] row)
+      (lines-row row)
       (cursor-line-start)))
 
 (defn find-buffer [buffers f]

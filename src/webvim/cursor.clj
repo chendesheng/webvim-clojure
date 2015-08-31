@@ -6,6 +6,7 @@
         (clojure [string :only (join split)])
         webvim.autocompl
         webvim.history
+        webvim.text
         webvim.global))
 
 (def re-word-start #"(?<=\W)\w|(?<=[\s\w])[^\s\w]")
@@ -313,14 +314,14 @@
   (let [d (round-to-zero (* (:h (:viewport @window)) factor))
         scroll-top (b :scroll-top)
         h (-> @window :viewport :h)
-        row (-> b :cursor :row)
+        row (-> b :y)
         vrow (- row scroll-top)
         newrow (bound-range (+ row d) 0 (-> b :lines count dec dec))
-        newcol (first-nonspace-pos ((:lines b) newrow))
+        ;newcol (first-nonspace-pos ((:lines b) newrow))
         newst (-> newrow (- vrow) negzero)]
     (-> b
         (assoc :scroll-top newst)
-        (assoc :cursor {:row newrow :col newcol :lastcol newcol}))))
+        (lines-row newrow))))
 
 (defn cursor-center-viewport[b]
   (assoc b :scroll-top 

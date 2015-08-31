@@ -481,20 +481,6 @@
             ;buffer has been modifed and cursor is no longer inside, ignore
             (recur (fndir b))))))))
 
-(defn move-next-empty-line[b]
-  (let [b1 (cursor-simple-next-str b "^[^\r\n]")
-        b2 (cursor-simple-next-str b1 "^[\r\n]") ]
-    (if (or (= b b1) (= b1 b2))
-      (cursor-move-end b)
-      b2)))
-
-(defn move-back-empty-line[b]
-  (let [b1 (cursor-simple-back-str b "^[^\r\n]")
-        b2 (cursor-simple-back-str b1 "^[\r\n]") ]
-    (if (or (= b b1) (= b1 b2))
-      (cursor-move-start b)
-      b2)))
-
 (defn- nop[b] b)
 
 (defn init-keymap-tree
@@ -557,8 +543,8 @@
                   (-> % 
                       (fnsearch re)
                       (highlight-all-matches re)))
-           "}" move-next-empty-line
-           "{" move-back-empty-line
+           "}" paragraph-forward
+           "{" paragraph-backward
            "%" (fn[b]
                  (let [b1 (if (not (contains? all-braces (char-under-cursor b)))
                             (cursor-next-re b #"[\(\[\{\)\]\}]" #"[\(\[\{\)\]\}]")

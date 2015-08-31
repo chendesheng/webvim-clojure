@@ -278,6 +278,13 @@
   (if (zero? n) t
     (recur (line-backward t (t :x)) (dec n))))
 
+(defn lines-row[t n]
+  (let [y (t :y)
+        dy (- n y)]
+    (if (> dy 0)
+      (lines-forward t dy)
+      (lines-backward t (- dy)))))
+
 (defn text-start[t]
   (merge t {:x 0 :y 0 :pos 0}))
 
@@ -338,7 +345,7 @@
   (re-forward t #"(?<=\n)\n[^\n]"))
 
 (defn paragraph-backward[t]
-  (re-backward t #"(?<=\n)\n[^\n]"))
+  (re-backward t #"((?<=\n)\n[^\n])|^"))
 
 (defn line-first[t]
   (let [s (t :str)
