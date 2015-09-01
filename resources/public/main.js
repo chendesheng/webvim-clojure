@@ -629,6 +629,7 @@ function renderCursor(pos, buf) {
 	if (!$('.lines .cursor').get(0)) {
 		$('.lines').append('<div class="cursor"></div>');
 	}
+
 	var res = getScreenXYByPos(buf, pos);
 	if (!/\bcode\b/.test(res.e.parentNode.className)) {
 		$('.lines .cursor').removeClass().addClass('cursor').addClass(res.e.parentNode.className);
