@@ -102,7 +102,7 @@ String.prototype.count = function(ch) {
 	}
 
 	return cnt;
-}
+};
 
 String.prototype.eachBlock = function(fn, n) {
 	var str = this;
@@ -324,7 +324,7 @@ function render(buf) {
 //	if (typeof buf.cursor != 'undefined') {
 //		renderCursor(buf);
 //	}
-	renderCursor(buf);
+	renderCursor(buf.pos, buffers[buf.id]);
 	
 	//render ex
 	if (buf.ex && buf.ex.length > 0) {
@@ -571,23 +571,21 @@ function renderSelection($p, a, b, reverseTextColor, buf) {
 	});
 }
 
-function renderCursor(buf) {
+function renderCursor(pos, buf) {
 	if (!$('.lines .cursor').get(0)) {
 		$('.lines').append('<div class="cursor"></div>');
 	}
 
-	var cr = buf.y;
-	var cc = buf.x;
-	var cline = getLineByPos(buffers[buf.id], buf.pos)
+	var res = getElementByPos(buf, pos);
+	var cline = getLineByPos(buf, pos);
+	var ch = res.e.textContent[pos - res.pos];
 
-	var x = textWidth(cline, 0, cc);
-	var y = cr*21+1;
-	var w = 9.57;
-	if (isChinese(cline[cc])) {
-		w = 16;
-	}
-	//}
-	$('.lines .cursor').attr('style', 'left:'+x+'px;top:'+y+'px;width:'+w+'px;');
+	var x = textWidth(cline);
+	var y = (res.linenum+res.e.textContent.substring(0, pos-res.pos).count('\n'))*21+1;
+	//var w = textWidth(ch);
+
+	$('.lines .cursor').attr('style', 'left:'+x+'px;top:'+y+'px;');
+	$('.lines .cursor').text(ch);
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];
