@@ -30,8 +30,14 @@ body {
 	white-space:pre;
 }
 
+.lines .code {
+	position:relative;
+	z-index:100;
+}
+
 .selections, .highlights {
 	pointer-events: none;
+	z-index:-1;
 }
 
 .selections .line-selected {
@@ -74,8 +80,8 @@ pre {
 
 .cursor {
 	position:absolute;
-	background:#007ACC;
-	opacity:0.7;
+	background:#ae81ff;
+	color:white;
 	width:9.57px;
 	height:21px;
 	z-index:1000000;
@@ -150,7 +156,7 @@ pre {
 }
 
 .highlights .line-selected {
-	background:#ffdb9e;
+	background:rgba(102, 217, 239, 0.75);
 	color:#000;
 }
 

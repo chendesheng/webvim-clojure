@@ -102,7 +102,7 @@ String.prototype.count = function(ch) {
 	}
 
 	return cnt;
-}
+};
 
 String.prototype.eachBlock = function(fn, n) {
 	var str = this;
@@ -129,7 +129,7 @@ function outOfRange(ele) {
 	return ele == null || !/\bcode\b/.test(ele.className);
 }
 
-function getElementByPos(buf, pos) {
+function getCodeBlockByPos(buf, pos) {
 	var i = buf.pos;
 	var ele = buf.currentBlock;
 	var num = buf.currentBlockNumber;
@@ -176,8 +176,51 @@ function getElementByPos(buf, pos) {
 	return null;
 }
 
-function getLineByPos(buf, pos) {
+function getElementByPos(buf, pos) {
+	var res = getCodeBlockByPos(buf, pos);
+	if (res == null) return null;
+
+	var ele = res.e.firstChild;
+	var i = res.pos;
+	while (true) {
+		var l = ele.textContent.length;
+		if (i <= pos && pos < i+l) {
+			break;
+		}
+
+		i += l;
+		ele = ele.nextSibling;
+	}
+	if (ele.nodeType != 3) {
+		ele = ele.firstChild;
+	}
+
+	return {e: ele, offset: pos-i};
+}
+
+function getScreenXYByPos(buf, pos) {
 	var res = getElementByPos(buf, pos);
+	if (res == null) return;
+
+	var range = document.createRange();
+	range.setStart(res.e, res.offset);
+	range.setEnd(res.e, res.offset);
+
+	var list = range.getClientRects();
+	var rect = list[0];
+	if (list.length > 1 && list[0].top != list[1].top) {
+		//line break;
+		rect = list[1];
+	}
+
+	var scrollTop = $('.buffer').scrollTop();
+	var ch = res.e.textContent[res.offset];	
+	return {left: rect.left-50, top: rect.top+scrollTop, ch: ch, e: res.e};
+}
+
+
+function getLineByPos(buf, pos) {
+	var res = getCodeBlockByPos(buf, pos);
 	if (res == null)
 		return "";
 
@@ -283,7 +326,7 @@ function render(buf) {
 		var b = buffers[buf.id];
 		var lineParent = $('.lines')[0];
 		buf.changes.each(function(c) {
-			var res = getElementByPos(b, c.pos);
+			var res = getCodeBlockByPos(b, c.pos);
 			var ele = res.e;
 			var offset = c.pos - res.pos;
 			var oldtxt = ele.textContent;
@@ -327,7 +370,7 @@ function render(buf) {
 //	if (typeof buf.cursor != 'undefined') {
 //		renderCursor(buf);
 //	}
-	renderCursor(buffers[buf.id], buf.pos);
+	renderCursor(buf.pos, buffers[buf.id]);
 	
 	//render ex
 	if (buf.ex && buf.ex.length > 0) {
@@ -362,18 +405,25 @@ function render(buf) {
 	}
 
 	//render visual
-	$('.lines .selections').remove();
+	$('.lines .selections').empty();
 	if (buf.visual) {
-		if (!$('.lines .selections').get(0)) {
+		if ($('.lines .selections')[0] == null) {
 			$('.lines').append('<div class="selections"></div>');
 		}
-		$(renderSelections(buffers[buf.id], buf.visual.ranges)).addClass('selections').appendTo('.lines');
+
+		var $p = $('.lines .selections')[0];
+		renderSelections($p, buffers[buf.id], buf.visual.ranges);
 	}
 
 	//render hlsearch
-	$('.lines .highlights').remove();
+	$('.lines .highlights').empty();
 	if (buf.highlights) {
-		$(renderSelections(buffers[buf.id], buf.highlights, true)).addClass('highlights').appendTo('.lines');
+		if ($('.lines .highlights')[0] == null) {
+			$('.lines').append('<div class="highlights"></div>');
+		}
+
+		var $p = $('.lines .highlights')[0];
+		renderSelections($p, buffers[buf.id], buf.highlights, true);
 	}
 
 	//render matched brace pair
@@ -501,14 +551,12 @@ function scrollToCursor(scrollTopRow, instant) {
 	}
 }
 
-function renderSelections(buf, ranges, reverseTextColor) {
-	var div = document.createElement('DIV');
+function renderSelections($p, buf, ranges, reverseTextColor) {
 	for (var i = 0; i < ranges.length; i+=2) {
 		var a = ranges[i];
 		var b = ranges[i+1];
-		renderSelection(div, a, b, reverseTextColor, buf);
+		renderSelection($p, a, b, reverseTextColor, buf);
 	}
-	return div;
 }
 
 //extract text from DOM: [a, b)
@@ -516,7 +564,7 @@ function substring(buf, a, b) {
 	if (a == b) return '';
 	if (a > b) throw "a must smaller or equal than b";
 
-	var res = getElementByPos(buf, a);
+	var res = getCodeBlockByPos(buf, a);
 	var ele = res.e;
 
 	var txt = '';
@@ -551,73 +599,43 @@ function renderSelection($p, a, b, reverseTextColor, buf) {
 
 	var div = document.createElement('DIV');
 
-	var res = getElementByPos(buf, a);
-	var startLine = getLineByPos(buf, a)
-	var startLineNum = res.linenum + res.e.textContent.substring(0, a-res.pos).count('\n');
+	//var resa = getElementByPos(buf, a);
+	//var resb = getElementByPos(buf, b);
+	//var range = document.createRange();
+	//range.setStart(resa.e, resa.offset);
+	//range.setEnd(resb.e, resb.offset);
+	//var span = document.createElement('SPAN');
+	//span.style.color = '#000';
+	//span.style.background = 'rgb(255, 233, 32)';
+	//range.surroundContents(span);
+	
 
-	var txt = substring(buf, a, b);
-	txt.eachLine(function(line, i) {
-		var $line = document.createElement('DIV');
-		$line.className = 'line-selected';
+	var resa = getScreenXYByPos(buf, a);
+	var resb = getScreenXYByPos(buf, b);
 
-		if (i == 0) {
-			$line.style.left = textWidth(startLine) + 'px';
-		} else {
-			$line.style.left = '0px';
+	if (resa.top != resb.top) {
+		$('<span>').addClass('line-selected').css('left', resa.left).css('top', resa.top).width('100%').appendTo($p);
+		var mh = resb.top-resa.top-21;
+		if (mh > 0) {
+			$('<span>').addClass('line-selected').css('left', 0).css('top', resa.top+21).width('100%').height(mh).appendTo($p);
 		}
-
-		$line.style.top = ((startLineNum+i)*21+1) + 'px';
-
-		var w = textWidth(line);
-		$line.style.width = w+'px';
-		if (reverseTextColor) {
-			$line.textContent = line;
-		}
-		$p.appendChild($line);
-	});
+		$('<span>').addClass('line-selected').css('left', 0).css('top', resb.top).width(resb.left).appendTo($p);
+	} else {
+		$('<span>').addClass('line-selected').css('left', resa.left).css('top', resa.top).width(Math.abs(resa.left-resb.left)).appendTo($p);
+	}
 }
 
-function renderCursor(buf, pos) {
+function renderCursor(pos, buf) {
 	if (!$('.lines .cursor').get(0)) {
 		$('.lines').append('<div class="cursor"></div>');
 	}
-
-	var res = getElementByPos(buf, pos);
-	if (res == null) return;
-
-	var cline = getLineByPos(buf, pos);
-	var ch = res.e.textContent[pos - res.pos];	
-
-	var ele = res.e.firstChild;
-	var i = res.pos;
-	while (true) {
-		var l = ele.textContent.length;
-		if (i <= pos && pos < i+l) {
-			break;
-		}
-
-		i += l;
-		ele = ele.nextSibling;
+	var res = getScreenXYByPos(buf, pos);
+	if (!/\bcode\b/.test(res.e.parentNode.className)) {
+		$('.lines .cursor').removeClass().addClass('cursor').addClass(res.e.parentNode.className);
+	} else {
+		$('.lines .cursor').removeClass().addClass('cursor');
 	}
-	if (ele.nodeType != 3) {
-		ele = ele.firstChild;
-	}
-
-	var range = document.createRange();
-
-	range.setStart(ele, pos-i);
-	range.setEnd(ele, pos-i);
-
-	var list = range.getClientRects();
-	var rect = list[0];
-	if (list.length > 1 && list[0].top != list[1].top) {
-		//line break;
-		rect = list[1];
-	}
-
-	var scrollTop = $('.buffer').scrollTop();
-
-	$('.lines .cursor').text(ch).attr('style', 'left:'+(rect.left-50)+'px;top:'+(rect.top+scrollTop)+'px;');
+	$('.lines .cursor').text(res.ch).attr('style', 'left:'+res.left+'px;top:'+res.top+'px;');
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];
