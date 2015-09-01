@@ -99,9 +99,10 @@
 (defn- remove-fields[b]
   (-> b 
       track-unsaved
-      (dissoc :history :txt-cache :context :last-cursor :language :filepath
+      (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :vx :y
           :macro :chan-in :chan-out :registers :last-saved-lines)
       (dissoc-empty [:highlights])
+      (dissoc-empty [:changes])
       (dissoc-nil :keys)
       remove-visual-mode
       remove-autocompl))

@@ -178,6 +178,9 @@ function getElementByPos(buf, pos) {
 
 function getLineByPos(buf, pos) {
 	var res = getElementByPos(buf, pos);
+	if (res == null)
+		return "";
+
 	var ele = res.e;
 	var elepos = res.pos;
 	var txt = ele.textContent.substring(0, pos-elepos);
@@ -324,7 +327,7 @@ function render(buf) {
 //	if (typeof buf.cursor != 'undefined') {
 //		renderCursor(buf);
 //	}
-	renderCursor(buf);
+	renderCursor(buffers[buf.id], buf.pos);
 	
 	//render ex
 	if (buf.ex && buf.ex.length > 0) {
@@ -526,6 +529,9 @@ function substring(buf, a, b) {
 
 		txt += ele.textContent.substring(a-start, b-start);
 		ele = ele.nextSibling;
+		if (ele == null)
+			break;
+
 		start = start + ele.textContent.length;
 		a = start;
 	}
@@ -571,23 +577,47 @@ function renderSelection($p, a, b, reverseTextColor, buf) {
 	});
 }
 
-function renderCursor(buf) {
+function renderCursor(buf, pos) {
 	if (!$('.lines .cursor').get(0)) {
 		$('.lines').append('<div class="cursor"></div>');
 	}
 
-	var cr = buf.y;
-	var cc = buf.x;
-	var cline = getLineByPos(buffers[buf.id], buf.pos)
+	var res = getElementByPos(buf, pos);
+	if (res == null) return;
 
-	var x = textWidth(cline, 0, cc);
-	var y = cr*21+1;
-	var w = 9.57;
-	if (isChinese(cline[cc])) {
-		w = 16;
+	var cline = getLineByPos(buf, pos);
+	var ch = res.e.textContent[pos - res.pos];	
+
+	var ele = res.e.firstChild;
+	var i = res.pos;
+	while (true) {
+		var l = ele.textContent.length;
+		if (i <= pos && pos < i+l) {
+			break;
+		}
+
+		i += l;
+		ele = ele.nextSibling;
 	}
-	//}
-	$('.lines .cursor').attr('style', 'left:'+x+'px;top:'+y+'px;width:'+w+'px;');
+	if (ele.nodeType != 3) {
+		ele = ele.firstChild;
+	}
+
+	var range = document.createRange();
+
+	range.setStart(ele, pos-i);
+	range.setEnd(ele, pos-i);
+
+	var list = range.getClientRects();
+	var rect = list[0];
+	if (list.length > 1 && list[0].top != list[1].top) {
+		//line break;
+		rect = list[1];
+	}
+
+	var scrollTop = $('.buffer').scrollTop();
+
+	$('.lines .cursor').text(ch).attr('style', 'left:'+(rect.left-50)+'px;top:'+(rect.top+scrollTop)+'px;');
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];

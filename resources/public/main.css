@@ -79,6 +79,7 @@ pre {
 	width:9.57px;
 	height:21px;
 	z-index:1000000;
+	white-space:pre;
 }
 
 .status-bar .cursor {
