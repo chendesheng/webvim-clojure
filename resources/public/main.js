@@ -218,30 +218,6 @@ function getScreenXYByPos(buf, pos) {
 	return {left: rect.left-50, top: rect.top+scrollTop, ch: ch, e: res.e};
 }
 
-
-function getLineByPos(buf, pos) {
-	var res = getCodeBlockByPos(buf, pos);
-	if (res == null)
-		return "";
-
-	var ele = res.e;
-	var elepos = res.pos;
-	var txt = ele.textContent.substring(0, pos-elepos);
-	var line = ''
-	while(true) {
-		var br = txt.lastIndexOf('\n');
-		line = txt.substring(br+1) + line;
-		if (br != -1) {
-			break;
-		}
-		ele = ele.previousSibling;
-		if (outOfRange(ele)) break;
-		txt = ele.textContent;
-	}
-
-	return line;
-}
-
 function refreshIter(index, currentBlock, states, parentNode) {
 	var i = index;
 	var ele = currentBlock;
@@ -253,7 +229,7 @@ function refreshIter(index, currentBlock, states, parentNode) {
 			return i;
 		},
 		render: function(items) {
-			var newele = renderLine(items);
+			var newele = renderBlock(items);
 			parentNode.replaceChild(newele, ele);
 			ele = newele;
 		},
@@ -293,7 +269,7 @@ function render(buf) {
 		buf.str.eachBlock(function(block, i) {
 			hl.states.push(null);
 			if (block) {
-				$lines.appendChild(renderLine(hl.parseLine(block, i)));
+				$lines.appendChild(renderBlock(hl.parseLine(block, i)));
 
 				var num = block.count('\n');
 				for (var j = 0; j < num; j++) {
@@ -332,7 +308,7 @@ function render(buf) {
 			var oldtxt = ele.textContent;
 			var newtxt = oldtxt.substring(0, offset) + c.to + oldtxt.substring(offset+c.len);
 			var oldstate = hl.states[res.num+1]
-			b.currentBlock = renderLine(hl.parseLine(newtxt, res.num));
+			b.currentBlock = renderBlock(hl.parseLine(newtxt, res.num));
 			lineParent.replaceChild(b.currentBlock, ele);
 			ele = b.currentBlock.nextSibling;
 			if (!outOfRange(ele) && !oldstate.equal(hl.states[res.num+1])) {
@@ -504,7 +480,10 @@ function render(buf) {
 	}
 }
 
-function renderLineInner(items, parentNode) {
+function renderBlock(items) {
+	var block = document.createElement('SPAN');
+	block.className = 'code';
+
 	items.each(function(item){
 		var className = item[0];
 		var text = item[1];
@@ -516,14 +495,9 @@ function renderLineInner(items, parentNode) {
 		} else {
 			node = document.createTextNode(text);
 		}
-		parentNode.appendChild(node);
+		block.appendChild(node);
 	});
-}
 
-function renderLine(items) {
-	var block = document.createElement('SPAN');
-	block.className = 'code';
-	renderLineInner(items, block);
 	return block;
 }
 
@@ -557,6 +531,14 @@ function renderSelections($p, buf, ranges, reverseTextColor) {
 		var b = ranges[i+1];
 		renderSelection($p, a, b, reverseTextColor, buf);
 	}
+}
+function newsubstring(buf, a, b) { 
+	var resa = getElementByPos(buf, a); 
+	var resb = getElementByPos(buf, b); 
+	var range = document.createRange(); 
+	range.setStart(resa.e, resa.offset); 
+	range.setEnd(resb.e, resb.offset); 
+	return range.toString();
 }
 
 //extract text from DOM: [a, b)
