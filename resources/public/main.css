@@ -1,5 +1,5 @@
 body {
-	font-family:'Source Code Pro for Powerline';
+	font-family:'Source Code Pro for Powerline', 'Courier New';
 	padding:0;
 	margin:0;
 	color:#ddd;
@@ -82,8 +82,6 @@ pre {
 	position:absolute;
 	background:#ae81ff;
 	color:white;
-	width:9.57px;
-	height:21px;
 	z-index:1000000;
 	white-space:pre;
 }

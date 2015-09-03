@@ -679,7 +679,8 @@ function renderCursor(pos, buf) {
 	} else {
 		$('.lines .cursor').removeClass().addClass('cursor');
 	}
-	$('.lines .cursor').text(res.ch).attr('style', 'left:'+res.left+'px;top:'+res.top+'px;');
+	var ch = (res.ch == '\n'||res.ch=='\t') ? ' ' : res.ch;
+	$('.lines .cursor').text(ch).attr('style', 'left:'+res.left+'px;top:'+res.top+'px;');
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];
