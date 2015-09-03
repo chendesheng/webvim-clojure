@@ -50,21 +50,20 @@
         (set-insert-mode keycode))))
 
 (defn set-insert-line-end[b keycode]
-  (let [col (dec (col-count b (-> b :cursor :row)))]
-    (-> b
-        cursor-line-end
-        (set-insert-mode keycode))))
+  (-> b
+      line-end
+      (set-insert-mode keycode)))
 
 (defn set-insert-line-start[b keycode]
   (-> b
-      cursor-line-start
+      line-start
       (set-insert-mode keycode)))
 
 (defn set-insert-remove-char[b keycode]
   (registers-put (:registers b) (-> b :context :register) (buf-copy-range b (:cursor b) (:cursor b) true))
   (-> b
       (set-insert-mode keycode)
-      (buf-replace (:cursor b) "" true)))
+      (text-delete-offset 1)))
 
 (defn set-insert-new-line[b keycode]
   (-> b 
@@ -170,13 +169,14 @@
   ;(println (str "delete-motion:" keycode))
   ;(println (str "inclusive:" (inclusive? keycode)))
   (let [lastbuf (-> b :context :lastbuf)]
-    (if (or (nil? lastbuf) (same-pos? (:cursor b) (:cursor lastbuf))) ;don't do anything if cursor doesn't change
+    (if (or (nil? lastbuf) (= (:pos b) (:pos lastbuf))) ;don't do anything if cursor doesn't change
       b
       (-> b :context :lastbuf 
           buf-save-cursor
           (buf-copy-range-lastbuf (:cursor b) (inclusive? keycode))
-          (buf-replace
-            (:cursor b) "" (inclusive? keycode))
+          (text-delete (if (inclusive? keycode)
+                         (-> b :pos inc)
+                         (:pos b)))
           history-save))))
 
 (defn change-motion[b keycode]
@@ -255,38 +255,31 @@
                       #(apply conj % ks)) 
             (buffer-replace-suggestion w))))))
 
+(defn keycode-to-char[keycode]
+  (cond 
+    (= 1 (count keycode))
+    keycode
+    (= "tab" keycode)
+    "\t"
+    (= "space" keycode)
+    " "
+    :else ""))
+
 (defn move-to-next-char[b keycode]
-  (let [ch (cond 
-             (= 1 (count keycode))
-             keycode
-             (= "tab" keycode)
-             "\t"
-             (= "space" keycode)
-             " ")]
-    (cursor-next-char b ch)))
+  (let [ch (keycode-to-char keycode)]
+    (re-forward b (-> ch quote-pattern re-pattern))))
 
 (defn move-to-back-char[b keycode]
-  (let [ch (cond 
-             (= 1 (count keycode))
-             keycode
-             (= "tab" keycode)
-             "\t"
-             (= "space" keycode)
-             " ")]
-    (cursor-back-char b ch)))
+  (let [ch (keycode-to-char keycode)]
+    (re-backward b (-> ch quote-pattern re-pattern))))
 
 (defn move-before-next-char[b keycode]
-  (let [b1 (move-to-next-char b keycode)]
-    (if (same-pos? (:cursor b1) (-> b1 :context :lastbuf :cursor))
-      b1
-      (dec-col b1))))
+  (-> b (move-to-next-char keycode)
+      char-backward))
 
 (defn move-after-back-char[b keycode]
-  (let [b1 (move-to-back-char b keycode)]
-    (if (same-pos? (:cursor b1) (-> b1 :context :lastbuf :cursor))
-      b1
-      (inc-col b1))))
-
+  (-> b (move-to-back-char keycode)
+      char-backward))
 
 (defn put-from-register[b keycode]
   (let [txt (registers-get (:registers b) keycode)]

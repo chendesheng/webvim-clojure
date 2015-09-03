@@ -335,8 +335,11 @@
   (re-pattern 
     (str "[" not-space-chars "](?=[" space-chars "]|$)")))
 
-(defn re-forward[t re]
-  (text-re t re pos-re-next-forward (-> t :str count)))
+(defn re-forward
+  ([t re]
+  (text-re t re pos-re-next-forward (-> t :str count) true))
+  ([t re crossline]
+  (text-re t re pos-re-next-forward (-> t :str count))))
 
 (defn re-backward[t re]
   (text-re t re pos-re-next-backward 0))
