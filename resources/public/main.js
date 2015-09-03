@@ -105,21 +105,32 @@ String.prototype.count = function(ch) {
 };
 
 String.prototype.eachBlock = function(fn, n) {
+	n = n || 100;
 	var str = this;
 	var num = 0;
-	while(true) {
-		var i = str.substring(n).search(/\s/)+1;
-
-		if (i==0) {
+	while(str.length > 0) {
+		//ensure callback string length (str.length) >= 0.5n, avoid fragment code block
+		if (str.length < 1.5*n) {  
 			fn(str, num);
+			num++;
 			break;
 		} else {
-			i += n;
-			fn(str.substring(0, i), num);
-			str = str.substring(i);
+			var i = str.substring(n).search(/\s/);
+
+			if (i==-1) {
+				fn(str, num);
+				num++;
+				break;
+			} else {
+				i = i+n+1;
+				fn(str.substring(0, i), num);
+				num++;
+				str = str.substring(i);
+			}
 		}
-		num++;
 	}
+
+	return num;
 };
 
 //local states for each buffer, doesn't contains text content since it might be too large.
@@ -269,7 +280,7 @@ function render(buf) {
 		buf.str.eachBlock(function(block, i) {
 			hl.states.push(null);
 			if (block) {
-				$lines.appendChild(renderBlock(hl.parseLine(block, i)));
+				$lines.appendChild(renderBlock(hl.parseBlock(block, i)));
 
 				var num = block.count('\n');
 				for (var j = 0; j < num; j++) {
@@ -282,12 +293,12 @@ function render(buf) {
 					linenum++;
 				}
 			}
-		}, 100);
+		});
 
-		//var span = document.createElement('SPAN');
-		//span.className = 'code';
-		//span.textContent = buf.str;
-		//$lines.appendChild(span);
+		//put a pivot in the end
+		//var pivot = document.createElement('SPAN');
+		//pivot.className = 'code';
+		//$lines.appendChild(pivot);
 
 		buffers[buf.id].currentBlock = $lines.firstChild;
 		buffers[buf.id].currentBlockNumber = 0;
@@ -306,32 +317,64 @@ function render(buf) {
 	
 	if (buf.changes) {
 		var b = buffers[buf.id];
-		var lineParent = $('.lines')[0];
+		var $lines = $('.lines')[0];
 		buf.changes.each(function(c) {
-			//var range = document.createRange();
-			//var code = $('.lines .code')[0];
-			//range.setStart(code.firstChild, c.pos);
-			//range.setEnd(code.firstChild, c.pos+c.len);
-			//range.deleteContents();
-			//var txt = document.createTextNode(c.to);
-			//range.insertNode(txt);
-			//code.normalize();
-			
-			var res = getCodeBlockByPos(b, c.pos);
-			var ele = res.e;
-			var offset = c.pos - res.pos;
-			var oldtxt = ele.textContent;
-			var newtxt = oldtxt.substring(0, offset) + c.to + oldtxt.substring(offset+c.len);
-			var oldstate = hl.states[res.num+1]
-			b.currentBlock = renderBlock(hl.parseLine(newtxt, res.num));
-			lineParent.replaceChild(b.currentBlock, ele);
-			ele = b.currentBlock.nextSibling;
-			if (!outOfRange(ele) && !oldstate.equal(hl.states[res.num+1])) {
-				hl.refresh(refreshIter(res.num+1, ele, hl.states, lineParent));
+			var resa = getCodeBlockByPos(b, c.pos);
+			var resb = getCodeBlockByPos(b, c.pos+c.len);
+			var nextblock = getCodeBlockByPos(b, resb.pos+resb.e.textContent.length);
+			var prefix = resa.e.textContent.substring(0, c.pos-resa.pos);
+			var suffix = resb.e.textContent.substring(c.pos+c.len-resb.pos);
+			var newtxt = prefix + c.to + suffix;
+
+			//delete [resa.e, resb] both inclusive
+			var ele = resa.e;
+			while(true) {
+				var toremove = ele;
+				ele = ele.nextSibling;
+				$lines.removeChild(toremove);
+
+				if (toremove == resb.e) {
+					break;
+				}
 			}
+
+			//delete hl.states [resa.num+1, resb.num+1]
+			var blocknumdeleted = resb.num-resa.num+1;
+			var deletedstates = hl.states.splice(resa.num+1, blocknumdeleted);
+			var savedstate = deletedstates.pop();
+
+			//insert and keep track hl.states
+			var blocknuminserted = newtxt.eachBlock(function(block, i) {
+				var num = i + resa.num;
+				var res = hl.parse(block, hl.states[num]);
+				hl.states.splice(num+1, 0, res[0]);
+				$lines.insertBefore(renderBlock(res[1]), ele);
+			});
+
+
+			//update local buffer
+			var linenuminserted = newtxt.count('\n'); 
+			var linenumdeleted = nextblock.linenum-resa.linenum;
+
+			var linenumdiff = linenuminserted-linenumdeleted;
+			var blocknumdiff = blocknuminserted - blocknumdeleted;
+			var posdiff = c.to.length-c.len;
+
+			b.pos = nextblock.pos + posdiff;
+			b.currentBlock = nextblock.e;
+			b.currentLineNumber = nextblock.linenum + linenumdiff;
+			b.currentBlockNumber = nextblock.num+blocknumdiff;
+
+			//update syntax highlight
+			if (!outOfRange(ele) && !savedstate.equal(hl.states[resa.num+blocknuminserted])) {
+				//currentBlock will change
+				var saved = b.currentBlock.previousSibling;
+				hl.refresh(refreshIter(resa.num+blocknuminserted, b.currentBlock, hl.states, $lines));
+				b.currentBlock = saved.nextSibling;
+			}
+
 			//render gutter
 			var $gutter = $('.gutter');
-			var linenumdiff = newtxt.count('\n') - oldtxt.count('\n');
 			var linenum = parseInt($gutter.find(':last-child').text());
 			if (linenumdiff > 0) {
 				for (var j = 0; j < linenumdiff; j++) {
@@ -547,6 +590,7 @@ function renderSelections($p, buf, ranges, reverseTextColor) {
 		renderSelection($p, a, b, reverseTextColor, buf);
 	}
 }
+
 function newsubstring(buf, a, b) { 
 	var resa = getElementByPos(buf, a); 
 	var resb = getElementByPos(buf, b); 

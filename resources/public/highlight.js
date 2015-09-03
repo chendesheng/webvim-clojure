@@ -187,8 +187,8 @@ function newHighlight(lang) {
 function hlcompile(ROOT) {
 	if (!ROOT) {
 		return {
-			parseLine: function(line, row) {
-				return [[null, line]];
+			parseBlock: function(block, row) {
+				return [[null, block]];
 			},
 			refreshLines: function() {}
 		};
@@ -338,24 +338,24 @@ function hlcompile(ROOT) {
 		return recontains;
 	}
 	function parse(ctx) {
-		var line = ctx.line;
-		while(ctx.index < line.length) {
+		var block = ctx.block;
+		while(ctx.index < block.length) {
 			var mode = ctx.modes.peek();
 //			console.log(mode.begin);
-//			console.log(mode.line);
+//			console.log(mode.block);
 //			console.log(mode.rebegin);
 //			console.log(mode.recontains);
 
 			var recontains = modeReContains(mode, ctx.index);
 
-			if(recontains && (result = recontains.exec(line)) != null) {
+			if(recontains && (result = recontains.exec(block)) != null) {
 				var captured = result[0];
 				var matched = false;
 				for (var i = 0; i < mode.contains.length; i++) {
 					var c = mode.contains[i];
 					if (c.rebegin.test(captured)) {
 						matched = true;
-						writeOutput(ctx, mode.className, line.substring(ctx.index, recontains.lastIndex-captured.length));
+						writeOutput(ctx, mode.className, block.substring(ctx.index, recontains.lastIndex-captured.length));
 						ctx.index = recontains.lastIndex;
 						if (c.beginCapture) {
 						      writeOutput(ctx, c.beginCapture(ctx, captured), captured);
@@ -385,17 +385,17 @@ function hlcompile(ROOT) {
 				}
 
 			} else {
-				if (ctx.index < line.length) {
-					writeOutput(ctx, (mode||{}).className, line.substring(ctx.index));
-					ctx.index = line.length;
+				if (ctx.index < block.length) {
+					writeOutput(ctx, (mode||{}).className, block.substring(ctx.index));
+					ctx.index = block.length;
 				}
 			}
 		}
 	}
 
-	function doParse(line, startModes) {
+	function doParse(block, startModes) {
 		var ctx = {
-			line: line, 
+			block: block, 
 			index: 0,
 			modes: startModes.slice(),
 			output: [] //[[className, text], [className, text]...]
@@ -405,23 +405,31 @@ function hlcompile(ROOT) {
 	}
 
 	var hl = {};
-	hl.states; //caller should init states before call parseLine
+	hl.states; //caller should init states before call parseBlock
 
 	//var nodeCount = 0;
-	//parse one line and save end state to next line
-	//call this function when line changes
-	hl.parseLine = function(line, row) {
+	//parse one block and save end state to next block
+	//call this function when block changes
+	hl.parseBlock = function(block, row) {
 		var states = hl.states;
 		if (states[row]==null) {
 			states[row] = [rootCompiled];
 		}
-		var ctx = doParse(line, states[row]);
+		var ctx = doParse(block, states[row]);
 		states[row+1] = ctx.modes;
 		//logmodes(row+1);
 		
 		//nodeCount += ctx.output.length;
 		//console.log('output count:' + nodeCount);
 		return ctx.output;
+	};
+
+	hl.parse = function(block, state) {
+		if (state==null) {
+			state = [rootCompiled];
+		}
+		var ctx = doParse(block, state);
+		return [ctx.modes, ctx.output];
 	};
 
 	hl.refresh = function(iter) {
@@ -443,27 +451,6 @@ function hlcompile(ROOT) {
 			}
 		}
 	}
-
-	//These lines' text are not changed but syntax affected by previous lines change
-	hl.refreshLines = function(index, cnt, renderLine) {
-		var states = hl.states;
-		for (var i = index; i < cnt; i++) {
-			var $line = $('#line-'+i+' pre');
-			var line = $line[0].textContent;
-
-			//logmodes(i);
-			var ctx = doParse(line, states[i]);
-			renderLine(i, ctx.output);
-			if (states[i+1].equal(ctx.modes)) {
-				//doParse has 3 arguments, in next lines none of them changed
-				//so no syntax will be changed in next lines
-				return;
-			} else {
-				states[i+1] = ctx.modes;
-			}
-			//logmodes(i+1);
-		}
-	};
 
 	function logmodes(index) {
 		var out = [index];
