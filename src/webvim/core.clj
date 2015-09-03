@@ -136,7 +136,8 @@
                     (dissoc-if-equal before :keys)
                     (dissoc-if-equal before :name)
                     (dissoc-if-equal before :ex)
-                    (dissoc-if-equal before :message)))]
+                    (dissoc-if-equal before :message)
+                    (dissoc :lines)))]
     (response b)))
 
 

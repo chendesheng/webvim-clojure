@@ -46,9 +46,8 @@
               0
               (-> b :cursor :col inc))]
     (-> b
-        (set-insert-mode keycode)
-        (assoc-in [:cursor :col] col)
-        (assoc-in [:cursor :lastcol] col))))
+        char-forward
+        (set-insert-mode keycode))))
 
 (defn set-insert-line-end[b keycode]
   (let [col (dec (col-count b (-> b :cursor :row)))]
@@ -346,20 +345,21 @@
       (serve-keymap (@normal-mode-keymap "i") "c")))
 
 (defn move-next-same-word[b]
-  (let [[word start] (word-under-cursor (:lines b) (:cursor b))
+  (let [[start end] (current-word b)
+        word (text-subs (b :str) start end)
+        _ (println (str word))
         re (re-pattern (str "\\b" word "\\b"))]
     (registers-put (:registers b) "/" (str "/" re))
     (-> b 
-        (assoc-in [:cursor :col] start)
         (re-forward-highlight re)
         (highlight-all-matches re))))
 
 (defn move-back-same-word[b]
-  (let [[word start] (word-under-cursor (:lines b) (:cursor b))
+  (let [[start end] (current-word b)
+        word (text-subs (b :str) start end)
         re (re-pattern (str "\\b" word "\\b"))]
     (registers-put (:registers b) "/" (str "?" re))
     (-> b 
-        (assoc-in [:cursor :col] start)
         (re-backward-highlight re)
         (highlight-all-matches re))))
 
@@ -394,37 +394,41 @@
               (assoc :chan-out (:chan-out b)))
           (recur (first coll) (subvec coll 1)))))))
 
+(defn save-x-to-vx[b]
+  (assoc b :vx (b :x)))
+
+(defn save-x-if-not-jk
+  "save to :vx unless it is up down motion"
+  [b lastbuf keycode]
+  (if-not (or (= (:pos lastbuf) (:pos b)) 
+              (contains? #{"j" "k"} keycode))
+    (save-x-to-vx b) b))
+
+(defn normal-mode-fix-pos
+    "prevent cursor on top of EOL in normal mode"
+    [b]
+    (let [ch (text-char-at (b :str) (b :pos))]
+      (if (= (or ch \newline) \newline)
+        (char-backward b) b)))
+
 (defn normal-mode-after[b keycode]
   (let [{col :col row :row} (:cursor b)
         lastbuf (-> b :context :lastbuf)]
-    (if (not (nil? (motions-push-jumps keycode)))
+    (if-not (nil? (motions-push-jumps keycode))
       (jump-push lastbuf))
     ;(println "normal-mode-after, recording-keys" (-> b :macro :recording-keys))
     ;if nothing changed there is no need to overwrite "." register
     ;so keys like i<esc> won't affect, this also exclude all motions.
-    (if (not (or (= (:lines lastbuf) (:lines b))
+    (if-not (or (= (:lines lastbuf) (:lines b))
                  ;These commands should not get repeat
-                 (contains? #{".", "u", "c+r", "p", "P", ":"} keycode)))
+                 (contains? #{".", "u", "c+r", "p", "P", ":"} keycode))
       (registers-put (:registers b) "." (-> b :macro :recording-keys)))
-    ;alwasy clear :recording-keys
-    ;prevent cursor on top of EOL in normal mode
-    (let [ch (text-char-at (b :str) (b :pos))
-          b1  (if (= ch \newline)
-                (if (or (zero? (b :pos)) 
-                        (= (text-char-at (b :str) (dec (b :pos))) \newline))
-                  b (-> b 
-                        (update-in [:pos] dec)
-                        (update-in [:x] dec)))
-                b)]
-    ;(let [b1 (if (and (> col 0)
-    ;                  (>= col (dec (col-count b row)))
-    ;                  (-> b :lines vector?)
-    ;                  (< row (-> b :lines count dec)))
-    ;           (update-in b [:cursor :col] dec)
-    ;           b)]
-      (-> b1 
-          (assoc-in [:macro :recording-keys] [])
-          (buf-update-highlight-brace-pair (:cursor b1))))))
+    (-> b 
+        normal-mode-fix-pos
+        (save-x-if-not-jk lastbuf keycode)
+        ;alwasy clear :recording-keys
+        (assoc-in [:macro :recording-keys] [])
+        (buf-update-highlight-brace-pair (:cursor b)))))
 
 (defn dot-repeat[b]
   (let [keycodes (registers-get (:registers b) ".")]
@@ -574,7 +578,8 @@
            :continue #(not (= "esc" %2))
            :leave (fn[b keycode]
                     (-> b
-                        (cursor-move-char 0)
+                        char-backward
+                        save-x-to-vx
                         set-normal-mode
                         history-save))})
 
@@ -653,7 +658,10 @@
                               (assoc-in [:context :lastbuf] b)))
                  :leave (fn[b keycode] (set-normal-mode b))
                  :continue #(not (or (= "d" %2) (= "c" %2) (= "esc" %2) (= "v" %2) (= "y" %2)))
-                 :after visual-mode-select
+                 :after (fn[b keycode]
+                          (-> b
+                              (visual-mode-select keycode)
+                              (save-x-if-not-jk (b :lastbuf) keycode)))
                  "d" delete-range
                  "c" change-range
                  "o" (fn[b]

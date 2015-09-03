@@ -226,26 +226,6 @@
     nil
     (.charAt s pos)))
 
-(defn char-backward [t]
-  (let [pos (t :pos)
-        s (t :str)
-        newpos (dec pos)
-        ch (text-char-at s newpos)]
-    (if (or (nil? ch) (= ch \newline)) t
-      (-> t
-          (assoc :pos newpos)
-          (update-in [:x] dec))))) 
-
-(defn char-forward [t]
-  (let [pos (t :pos)
-        s (t :str)
-        newpos (inc pos)
-        ch (text-char-at s newpos)]
-    (if (or (nil? ch) (= ch \newline)) t
-      (-> t
-          (assoc :pos newpos)
-          (update-in [:x] inc))))) 
-
 (defn line-backward [t vx]
   (let [{pos :pos
          s :str
@@ -276,11 +256,11 @@
 
 (defn lines-forward[t n]
   (if (zero? n) t
-    (recur (line-forward t (t :x)) (dec n))))
+    (recur (line-forward t (t :vx)) (dec n))))
 
 (defn lines-backward[t n]
   (if (zero? n) t
-    (recur (line-backward t (t :x)) (dec n))))
+    (recur (line-backward t (t :vx)) (dec n))))
 
 (defn lines-row[t n]
   (let [y (t :y)
@@ -383,3 +363,30 @@
     (-> t
         (text-update-pos a)
         (update-in [:highlights] conj a (dec b)))))
+
+(defn char-forward[t]
+  (let [pos (t :pos)
+        newpos (inc pos)
+        s (t :str)
+        ch (text-char-at s pos)]
+    (if (= (or ch \newline) \newline)
+      t
+      (text-update-pos t newpos))))
+
+(defn char-backward[t]
+  (let [newpos (dec (t :pos))
+        s (t :str)
+        ch (text-char-at s newpos)]
+    (if (= (or ch \newline) \newline)
+      t
+      (text-update-pos t newpos))))
+
+(defn current-word[t]
+  "return range of word under cursor"
+  (let [{pos :pos
+         s :str} t
+        b (last (pos-re-forward pos s re-word-end-border))
+        a (first (pos-re-backward b s re-word-start-border))]
+    (println "a:" a)
+    (println "b:" b)
+    [a b]))
