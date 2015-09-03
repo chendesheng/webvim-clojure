@@ -348,7 +348,7 @@
   (let [[start end] (current-word b)
         word (text-subs (b :str) start end)
         _ (println (str word))
-        re (re-pattern (str "\\b" word "\\b"))]
+        re (re-pattern (str "\\b" (quote-pattern word) "\\b"))]
     (registers-put (:registers b) "/" (str "/" re))
     (-> b 
         (re-forward-highlight re)
@@ -357,7 +357,7 @@
 (defn move-back-same-word[b]
   (let [[start end] (current-word b)
         word (text-subs (b :str) start end)
-        re (re-pattern (str "\\b" word "\\b"))]
+        re (re-pattern (str "\\b" (quote-pattern word) "\\b"))]
     (registers-put (:registers b) "/" (str "?" re))
     (-> b 
         (re-backward-highlight re)
