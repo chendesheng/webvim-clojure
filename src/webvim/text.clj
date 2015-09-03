@@ -68,21 +68,27 @@
 
 ;function name start with pos take pos as first argument and return newpos
 ;these can be combined in one motion command
-(defn- pos-eol-backward[pos s]
-  (or (first (pos-re-next-backward pos s re-line-break)) -1))
+(defn- pos-eol-backward
+  "return nil if coundn't find EOL"
+  [pos s]
+  (first (pos-re-next-backward pos s re-line-break)))
 
-(defn- pos-eol-forward[pos s]
-  (or (first (pos-re-forward pos s re-line-break)) (count s)))
+(defn- pos-eol-forward
+  "return nil if coundn't find EOL"
+  [pos s]
+  (first (pos-re-forward pos s re-line-break)))
 
-(defn- pos-re[pos s re re-fn]
-  (or (first (re-fn pos s re)) pos))
+(defn- pos-re
+  ([pos s re re-fn default]
+   (or (first (re-fn pos s re)) default))
+  ([pos s re re-fn]
+   (pos-re pos s re re-fn pos)))
 
 (defn- pos-end-re[pos s re re-fn]
   (or (last (re-fn pos s re)) pos))
 
 (defn- pos-line-first[pos s]
-  (pos-re pos s #"((?<=\n)[\s\S])|^" pos-re-backward))
-
+  (pos-re pos s #"((?<=\n)[\s\S])" pos-re-backward 0))
 
 (defn text-subs
   ([s l r]
@@ -211,13 +217,38 @@
    (text-replace t l r ""))
   ([t pt]
    (let [pos (t :pos)
-         [a b] (sort2 pos pt)]
-     (text-delete t a b))))
+         [l r] (sort2 pos pt)]
+     (text-delete t l r))))
+
+(defn text-insert-line-after[t]
+  (let [pos (t :pos)
+        s (t :str)
+        newpos (pos-eol-forward pos s)]
+    (if (nil? newpos)
+      (-> t
+          (text-insert (count s) line-break)
+          (text-update-pos (-> s count dec)))
+      (-> t
+          (text-update-pos newpos)
+          (text-insert line-break)))))
+
+(defn text-insert-line-before[t]
+  (let [pos (t :pos)
+        s (t :str)
+        newpos (pos-eol-backward pos s)]
+    (if (nil? newpos)
+      (-> t
+          (text-insert 0 line-break)
+          (text-update-pos 0))
+      (-> t
+          (text-update-pos newpos)
+          (text-insert line-break)))))
 
 (defn text-delete-offset[t offset] 
   (let [pos (t :pos)
         newpos (+ pos offset)]
-        (text-delete t newpos)))
+    (if (neg? newpos) t
+      (text-delete t newpos))))
 
 (defn text-char-at
   "return nil if out of range"
@@ -231,8 +262,8 @@
          s :str
          y :y} t]
     (let [eol (pos-eol-backward pos s)]
-      (if (neg? eol) t
-        (let [eol2 (pos-eol-backward eol s)
+      (if (nil? eol) t
+        (let [eol2 (or (pos-eol-backward eol s) -1)
               len (- eol eol2)
               x (bound-range vx 0 (dec len))]
           (-> t
@@ -245,8 +276,8 @@
          s :str
          y :y} t]
     (let [eol (pos-eol-forward pos s)]
-      (if (= eol (count s)) t
-        (let [eol2 (pos-eol-forward (inc eol) s)
+      (if (nil? eol) t
+        (let [eol2 (or (pos-eol-forward (inc eol) s) (count s))
               len (- eol2 eol)
               x (bound-range vx 0 (dec len))]
           (-> t
@@ -272,11 +303,14 @@
 (defn text-start[t]
   (merge t {:x 0 :y 0 :pos 0}))
 
-(defn- text-re[t re re-fn]
-  (let [{pos :pos
-         s :str} t
-        newpos (pos-re pos s re re-fn)]
-    (text-update-pos t newpos)))
+(defn- text-re
+  ([t re re-fn default]
+   (let [{pos :pos
+          s :str} t
+         newpos (pos-re pos s re re-fn default)]
+     (text-update-pos t newpos)))
+  ([t re re-fn]
+   (text-re t re re-fn 0)))
 
 (def word-chars "a-zA-Z_\\-!.?+*=<>&#\\':0-9")
 (def not-word-chars (str "^" word-chars))
@@ -302,10 +336,10 @@
     (str "[" not-space-chars "](?=[" space-chars "]|$)")))
 
 (defn re-forward[t re]
-  (text-re t re pos-re-next-forward))
+  (text-re t re pos-re-next-forward (-> t :str count)))
 
 (defn re-backward[t re]
-  (text-re t re pos-re-next-backward))
+  (text-re t re pos-re-next-backward 0))
 
 (defn word-forward[t]
   (re-forward t re-word-start-border))
@@ -346,7 +380,7 @@
         (text-update-pos t newpos)))
 
 (defn line-end[t]
-  (text-re t #"\n|$" pos-re-forward))
+  (text-re t #"\n" pos-re-forward (-> t :str count)))
 
 (defn re-forward-highlight[t re]
   (let [pos (t :pos)

@@ -404,7 +404,9 @@ function render(buf) {
 //	if (typeof buf.cursor != 'undefined') {
 //		renderCursor(buf);
 //	}
-	renderCursor(buf.pos, buffers[buf.id]);
+	if (typeof buf.pos != 'undefined') {
+		renderCursor(buf.pos, buffers[buf.id]);
+	}
 	
 	//render ex
 	if (buf.ex && buf.ex.length > 0) {

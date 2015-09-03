@@ -69,13 +69,13 @@
 (defn set-insert-new-line[b keycode]
   (-> b 
       (set-insert-mode keycode)
-      buf-insert-line-after
+      text-insert-line-after
       buf-indent-current-line))
 
 (defn set-insert-new-line-before[b keycode]
   (-> b 
       (set-insert-mode keycode)
-      buf-insert-line-before
+      text-insert-line-before
       buf-indent-current-line))
 
 (defn insert-mode-default[b keycode]
