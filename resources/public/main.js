@@ -283,6 +283,12 @@ function render(buf) {
 				}
 			}
 		}, 100);
+
+		//var span = document.createElement('SPAN');
+		//span.className = 'code';
+		//span.textContent = buf.str;
+		//$lines.appendChild(span);
+
 		buffers[buf.id].currentBlock = $lines.firstChild;
 		buffers[buf.id].currentBlockNumber = 0;
 		buffers[buf.id].currentLineNumber = 0;
@@ -302,6 +308,15 @@ function render(buf) {
 		var b = buffers[buf.id];
 		var lineParent = $('.lines')[0];
 		buf.changes.each(function(c) {
+			//var range = document.createRange();
+			//var code = $('.lines .code')[0];
+			//range.setStart(code.firstChild, c.pos);
+			//range.setEnd(code.firstChild, c.pos+c.len);
+			//range.deleteContents();
+			//var txt = document.createTextNode(c.to);
+			//range.insertNode(txt);
+			//code.normalize();
+			
 			var res = getCodeBlockByPos(b, c.pos);
 			var ele = res.e;
 			var offset = c.pos - res.pos;
