@@ -324,8 +324,13 @@
     (-> b
       (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
       buf-save-cursor
-      (buf-delete-range2 {:row row :col col} {:row row :col (-> b (col-count row) dec)})
+      (text-delete (b :pos) (-> b current-line last dec))
       history-save)))
+
+(defn change-to-line-end[b]
+  (-> b
+      (text-delete (b :pos) (-> b current-line last dec))
+      (serve-keymap (@normal-mode-keymap "i") "c")))
 
 (defn delete-range[b]
   (-> b
@@ -439,7 +444,7 @@
       (registers-put (:registers b) (-> b :context :register) (buf-copy-range b cursor cursor true))
       (-> b 
           buf-save-cursor
-          (buf-replace cursor "" true)
+          (text-delete-offset 1)
           history-save))))
 
 (defn yank-visual[b]
@@ -681,6 +686,7 @@
           "p" #(put-from-register-append % (-> % :context :register))
           "P" #(put-from-register % (-> % :context :register))
           "D" delete-to-line-end
+          "C" change-to-line-end
           "J" (fn[b]
                 (-> b 
                     buf-save-cursor

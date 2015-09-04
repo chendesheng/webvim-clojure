@@ -65,6 +65,10 @@ function showOngoingKey(key) {
 	}
 }
 
+function hideOngoingKey() {
+	$('.lines .cursor').text('');
+}
+
 //map key to another get return from callback
 function imap(key, callback) {
 	if (!key) {
@@ -86,6 +90,7 @@ function imap(key, callback) {
 			ongoingkeys.push(key);
 			showOngoingKey(key);
 		} else {
+			hideOngoingKey();
 			//press twice 'j'
 			if (ongoingkeysTimer != null) {
 				clearTimeout(ongoingkeysTimer);
@@ -100,6 +105,7 @@ function imap(key, callback) {
 			clearTimeout(ongoingkeysTimer);
 			ongoingkeysTimer = null;
 		}
+		hideOngoingKey();
 
 		ongoingkeys.push(key);
 		ongoingkeys.each(function(key){
