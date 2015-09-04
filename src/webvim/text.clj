@@ -78,6 +78,16 @@
   [pos s]
   (first (pos-re-forward pos s re-line-break)))
 
+(defn- pos-end-eol-forward
+  "return nil if coundn't find EOL"
+  [pos s]
+  (last (pos-re-forward pos s re-line-break)))
+
+(defn- pos-end-eol-backward
+  "return nil if coundn't find EOL"
+  [pos s]
+  (last (pos-re-backward pos s re-line-break)))
+
 (defn- pos-re
   ([pos s re re-fn default]
    (or (first (re-fn pos s re)) default))
@@ -219,6 +229,20 @@
    (let [pos (t :pos)
          [l r] (sort2 pos pt)]
      (text-delete t l r))))
+
+(defn text-delete-inclusive
+  [t p1 p2]
+  (let [[l r] (sort2 p1 p2)]
+    (-> t
+        (text-delete l (inc r))
+        (text-update-pos l))))
+
+(defn text-delete-range
+  "delete range and set pos to end of deleted"
+  [t rg]
+  (-> t
+      (text-delete (first rg) (second rg))
+      (text-update-pos (first rg))))
 
 (defn text-insert-line-after[t]
   (let [pos (t :pos)
@@ -417,11 +441,19 @@
       (text-update-pos t newpos))))
 
 (defn current-word[t]
-  "return range of word under cursor"
+  "return range of word under cursor, right side is exclusive"
   (let [{pos :pos
          s :str} t
         b (last (pos-re-forward pos s re-word-end-border))
         a (first (pos-re-backward b s re-word-start-border))]
-    (println "a:" a)
-    (println "b:" b)
     [a b]))
+
+(defn current-line[t]
+  "return range of line under cursor, right side is exclusive"
+  (let [{pos :pos
+         s :str} t
+        b (or (pos-end-eol-forward pos s) (count s))
+        a (or (pos-end-eol-backward pos s) 0)]
+    [a b]))
+
+;(apply text-subs "\naaa\n" (current-line {:pos 2 :str (text-new "\naaa\n")}))

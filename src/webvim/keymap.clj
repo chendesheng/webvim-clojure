@@ -168,30 +168,31 @@
 (defn delete-motion[b keycode]
   ;(println (str "delete-motion:" keycode))
   ;(println (str "inclusive:" (inclusive? keycode)))
-  (let [lastbuf (-> b :context :lastbuf)]
-    (if (or (nil? lastbuf) (= (:pos b) (:pos lastbuf))) ;don't do anything if cursor doesn't change
+  (let [lastbuf (-> b :context :lastbuf)
+        pos (b :pos)]
+    (if (or (nil? lastbuf) (= pos (:pos lastbuf))) ;don't do anything if cursor doesn't change
       b
-      (-> b :context :lastbuf 
-          buf-save-cursor
-          (buf-copy-range-lastbuf (:cursor b) (inclusive? keycode))
-          (text-delete (if (inclusive? keycode)
-                         (-> b :pos inc)
-                         (:pos b)))
-          history-save))))
+      (let [inclusive (inclusive? keycode)]
+        (-> lastbuf
+            buf-save-cursor
+            (buf-copy-range-lastbuf (:cursor b) inclusive)
+            (text-delete (if inclusive (inc pos) pos))
+            history-save)))))
 
 (defn change-motion[b keycode]
   ;(println "change-motion:" keycode)
   (let [lastbuf (-> b :context :lastbuf)
-        lastcur (:cursor lastbuf)]
+        lastcur (:cursor lastbuf)
+        pos (b :pos)]
     ;(pprint lastcur)
     ;(pprint (:cursor b))
-    (if (or (nil? lastbuf) (same-pos? (:cursor b) lastcur))
+    (if (or (nil? lastbuf) (= pos (:pos lastbuf)))
       b
       (let [inclusive (inclusive? keycode)]
-        (-> b 
+        (-> lastbuf
             ;(println (str "change-motion:" keycode))
             (buf-copy-range-lastbuf lastcur inclusive)
-            (buf-replace lastcur "" inclusive)
+            (text-delete (if inclusive (inc pos) (dec pos)))
             (serve-keymap (@normal-mode-keymap "i") keycode))))))
 
 (defn yank-motion[b keycode]
@@ -310,10 +311,11 @@
   (let [{row :row col :col} (b :cursor)]
     (registers-put (:registers b) (-> b :context :register) (buf-copy-range b {:row row :col 0} {:row row :col (col-count b row)} false))
     (-> b
-      (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
-      buf-save-cursor
-      buf-delete-line
-      history-save)))
+        (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
+        buf-save-cursor
+        (text-delete-range (current-line b))
+        line-start
+        history-save)))
 
 (defn delete-to-line-end[b]
   (let [{row :row col :col} (b :cursor)]
@@ -327,7 +329,7 @@
 (defn delete-range[b]
   (-> b
       (assoc :last-cursor (-> b :context :lastbuf :cursor))
-      buf-delete-range
+      (text-delete-inclusive (b :pos) (-> b :context :lastbuf :pos))
       history-save))
 
 (defn change-range[b]
@@ -686,7 +688,7 @@
                     buf-join-line
                     history-save))
           "c" (merge
-                @motion-keymap
+                @motion-keymap 
                 {:before save-lastbuf
                  :after change-motion})
           "y" (merge
