@@ -321,24 +321,22 @@
 
 (def re-word-start-border
   (re-pattern 
-    (str "(?<=[" not-word-chars "]|^)[" word-chars "]|(?<=[" not-punctuation-chars "]|^)[" punctuation-chars "]")))
+    (str "(?<=[" not-word-chars "])[" word-chars "]|(?<=[" not-punctuation-chars "])[" punctuation-chars "]")))
 
 (def re-WORD-start-border
   (re-pattern 
-    (str "(?<=[" space-chars "]|^)[" not-space-chars "]")))
+    (str "(?<=[" space-chars "])[" not-space-chars "]")))
 
 (def re-word-end-border
   (re-pattern 
-    (str "[" word-chars "](?=[" not-word-chars "]|$)|[" punctuation-chars "](?=[" not-punctuation-chars "]|$)")))
+    (str "[" word-chars "](?=[" not-word-chars "])|[" punctuation-chars "](?=[" not-punctuation-chars "])")))
 
 (def re-WORD-end-border
   (re-pattern 
-    (str "[" not-space-chars "](?=[" space-chars "]|$)")))
+    (str "[" not-space-chars "](?=[" space-chars "])")))
 
 (defn re-forward
   ([t re]
-  (text-re t re pos-re-next-forward (-> t :str count) true))
-  ([t re crossline]
   (text-re t re pos-re-next-forward (-> t :str count))))
 
 (defn re-backward[t re]
