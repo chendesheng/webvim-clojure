@@ -37,7 +37,7 @@ body {
 
 .selections, .highlights {
 	pointer-events: none;
-	z-index:-1;
+	z-index:0;
 }
 
 .selections .line-selected {
@@ -82,8 +82,10 @@ pre {
 	position:absolute;
 	background:#ae81ff;
 	color:white;
-	z-index:1000000;
+	z-index:1;
 	white-space:pre;
+	width:9.57px;
+	height:21px;
 }
 
 .status-bar .cursor {

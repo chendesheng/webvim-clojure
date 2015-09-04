@@ -641,18 +641,6 @@ function renderSelection($p, a, b, reverseTextColor, buf) {
 	b++;
 
 	var div = document.createElement('DIV');
-
-	//var resa = getElementByPos(buf, a);
-	//var resb = getElementByPos(buf, b);
-	//var range = document.createRange();
-	//range.setStart(resa.e, resa.offset);
-	//range.setEnd(resb.e, resb.offset);
-	//var span = document.createElement('SPAN');
-	//span.style.color = '#000';
-	//span.style.background = 'rgb(255, 233, 32)';
-	//range.surroundContents(span);
-	
-
 	var resa = getScreenXYByPos(buf, a);
 	var resb = getScreenXYByPos(buf, b);
 
@@ -674,13 +662,7 @@ function renderCursor(pos, buf) {
 	}
 
 	var res = getScreenXYByPos(buf, pos);
-	if (!/\bcode\b/.test(res.e.parentNode.className)) {
-		$('.lines .cursor').removeClass().addClass('cursor').addClass(res.e.parentNode.className);
-	} else {
-		$('.lines .cursor').removeClass().addClass('cursor');
-	}
-	var ch = (res.ch == '\n'||res.ch=='\t') ? ' ' : res.ch;
-	$('.lines .cursor').text(ch).attr('style', 'left:'+res.left+'px;top:'+res.top+'px;');
+	$('.lines .cursor').removeClass().addClass('cursor').css('left', res.left).css('top', res.top);
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];
