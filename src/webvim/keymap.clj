@@ -38,6 +38,7 @@
 (defn set-insert-mode[b keycode]
   ;(println "set-insert-mode")
   (-> b 
+      (assoc-in [:visual :ranges] [])
       (merge {:ex "" :mode insert-mode :message nil :keys nil})
       buf-save-cursor))
 
@@ -328,14 +329,12 @@
 
 (defn delete-range[b]
   (-> b
-      (assoc :last-cursor (-> b :context :lastbuf :cursor))
       (text-delete-inclusive (b :pos) (-> b :context :lastbuf :pos))
       history-save))
 
 (defn change-range[b]
   (-> b 
-      (assoc :last-cursor (-> b :context :lastbuf :cursor))
-      buf-delete-range
+      (text-delete-inclusive (b :pos) (-> b :context :lastbuf :pos))
       (set-insert-mode "c")
       (serve-keymap (@normal-mode-keymap "i") "c")))
 
