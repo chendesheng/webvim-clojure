@@ -151,7 +151,6 @@
 (def all-braces {\( \) \) \( \[ \] \] \[ \{ \} \} \{})
 
 (def re-braces #"(?<!\\)(\(|\[|\{|\}|\]|\))")
-(def re-js-statements #"\b(if|while|switch|for)\s*\(.*?\)\s*$")
 
 ;http://stackoverflow.com/questions/21191045/get-string-indices-from-the-result-of-re-seq
 (defn re-seq-pos [pattern string start] 

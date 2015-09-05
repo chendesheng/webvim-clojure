@@ -4,6 +4,8 @@
         webvim.text
         webvim.global))
 
+(def re-js-statements #"\b(if|while|switch|for)\s*\(.*?\)\s*$")
+
 ;trim leading spaces but not '\n'
 ;only use in indent function
 (defn trim-left-space[line]
@@ -24,6 +26,7 @@
           (.start m 1))))
     :else 2))
 
+;find outer scope and align by start bracket
 (defn clojure-indent
   "Indent by brace parsing"
   [lines row]
@@ -75,11 +78,11 @@
     (if (nil? pline) ""
       (or (re-subs #"^\s*" pline) ""))))
 
-(defn c-comment? [line]
+(defn clang-comment? [line]
   (re-test #"^\s*//" line))
 
 (defn not-blank-or-comment? [line]
-  (not (or (text-blank? line) (c-comment? line))))
+  (not (or (text-blank? line) (clang-comment? line))))
 
 ;1. indent -1: line contains brace but pline not
 ;   if {
@@ -123,7 +126,7 @@
         pindent (re-subs #"^\s*" pline)
         pbrace? (re-test #"[\{]\s*$" pline)
         brace? (re-test #"^\s*\}" line)]
-    (cond (c-comment? line)
+    (cond (clang-comment? line)
           (auto-indent s pos)
           (empty? pline)
           ""
