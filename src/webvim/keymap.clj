@@ -458,9 +458,6 @@
                           :col (:col cur1)
                           :lastcol (:col cur1)})))))
 
-(defn inside? [lines {r :row c :col}]
-  (and (< r (count lines)) (< c (count (lines r)))))
-
 (defn move-to-jumplist
   [b fndir]
   (loop [pos (fndir b)]
@@ -471,15 +468,15 @@
           ;buffer has been deleted, ignore
           (recur (fndir b)) 
           ;pos is avaliable
-          (if (inside? (newb :lines) (pos :cursor))
+          (if (< (pos :pos) (count (newb :str)))
             (let [newid (newb :id)
-                  newcur (pos :cursor)]
+                  newpos (pos :pos)]
               (if (= newid @active-buffer-id) 
                 ;update pos inside current buffer
-                (assoc b :cursor newcur)
+                (text-update-pos b newpos)
                 (let []
                   (change-active-buffer newid)
-                  (swap! buffer-list assoc-in [newid :cursor] newcur)
+                  (swap! buffer-list update-in [newid] #(text-update-pos % newpos))
                   b)))
             ;buffer has been modifed and cursor is no longer inside, ignore
             (recur (fndir b))))))))
