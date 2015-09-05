@@ -360,9 +360,12 @@
       (subs line s col))))
 
 (defn buffer-replace-suggestion[b word]
-  (let [subject (buffer-word-before-cursor b)
-        {col :col} (:cursor b)]
-    (buf-replace b (assoc (:cursor b) :col (- col (count subject))) word false)))
+  (let [pos (b :pos)
+        s (b :str)
+        wordstart (or (first (pos-re-backward pos s #"(?<=[^a-zA-Z])[a-zA-Z]")) 0)]
+    (text-replace b wordstart pos word)))
+
+;(buffer-replace-suggestion {:pos 5 :str (text-new "aa aaa") :changes []} "bbb")
 
 (defn buf-delete-line
   "Delete line under cursor and put cursor to next line"

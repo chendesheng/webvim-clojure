@@ -253,11 +253,12 @@
             s (-> b1 :autocompl :suggestions (get 0))
             ;delete back then insert word
             ks (apply conj (vec (repeat (count s) "backspace")) (map str (vec w)))]
-        (-> b1 
-            (assoc-in [:autocompl :suggestions-index] n)
-            (update-in [:macro :recording-keys] 
-                      #(apply conj % ks)) 
-            (buffer-replace-suggestion w))))))
+        (if (empty? w) b
+          (-> b1 
+              (assoc-in [:autocompl :suggestions-index] n)
+              (update-in [:macro :recording-keys] 
+                         #(apply conj % ks)) 
+              (buffer-replace-suggestion w)))))))
 
 (defn keycode-to-char[keycode]
   (cond 
