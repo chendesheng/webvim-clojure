@@ -246,73 +246,6 @@
       (.charAt line col)
       0)))
 
-(defn buf-match-brace[b pt]
-  (let [brace (buf-char-at b pt)
-        m (all-braces brace)
-        lines (:lines b)
-        left? (contains? left-braces brace)
-        re (re-pattern (str  (quote-pattern brace) "|" (quote-pattern m)))]
-    (if (nil? m) nil
-      (if left?
-        (loop[cnt 0
-              {row :row col :col} pt]
-          ;(println "row:" row ",col:" col)
-          (let [line (lines row)
-                matches (re-seq-pos re line col)
-                [ncnt, col] (reduce 
-                              (fn [[cnt, _] match]
-                                (let [{start :start group :group} match
-                                      ch (.charAt group 0)
-                                      ncnt (if (= brace ch)
-                                             (inc cnt)
-                                             (dec cnt))]
-                                  ;(println "start:" start ",ncnt:" ncnt, ",ch:" ch)
-                                  (if (zero? ncnt) 
-                                    (reduced [0, start])
-                                    [ncnt, start])))
-                              [cnt (-> line count dec)], matches)]
-            ;(println ncnt)
-            (cond (zero? ncnt)
-                  {:row row :col col}
-                  (>= (inc row) (count lines))
-                  nil
-                  :else
-                  (recur ncnt {:row (inc row) :col 0}))))
-        (loop[cnt 0
-              row (pt :row)
-              col (-> pt :col inc)]
-          ;(println "right")
-          ;(pprint pt)
-          ;(println "row:" row ",col:" col)
-          (let [line (lines row)
-                subline (if (= col -1)
-                          line
-                          (subs line 0 col))
-                matches (reverse (re-seq-pos re subline 0))
-                [ncnt, col] (reduce 
-                              (fn [[cnt, _] match]
-                                (let [{start :start group :group} match
-                                      ch (.charAt group 0)
-                                      ncnt (if (= brace ch)
-                                             (inc cnt)
-                                             (dec cnt))]
-                                  ;(println "start:" start ",ncnt:" ncnt, ",ch:" ch)
-                                  (if (zero? ncnt) 
-                                    (reduced [0, start])
-                                    [ncnt, start])))
-                              [cnt (-> line count dec)], matches)]
-            ;(println ncnt)
-            (cond (zero? ncnt)
-                  {:row row :col col}
-                  (zero? row) 
-                  nil
-                  :else
-                  (recur ncnt (dec row) -1))))))))
-
-(defn cursor-match-brace[b]
-  (let [b1 (cursor-next-re b #"[\(\[\{\)\]\}]" #"[\(\[\{\)\]\}]")]
-    (buf-match-brace b1 (:cursor b1))))
-
 (defn buf-line[b row]
   (-> b :lines (get row)))
 
@@ -485,11 +418,12 @@
                   (recur (conj res (buf-line b r)) (inc r)))))]
     (join res)))
 
-(defn buf-update-highlight-brace-pair[b pt]
-  (let [pt2 (buf-match-brace b pt)]
-    (if (nil? pt2)
+(defn buf-update-highlight-brace-pair[b pos]
+  (let [mpos (pos-match-brace (b :str) pos)]
+    (println pos mpos)
+    (if (nil? mpos)
       (dissoc b :braces)
-      (assoc b :braces [{:row (:row pt) :col (:col pt)} pt2]))))
+      (assoc b :braces [pos mpos]))))
 
 (defn buf-join-line
   "join current line and next line"

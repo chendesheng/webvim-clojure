@@ -464,26 +464,21 @@ function render(buf) {
 
 	//render matched brace pair
 	$('.lines .highlight-brace-pair').empty();
-	//if (buf.braces) {
-	//	if (!$('.lines .highlight-brace-pair').get(0)) {
-	//		$('.lines').append('<div class="highlight-brace-pair"></div>');
-	//	}
-	//	var cr, cc;
-	//	if (buf.cursor) {
-	//		cr = parseInt(buf.cursor.row);
-	//		cc = parseInt(buf.cursor.col);
-	//	}
+	if (buf.braces) {
+		if (!$('.lines .highlight-brace-pair').get(0)) {
+			$('.lines').append('<div class="highlight-brace-pair"></div>');
+		}
 
-	//	var ranges = [];
-	//	for (var i = 0; i < buf.braces.length; i++) {
-	//		var pt = buf.braces[i];
-	//		//skip cursor, don't draw twice in same point
-	//		if (buf.cursor && pt.row == cr && pt.col == cc) continue; 
+		var $p = $('.lines .highlight-brace-pair')[0];
 
-	//		ranges.push(pt, {row:pt.row, col:pt.col+1});
-	//	}
-	//	renderSelections($('.lines .highlight-brace-pair'), ranges);
-	//}
+		for (var i = 0; i < buf.braces.length; i++) {
+			var pt = buf.braces[i];
+			//skip cursor, don't draw twice in same point
+			if (buf.pos == pt) continue; 
+
+			renderSelection($p, pt, pt, true, buffers[buf.id]);
+		}
+	}
 
 	scrollToCursor(buf['scroll-top'] || 0, buf.lines);
 

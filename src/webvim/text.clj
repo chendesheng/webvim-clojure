@@ -54,13 +54,13 @@
       (let [m (.matcher s #"^\s$")]
         (.find m 0))))
 
-(defn- pos-re-forward
+(defn pos-re-forward
   "return forward range matches"
   [pos s re]
   (let [m (.matcher s re)]
     (find-first m pos)))
 
-(defn- pos-re-backward
+(defn pos-re-backward
   "return backward range matches"
   [pos s re]
   ;(println s)
@@ -75,9 +75,9 @@
       ;(println "offset:" offset)
       (if (neg? offset)
         nil
-        (let[[a b] (if (< offset 1)
+        (let[[a b] (if (< offset 100)
                      [0 offset]
-                     [(- offset 1) offset])]
+                     [(- offset 100) offset])]
           (.region m a b)
           (let [matches (find-last m)]
             ;(println matches)
@@ -551,3 +551,45 @@
 
 (defn range-blank? [s rg]
   (text-blank? (text-subs-range s rg)))
+
+(defn pos-re-forward-seq[pos s re]
+  (if (neg? pos) nil
+    (let [rg (pos-re-forward pos s re)]
+      (if (nil? rg) nil
+        (cons rg (lazy-seq (pos-re-forward-seq (-> rg first inc) s re)))))))
+
+(defn pos-re-backward-seq[pos s re]
+  (if (neg? pos) nil
+    (let [rg (pos-re-backward pos s re)]
+      (if (nil? rg) nil
+        (cons rg (lazy-seq (pos-re-backward-seq (-> rg first dec) s re)))))))
+
+;(pos-re-forward-seq -1 (text-new "(((") #"\(")
+;(pos-re-backward-seq -1 (text-new "(((") #"\(")
+(pos-re-forward 0 (text-new "   ()") #"\(|\)|\[|\]|\{|\}")
+
+(defn pos-match-brace
+  "return matched brace position, nil if not find"
+  [s pos]
+  (let [brace (text-char-at s pos)
+        m (all-braces brace)
+        left? (contains? left-braces brace)
+        re (re-pattern (str  (quote-pattern brace) "|" (quote-pattern m)))]
+    (if (nil? m) nil
+      (let [inc-cnt? (if left? 
+                       #(contains? left-braces %)
+                       #(contains? right-braces %))
+            braces (if left?
+                     (pos-re-forward-seq pos s re)
+                     (pos-re-backward-seq pos s re))
+            mpos (reduce 
+                   (fn[cnt [a _]]
+                     (let [ch (text-char-at s a)
+                           newcnt (if (inc-cnt? ch)
+                                    (inc cnt)
+                                    (dec cnt))]
+                       (if (zero? newcnt)
+                         (reduced [a])
+                         newcnt))) 0 braces)]
+        (if (vector? mpos) (first mpos) nil)))))
+

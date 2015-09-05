@@ -93,8 +93,8 @@
              (text-insert b keycode)
              :else
              b)
-        b2 (buf-update-highlight-brace-pair b1 (:cursor (dec-col b1)))
-        b3 (if (or (re-find (-> b2 :language :indent-triggers) keycode) (= keycode "enter"))
+        b2 (buf-update-highlight-brace-pair b1 (-> b1 :pos dec))
+        b3 (if (or (re-test (-> b2 :language :indent-triggers) keycode) (= keycode "enter"))
              (-> b2 
                  buf-indent-current-line 
                  char-forward)
@@ -429,7 +429,7 @@
         (save-x-if-not-jk lastbuf keycode)
         ;alwasy clear :recording-keys
         (assoc-in [:macro :recording-keys] [])
-        (buf-update-highlight-brace-pair (:cursor b)))))
+        (buf-update-highlight-brace-pair (b :pos)))))
 
 (defn dot-repeat[b]
   (let [keycodes (registers-get (:registers b) ".")]
@@ -551,16 +551,14 @@
            "}" paragraph-forward
            "{" paragraph-backward
            "%" (fn[b]
-                 (let [b1 (if (not (contains? all-braces (char-under-cursor b)))
-                            (cursor-next-re b #"[\(\[\{\)\]\}]" #"[\(\[\{\)\]\}]")
-                            b)]
-                   (let [cur (cursor-match-brace b1)]
-                     (if (nil? cur) 
-                       b1
-                       (let [newcur (assoc cur :lastcol (:col cur))]
-                         (assoc b1 :cursor newcur))))))
+                 (let [s (b :str)
+                       pos (b :pos)
+                       newpos (pos-match-brace s
+                                (first (pos-re-forward pos s #"\(|\)|\[|\]|\{|\}")))]
+                   (text-update-pos b newpos)))
            "c+u" #(cursor-move-viewport %1 -0.5) 
            "c+d" #(cursor-move-viewport %1 0.5)})
+
 
   (reset! visual-mode-keymap @motion-keymap)
   (swap! visual-mode-keymap 
@@ -709,3 +707,4 @@
                         (assoc-in [:context :register] "\"")))
           :after normal-mode-after})
 (reset! root-keymap @normal-mode-keymap))
+

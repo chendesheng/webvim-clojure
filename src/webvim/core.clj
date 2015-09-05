@@ -84,22 +84,10 @@
          (= (:col c1) (:col c2))
          (= (:lastcol c1) (:lastcol c2)))))
 
-(defn- dissoc-cursor[after before]
-  (let [braces (vec (filter ;remove brace if equal to :cursor
-                            #(not (equal-pt? % (after :cursor))) 
-                            (after :braces)))
-        b (if (empty? braces)
-            after
-            (assoc after :braces braces))]
-    ;dissoc :cursor if not change
-    (if (equal-cursor? (:cursor before) (:cursor b))
-      (dissoc b :cursor)
-      b)))
-
 (defn- remove-fields[b]
   (-> b 
       track-unsaved
-      (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :vx :y
+      (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :vx :y :cursor
           :macro :chan-in :chan-out :registers :last-saved-lines)
       (dissoc-empty [:highlights])
       (dissoc-empty [:changes])
@@ -121,7 +109,6 @@
                 (or (nil? before) (not (= (:id before) (:id after))))
                 (-> after
                     (assoc :str (str txt))
-                    (dissoc-cursor nil)
                     (assoc :lang (-> after :language :name))
                     (dissoc :changes)
                     remove-fields)
@@ -130,9 +117,7 @@
                     remove-fields
                     (dissoc :str)
                     (diff-lines before)
-                    (dissoc-cursor before)
                     (dissoc-if-equal before :mode)
-                    (dissoc-if-equal before :braces)
                     (dissoc-if-equal before :keys)
                     (dissoc-if-equal before :name)
                     (dissoc-if-equal before :ex)

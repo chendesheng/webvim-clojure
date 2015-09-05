@@ -13,62 +13,6 @@
 
 (def indent-tab-size #{"def" "defn" "if" "fn" "let" "cond" "loop"})
 
-(defn get-indent[line]
-  (cond 
-    (= 1 (count (.trim line)))
-    1
-    (re-test #"\(\s*[^,\s]+[\s,]+[^,\s]+" line)
-    (let [w (re-subs #"[^\s\[\{\(]+" (trim-left-space (text-subs line 1)))]
-      (if (contains? indent-tab-size w)
-        2
-        (let [m (re-matcher #"\(\s*[^,\s]+[\s,]*([^,\s]+)" line)]
-          (.find m)
-          (.start m 1))))
-    :else 2))
-
-;find outer scope and align by start bracket
-(defn clojure-indent
-  "Indent by brace parsing"
-  [lines row]
-  (if (zero? row)
-    ""
-    (loop [current (dec row)
-           braces []]
-      ;(pprint2 braces "braces:")
-      (cond 
-        (neg? current)
-        ""
-        (blank? (lines current))
-        (recur (dec current) braces)
-        :else
-        (let [line (lines current)
-              ;_ (println line)
-              nbraces (reduce 
-                        (fn[stack pt]
-                          (let [ch (-> pt :group first) ]
-                            ;(println "ch:" ch)
-                            (if (and (not (empty? stack))
-                                     (= (-> stack last :group first) (all-braces ch)))
-                              (pop stack)
-                              (conj stack pt))))
-                        ;from right to left
-                        braces (reverse (re-seq-pos re-braces line 0)))]
-          ;(println "current:" current)
-          ;(pprint2 nbraces "nbraces:")
-          ;(println "line:")
-          ;(println line)
-          (cond (empty? nbraces)
-                (repeat-space (count-left-spaces line))
-                (contains? left-braces (-> nbraces first :group first))
-                (let [m (first nbraces)
-                      ch (-> m :group first)
-                      start (m :start)]
-                  ;(println "start:" start)
-                  (if (= ch \()
-                    (repeat-space (+ (get-indent (text-subs line start)) start))
-                    (repeat-space (inc (m :start)))))
-                :else (recur (dec current) nbraces)))))))
-
 (defn auto-indent 
   [s pos]
   (let [lines (filter #(-> % text-blank? not)
@@ -78,10 +22,59 @@
     (if (nil? pline) ""
       (or (re-subs #"^\s*" pline) ""))))
 
+(defn clojure-comment? [line]
+  (re-test #"^\s*;" line))
+
+(defn clojure-not-blank-or-comment? [line]
+  (not (or (text-blank? line) (clojure-comment? line))))
+
+(defn clojure-get-indent[line]
+  (cond 
+    (= 1 (count (.trim line)))
+    1
+    (not (= (text-char-at line 0) \())
+    1
+    (re-test #"^\(\s*[^,\s]+[\s,]+[^,\s]+" line)
+    (let [w (re-subs #"[^\s\[\{\(]+"
+                     (text-subs line 1))]
+      (if (contains? indent-tab-size (str w))
+        2
+        (-> w count (+ 2))))
+    :else 2))
+
+;find outer scope and align by start bracket
+(defn clojure-indent
+  "Indent by brace parsing"
+  [s pos]
+  (let [[a b] (pos-line s pos)]
+    (cond 
+      (zero? a)
+      ""
+      (clojure-comment? (text-subs s a b))
+      (auto-indent s pos)
+      :else (let [tmp (reduce 
+                        (fn[stack [a _]]
+                          (let [ch (text-char-at s a)]
+                            (if (and (contains? left-braces ch) (empty? stack))
+                              (reduced [a])
+                              (if (= (peek stack) (all-braces ch))
+                                (pop stack)
+                                (conj stack ch))))) 
+                        [] (pos-re-backward-seq (dec a) s re-braces))
+                  mpos (if (vector? tmp) (first tmp) nil)]
+              (if (nil? mpos)
+                (auto-indent s pos)
+                (let [ch (text-char-at s mpos)
+                      [a b] (pos-line s mpos)
+                      cnt (- mpos a)]
+                  (repeat-space 
+                    (+ (- mpos a) 
+                       (clojure-get-indent (text-subs s mpos b))))))))))
+
 (defn clang-comment? [line]
   (re-test #"^\s*//" line))
 
-(defn not-blank-or-comment? [line]
+(defn clang-not-blank-or-comment? [line]
   (not (or (text-blank? line) (clang-comment? line))))
 
 ;1. indent -1: line contains brace but pline not
@@ -118,7 +111,7 @@
 (defn clang-indent [s pos]
   (let [[head & ranges] (lines-reverse s pos)
         line (text-subs-range s head)
-        lines (filter not-blank-or-comment?
+        lines (filter clang-not-blank-or-comment?
                       (ranges-to-texts s ranges))
         _ (println (str "[" line "]"))
         pline (or (first lines) "")
@@ -162,7 +155,7 @@
     (loop [t (text-update-pos t p2) ;put pos at end and keep track it
            [a _] (pos-first-line s p1 #(not (range-blank? s %)))] ;start at first non-blank line
       (println (t :pos) a)
-      (if (< (t :pos) a) t
+      (if (< (t :pos) a) (text-update-pos t p1)
         (let [t1 (buf-indent-line t a)
               s1 (t1 :str)]
           (recur 
