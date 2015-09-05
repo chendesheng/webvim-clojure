@@ -8,18 +8,8 @@
         webvim.history
         webvim.text
         webvim.cursor
+        webvim.indent
         webvim.global))
-
-(def re-braces #"(?<!\\)(\(|\[|\{|\}|\]|\))")
-(def re-js-statements #"\b(if|while|switch|for)\s*\(.*?\)\s*$")
-(declare clojure-indent)
-(declare auto-indent)
-(declare clang-indent)
-
-;trim leading spaces but not '\n'
-;only use in indent function
-(defn trim-left-space[line]
-  (.replaceAll line "^[ \t]+" ""))
 
 (defn split-lines-all 
   "Split by \\n and keep \\n. Always has a extra empty string after last \\n.
@@ -244,10 +234,6 @@
   (let [{row :row col :col} cursor]
     (.charAt (lines row) col)))
 
-(def left-braces #{\( \[ \{})
-(def right-braces #{\) \] \}})
-(def all-braces {\( \) \) \( \[ \] \] \[ \{ \} \} \{})
-
 (defn buf-char-at[b {row :row col :col}]
   (let [line (-> b :lines (get row))]
     (if (< col (count line))
@@ -259,14 +245,6 @@
     (if (< col (count line))
       (.charAt line col)
       0)))
-
-;http://stackoverflow.com/questions/21191045/get-string-indices-from-the-result-of-re-seq
-(defn re-seq-pos [pattern string start] 
-  (let [m (re-matcher pattern (subs string start))] 
-    ((fn step [] 
-      (when (. m find) 
-        (cons {:start (+ (. m start) start) :end (+ (. m end) start) :group (. m group)} 
-          (lazy-seq (step))))))))
 
 (defn buf-match-brace[b pt]
   (let [brace (buf-char-at b pt)
@@ -490,172 +468,6 @@
     (-> b
         (update-in [:cursor :row] dec)
         buf-insert-line-after)))
-
-(def indent-tab-size #{"def" "defn" "if" "fn" "let" "cond" "loop"})
-(defn get-indent[line]
-  (cond 
-    (= 1 (count (.trim line)))
-    1
-    (re-test #"\(\s*[^,\s]+[\s,]+[^,\s]+" line)
-    (let [w (re-find #"[^\s\[\{\(]+" (trim-left-space (subs line 1)))]
-      (if (contains? indent-tab-size w)
-        2
-        (let [m (re-matcher #"\(\s*[^,\s]+[\s,]*([^,\s]+)" line)]
-          (.find m)
-          (.start m 1))))
-    :else 2))
-
-(defn clojure-indent
-  "Indent by brace parsing"
-  [lines row]
-  (if (zero? row)
-    ""
-    (loop [current (dec row)
-           braces []]
-      ;(pprint2 braces "braces:")
-      (cond 
-        (neg? current)
-        ""
-        (blank? (lines current))
-        (recur (dec current) braces)
-        :else
-        (let [line (lines current)
-              ;_ (println line)
-              nbraces (reduce 
-                        (fn[stack pt]
-                          (let [ch (-> pt :group first) ]
-                            ;(println "ch:" ch)
-                            (if (and (not (empty? stack))
-                                     (= (-> stack last :group first) (all-braces ch)))
-                              (pop stack)
-                              (conj stack pt))))
-                        ;from right to left
-                        braces (reverse (re-seq-pos re-braces line 0)))]
-          ;(println "current:" current)
-          ;(pprint2 nbraces "nbraces:")
-          ;(println "line:")
-          ;(println line)
-          (cond (empty? nbraces)
-                (repeat-space (count-left-spaces line))
-                (contains? left-braces (-> nbraces first :group first))
-                (let [m (first nbraces)
-                      ch (-> m :group first)
-                      start (m :start)]
-                  ;(println "start:" start)
-                  (if (= ch \()
-                    (repeat-space (+ (get-indent (subs line start)) start))
-                    (repeat-space (inc (m :start)))))
-                :else (recur (dec current) nbraces)))))))
-
-(defn prev-non-blank-line[lines row]
-  (loop [i (dec row)]
-    (if (neg? i)
-      -1
-      (let [line (lines i)]
-        (if (blank? line)
-          (recur (dec i))
-          i)))))
-
-(defn auto-indent [lines row]
-  (if (zero? row)
-    ""
-    (let [line (lines row)
-          prow (prev-non-blank-line lines row)
-          pline (lines prow)]
-      (or (re-find #"^\s*" pline) ""))))
-
-
-(defn prev-not-blank-and-not-comment-line[lines row]
-  (loop [i (dec row)]
-    (if (neg? i)
-      -1
-      (let [line (lines i)]
-        (if (or (blank? line) (re-test #"^\s*//" line))
-          (recur (dec i))
-          i)))))
-
-;1. indent -1: line contains brace but pline not
-;   if {
-;       aaaa    <- pline
-;   }           <- line 
-;
-;2. indent +1: pline contains brace but line not
-;   if {        <- pline
-;       aaaa    <- line
-;   }
-;
-;3. keep indent: both contains braces or both not
-;   if {        <- pline
-;   }           <- line
-;   if {
-;       aaaa    <- pline
-;       bbbb    <- line
-;   }
-;
-;4. indent +1
-;   if (aa==bb) <- pline
-;       aaaaa;  <- line
-;
-;5. indent -1
-;   if (aa==bb) <- ppline
-;       aaaaa;  <- pline
-;   bbbbb;      <- line
-;
-;6. function {
-;       hello(aa==bb)  <- ppline
-;   }                  <- pline
-;   aaaa               <- line
-(defn clang-indent [lines row]
-  (if (zero? row)
-    ""
-    (let [line (lines row)
-          prow (prev-not-blank-and-not-comment-line lines row)
-          pline (or (get lines prow) "")
-          pindent (re-find #"^\s*" pline)
-
-          pbrace? (re-test #"[\{]\s*$" pline)
-          brace? (re-test #"^\s*\}" line)]
-      (cond (and (not pbrace?) brace?)
-            (if (empty? pindent) "" (subs pindent 1))
-            (and pbrace? (not brace?))
-            (str pindent "\t")
-            (and pbrace? brace?)
-            pindent
-            (re-test re-js-statements pline)
-            (str pindent "\t")
-            :else
-            (let [pprow (prev-not-blank-and-not-comment-line lines prow)
-                  ppline (or (get lines pprow) "")
-                  ppindent (re-find #"^\s*" ppline)]
-              (if (and (re-test re-js-statements ppline)
-                       (not (re-test #"[\}]\s*$" pline)))
-                ppindent
-                pindent))))))
-
-(defn buf-indent-line[b row]
-  (let [indent ((-> b :language :fn-indent) (b :lines) row)
-        line (buf-line b row)]
-    (-> b
-        (assoc-in [:lines row] (str indent (trim-left-space line))))))
-
-(defn buf-indent-lines 
-  "indent from cursor row to row both inclusive"
-  [b row]
-  (let [r (-> b :cursor :row)
-        [r1 r2] (if (> r row) [row r] [r row])]
-    ;(println "buf-indent-lines:" r1 r2)
-    (loop[i r1
-          b1 b]
-      (cond 
-        (> i r2) (-> b1 
-                    (assoc-in [:cursor :row] r1)
-                    (cursor-line-start))
-        :else
-        (recur (inc i) (buf-indent-line b1 i))))))
-
-(defn buf-indent-current-line
-  [b]
-  (buf-indent-lines b (-> b :cursor :row)))
 
 (defn buf-copy-range[b p1 p2 inclusive]
   (let [[{r1 :row c1 :col} cur2] (cursor-sort p1 p2)

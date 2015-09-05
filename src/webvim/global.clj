@@ -101,13 +101,10 @@
 (defn sort2[a b]
   (if (< a b) [a b] [b a]))
 
-(defn re-test[re s]
-  (if (nil? re)
-    false
-    (.find (re-matcher re s))))
-
-(defn count-left-spaces[line]
-  (count (re-find #"^\s*" line)))
+(defn delta[a b]
+  (if (< a b)
+    (- b a)
+    (- a b)))
 
 (defn repeat-space[n]
   (reduce (fn[s _]
@@ -148,4 +145,19 @@
   (if (fn? f)
     (apply f b args)
     b))
+
+(def left-braces #{\( \[ \{})
+(def right-braces #{\) \] \}})
+(def all-braces {\( \) \) \( \[ \] \] \[ \{ \} \} \{})
+
+(def re-braces #"(?<!\\)(\(|\[|\{|\}|\]|\))")
+(def re-js-statements #"\b(if|while|switch|for)\s*\(.*?\)\s*$")
+
+;http://stackoverflow.com/questions/21191045/get-string-indices-from-the-result-of-re-seq
+(defn re-seq-pos [pattern string start] 
+  (let [m (re-matcher pattern (subs string start))] 
+    ((fn step [] 
+      (when (. m find) 
+        (cons {:start (+ (. m start) start) :end (+ (. m end) start) :group (. m group)} 
+          (lazy-seq (step))))))))
 

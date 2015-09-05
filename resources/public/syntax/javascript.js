@@ -95,8 +95,8 @@ var keywords = hljs.toSet(
 					return 'keyword';
 				} else {
 					var i = ctx.index;
-					var line = ctx.line.substr(i);
-					if (ctx.line[i-captured.length-1]=='.'){
+					var line = ctx.block.substr(i);
+					if (ctx.block[i-captured.length-1]=='.'){
 					return 'title';
 				} else if (/^\s*\(/.test(line)) {
 					return 'title';

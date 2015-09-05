@@ -3,6 +3,35 @@
         webvim.global)
   (:import (org.ahmadsoft.ropes RopeBuilder)))
 
+(defn text-new[s]
+  (let [builder (RopeBuilder.)]
+    (.build builder s)))
+
+(defn text-subs
+  ([s l r]
+   (.subSequence s l r))
+  ([s l]
+   (.subSequence s l (.length s))))
+
+(defn text-subs-range[s [a b]]
+  (text-subs s a b))
+
+(defn re-test[re s]
+  (cond (nil? re) false
+        (string? s) (.find (re-matcher re s))
+        :else (.find (.matcher s re))))
+
+(defn re-subs[re s]
+  (cond (nil? re) nil
+        (string? s) (re-find re s)
+        :else (let [m (.matcher s re)]
+                (if (.find m)
+                  (text-subs s (.start m) (.end m))
+                  nil))))
+
+(defn count-left-spaces[line]
+  (count (re-subs #"^\s*" line)))
+
 (def line-break "\n")
 (def re-line-break (re-pattern line-break))
 
@@ -20,9 +49,10 @@
           matched)))
     nil))
 
-(defn text-new[s]
-  (let [builder (RopeBuilder.)]
-    (.build builder s)))
+(defn text-blank? [s]
+  (or (nil? s)
+      (let [m (.matcher s #"^\s$")]
+        (.find m 0))))
 
 (defn- pos-re-forward
   "return forward range matches"
@@ -89,22 +119,16 @@
   (last (pos-re-backward pos s re-line-break)))
 
 (defn- pos-re
-  ([pos s re re-fn default]
-   (or (first (re-fn pos s re)) default))
+  ([pos s re re-fn notfound]
+   (or (first (re-fn pos s re)) notfound))
   ([pos s re re-fn]
    (pos-re pos s re re-fn pos)))
 
 (defn- pos-end-re[pos s re re-fn]
   (or (last (re-fn pos s re)) pos))
 
-(defn- pos-line-first[pos s]
+(defn pos-line-first[pos s]
   (pos-re pos s #"((?<=\n)[\s\S])" pos-re-backward 0))
-
-(defn text-subs
-  ([s l r]
-   (.subSequence s l r))
-  ([s l]
-   (.subSequence s l (.length s))))
 
 (defn count-lines[s]
   (let [cnt (count line-break)]
@@ -164,7 +188,7 @@
         lastEOL (pos-re-next-backward pos s re-line-break)]
     (assoc t :x (if (nil? lastEOL) pos (- pos (last lastEOL))))))
 
-(defn- text-update-pos[t newpos]
+(defn text-update-pos[t newpos]
   (let [pos (t :pos)
         s (t :str)]
     (cond 
@@ -179,7 +203,7 @@
       :else t)))
 
 (defn- text-save-change[t pos from to]
-  (update-in t [:changes] conj {:pos pos :len (count from) :to to}))
+  (update-in t [:changes] conj {:pos pos :len (count from) :to (str to)}))
 
 (defn str-replace
   [s l r to]
@@ -328,10 +352,10 @@
   (merge t {:x 0 :y 0 :pos 0}))
 
 (defn- text-re
-  ([t re re-fn default]
+  ([t re re-fn notfound]
    (let [{pos :pos
           s :str} t
-         newpos (pos-re pos s re re-fn default)]
+         newpos (pos-re pos s re re-fn notfound)]
      (text-update-pos t newpos)))
   ([t re re-fn]
    (text-re t re re-fn 0)))
@@ -396,13 +420,14 @@
         newpos (pos-line-first pos s)]
     (text-update-pos t newpos)))
 
+(defn pos-line-start[pos s]
+  (-> pos
+      (pos-line-first s)
+      (pos-re s #"[\S\n]|((?<=\s)[\S\n])" pos-re-forward)))
+
 (defn line-start[t]
-  (let [pos (t :pos)
-        s (t :str)
-        newpos (-> pos
-                   (pos-line-first s)
-                   (pos-re s #"[\S\n]|((?<=\s)[\S\n])" pos-re-forward))]
-        (text-update-pos t newpos)))
+  (let [newpos (pos-line-start (t :pos) (t :str))]
+    (text-update-pos t newpos)))
 
 (defn line-end[t]
   (text-re t #"\n" pos-re-forward (-> t :str count)))
@@ -448,12 +473,81 @@
         a (first (pos-re-backward b s re-word-start-border))]
     [a b]))
 
-(defn current-line[t]
-  "return range of line under cursor, right side is exclusive"
-  (let [{pos :pos
-         s :str} t
-        b (or (pos-end-eol-forward pos s) (count s))
-        a (or (pos-end-eol-backward pos s) 0)]
+(defn pos-line[s pos]
+  (let [b (or (last (pos-re-forward pos s #"\n")) (count s))
+        a (or (last (pos-re-next-backward pos s #"\n")) 0)]
     [a b]))
 
-;(apply text-subs "\naaa\n" (current-line {:pos 2 :str (text-new "\naaa\n")}))
+(defn current-line
+  [t]
+   "return range of line under cursor, right side is exclusive"
+   (pos-line (t :str) (t :pos)))
+
+;(current-line {:pos 1 :str (text-new "\naaa\n")})
+;(current-line {:pos 5 :str (text-new "\nbb\n\naaa\n")})
+;(pos-re-forward 0 (text-new "\n\naaa\n") #"\n")
+;(pos-eol-forward 4 (text-new "\naaa\n"))
+;(pos-eol-backward 4 (text-new "\naaa\n"))
+;(pos-re-forward 0 (text-new "\n\naaa\n") #"(?<=\n)[\s\S]")
+
+(defn lines-reverse
+  "return a lazy seq, line by line start at pos back to top"
+  [s pos]
+  (let [rg (pos-line s pos)
+        [a _] rg]
+    (if (pos? a)
+      (cons rg (lazy-seq (lines-reverse s (dec a))))
+      (list rg))))
+
+(defn lines
+  "return a lazy seq, line by line start at pos until bottom"
+  ([s pos]
+   (let [rg (pos-line s pos)
+         [_ b] rg]
+     (if (< b (count s))
+       (cons rg (lazy-seq (lines s b)))
+       (list rg))))
+  ([s p1 p2] ;both inclusive
+   (take-while
+     #(>= p2 (first %))
+     (lines s p1))))
+
+;(lines (text-new "aa\nbb\ncc\n\n") 0 0)
+
+;(let [s (text-new "aa\nbb\ncc\n\n")] 
+;  (take 30
+;        (lines s 0 9)))
+;(lines (text-new "aa\nbb\ncc\n\n") 0)
+
+;(defn positive-numbers 
+;  ([] (positive-numbers 1))
+;  ([n] 
+;   (println n)
+;   (cons n (lazy-seq (positive-numbers (inc n))))))
+;(take 1 (positive-numbers))
+
+(defn ranges-to-texts
+  "Return a lazy seq contains texts sub from s. Range's right point is exclusive."
+  [s ranges]
+  (map #(apply text-subs s %) ranges))
+
+(defn pos-next-line
+"Find first line pred is true start at next line"
+  ([s pos pred]
+   (first 
+     (filter pred (rest (lines s pos)))))
+  ([s pos]
+   (second (lines s pos))))
+
+(defn pos-prev-line
+  [s pos]
+  (second (lines-reverse s pos)))
+
+(defn pos-first-line
+  "Find first line pred is true start at current line"
+  [s pos pred]
+  (first 
+    (filter pred (lines s pos))))
+
+(defn range-blank? [s rg]
+  (text-blank? (text-subs-range s rg)))

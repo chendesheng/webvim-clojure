@@ -11,6 +11,7 @@
         webvim.ex
         webvim.serve
         webvim.text
+        webvim.indent
         webvim.autocompl))
 
 (defonce motion-keymap (atom {}))
@@ -93,8 +94,10 @@
              :else
              b)
         b2 (buf-update-highlight-brace-pair b1 (:cursor (dec-col b1)))
-        b3 (if (re-test (-> b2 :language :indent-triggers) keycode)
-             (-> b2 buf-indent-current-line inc-col)
+        b3 (if (or (re-find (-> b2 :language :indent-triggers) keycode) (= keycode "enter"))
+             (-> b2 
+                 buf-indent-current-line 
+                 char-forward)
              b2)]
     (if (empty? (-> b3 :autocompl :suggestions))
       b3
@@ -206,13 +209,12 @@
         lastbuf))))
 
 (defn indent-motion[b keycode]
-  (let [lastbuf (-> b :context :lastbuf)
-        lastcur (:cursor lastbuf)]
-    (if (or (nil? lastbuf) (same-pos? (:cursor b) lastcur))
+  (let [lastpos (-> b :context :lastbuf :pos)]
+    (if (or (nil? lastpos) (= (b :pos) lastpos))
       b
       (-> b 
           buf-save-cursor
-          (buf-indent-lines (lastcur :row))
+          (buf-indent-lines lastpos)
           (history-save)))))
 
 (defn start-register[b keycode]
