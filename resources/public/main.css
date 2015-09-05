@@ -87,6 +87,9 @@ pre {
 	width:9.57px;
 	height:21px;
 }
+.cursor.ongoing-key {
+	z-index:100000;
+}
 
 .status-bar .cursor {
 	position:relative;

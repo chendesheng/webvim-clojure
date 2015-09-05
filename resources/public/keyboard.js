@@ -61,12 +61,12 @@ var ongoingkeysTimer;
 
 function showOngoingKey(key) {
 	if (key.length == 1) {
-		$('.lines .cursor').text(key).removeClass().addClass('cursor');
+		$('.lines .cursor').text(key).removeClass().addClass('cursor ongoing-key');
 	}
 }
 
 function hideOngoingKey() {
-	$('.lines .cursor').text('');
+	$('.lines .cursor').text('').removeClass('ongoing-key');
 }
 
 //map key to another get return from callback
@@ -83,6 +83,7 @@ function imap(key, callback) {
 	if (key == 'j') {
 		if (ongoingkeys.length == 0) {
 			ongoingkeysTimer = setTimeout(function() {
+				hideOngoingKey();
 				callback('j');
 				ongoingkeys = [];
 			}, 1000);
