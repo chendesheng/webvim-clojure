@@ -24,40 +24,24 @@
 (defn apply-changes[b changes]
   ())
 
-(defn insert?[{to :to len :len}]
-  (and (not (empty? to)) (zero? len)))
-
-(defn delete?[{to :to len :len}]
-  (and (empty? to) (pos? len)))
-
-(defn replace?[{to :to len :len}]
-  (and (not (empty? to)) (pos? len)))
-
-(defn unchange?[{to :to len :len}]
-  (and (empty? to) (zero? len)))
-
 (defn changes-merge
-  "s is text **before** changes"
-  [s changes]
+  [changes]
   (reduce 
     (fn[chs c]
       (if (vector? chs)
-        (let [lastc (peek chs)]
-          ;conditions: lastc is delete, 
-          (conj chs c))
-        [c]) changes)))
+        (let [merged (merge-change (peek chs) c)]
+          (if (nil? merged)
+            (conj chs c)
+            (conj (pop chs) merged))))
+        [c]) changes))
 
 (defn- merge-change
   "return nil if can't merge otherwise return merged change"
   [c1 c2]
-  (let [p1 (c1 :pos)
-        p2 (c2 :pos)
-        to1 (c1 :to)
-        to2 (c2 :to)
-        l1 (c1 :len)
-        l2 (c2 :len)
-        lt1 (count to1)
-        lt2 (count to2)]
+  (let [p1 (c1 :pos) p2 (c2 :pos)
+        to1 (c1 :to) to2 (c2 :to)
+        l1 (c1 :len) l2 (c2 :len)
+        lt1 (count to1) lt2 (count to2)]
     (cond
       (= p1 p2)
       {:pos p1
