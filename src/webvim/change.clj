@@ -139,7 +139,7 @@
         {:pos p2
          :to to1
          :len (+ l1 l2)}
-        (= (+ p1 l1) p2)
+        (= (+ p1 lt1) p2)
         {:pos p1
          :to to1
          :len (+ l1 l2)}
@@ -154,7 +154,7 @@
         {:pos p2
          :to (str to2 to1)
          :len (+ l1 l2)}
-        (= (+ p1 l1) p2)
+        (= (+ p1 lt1) p2)
         {:pos p1
          :to (str to1 to2)
          :len (+ l1 l2)}
@@ -182,13 +182,13 @@
 (merge-change {:pos 0 :len 0 :to "aa"} {:pos 0 :len 5 :to "bb"}) ; =>  {:pos 0 :len 3 :to "bb"}
 
 ;delete + insert
-(merge-change {:pos 0 :len 1 :to ""} {:pos 0 :len 0 :to "aa"} )
-(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 0 :to "aa"} )
-(merge-change {:pos 0 :len 1 :to ""} {:pos 0 :len 0 :to "aa"} )
-(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 0 :to "aa"} )
-(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 4 :to ""} )
-(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 4 :to "bb"} )
-(merge-change {:pos 0 :len 3 :to ""} {:pos 1 :len 4 :to "bb"} )
+(merge-change {:pos 0 :len 1 :to ""} {:pos 0 :len 0 :to "aa"})
+(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 0 :to "aa"})
+(merge-change {:pos 0 :len 1 :to ""} {:pos 0 :len 0 :to "aa"})
+(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 0 :to "aa"})
+(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 4 :to ""})
+(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 4 :to "bb"})
+(merge-change {:pos 0 :len 3 :to ""} {:pos 1 :len 4 :to "bb"})
 
 (defn change-reverse[change]
   {:len (change :to) :to (change :len) :pos (change :pos)})
