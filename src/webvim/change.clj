@@ -58,111 +58,20 @@
         l2 (c2 :len)
         lt1 (count to1)
         lt2 (count to2)]
-  (cond 
-    (insert? c1)
-    (cond 
-      (insert? c2)
-      (cond 
-        (= p1 p2)
-        {:pos p1
-         :to (str to2 to1)
-         :len 0}
-        (= (+ p1 lt1) p2)
-        {:pos p1
-         :to (str to1 to2)
-         :len 0}
-        :else
-        nil)
-      (delete? c2)
-      (cond 
-        (= p1 p2)
-        {:pos p1
-         :to (subs to1 (min l2 lt1))
-         :len (max 0 (- l2 lt1))}
-        (= (+ p1 lt1) p2)
-        {:pos p1
-         :to to1
-         :len l2}
-        (= p1 (+ p2 l2))
-        {:pos p2
-         :to to1
-         :len l2}
-        :else
-        nil)
-      (replace? c2)
-      (cond 
-        (= p1 p2)
-        {:pos p1
-         :to (str to2 (subs to1 (min l2 lt1)))
-         :len (max 0 (- l2 lt1))}
-        (= (+ p1 lt1) p2)
-        {:pos p1
-         :to (str to1 to2)
-         :len l2}
-        (= p1 (+ p2 l2))
-        {:pos p2
-         :to (str to2 to1)
-         :len l2}
-        :else
-        nil)
-      (unchange? c2)
-      c1)
-    (delete? c1)
-    (cond 
-      (unchange? c2)
-      c1
-      (and (= p1 p2))
+    (cond
+      (= p1 p2)
       {:pos p1
-       :to to2
+       :to (str to2 (subs to1 (min lt1 l2)))
+       :len (+ l1 (max 0 (- l2 lt1)))}
+      (= p1 (+ p2 l2))
+      {:pos p2
+       :to (str to2 to1)
        :len (+ l1 l2)}
-      :else nil)
-    (replace? c1)
-    (cond 
-      (insert? c2)
-      (cond 
-        (= p1 p2)
-        {:pos p1
-         :to (str to2 to1)
-         :len l1}
-        (= (+ p1 lt1) p2)
-        {:pos p1
-         :to (str to1 to2)
-         :len l1}
-        :else nil)
-      (delete? c2)
-      (cond
-        (= p1 p2)
-        {:pos p1
-         :to (subs to1 (min lt1 l2))
-         :len (+ l1 (max 0 (- lt1 l2)))}
-        (= p1 (+ p2 l2))
-        {:pos p2
-         :to to1
-         :len (+ l1 l2)}
-        (= (+ p1 lt1) p2)
-        {:pos p1
-         :to to1
-         :len (+ l1 l2)}
-        :else nil)
-      (replace? c2)
-      (cond
-        (= p1 p2)
-        {:pos p1
-         :to (str to2 (subs to1 (min lt1 l2)))
-         :len (+ l1 (max 0 (- lt1 l2)))}
-        (= p1 (+ p2 l2))
-        {:pos p2
-         :to (str to2 to1)
-         :len (+ l1 l2)}
-        (= (+ p1 lt1) p2)
-        {:pos p1
-         :to (str to1 to2)
-         :len (+ l1 l2)}
-        :else nil)
-      (unchange? c2)
-      c1)
-    (unchange? c1)
-    c2)))
+      (= (+ p1 lt1) p2)
+      {:pos p1
+       :to (str to1 to2)
+       :len (+ l1 l2)}
+      :else nil)))
 
 ;test cases
 ;insert + insert
