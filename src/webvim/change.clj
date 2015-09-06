@@ -14,15 +14,10 @@
 ;  3) {:len 3 :to "" :pos 0} + {:len 3 :to "" :pos 0} => {:len 6 :to "" :pos 0}
 ;  4) {:len 0 :to "abc" :pos 0} + {:len 1 :to "" :pos 2} => {:len 0 :to "ab" :pos 0}
 ;  ...
-;Reverse changes simply swap :len and :to:
-;  ~{:len 3 :to "bb" :pos 0} => {:len 2 :to "aaa" :pos 0}
 ;
 ;History: [c1 c2 c3*]
 ;  undo:  [c1 c2* c3] apply ~c3
 ;  redo:  [c1 c2 c3*] apply c3
-
-(defn apply-changes[b changes]
-  ())
 
 (defn changes-merge
   [changes]
@@ -59,29 +54,42 @@
 
 ;test cases
 ;insert + insert
-(merge-change {:pos 0 :len 0 :to "aa"} {:pos 2 :len 0 :to "bb"})
-(merge-change {:pos 0 :len 0 :to "aa"} {:pos 0 :len 0 :to "bb"})
+;(merge-change {:pos 0 :len 0 :to "aa"} {:pos 2 :len 0 :to "bb"})
+;(merge-change {:pos 0 :len 0 :to "aa"} {:pos 0 :len 0 :to "bb"})
 
 ;insert + delete
-(merge-change {:pos 0 :len 0 :to "aa"} {:pos 2 :len 1 :to ""})
-(merge-change {:pos 5 :len 0 :to "aa"} {:pos 2 :len 3 :to ""})
-(merge-change {:pos 0 :len 0 :to "aa"} {:pos 0 :len 1 :to ""})
-(merge-change {:pos 0 :len 0 :to "aa"} {:pos 0 :len 3 :to ""})
+;(merge-change {:pos 0 :len 0 :to "aa"} {:pos 2 :len 1 :to ""})
+;(merge-change {:pos 5 :len 0 :to "aa"} {:pos 2 :len 3 :to ""})
+;(merge-change {:pos 0 :len 0 :to "aa"} {:pos 0 :len 1 :to ""})
+;(merge-change {:pos 0 :len 0 :to "aa"} {:pos 0 :len 3 :to ""})
 
 ;insert + replace
-(merge-change {:pos 0 :len 0 :to "aa"} {:pos 2 :len 3 :to "bb"}) ; =>  {:pos 0 :len 3 :to "aabb"}
-(merge-change {:pos 5 :len 0 :to "aa"} {:pos 2 :len 3 :to "bb"}) ; =>  {:pos 2 :len 3 :to "bbaa"}
-(merge-change {:pos 0 :len 0 :to "aa"} {:pos 0 :len 3 :to "bb"}) ; =>  {:pos 0 :len 1 :to "bb"}
-(merge-change {:pos 0 :len 0 :to "aa"} {:pos 0 :len 5 :to "bb"}) ; =>  {:pos 0 :len 3 :to "bb"}
+;(merge-change {:pos 0 :len 0 :to "aa"} {:pos 2 :len 3 :to "bb"}) ; =>  {:pos 0 :len 3 :to "aabb"}
+;(merge-change {:pos 5 :len 0 :to "aa"} {:pos 2 :len 3 :to "bb"}) ; =>  {:pos 2 :len 3 :to "bbaa"}
+;(merge-change {:pos 0 :len 0 :to "aa"} {:pos 0 :len 3 :to "bb"}) ; =>  {:pos 0 :len 1 :to "bb"}
+;(merge-change {:pos 0 :len 0 :to "aa"} {:pos 0 :len 5 :to "bb"}) ; =>  {:pos 0 :len 3 :to "bb"}
 
 ;delete + insert
-(merge-change {:pos 0 :len 1 :to ""} {:pos 0 :len 0 :to "aa"})
-(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 0 :to "aa"})
-(merge-change {:pos 0 :len 1 :to ""} {:pos 0 :len 0 :to "aa"})
-(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 0 :to "aa"})
-(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 4 :to ""})
-(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 4 :to "bb"})
-(merge-change {:pos 0 :len 3 :to ""} {:pos 1 :len 4 :to "bb"})
+;(merge-change {:pos 0 :len 1 :to ""} {:pos 0 :len 0 :to "aa"})
+;(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 0 :to "aa"})
+;(merge-change {:pos 0 :len 1 :to ""} {:pos 0 :len 0 :to "aa"})
+;(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 0 :to "aa"})
+;(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 4 :to ""})
+;(merge-change {:pos 0 :len 3 :to ""} {:pos 0 :len 4 :to "bb"})
+;(merge-change {:pos 0 :len 3 :to ""} {:pos 1 :len 4 :to "bb"})
 
-(defn change-reverse[change]
-  {:len (change :to) :to (change :len) :pos (change :pos)})
+(defn apply-change[s c]
+  (let [{pos :pos
+         len :len
+         to :to} c
+        news (str-replace s pos (+ pos len) to)]
+    [news {:pos pos
+           :len (count to)
+           :to (text-subs s pos (+ pos len))}]))
+
+(defn apply-changes[s changes]
+  (reduce 
+    (fn [[s rchs] c]
+      (let [[news rc] (apply-change s c)]
+        [news (conj rchs rc)])) [s []] changes))
+
