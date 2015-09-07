@@ -2,6 +2,7 @@
   (:use clojure.pprint
         (clojure [string :only (join split blank?)])
         webvim.text
+        webvim.change
         webvim.global))
 
 (def re-js-statements #"\b(if|while|switch|for)\s*\(.*?\)\s*$")

@@ -6,6 +6,7 @@
         (clojure [string :only (join split blank?)])
         webvim.autocompl
         webvim.history
+        webvim.change
         webvim.text
         webvim.cursor
         webvim.indent
@@ -45,12 +46,23 @@
            :filepath filepath 
            ;Each line is a standard java String
            :lines (split-lines-all txt)
+
            :str (text-new txt)
            :pos 0  ;offset from first char
-           :x 0    ;charactor offset from previous line break
+           :x 0    ;saved x for up down motion
            :y 0    ;num of line breaks from first char
-           :vx 0   ;saved x
-           :changes [];changes of current command
+
+           ;changes of current command, for writing back to client
+           :changes [] 
+           ;reverse of changes, 
+           ;start record when enter insert mode 
+           ;stop record when exit insert mode
+           ;push to undo stack when exit insert mode
+           :pending-undo [] 
+           ;undoes and redoes are stackes only push pop peek
+           :undoes []
+           :redoes []
+
            ;row, col, lastcol, viewport row (row from top of current viewport)
            :cursor {:row 0 :col 0 :lastcol 0}
            ;For client display matched braces: [{:row :col} {:row :col}]

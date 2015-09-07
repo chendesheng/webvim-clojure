@@ -1,20 +1,23 @@
 (ns webvim.text
   (:use clojure.pprint
+        webvim.change
         webvim.global)
   (:import (org.ahmadsoft.ropes RopeBuilder)))
 
-(defn text-new[s]
-  (let [builder (RopeBuilder.)]
-    (.build builder s)))
-
-(defn text-subs
-  ([s l r]
-   (.subSequence s l r))
-  ([s l]
-   (.subSequence s l (.length s))))
-
 (defn text-subs-range[s [a b]]
   (text-subs s a b))
+
+(defn text-update-pos[t newpos]
+  (let [pos (t :pos)
+        s (t :str)]
+    (cond 
+      (> newpos pos)
+      (-> t
+          (text-op-size + (text-size (text-subs s pos newpos))))
+      (< newpos pos)
+      (-> t
+          (text-op-size - (text-size (text-subs s newpos pos))))
+      :else t)))
 
 (defn re-test[re s]
   (cond (nil? re) false
@@ -32,7 +35,6 @@
 (defn count-left-spaces[line]
   (count (re-subs #"^\s*" line)))
 
-(def line-break "\n")
 (def re-line-break (re-pattern line-break))
 
 (defn- find-first[m pos]
@@ -130,16 +132,6 @@
 (defn pos-line-first[pos s]
   (pos-re pos s #"((?<=\n)[\s\S])" pos-re-backward 0))
 
-(defn count-lines[s]
-  (let [cnt (count line-break)]
-    (loop[s1 s n 0]
-      (let [i (if (empty? s1)
-                -1
-                (.indexOf s1 line-break))]
-        (if (= i -1)
-          n
-          (recur (text-subs s1 (+ i cnt)) (inc n)))))))
-
 ;(defn text-offset-pos
 ;  [t offset]
 ;  (if (zero? offset) t
@@ -168,77 +160,8 @@
 ;              (assoc :x (if (nil? lastEOL) l (- l (last lastEOL))))
 ;              (assoc :y (- (t :y) (count-lines sub)))))))))
 
-(defn text-size
-  "How many chars and lines s contains"
-  [s]
-  {:dpos (count s)
-   :dy (count-lines s)})
-
-(defn text-op-size
-  [t op {dpos :dpos dy :dy}]
-  (-> t
-      (update-in [:pos] op dpos)
-      (update-in [:y] op dy)))
-
-(defn text-x
-  "Update :x"
-  [t]
-  (let [pos (t :pos)
-        s (t :str)
-        lastEOL (pos-re-next-backward pos s re-line-break)]
-    (assoc t :x (if (nil? lastEOL) pos (- pos (last lastEOL))))))
-
-(defn text-update-pos[t newpos]
-  (let [pos (t :pos)
-        s (t :str)]
-    (cond 
-      (> newpos pos)
-      (-> t
-          (text-op-size + (text-size (text-subs s pos newpos)))
-          text-x)
-      (< newpos pos)
-      (-> t
-          (text-op-size - (text-size (text-subs s newpos pos)))
-          text-x)
-      :else t)))
-
 (defn- text-save-change[t pos from to]
   (update-in t [:changes] conj {:pos pos :len (count from) :to (str to)}))
-
-(defn str-replace
-  [s l r to]
-  (-> s
-    (.delete l r)
-    (.insert l to)))
-
-(defn- text-replace-inner 
-  ([t l from to]
-   (let [s (t :str)
-         pos (t :pos)
-         r (+ l (count from))
-         news (str-replace s l r to)
-         newt (assoc t :str news)]
-     (cond 
-       (< pos l)
-       newt
-       (>= pos r)
-       (-> newt
-           (text-op-size - (text-size from))
-           (text-op-size + (text-size to))
-           text-x)
-       :else
-       (-> newt
-           (text-op-size - (text-size (text-subs s l pos)))
-           (text-op-size + (text-size to))
-           text-x)))))
-
-(defn text-replace 
-  ([t l r to]
-   (let [s (t :str)
-         from (text-subs s l r)]
-     (-> t
-         (text-replace-inner l from to)
-         (text-save-change l from to)))))
 
 (defn text-insert
   ([t l txt]
@@ -305,41 +228,41 @@
     nil
     (.charAt s pos)))
 
-(defn line-backward [t vx]
+(defn line-backward [t]
   (let [{pos :pos
          s :str
+         x :x
          y :y} t]
     (let [eol (pos-eol-backward pos s)]
       (if (nil? eol) t
         (let [eol2 (or (pos-eol-backward eol s) -1)
               len (- eol eol2)
-              x (bound-range vx 0 (dec len))]
+              x1 (bound-range x 0 (dec len))]
           (-> t
-            (assoc :pos (+ eol2 x 1))
-            (assoc :x x)
+            (assoc :pos (+ eol2 x1 1))
             (assoc :y (dec y))))))))
 
-(defn line-forward [t vx]
+(defn line-forward [t]
   (let [{pos :pos
          s :str
+         x :x
          y :y} t]
     (let [eol (pos-eol-forward pos s)]
       (if (nil? eol) t
         (let [eol2 (or (pos-eol-forward (inc eol) s) (count s))
               len (- eol2 eol)
-              x (bound-range vx 0 (dec len))]
+              x1 (bound-range x 0 (dec len))]
           (-> t
-            (assoc :pos (+ eol x 1))
-            (assoc :x x)
+            (assoc :pos (+ eol x1 1))
             (assoc :y (inc y))))))))
 
 (defn lines-forward[t n]
   (if (zero? n) t
-    (recur (line-forward t (t :vx)) (dec n))))
+    (recur (line-forward t) (dec n))))
 
 (defn lines-backward[t n]
   (if (zero? n) t
-    (recur (line-backward t (t :vx)) (dec n))))
+    (recur (line-backward t) (dec n))))
 
 (defn lines-row[t n]
   (let [y (t :y)

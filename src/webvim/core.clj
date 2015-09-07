@@ -87,7 +87,7 @@
 (defn- remove-fields[b]
   (-> b 
       track-unsaved
-      (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :vx :y :cursor
+      (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :y :cursor :undoes :redoes :pending-undo
           :macro :chan-in :chan-out :registers :last-saved-lines)
       (dissoc-empty [:highlights])
       (dissoc-empty [:changes])

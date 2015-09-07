@@ -11,6 +11,7 @@
         webvim.ex
         webvim.serve
         webvim.text
+        webvim.change
         webvim.indent
         webvim.autocompl))
 
@@ -396,15 +397,16 @@
               (assoc :chan-out (:chan-out b)))
           (recur (first coll) (subvec coll 1)))))))
 
-(defn save-x-to-vx[b]
-  (assoc b :vx (b :x)))
+(defn update-x[b]
+  (let [pos (b :pos)]
+  (assoc b :x (- pos (pos-line-first pos (b :str))))))
 
-(defn save-x-if-not-jk
-  "save to :vx unless it is up down motion"
+(defn update-x-if-not-jk
+  "update :x unless it is up down motion"
   [b lastbuf keycode]
   (if-not (or (= (:pos lastbuf) (:pos b)) 
               (contains? #{"j" "k"} keycode))
-    (save-x-to-vx b) b))
+    (update-x b) b))
 
 (defn normal-mode-fix-pos
     "prevent cursor on top of EOL in normal mode"
@@ -427,7 +429,7 @@
       (registers-put (:registers b) "." (-> b :macro :recording-keys)))
     (-> b 
         normal-mode-fix-pos
-        (save-x-if-not-jk lastbuf keycode)
+        (update-x-if-not-jk lastbuf keycode)
         ;alwasy clear :recording-keys
         (assoc-in [:macro :recording-keys] [])
         (buf-update-highlight-brace-pair (b :pos)))))
@@ -576,7 +578,7 @@
            :leave (fn[b keycode]
                     (-> b
                         char-backward
-                        save-x-to-vx
+                        update-x
                         set-normal-mode
                         history-save))})
 
@@ -658,7 +660,7 @@
                  :after (fn[b keycode]
                           (-> b
                               (visual-mode-select keycode)
-                              (save-x-if-not-jk (b :lastbuf) keycode)))
+                              (update-x-if-not-jk (b :lastbuf) keycode)))
                  "d" delete-range
                  "c" change-range
                  "o" (fn[b]
