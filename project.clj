@@ -12,7 +12,8 @@
                  [ring "1.4.0"]]
   :source-paths ["src" "src/webvim"]
   :resource-paths ["thirdparty/*", "resources"]
-  :main webvim.core)
+  :main webvim.core
+  :jvm-opts ["-Xverify:none"])
 
 
 

@@ -129,7 +129,6 @@
        :len (+ l1 l2)}
       :else nil)))
 
-
 (defn- merge-changes
   "compress changes"
   [changes]
@@ -139,8 +138,14 @@
         (let [merged (merge-change (peek chs) c)]
           (if (nil? merged)
             (conj chs c)
-            (conj (pop chs) merged))))
-        [c]) changes))
+            (conj (pop chs) merged)))
+        (let [merged (merge-change chs c)]
+          (if (nil? merged)
+            [chs c]
+            [merged])))) changes))
+
+;(println (merge-change {:pos 1 :len 1 :to ""} {:pos 0 :len 1 :to ""}))
+;(println (merge-changes [{:pos 1 :len 1 :to ""} {:pos 0 :len 1 :to ""}]))
 
 ;test cases
 ;insert + insert
@@ -179,7 +184,7 @@
 ; redo                  | {:changes [c1 c2]   :pending-undo []        undoes: [[~c1 ~c2]] redoes: []}
 (defn text-save-undo[t]
   (let [s (t :str)
-        chs (merge-changes (t :pending-undo))]
+        chs (merge-changes (rseq (t :pending-undo)))]
     (println "text-save-undo:" (t :pending-undo))
     (println "text-save-undo:" chs)
     (-> t
