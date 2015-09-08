@@ -71,6 +71,8 @@
            :braces nil
            ;saved cursor when insert begins, for undo/redo function only
            :last-cursor nil
+           ;unchanged
+           :dirty false
            ;save :lines object when write buffer to disk, check if lines unsaved
            :last-saved-lines nil
            ;:type =0 visual =1 visual line =2 visual block
@@ -115,17 +117,8 @@
     (pprint (b :language))
 
     (autocompl-words-parse-lines (b :lines))
-    ;The undo/redo function takes advantage of clojure's persistent data structure, just save everything we needs. TODO save changes
-    ;Each history item holds two cursors: one is cursor pos when edit begins and the other is when edit ends. Perform undo action will recover cursor to cursor-begin and perform redo action recover cursor to cursor-end. 
     (-> b
-        (assoc :last-saved-lines (b :lines))
-        (assoc :history {:items [{:lines (:lines b) 
-                                  ;The initial version doesn't need cursor-begin
-                                  :cursor-begin nil 
-                                  :cursor-end (:cursor b)}]
-                         :version 0})
-        ;cache whole txt for searching, use :lines check if same version
-        (assoc :txt-cache {:lines (:lines b)  :txt txt}))))
+        (assoc :last-saved-lines (b :lines)))))
 
 (defn open-file
   "Create buffer from a file by slurp, return emtpy buffer if file not exists"

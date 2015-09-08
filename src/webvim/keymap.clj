@@ -4,7 +4,6 @@
             [clojure.core.async :as async])
   (:use clojure.pprint
         webvim.buffer
-        webvim.history
         webvim.cursor
         webvim.global
         webvim.jumplist
@@ -182,7 +181,7 @@
             buf-save-cursor
             (buf-copy-range-lastbuf (:cursor b) inclusive)
             (text-delete (if inclusive (inc pos) pos))
-            history-save)))))
+            text-save-undo)))))
 
 (defn change-motion[b keycode]
   ;(println "change-motion:" keycode)
@@ -216,7 +215,7 @@
       (-> b 
           buf-save-cursor
           (buf-indent-lines lastpos)
-          (history-save)))))
+          text-save-undo))))
 
 (defn start-register[b keycode]
   (let [m (re-find #"[0-9a-zA-Z/*#%.:+=\-]" keycode)]
@@ -294,7 +293,7 @@
           buf-save-cursor
           (buf-insert txt)
           dec-col
-          history-save)
+          text-save-undo)
       b)))
 
 (defn put-from-register-append[b keycode]
@@ -309,7 +308,7 @@
           (assoc-in [:cursor :col] col1)
           (buf-insert txt)
           dec-col
-          history-save)
+          text-save-undo)
       b)))
 
 (defn delete-line[b]
@@ -320,7 +319,7 @@
         buf-save-cursor
         (text-delete-range (current-line b))
         line-start
-        history-save)))
+        text-save-undo)))
 
 (defn delete-to-line-end[b]
   (let [{row :row col :col} (b :cursor)]
@@ -329,7 +328,7 @@
       (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
       buf-save-cursor
       (text-delete (b :pos) (-> b current-line last dec))
-      history-save)))
+      text-save-undo)))
 
 (defn change-to-line-end[b]
   (-> b
@@ -339,7 +338,7 @@
 (defn delete-range[b]
   (-> b
       (text-delete-inclusive (b :pos) (-> b :context :lastbuf :pos))
-      history-save))
+      text-save-undo))
 
 (defn change-range[b]
   (-> b 
@@ -399,7 +398,7 @@
 
 (defn update-x[b]
   (let [pos (b :pos)]
-  (assoc b :x (- pos (pos-line-first pos (b :str))))))
+    (assoc b :x (- pos (pos-line-first pos (b :str))))))
 
 (defn update-x-if-not-jk
   "update :x unless it is up down motion"
@@ -450,7 +449,7 @@
       (-> b 
           buf-save-cursor
           (text-delete-offset 1)
-          history-save))))
+          text-save-undo))))
 
 (defn yank-visual[b]
   (let [[p1 p2] (-> b :visual :ranges)]
@@ -580,7 +579,7 @@
                         char-backward
                         update-x
                         set-normal-mode
-                        history-save))})
+                        text-save-undo))})
 
   (reset! normal-mode-keymap @motion-keymap)
   (swap! normal-mode-keymap 
@@ -614,7 +613,7 @@
                          (update-in [:context] dissoc :lastbuf)
                          buf-save-cursor
                          buf-indent-current-line
-                         history-save)
+                         text-save-undo)
                  :before save-lastbuf
                  :after indent-motion})
           ":" (merge
@@ -630,7 +629,7 @@
                              (assoc-in [:cursor :col] 0)
                              (update-in [:cursor :row] inc)
                              buf-indent-current-line
-                             history-save))
+                             text-save-undo))
                :else (fn[b keycode]
                        (let [ch (cond
                                   (= keycode "space")
@@ -640,10 +639,10 @@
                            (-> b 
                                buf-save-cursor
                                (buf-replace-char ch)
-                               history-save)
+                               text-save-undo)
                                b)))}
-          "u" history-undo
-          "c+r" history-redo
+          "u" text-undo
+          "c+r" text-redo
           "c+o" #(move-to-jumplist % jump-prev)
           "c+i" #(move-to-jumplist % jump-next)
           "c+g" buf-cursor-info
@@ -691,7 +690,7 @@
                 (-> b 
                     buf-save-cursor
                     buf-join-line
-                    history-save))
+                    text-save-undo))
           "c" (merge
                 @motion-keymap 
                 {:before save-lastbuf

@@ -27,7 +27,7 @@
         news (str-replace s pos (+ pos len) to)]
     [news {:pos pos
            :len (count to)
-           :to (text-subs s pos (+ pos len))}]))
+           :to (str (text-subs s pos (+ pos len)))}]))
 
 (defn apply-changes[s changes]
   (reduce 
@@ -60,6 +60,9 @@
 (defn- text-apply-change[t c]
   (let [s (t :str)
         [news rc] (apply-change s c)]
+    (println "text-apply-change:")
+    (println c)
+    (println rc)
     (-> t
         (assoc :str news)
         (update-in [:changes] conj c)
@@ -177,6 +180,8 @@
 (defn text-save-undo[t]
   (let [s (t :str)
         chs (merge-changes (t :pending-undo))]
+    (println "text-save-undo:" (t :pending-undo))
+    (println "text-save-undo:" chs)
     (-> t
         (update-in [:undoes] conj chs)
         (assoc :pending-undo [])
