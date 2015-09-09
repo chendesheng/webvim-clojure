@@ -57,12 +57,12 @@
                         (fn[stack [a _]]
                           (let [ch (text-char-at s a)]
                             (if (and (contains? left-braces ch) (empty? stack))
-                              (reduced [a])
+                              (reduced a)
                               (if (= (peek stack) (all-braces ch))
                                 (pop stack)
                                 (conj stack ch))))) 
                         [] (pos-re-backward-seq (dec a) s re-braces))
-                  mpos (if (vector? tmp) (first tmp) nil)]
+                  mpos (if (number? tmp) tmp nil)]
               (if (nil? mpos)
                 (auto-indent s pos)
                 (let [ch (text-char-at s mpos)

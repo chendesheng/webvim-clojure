@@ -108,41 +108,37 @@
 ;  4) {:len 0 :to "abc" :pos 0} + {:len 1 :to "" :pos 2} => {:len 0 :to "ab" :pos 0}
 ;  ...
 (defn- merge-change
-  "return nil if can't merge otherwise return merged change"
+  "return nil if can't merge (include c1 = nil) otherwise return merged change"
   [c1 c2]
-  (let [p1 (c1 :pos) p2 (c2 :pos)
-        to1 (c1 :to) to2 (c2 :to)
-        l1 (c1 :len) l2 (c2 :len)
-        lt1 (count to1) lt2 (count to2)]
-    (cond
-      (= p1 p2)
-      {:pos p1
-       :to (str to2 (subs to1 (min lt1 l2)))
-       :len (+ l1 (max 0 (- l2 lt1)))}
-      (= p1 (+ p2 l2))
-      {:pos p2
-       :to (str to2 to1)
-       :len (+ l1 l2)}
-      (= (+ p1 lt1) p2)
-      {:pos p1
-       :to (str to1 to2)
-       :len (+ l1 l2)}
-      :else nil)))
+  (if (nil? c1) nil
+    (let [p1 (c1 :pos) p2 (c2 :pos)
+          to1 (c1 :to) to2 (c2 :to)
+          l1 (c1 :len) l2 (c2 :len)
+          lt1 (count to1) lt2 (count to2)]
+      (cond
+        (= p1 p2)
+        {:pos p1
+         :to (str to2 (subs to1 (min lt1 l2)))
+         :len (+ l1 (max 0 (- l2 lt1)))}
+        (= p1 (+ p2 l2))
+        {:pos p2
+         :to (str to2 to1)
+         :len (+ l1 l2)}
+        (= (+ p1 lt1) p2)
+        {:pos p1
+         :to (str to1 to2)
+         :len (+ l1 l2)}
+        :else nil))))
 
 (defn- merge-changes
   "compress changes"
   [changes]
   (reduce 
     (fn[chs c]
-      (if (vector? chs)
-        (let [merged (merge-change (peek chs) c)]
-          (if (nil? merged)
-            (conj chs c)
-            (conj (pop chs) merged)))
-        (let [merged (merge-change chs c)]
-          (if (nil? merged)
-            [chs c]
-            [merged])))) changes))
+      (let [merged (merge-change (peek chs) c)]
+        (if (nil? merged)
+          (conj chs c)
+          (conj (pop chs) merged)))) [] changes))
 
 ;(println (merge-change {:pos 1 :len 1 :to ""} {:pos 0 :len 1 :to ""}))
 ;(println (merge-changes [{:pos 1 :len 1 :to ""} {:pos 0 :len 1 :to ""}]))
@@ -194,21 +190,23 @@
 
 ;popup from undo apply changes (reverse order) then push reverse to redo
 (defn text-undo[t]
-  (let [s (t :str)
-        chs (-> t :undoes peek rseq vec)
-        [news rchs] (apply-changes s chs)]
-    (-> t
-        (assoc :changes chs)
-        (update-in [:undoes] pop)
-        (assoc :str news)
-        (update-in [:redoes] conj rchs))))
+  (if (-> t :undoes count zero?) t
+    (let [s (t :str)
+          chs (-> t :undoes peek rseq vec)
+          [news rchs] (apply-changes s chs)]
+      (-> t
+          (assoc :changes chs)
+          (update-in [:undoes] pop)
+          (assoc :str news)
+          (update-in [:redoes] conj rchs)))))
 
 (defn text-redo[t]
-  (let [s (t :str)
-        chs (-> t :redoes peek rseq vec)
-        [news rchs] (apply-changes s chs)]
-    (-> t
-        (assoc :changes chs)
-        (update-in [:redoes] pop)
-        (assoc :str news)
-        (update-in [:undoes] conj rchs))))
+  (if (-> t :redoes count zero?) t
+    (let [s (t :str)
+          chs (-> t :redoes peek rseq vec)
+          [news rchs] (apply-changes s chs)]
+      (-> t
+          (assoc :changes chs)
+          (update-in [:redoes] pop)
+          (assoc :str news)
+          (update-in [:undoes] conj rchs)))))
