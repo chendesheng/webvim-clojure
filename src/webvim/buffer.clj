@@ -435,18 +435,12 @@
 
 (defn buf-join-line
   "join current line and next line"
-  [b]
-  (let [{r :row c :col} (b :cursor)]
-    (if (< r (-> b :lines count dec))
-      (let [[start _] (line-next-re (buf-line b (inc r)) 0 #"^\S|(?<=\s)\S")
-            col (if (nil? start)
-                  (dec (col-count b (inc r)))
-                  start)]
-        (-> b
-            cursor-line-end
-            (buf-replace {:row (inc r) :col col} " " false)
-            dec-col))
-      b)))
+  [t]
+  (let [pos (t :pos)
+        s (t :str)
+        [a b] (pos-re-forward pos s #"\n.+?(?=(\n|\S))")]
+    (if (nil? a) t
+      (text-replace t a b " "))))
 
 (defn buf-bound-scroll-top
   "Change scroll top make cursor inside viewport"
