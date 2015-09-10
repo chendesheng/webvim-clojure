@@ -1,4 +1,15 @@
-$(document).ready(function() {
+var lineHeight = 21;
+window.onload = function() { //use window.onload, not sure if stylesheet is loaded in document.ready
+	var d = document.createElement('SPAN');
+	d.style.opacity = 0;
+	d.style.position = 'absolute';
+	d.style.right = 0;
+	d.style.bottom = 0;
+	d.textContent = "MMMMM";
+	document.body.appendChild(d);
+	lineHeight = d.offsetHeight;
+	document.body.removeChild(d);
+
 	$.getJSON('buf', function(resp) {
 		render(resp);
 
@@ -7,7 +18,7 @@ $(document).ready(function() {
 			waitForFinalEvent(setSize, 500, "resize window");
 		});
 	});
-});
+};
 
 //https://stackoverflow.com/questions/2854407/javascript-jquery-window-resize-how-to-fire-after-the-resize-is-completed/4541963#4541963
 var waitForFinalEvent = (function () {
@@ -26,10 +37,10 @@ var waitForFinalEvent = (function () {
 function setSize() {
 	var sw = $('.buffer')[0].offsetHeight;
 	var w = Math.floor($('.lines')[0].offsetWidth/9.57);
-	var h = Math.floor(sw/21);
+	var h = Math.floor(sw/lineHeight);
 	$.getJSON('resize/'+w+'/'+h);
 	
-	$('.lines').css('padding-bottom', sw-21); //scroll beyond last line, leave at least one line
+	$('.lines').css('padding-bottom', sw-lineHeight); //scroll beyond last line, leave at least one line
 }
 
 function isChinese(c) {
@@ -510,8 +521,8 @@ function render(buf) {
 			}
 		});
 
-		if (y+21+$autocompl.height()-$('.lines').scrollTop() < $('.lines').height()) {
-			$autocompl.css('top', y+21+'px');
+		if (y+lineHeight+$autocompl.height()-$('.lines').scrollTop() < $('.lines').height()) {
+			$autocompl.css('top', y+lineHeight+'px');
 		} else {
 			$autocompl.css('top', y-$autocompl.height()+'px');
 		}
@@ -566,8 +577,8 @@ function scrollToCursor(scrollTopRow, instant) {
 	var width = $lines.width();
 
 	var oldst = $buf.scrollTop();
-	var newst = scrollTopRow * 21;
-	if (!instant && Math.abs(oldst - newst) > 3*21) {
+	var newst = scrollTopRow * lineHeight;
+	if (!instant && Math.abs(oldst - newst) > 3*lineHeight) {
 		$buf.animate({ scrollTop: newst}, 60);
 	} else {
 		$buf.scrollTop(newst);
@@ -640,14 +651,14 @@ function renderSelection($p, a, b, reverseTextColor, buf) {
 	var resb = getScreenXYByPos(buf, b);
 
 	if (resa.top != resb.top) {
-		$('<span>').addClass('line-selected').css('left', resa.left).css('top', resa.top).width('100%').appendTo($p);
-		var mh = resb.top-resa.top-21;
+		$('<span>').addClass('line-selected').css('left', resa.left).css('top', resa.top).height(lineHeight).width('100%').appendTo($p);
+		var mh = resb.top-resa.top-lineHeight;
 		if (mh > 0) {
-			$('<span>').addClass('line-selected').css('left', 0).css('top', resa.top+21).width('100%').height(mh).appendTo($p);
+			$('<span>').addClass('line-selected').css('left', 0).css('top', resa.top+lineHeight).width('100%').height(mh).appendTo($p);
 		}
-		$('<span>').addClass('line-selected').css('left', 0).css('top', resb.top).width(resb.left).appendTo($p);
+		$('<span>').addClass('line-selected').css('left', 0).css('top', resb.top).height(lineHeight).width(resb.left).appendTo($p);
 	} else {
-		$('<span>').addClass('line-selected').css('left', resa.left).css('top', resa.top).width(Math.abs(resa.left-resb.left)).appendTo($p);
+		$('<span>').addClass('line-selected').css('left', resa.left).css('top', resa.top).height(lineHeight).width(Math.abs(resa.left-resb.left)).appendTo($p);
 	}
 }
 
@@ -657,7 +668,17 @@ function renderCursor(pos, buf) {
 	}
 
 	var res = getScreenXYByPos(buf, pos);
-	$('.lines .cursor').removeClass().addClass('cursor').css('left', res.left).css('top', res.top);
+	console.log(res);
+	var color = getComputedStyle(res.e.parentNode, null).color;
+	var background = getComputedStyle(document.body, null).backgroundColor;
+	console.log(color);
+	console.log(background);
+	$('.lines .cursor').empty().append(res.ch=='\n'?' ':res.ch).removeClass()
+		.addClass('cursor')
+		.css('left', res.left)
+		.css('background-color', color) //unbuntu style replace font color and background color
+		.css('color', background)
+		.css('top', res.top);
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];

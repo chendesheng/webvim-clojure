@@ -66,7 +66,7 @@ function showOngoingKey(key) {
 }
 
 function hideOngoingKey() {
-	$('.lines .cursor').text('').removeClass('ongoing-key');
+	$('.lines .cursor').removeClass('ongoing-key');
 }
 
 //map key to another get return from callback
