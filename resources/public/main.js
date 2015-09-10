@@ -35,12 +35,14 @@ var waitForFinalEvent = (function () {
 })();
 		
 function setSize() {
-	var sw = $('.buffer')[0].offsetHeight;
-	var w = Math.floor($('.lines')[0].offsetWidth/9.57);
-	var h = Math.floor(sw/lineHeight);
+	var zoom = window.innerWidth/$(document.body).width();
+	var pageh = $('.buffer')[0].offsetHeight;
+	var sw = pageh*zoom;
+	var w = Math.floor($('.lines')[0].offsetWidth*zoom/$('.lines')[0].offsetWidth);
+	var h = Math.floor(window.innerHeight/lineHeight);
 	$.getJSON('resize/'+w+'/'+h);
 	
-	$('.lines').css('padding-bottom', sw-lineHeight); //scroll beyond last line, leave at least one line
+	$('.lines').css('padding-bottom', pageh-lineHeight); //scroll beyond last line, leave at least one line
 }
 
 function isChinese(c) {
