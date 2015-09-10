@@ -55,11 +55,13 @@
            ;changes of current command, for writing back to client
            :changes [] 
            ;reverse of changes, 
-           ;start record when enter insert mode 
+           ;start record when enter insert mode (save :cursor at start)
            ;stop record when exit insert mode
-           ;push to undo stack when exit insert mode
-           :pending-undo [] 
+           ;save to undo stack when exit insert mode
+           ;contains: {:changes [c1 c2] :cursor 100}
+           :pending-undo nil 
            ;undoes and redoes are stackes only push pop peek
+           ;one undo contains {:changes [] :cursor}
            :undoes []
            :redoes []
 

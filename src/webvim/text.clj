@@ -7,18 +7,6 @@
 (defn text-subs-range[s [a b]]
   (text-subs s a b))
 
-(defn text-update-pos[t newpos]
-  (let [pos (t :pos)
-        s (t :str)]
-    (cond 
-      (> newpos pos)
-      (-> t
-          (text-op-size + (text-size (text-subs s pos newpos))))
-      (< newpos pos)
-      (-> t
-          (text-op-size - (text-size (text-subs s newpos pos))))
-      :else t)))
-
 (defn re-test[re s]
   (cond (nil? re) false
         (string? s) (.find (re-matcher re s))

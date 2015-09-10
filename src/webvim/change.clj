@@ -29,12 +29,6 @@
            :len (count to)
            :to (str (text-subs s pos (+ pos len)))}]))
 
-(defn apply-changes[s changes]
-  (reduce 
-    (fn [[s rchs] c]
-      (let [[news rc] (apply-change s c)]
-        [news (conj rchs rc)])) [s []] changes))
-
 (defn count-lines[s]
   (let [cnt (count line-break)]
     (loop[s1 s n 0]
@@ -57,21 +51,23 @@
       (update-in [:pos] op dpos)
       (update-in [:y] op dy)))
 
-(defn- text-apply-change[t c]
-  (let [s (t :str)
-        [news rc] (apply-change s c)]
-    (println "text-apply-change:")
-    (println c)
-    (println rc)
-    (-> t
-        (assoc :str news)
-        (update-in [:changes] conj c)
-        (update-in [:pending-undo] conj rc))))
+;TODO: keep track of current line number is annoying
+(defn text-update-pos[t newpos]
+  (let [pos (t :pos)
+        s (t :str)]
+    (cond 
+      (> newpos pos)
+      (-> t
+          (text-op-size + (text-size (text-subs s pos newpos))))
+      (< newpos pos)
+      (-> t
+          (text-op-size - (text-size (text-subs s newpos pos))))
+      :else t)))
 
 (defn- shift-pos
+  ;only need (t :pos) and (t :y)
   ([t l from to]
-   (let [s (t :str)
-         pos (t :pos)
+   (let [pos (t :pos)
          r (+ l (count from))]
      (cond 
        (< pos l)
@@ -82,18 +78,42 @@
            (text-op-size + (text-size to)))
        :else
        (-> t
-           (text-op-size - (text-size (text-subs s l pos)))
+           (text-op-size - (text-size (text-subs from 0 (- pos l))))
            (text-op-size + (text-size to)))))))
+
+(defn- text-apply-change[t c]
+  (let [s (t :str)
+        [news rc] (apply-change s c)]
+    [(-> t
+        ;keep pos after change
+        (shift-pos (c :pos) (rc :to) (c :from))
+        (assoc :str news)) rc]))
+
+(defn text-apply-changes[t changes]
+  (reduce 
+    (fn [[t rchs] c]
+      (let [[newt rc] (text-apply-change t c)]
+        [newt (conj rchs rc)])) [t []] changes))
+
+(defn- push-pending[pending c oldpos]
+  (if (nil? pending)
+    ;create one if nil
+    {:changes [c] :cursor oldpos}
+    ;don't change :cursor
+    (update-in pending [:changes] conj c)))
 
 (defn text-replace 
   ([t l r to]
-   (let [s (t :str)
-         c {:pos l
-            :len (- r l)
-            :to (str to)}
-         newt (text-apply-change t c)
-         from (-> newt :pending-undo peek :to)]
-     (shift-pos newt l from to))))
+   (if (and (= l r) (empty? to)) t
+     (let [s (t :str)
+           c {:pos l
+              :len (- r l)
+              :to (str to)}
+           [newt rc] (text-apply-change t c)
+           undo (push-pending (newt :pending-undo) rc (t :pos))]
+       (-> newt
+           (assoc :pending-undo undo)
+           (update-in [:changes] conj c))))))
 
 ;A change is one edit at **single** point. 
 ;For example:
@@ -180,33 +200,39 @@
 ; redo                  | {:changes [c1 c2]   :pending-undo []        undoes: [[~c1 ~c2]] redoes: []}
 (defn text-save-undo[t]
   (let [s (t :str)
-        chs (merge-changes (rseq (t :pending-undo)))]
-    (println "text-save-undo:" (t :pending-undo))
+        pending (t :pending-undo)
+        chs (merge-changes (rseq (pending :changes)))
+        undo (assoc pending :changes chs)]
+    (println "text-save-undo:" pending)
     (println "text-save-undo:" chs)
     (-> t
-        (update-in [:undoes] conj chs)
-        (assoc :pending-undo [])
+        (update-in [:undoes] conj undo)
+        (assoc :pending-undo nil)
         (assoc :redoes []))))
 
 ;popup from undo apply changes (reverse order) then push reverse to redo
 (defn text-undo[t]
   (if (-> t :undoes count zero?) t
     (let [s (t :str)
-          chs (-> t :undoes peek rseq vec)
-          [news rchs] (apply-changes s chs)]
-      (-> t
+          undo (-> t :undoes peek)
+          chs (-> undo :changes rseq vec)
+          [newt rchs] (text-apply-changes t chs)]
+      (-> newt
           (assoc :changes chs)
+          (text-update-pos (undo :cursor))
           (update-in [:undoes] pop)
-          (assoc :str news)
-          (update-in [:redoes] conj rchs)))))
+          (update-in [:redoes] 
+                     conj (assoc undo :changes rchs))))))
 
 (defn text-redo[t]
   (if (-> t :redoes count zero?) t
     (let [s (t :str)
-          chs (-> t :redoes peek rseq vec)
-          [news rchs] (apply-changes s chs)]
-      (-> t
+          redo (-> t :redoes peek)
+          chs (-> redo :changes rseq vec)
+          [newt rchs] (text-apply-changes t chs)]
+      (-> newt
           (assoc :changes chs)
+          (text-update-pos (redo :cursor))
           (update-in [:redoes] pop)
-          (assoc :str news)
-          (update-in [:undoes] conj rchs)))))
+          (update-in [:undoes] 
+                     conj (assoc redo :changes rchs))))))
