@@ -1,6 +1,7 @@
 var lineHeight = 21;
 window.onload = function() { //use window.onload, not sure if stylesheet is loaded in document.ready
 	var d = document.createElement('SPAN');
+	d.className = 'line-num';
 	d.style.opacity = 0;
 	d.style.position = 'absolute';
 	d.style.right = 0;
@@ -38,8 +39,8 @@ function setSize() {
 	var zoom = window.innerWidth/$(document.body).width();
 	var pageh = $('.buffer')[0].offsetHeight;
 	var sw = pageh*zoom;
-	var w = Math.floor($('.lines')[0].offsetWidth*zoom/$('.lines')[0].offsetWidth);
-	var h = Math.floor(window.innerHeight/lineHeight);
+	var w = Math.floor($('.lines')[0].offsetWidth*zoom/$('.cursor')[0].offsetWidth);
+	var h = Math.floor((window.innerHeight-$('.status-bar')[0].offsetHeight)/lineHeight);
 	$.getJSON('resize/'+w+'/'+h);
 	
 	$('.lines').css('padding-bottom', pageh-lineHeight); //scroll beyond last line, leave at least one line
@@ -82,6 +83,23 @@ function replaceBinding(html, data, ifEncode) {
 
 var lineTemplate = '<div id="line-{row}" class="line"><pre>{line}</pre></div>';
 var gutterLineTemplate = '<div id="line-num-{row}" class="line-num">{incrow}</div>';
+
+var _gutterWidth;
+function gutterWidth(linenum) {
+	if (linenum) {
+		var w = 0;
+		while(linenum>0) {
+			linenum = Math.floor(linenum / 10);
+			w++;
+		}
+
+		_gutterWidth = w;
+		$('.gutter').width(_gutterWidth+'ch');
+	} else {
+		//linenum = parseInt($('.gutter :last-child').text());
+		return _gutterWidth+2;//left padding 1ch, right padding 1ch
+	}
+}
 
 function lineid(i) {
 	return '#line-'+i;
@@ -238,8 +256,9 @@ function getScreenXYByPos(buf, pos) {
 	}
 
 	var scrollTop = $('.buffer').scrollTop();
+	var scrollLeft = $('.lines').scrollLeft();
 	var ch = res.e.textContent[res.offset];	
-	return {left: rect.left-50, top: rect.top+scrollTop, ch: ch, e: res.e};
+	return {left: rect.left+scrollLeft, top: rect.top+scrollTop, ch: ch, e: res.e};
 }
 
 function refreshIter(index, currentBlock, states, parentNode) {
@@ -307,6 +326,7 @@ function render(buf) {
 				}
 			}
 		});
+		
 
 		//put a pivot in the end
 		//var pivot = document.createElement('SPAN');
@@ -321,12 +341,11 @@ function render(buf) {
 
 		$('.buffer').append($gutter);
 		$('.buffer').append($lines);
+		gutterWidth(linenum);
 	}
 
 	var $gutter = $('.gutter');
 	hl = hl || buffers[buf.id].hl;
-	var cursor = buf.cursor || buffers[buf.id].cursor;
-	//buffers[buf.id].cursor = cursor;
 	
 	if (buf.changes) {
 		var b = buffers[buf.id];
@@ -405,6 +424,8 @@ function render(buf) {
 					linenum--;
 				}
 			}
+
+			gutterWidth(linenum);
 		});
 	}
 
@@ -414,17 +435,16 @@ function render(buf) {
 	}
 
 
-//	if (typeof buf.cursor != 'undefined') {
-//		renderCursor(buf);
-//	}
+	//save current cursor for local use
 	if (typeof buf.pos != 'undefined') {
-		renderCursor(buf.pos, buffers[buf.id]);
+		buffers[buf.id].cursor = buf.pos;
 	}
-	
+	renderCursor(buffers[buf.id]);
+
 	//render ex
 	if (buf.ex && buf.ex.length > 0) {
 		$('.status-bar .ex').empty().text(buf.ex);
-		$('.status-bar .ex').append('<span class="cursor"> </span>');
+		$('.status-bar .ex').append('<span class="cursor">\u0020</span>');
 	} else if (buf.message) {
 		$('.status-bar .ex').empty().text(buf.message);
 	} else {
@@ -486,8 +506,8 @@ function render(buf) {
 
 		for (var i = 0; i < buf.braces.length; i++) {
 			var pt = buf.braces[i];
-			//skip cursor, don't draw twice in same point
-			if (buf.pos == pt) continue; 
+			//skip cursor, don't draw twice at the same point
+			if (buffers[buf.id].cursor == pt) continue; 
 
 			renderSelection($p, pt, pt, true, buffers[buf.id]);
 		}
@@ -640,6 +660,13 @@ function substring(buf, a, b) {
 
 //if reverseTextColor==true copy text from lines append to line-selected
 function renderSelection($p, a, b, reverseTextColor, buf) {
+	function append(x, y, w, h) {
+		$('<span>').addClass('line-selected')
+			.css('left', x)
+			.css('top', y)
+			.css('margin-left', -gutterWidth()+'ch')
+			.height(h).width(w).appendTo($p);
+	}
 	//sort
 	if (a > b) {
 		var t = a;
@@ -653,18 +680,19 @@ function renderSelection($p, a, b, reverseTextColor, buf) {
 	var resb = getScreenXYByPos(buf, b);
 
 	if (resa.top != resb.top) {
-		$('<span>').addClass('line-selected').css('left', resa.left).css('top', resa.top).height(lineHeight).width('100%').appendTo($p);
+		append(resa.left, resa.top, '100%', lineHeight);
 		var mh = resb.top-resa.top-lineHeight;
 		if (mh > 0) {
-			$('<span>').addClass('line-selected').css('left', 0).css('top', resa.top+lineHeight).width('100%').height(mh).appendTo($p);
+			append(0, resa.top+lineHeight, '100%', mh);
 		}
-		$('<span>').addClass('line-selected').css('left', 0).css('top', resb.top).height(lineHeight).width(resb.left).appendTo($p);
+		append(0, resb.top, resb.left, lineHeight);
 	} else {
-		$('<span>').addClass('line-selected').css('left', resa.left).css('top', resa.top).height(lineHeight).width(Math.abs(resa.left-resb.left)).appendTo($p);
+		append(resa.left, resa.top, Math.abs(resa.left-resb.left), lineHeight);
 	}
 }
 
-function renderCursor(pos, buf) {
+function renderCursor(buf) {
+	var pos = buf.cursor;
 	if (!$('.lines .cursor').get(0)) {
 		$('.lines').append('<div class="cursor"></div>');
 	}
@@ -678,6 +706,7 @@ function renderCursor(pos, buf) {
 	$('.lines .cursor').empty().append(res.ch=='\n'?' ':res.ch).removeClass()
 		.addClass('cursor')
 		.css('left', res.left)
+		.css('margin-left', -gutterWidth()+'ch')
 		.css('background-color', color) //unbuntu style replace font color and background color
 		.css('color', background)
 		.css('top', res.top);
