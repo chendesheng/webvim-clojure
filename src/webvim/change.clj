@@ -86,7 +86,7 @@
         [news rc] (apply-change s c)]
     [(-> t
         ;keep pos after change
-        (shift-pos (c :pos) (rc :to) (c :from))
+        (shift-pos (c :pos) (rc :to) (c :to))
         (assoc :str news)) rc]))
 
 (defn text-apply-changes[t changes]
