@@ -332,16 +332,15 @@
 (defn write-buffer
   [b]
   (try 
-    (let [lines (:lines b)
-          f (:filepath b)]
+    (let [s (b :str)
+          f (b :filepath)]
       (if (not (fs/exists? f))
         (do
           (-> f fs/parent fs/mkdirs)
           (-> f fs/file fs/create)))
-      (spit f (join lines))
+      (spit f s)
       (-> b
-          (assoc :message (str "\"" f "\" " (count lines) "L written"))
-          (assoc :last-saved-lines (b :lines))))
+          (assoc :message (str "\"" f "\" written"))))
     (catch Exception e 
       (println (.getMessage e))
       (.printStackTrace e)
