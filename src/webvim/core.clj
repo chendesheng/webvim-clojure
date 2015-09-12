@@ -27,46 +27,6 @@
     (dissoc b k)
     b))
 
-(defn diff-lines [after before]
-  (let [lines1 (:lines before)
-        lines2 (:lines after)]
-    (cond 
-      (= lines1 lines2)
-      (dissoc after :lines)
-      :else
-      ;assume we only change single continuous lines block
-      (let [c1 (count lines1)
-            c2 (count lines2)
-            ;_ (println "c1:" c1 " c2:" c2)
-            start (loop [i 0];top-down
-                    (if (and (> c1 i) (> c2 i) (= (lines1 i) (lines2 i)))
-                      (recur (inc i))
-                      i))
-            end (loop [i 1];bottom-up, end is inclusive
-                  (let [i1 (- c1 i)
-                        i2 (- c2 i)]
-                    ;(println "(<= start i1)" (<= start i1))
-                    ;(println "(<= start i2)" (<= start i2))
-                    ;(println "(lines1 i1) == (lines2 i2):" (= (lines1 i1) (lines2 i2)))
-                    (if (and (< 0 i1) (< 0 i2) (<= start i1) (<= start i2) (= (lines1 i1) (lines2 i2)))
-                      (recur (inc i))
-                        i2)))
-            ;_ (println "start:" start " end:" end)
-            add-lines (subvec lines2 start (inc end))
-            ;c1+count(add-lines)-count(sub-lines)=c2
-            sub-lines (-> c1 (+ (count add-lines)) (- c2))]
-        (if (pos? sub-lines)
-          (autocompl-words-remove-lines (subvec lines1 start (+ start sub-lines))))
-        (autocompl-words-parse-lines add-lines)
-        (-> after
-            (dissoc :lines)
-            (assoc :difflines {:row start :sub sub-lines :add add-lines}))))))
-
-(defn- track-unsaved[b]
-  (if (buf-lines-unsaved? b)
-    (assoc b :unsaved 1)
-    (assoc b :unsaved 0)))
-
 (defn- remove-visual-mode[b]
   (if (empty? (-> b :visual :ranges))
     (dissoc b :visual)
@@ -86,9 +46,8 @@
 
 (defn- remove-fields[b]
   (-> b 
-      track-unsaved
       (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :y :cursor :undoes :redoes :pending-undo
-          :macro :chan-in :chan-out :registers :last-saved-lines)
+          :macro :chan-in :chan-out :registers)
       (dissoc-empty [:highlights])
       (dissoc-empty [:changes])
       (dissoc-nil :keys)
@@ -116,14 +75,12 @@
                 (-> after
                     remove-fields
                     (dissoc :str)
-                    (diff-lines before)
                     (dissoc-if-equal before :mode)
                     (dissoc-if-equal before :keys)
                     (dissoc-if-equal before :name)
                     (dissoc-if-equal before :ex)
                     (dissoc-if-equal before :message)
-                    (dissoc-if-equal before :pos)
-                    (dissoc :lines)))]
+                    (dissoc-if-equal before :pos)))]
     (response b)))
 
 
@@ -162,9 +119,7 @@
   (let [before (active-buffer)]
     (async/>!! (:chan-in before) keycode)
     (let [after (async/<!! (:chan-out before))]
-      (update-buffer 
-        (if (= (before :lines) (after :lines))
-          after (dissoc after :highlights)))
+      (update-buffer after)
 
       ;Always write (active-buffer) back because active-buffer-id may change by current key
       (render before (active-buffer)))))

@@ -11,13 +11,6 @@
         webvim.indent
         webvim.global))
 
-(defn split-lines-all 
-  "Split by \\n and keep \\n. Always has a extra empty string after last \\n.
-=> (split-lines-all \"\")
-[\"\"]"
-  [txt]
-  (split txt #"(?<=\n)" -1))
-
 (defn buffer-list-save
   "Generate buffer id (increase from 1) and add to buffer-list"
   [b]
@@ -43,9 +36,6 @@
         b {:name bufname
            ;= nil if it is a special buffer like [New File] or [Quick Fix]
            :filepath filepath 
-           ;Each line is a standard java String
-           :lines (split-lines-all txt)
-
            :str (text-new txt)
            :pos 0  ;offset from first char
            :x 0    ;saved x for up down motion
@@ -71,8 +61,6 @@
            :last-cursor nil
            ;unchanged
            :dirty false
-           ;save :lines object when write buffer to disk, check if lines unsaved
-           :last-saved-lines nil
            ;:type =0 visual =1 visual line =2 visual block
            ;:ranges is a vector of point pairs (unordered): [{:row :col} {:row :col}]. Always contains even number of points. Both end are inclusive
            :visual {:type 0 :ranges []}
@@ -113,10 +101,9 @@
            ;TODO detect language by file content
            :language (get languages ext (languages :else))}]
     (pprint (b :language))
-
-    (autocompl-words-parse-lines (b :lines))
-    (-> b
-        (assoc :last-saved-lines (b :lines)))))
+    (reset! autocompl-words 
+            (autocompl-parse (b :str)))
+    b))
 
 (defn open-file
   "Create buffer from a file by slurp, return emtpy buffer if file not exists"
@@ -132,12 +119,7 @@
   (if (and (empty? (b :str))
            (not (fs/exists? (b :filepath))))
     (assoc b :message (str "[New File] " (b :filepath)))
-    (assoc b :message (str "\"" (:filepath b) "\" " (count (:lines b)) "L"))))
-
-(defn buf-lines-unsaved?
-  "if :lines unsaved after last save"
-  [b]
-  (not (= (b :lines) (b :last-saved-lines))))
+    (assoc b :message (str "\"" (:filepath b) "\""))))
 
 ;TODO make write atomic
 (defn write-buffer
