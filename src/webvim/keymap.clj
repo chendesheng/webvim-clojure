@@ -40,16 +40,12 @@
   ;(println "set-insert-mode")
   (-> b 
       (assoc-in [:visual :ranges] [])
-      (merge {:ex "" :mode insert-mode :message nil :keys nil})
-      buf-save-cursor))
+      (merge {:ex "" :mode insert-mode :message nil :keys nil})))
 
 (defn set-insert-append[b keycode]
-  (let [col (if (= (col-count b (-> b :cursor :row)) 1) ;contains only EOL
-              0
-              (-> b :cursor :col inc))]
     (-> b
         char-forward
-        (set-insert-mode keycode))))
+        (set-insert-mode keycode)))
 
 (defn set-insert-line-end[b keycode]
   (-> b
@@ -62,10 +58,11 @@
       (set-insert-mode keycode)))
 
 (defn set-insert-remove-char[b keycode]
-  (registers-put (:registers b) (-> b :context :register) (buf-copy-range b (:cursor b) (:cursor b) true))
-  (-> b
-      (set-insert-mode keycode)
-      (text-delete-offset 1)))
+  (let [pos (b :pos)]
+    (registers-put (b :registers) (-> b :context :register) (buf-copy-range b pos pos true))
+    (-> b
+        (set-insert-mode keycode)
+        (text-delete-offset 1))))
 
 (defn set-insert-new-line[b keycode]
   (-> b 
@@ -79,34 +76,37 @@
       text-insert-line-before
       buf-indent-current-line))
 
-(defn insert-mode-default[b keycode]
-  (let [b1 (cond 
+(defn insert-mode-default[t keycode]
+  (let [t1 (cond 
              (= "backspace" keycode)
-             (text-delete-offset b -1)
+             (text-delete-offset t -1)
              (= "enter" keycode)
-             (text-insert b "\n")
+             (text-insert t "\n")
              (= "space" keycode)
-             (text-insert b " ")
+             (text-insert t " ")
              (= "tab" keycode)
-             (text-insert b "\t") 
+             (text-insert t "\t") 
              (= 1 (count keycode))
-             (text-insert b keycode)
+             (text-insert t keycode)
              :else
-             b)
-        b2 (buf-update-highlight-brace-pair b1 (-> b1 :pos dec))
-        b3 (if (or (re-test (-> b2 :language :indent-triggers) keycode) (= keycode "enter"))
-             (-> b2 
+             t)
+        t2 (buf-update-highlight-brace-pair t1 (-> t1 :pos dec))
+        t3 (if (or (re-test (-> t2 :language :indent-triggers) keycode) (= keycode "enter"))
+             (-> t2 
                  buf-indent-current-line 
                  char-forward)
-             b2)]
-    (if (empty? (-> b3 :autocompl :suggestions))
-      b3
-      (let [word (buffer-word-before-cursor b3)
-            suggestions (autocompl-suggest @autocompl-words word)]
+             t2)]
+    (if (empty? (-> t3 :autocompl :suggestions))
+      t3
+      (let [pos (t :pos)
+            [a b] (current-word t)
+            suggestions 
+            (if (< a pos)
+              (autocompl-suggest @autocompl-words (text-subs a pos)) nil)]
         (if (= 1 (count suggestions))
-          (assoc-in b3 [:autocompl :suggestions] [])
-          (assoc b3 :autocompl 
-                 (merge (:autocompl b3) 
+          (assoc-in t3 [:autocompl :suggestions] [])
+          (assoc t3 :autocompl 
+                 (merge (:autocompl t3) 
                         {:suggestions suggestions
                          :suggestions-index 0})))))))
 
@@ -119,14 +119,11 @@
   ;    (let [b2 (re-forward-highlight b1 re)]
   ;      (recur b2 (concat hls (:highlights b2)))))))
 
-(defn- buf-cursor-info[b]
+(defn- buf-pos-info[b]
   (let [{nm :name 
          path :filepath
-         {r :row c :col} :cursor
-         lines :lines} b
-        cnt (count lines)
-        percent (int (-> r (/ cnt) (* 100)))]
-    (assoc b :message (str "\"" (or path nm) "\" line " (inc r) " of " (count lines) " --" percent "%-- col " c))))
+         y :y} b]
+    (assoc b :message (str "\"" (or path nm) "\" line " (inc y)))))
 
 
 (defn handle-search[b]
@@ -158,16 +155,8 @@
       res)))
 
 (defn- buf-copy-range-lastbuf[b cur inclusive]
-;  (println (str "inclusive:" inclusive))
-;  (println (str "cursor:" cur))
-;  (println (str "cursor2:" (:cursor b)))
-  (registers-put (:registers b) (-> b :context :register) (buf-copy-range b cur (:cursor b) inclusive))
+  (registers-put (:registers b) (-> b :context :register) (buf-copy-range b cur (b :pos) inclusive))
   b)
-
-(defn same-pos? 
-  "return true if :row and :col are equal"
-  [cur1 cur2]
-  (and (= (:row cur1) (:row cur2)) (= (:col cur1) (:col cur2))))
 
 (defn delete-motion[b keycode]
   ;(println (str "delete-motion:" keycode))
@@ -178,42 +167,41 @@
       b
       (let [inclusive (inclusive? keycode)]
         (-> lastbuf
-            buf-save-cursor
-            (buf-copy-range-lastbuf (:cursor b) inclusive)
+            (buf-copy-range-lastbuf pos inclusive)
             (text-delete (if inclusive (inc pos) pos))
             text-save-undo)))))
 
 (defn change-motion[b keycode]
   ;(println "change-motion:" keycode)
   (let [lastbuf (-> b :context :lastbuf)
-        lastcur (:cursor lastbuf)
+        lastpos (:pos lastbuf)
         pos (b :pos)]
-    ;(pprint lastcur)
-    ;(pprint (:cursor b))
-    (if (or (nil? lastbuf) (= pos (:pos lastbuf)))
+    (if (or (nil? lastbuf) (= pos lastpos))
       b
       (let [inclusive (inclusive? keycode)]
         (-> lastbuf
             ;(println (str "change-motion:" keycode))
-            (buf-copy-range-lastbuf lastcur inclusive)
+            (buf-copy-range-lastbuf lastpos inclusive)
             (text-delete (if inclusive (inc pos) (dec pos)))
             (serve-keymap (@normal-mode-keymap "i") keycode))))))
 
 (defn yank-motion[b keycode]
   (let [lastbuf (-> b :context :lastbuf)
-        lastcur (:cursor lastbuf)]
-    (if (or (nil? lastbuf) (same-pos? (:cursor b) lastcur))
+        lastpos (:pos lastbuf)
+        pos (b :pos)]
+    (if (or (nil? lastbuf) (= pos lastpos))
       b
       (let [inclusive (inclusive? keycode)]
-        (buf-copy-range-lastbuf b lastcur inclusive)
+        (buf-copy-range-lastbuf b lastpos inclusive)
         lastbuf))))
 
 (defn indent-motion[b keycode]
-  (let [lastpos (-> b :context :lastbuf :pos)]
-    (if (or (nil? lastpos) (= (b :pos) lastpos))
+  (let [lastbuf (-> b :context :lastbuf)
+        lastpos (:pos lastbuf)
+        pos (b :pos)]
+    (if (or (nil? lastbuf) (= pos lastpos))
       b
       (-> b 
-          buf-save-cursor
           (buf-indent-lines lastpos)
           text-save-undo))))
 
@@ -231,12 +219,14 @@
       (assoc-in b [:visual :ranges 1]
                 (b :pos)) b)))
 
-(defn autocompl-start[b]
-  (let [word (buffer-word-before-cursor b)
-        suggestions (autocompl-suggest @autocompl-words word)]
+(defn autocompl-start[t]
+  (let [pos (t :pos)
+        [a b] (current-word t)
+        suggestions 
+        (if (< a pos)
+          (autocompl-suggest @autocompl-words (text-subs a pos)) nil)]
     (println "autocompl:")
-    (println word)
-    (assoc b :autocompl 
+    (assoc t :autocompl 
            {:suggestions suggestions 
             :suggestions-index 0})))
 
@@ -290,44 +280,36 @@
   (let [txt (registers-get (:registers b) keycode)]
     (if (string? txt)
       (-> b
-          buf-save-cursor
-          (buf-insert txt)
+          (text-insert txt)
           dec-col
           text-save-undo)
       b)))
 
 (defn put-from-register-append[b keycode]
-  (let [txt (registers-get (:registers b) keycode)
-        col (-> b :cursor :col inc)
-        col1 (if (= col (col-count b (-> b :cursor :row)))
-               (dec col)
-               col)]
+  (let [txt (registers-get (:registers b) keycode)]
     (if (string? txt)
       (-> b
-          buf-save-cursor
-          (assoc-in [:cursor :col] col1)
-          (buf-insert txt)
-          dec-col
+          (text-insert (b :pos) txt)
           text-save-undo)
       b)))
 
-(defn delete-line[b]
-  (let [{row :row col :col} (b :cursor)]
-    (registers-put (:registers b) (-> b :context :register) (buf-copy-range b {:row row :col 0} {:row row :col (col-count b row)} false))
-    (-> b
+(defn delete-line[t]
+  (let [pos (t :pos)
+        [a b] (current-line t)]
+    (registers-put (:registers t) (-> t :context :register) (buf-copy-range t a b false))
+    (-> t
         (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
-        buf-save-cursor
-        (text-delete-range (current-line b))
+        (text-delete-range (current-line t))
         line-start
         text-save-undo)))
 
-(defn delete-to-line-end[b]
-  (let [{row :row col :col} (b :cursor)]
-    (registers-put (:registers b) (-> b :context :register) (buf-copy-range b {:row row :col col} {:row row :col (-> b (col-count row) dec)} false))
-    (-> b
+(defn delete-to-line-end[t]
+  (let [pos (t :pos)
+        [a b] (current-line t)]
+    (registers-put (:registers t) (-> t :context :register) (buf-copy-range t pos b false))
+    (-> t
       (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
-      buf-save-cursor
-      (text-delete (b :pos) (-> b current-line last dec))
+      (text-delete a b)
       text-save-undo)))
 
 (defn change-to-line-end[b]
@@ -415,8 +397,7 @@
         (char-backward b) b)))
 
 (defn normal-mode-after[b keycode]
-  (let [{col :col row :row} (:cursor b)
-        lastbuf (-> b :context :lastbuf)]
+  (let [lastbuf (-> b :context :lastbuf)]
     (if-not (nil? (motions-push-jumps keycode))
       (jump-push lastbuf))
     ;(println "normal-mode-after, recording-keys" (-> b :macro :recording-keys))
@@ -442,23 +423,17 @@
         (replay-keys b keycodes (dissoc @normal-mode-keymap "."))))))
 
 (defn cut-char[b]
-  (if (= (col-count b (-> b :cursor :row)) 1)
-    b
-    (let [cursor (:cursor b)]
-      (registers-put (:registers b) (-> b :context :register) (buf-copy-range b cursor cursor true))
+    (let [pos (b :pos)]
+      (registers-put (:registers b) (-> b :context :register) (buf-copy-range b pos pos true))
       (-> b 
-          buf-save-cursor
           (text-delete-offset 1)
-          text-save-undo))))
+          text-save-undo)))
 
 (defn yank-visual[b]
   (let [[p1 p2] (-> b :visual :ranges)]
     (registers-put (:registers b) (-> b :context :register) (buf-copy-range b p1 p2 true))
-    (let [[cur1 _] (apply cursor-sort (-> b :visual :ranges))]
-      (-> b 
-          (assoc :cursor {:row (:row cur1)
-                          :col (:col cur1)
-                          :lastcol (:col cur1)})))))
+    (let [[cur1 _] (apply sort2 (-> b :visual :ranges))]
+      b)))
 
 (defn move-to-jumplist
   [b fndir]
@@ -496,14 +471,12 @@
            :else ex-mode-default})
 
   (reset! motion-keymap
-          {;"h" #(cursor-move-char % 0)
-           ;"l" #(cursor-move-char % 1)
-           "h" char-backward
+          {"h" char-backward
            "l" char-forward
            "k" #(lines-backward % 1)
            "j" #(lines-forward % 1)
            "g" {"g" text-start}
-           "G" cursor-move-end
+           ;"G" cursor-move-end
            "w" word-forward
            "W" WORD-forward
            "b" word-backward
@@ -586,7 +559,6 @@
          merge 
          {"w" word-forward
           "W" WORD-forward
-
           "i" @insert-mode-keymap
           "a" (merge
                 @insert-mode-keymap
@@ -611,7 +583,6 @@
                 @motion-keymap
                 {"=" #(-> % 
                          (update-in [:context] dissoc :lastbuf)
-                         buf-save-cursor
                          buf-indent-current-line
                          text-save-undo)
                  :before save-lastbuf
@@ -624,10 +595,7 @@
           "r" {"esc" nop
                "enter" (fn [b]
                          (-> b
-                             buf-save-cursor
                              (buf-replace-char "\n")
-                             (assoc-in [:cursor :col] 0)
-                             (update-in [:cursor :row] inc)
                              buf-indent-current-line
                              text-save-undo))
                :else (fn[b keycode]
@@ -637,7 +605,6 @@
                                   :else keycode)]
                          (if (= (count ch) 1)
                            (-> b 
-                               buf-save-cursor
                                (buf-replace-char ch)
                                text-save-undo)
                                b)))}
@@ -645,7 +612,7 @@
           "c+r" text-redo
           "c+o" #(move-to-jumplist % jump-prev)
           "c+i" #(move-to-jumplist % jump-next)
-          "c+g" buf-cursor-info
+          "c+g" buf-pos-info
           "esc" set-normal-mode
           "c+l" #(dissoc % :highlights) 
           "v" (merge
@@ -663,13 +630,8 @@
                  "d" delete-range
                  "c" change-range
                  "o" (fn[b]
-                       (let [{r :row c :col} (b :cursor)
-                             [pt1 pt2] (-> b :visual :ranges)
-                             {r1 :row c1 :col} pt1
+                       (let [[pt1 pt2] (-> b :visual :ranges)
                              newb (-> b 
-                                      (assoc-in [:cursor :col] c1)
-                                      (assoc-in [:cursor :lastcol] c1)
-                                      (assoc-in [:cursor :row] r1)
                                       (update-in [:visual :ranges] 
                                                  (fn[[a b]][b a])))]
                          (assoc-in newb [:context :lastbuf] newb)))})
@@ -688,7 +650,6 @@
           "C" change-to-line-end
           "J" (fn[b]
                 (-> b 
-                    buf-save-cursor
                     buf-join-line
                     text-save-undo))
           "c" (merge

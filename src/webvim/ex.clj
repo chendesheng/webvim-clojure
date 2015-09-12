@@ -17,7 +17,7 @@
 (defn move-to-line[b row]
   (-> b 
       (lines-row row)
-      (cursor-line-start)))
+      line-start))
 
 (defn find-buffer [buffers f]
   (reduce-kv 
