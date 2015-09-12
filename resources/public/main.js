@@ -698,12 +698,15 @@ function renderCursor(buf) {
 	}
 
 	var res = getScreenXYByPos(buf, pos);
+	if (/\r|\n|\t/.test(res.ch)) {
+		res.ch = ' ';
+	}
 	console.log(res);
 	var color = getComputedStyle(res.e.parentNode, null).color;
 	var background = getComputedStyle(document.body, null).backgroundColor;
 	console.log(color);
 	console.log(background);
-	$('.lines .cursor').empty().append(res.ch=='\n'?' ':res.ch).removeClass()
+	$('.lines .cursor').empty().append(res.ch).removeClass()
 		.addClass('cursor')
 		.css('left', res.left)
 		.css('margin-left', -gutterWidth()+'ch')
