@@ -27,7 +27,7 @@
         h (-> @window :viewport :h)
         row (-> b :y)
         vrow (- row scroll-top)
-        newrow (bound-range (+ row d) 0 (-> b :lines count dec dec))
+        newrow (bound-range (+ row d) 0 (b :linescnt))
         newst (-> newrow (- vrow) negzero)]
     (-> b
         (assoc :scroll-top newst)

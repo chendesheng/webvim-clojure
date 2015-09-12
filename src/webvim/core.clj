@@ -47,7 +47,7 @@
 (defn- remove-fields[b]
   (-> b 
       (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :y :cursor :undoes :redoes :pending-undo
-          :macro :chan-in :chan-out :registers)
+          :macro :chan-in :chan-out :registers :linescnt)
       (dissoc-empty [:highlights])
       (dissoc-empty [:changes])
       (dissoc-nil :keys)

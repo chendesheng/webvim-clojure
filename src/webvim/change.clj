@@ -68,18 +68,21 @@
   ;only need (t :pos) and (t :y)
   ([t l from to]
    (let [pos (t :pos)
-         r (+ l (count from))]
-     (cond 
-       (< pos l)
-       t
-       (>= pos r)
-       (-> t
-           (text-op-size - (text-size from))
-           (text-op-size + (text-size to)))
-       :else
-       (-> t
-           (text-op-size - (text-size (text-subs from 0 (- pos l))))
-           (text-op-size + (text-size to)))))))
+         r (+ l (count from))
+         szfrom (text-size from)
+         szto (text-size to)
+         t1 (cond 
+              (< pos l)
+              t
+              (>= pos r)
+              (-> t
+                  (text-op-size - szfrom)
+                  (text-op-size + szto))
+              :else
+              (-> t
+                  (text-op-size - (text-size (text-subs from 0 (- pos l))))
+                  (text-op-size + szto)))]
+     (update-in t1 [:linescnt] #(-> % (- (szfrom :dy)) (+ (szto :dy)))))))
 
 (defn- text-apply-change[t c]
   (let [s (t :str)

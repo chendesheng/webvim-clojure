@@ -33,10 +33,12 @@
                    :else {:name "Plain Text"
                           :fn-indent auto-indent}}
         ext (if (nil? bufname) "" (re-find #"\.\w+$" bufname))
+        s (text-new txt)
         b {:name bufname
            ;= nil if it is a special buffer like [New File] or [Quick Fix]
            :filepath filepath 
-           :str (text-new txt)
+           :str s
+           :linescnt (count-lines s)
            :pos 0  ;offset from first char
            :x 0    ;saved x for up down motion
            :y 0    ;num of line breaks from first char
