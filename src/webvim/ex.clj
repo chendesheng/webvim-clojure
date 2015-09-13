@@ -10,6 +10,7 @@
         webvim.serve
         webvim.jumplist
         webvim.text
+        webvim.line
         webvim.global)) 
 
 (declare ex-commands)
@@ -151,7 +152,7 @@
    #"^(\d+)$" (fn[b row _]
                 (println "row:" row)
                 (jump-push b)
-                (let [row (bound-range (dec (Integer. row)) 0 (-> b :lines count dec))]
+                (let [row (bound-range (dec (Integer. row)) 0 (-> b :linescnt dec))]
                   (move-to-line b row)))))
 
 (defn ex-mode-default[b keycode]

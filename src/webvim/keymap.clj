@@ -9,8 +9,9 @@
         webvim.jumplist
         webvim.ex
         webvim.serve
-        webvim.text
         webvim.change
+        webvim.text
+        webvim.line
         webvim.indent
         webvim.autocompl))
 

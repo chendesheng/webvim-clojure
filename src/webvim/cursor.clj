@@ -6,7 +6,7 @@
         (clojure [string :only (join split)])
         webvim.autocompl
         webvim.history
-        webvim.text
+        webvim.line
         webvim.global))
 
 (defn round-to-zero

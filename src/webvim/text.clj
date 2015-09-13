@@ -20,10 +20,8 @@
                   (text-subs s (.start m) (.end m))
                   nil))))
 
-(defn count-left-spaces[line]
-  (count (re-subs #"^\s*" line)))
-
-(def re-line-break (re-pattern line-break))
+(defn count-left-spaces[s]
+  (count (re-subs #"^\s*" s)))
 
 (defn- find-first[m pos]
   (if (.find m pos)
@@ -76,39 +74,19 @@
               (recur (dec a))
               (find-first m1 (first matches)))))))))
 
-(defn- pos-re-next-forward 
+(defn pos-re-next-forward 
   "return forward range matches, exclude current position"
   [pos s re]
   (pos-re-forward (inc pos) s re))
 
-(defn- pos-re-next-backward 
+(defn pos-re-next-backward 
   "return backward range matches, exclude current position"
   [pos s re]
   (pos-re-backward (dec pos) s re))
 
 ;function name start with pos take pos as first argument and return newpos
 ;these can be combined in one motion command
-(defn- pos-eol-backward
-  "return nil if coundn't find EOL"
-  [pos s]
-  (first (pos-re-next-backward pos s re-line-break)))
-
-(defn- pos-eol-forward
-  "return nil if coundn't find EOL"
-  [pos s]
-  (first (pos-re-forward pos s re-line-break)))
-
-(defn- pos-end-eol-forward
-  "return nil if coundn't find EOL"
-  [pos s]
-  (last (pos-re-forward pos s re-line-break)))
-
-(defn- pos-end-eol-backward
-  "return nil if coundn't find EOL"
-  [pos s]
-  (last (pos-re-backward pos s re-line-break)))
-
-(defn- pos-re
+(defn pos-re
   ([pos s re re-fn notfound]
    (or (first (re-fn pos s re)) notfound))
   ([pos s re re-fn]
@@ -116,37 +94,6 @@
 
 (defn- pos-end-re[pos s re re-fn]
   (or (last (re-fn pos s re)) pos))
-
-(defn pos-line-first[pos s]
-  (pos-re pos s #"((?<=\n)[\s\S])" pos-re-backward 0))
-
-;(defn text-offset-pos
-;  [t offset]
-;  (if (zero? offset) t
-;    (let [pos (t :pos)
-;          s (t :str)]
-;      (if (pos? offset)
-;        (let[len (count s)
-;             l pos
-;             tmpr (+ l offset)
-;             r (if (> tmpr len)
-;                 len
-;                 tmpr)
-;             sub (text-subs s l r)
-;             lastEOL (pos-re-backward r (t :str) re-line-break)]
-;          (-> t
-;              (assoc :pos r)
-;              (assoc :x (if (nil? lastEOL) r (- r (last lastEOL))))
-;              (assoc :y (+ (t :y) (count-lines sub)))))
-;        (let[r pos
-;             tmpl (+ r offset)
-;             l (if (neg? tmpl) 0 tmpl)
-;             sub (text-subs s l r)
-;             lastEOL (pos-re-backward l (t :str) re-line-break)]
-;          (-> t
-;              (assoc :pos l)
-;              (assoc :x (if (nil? lastEOL) l (- l (last lastEOL))))
-;              (assoc :y (- (t :y) (count-lines sub)))))))))
 
 (defn- text-save-change[t pos from to]
   (update-in t [:changes] conj {:pos pos :len (count from) :to (str to)}))
@@ -179,30 +126,6 @@
       (text-delete (first rg) (second rg))
       (text-update-pos (first rg))))
 
-(defn text-insert-line-after[t]
-  (let [pos (t :pos)
-        s (t :str)
-        newpos (pos-eol-forward pos s)]
-    (if (nil? newpos)
-      (-> t
-          (text-insert (count s) line-break)
-          (text-update-pos (-> s count dec)))
-      (-> t
-          (text-update-pos newpos)
-          (text-insert line-break)))))
-
-(defn text-insert-line-before[t]
-  (let [pos (t :pos)
-        s (t :str)
-        newpos (pos-eol-backward pos s)]
-    (if (nil? newpos)
-      (-> t
-          (text-insert 0 line-break)
-          (text-update-pos 0))
-      (-> t
-          (text-update-pos newpos)
-          (text-insert line-break)))))
-
 (defn text-delete-offset[t offset] 
   (let [pos (t :pos)
         newpos (+ pos offset)]
@@ -216,57 +139,14 @@
     nil
     (.charAt s pos)))
 
-(defn line-backward [t]
-  (let [{pos :pos
-         s :str
-         x :x
-         y :y} t]
-    (let [eol (pos-eol-backward pos s)]
-      (if (nil? eol) t
-        (let [eol2 (or (pos-eol-backward eol s) -1)
-              len (- eol eol2)
-              x1 (bound-range x 0 (dec len))]
-          (-> t
-            (assoc :pos (+ eol2 x1 1))
-            (assoc :y (dec y))))))))
-
-(defn line-forward [t]
-  (let [{pos :pos
-         s :str
-         x :x
-         y :y} t]
-    (let [eol (pos-eol-forward pos s)]
-      (if (nil? eol) t
-        (let [eol2 (or (pos-eol-forward (inc eol) s) (count s))
-              len (- eol2 eol)
-              x1 (bound-range x 0 (dec len))]
-          (-> t
-            (assoc :pos (+ eol x1 1))
-            (assoc :y (inc y))))))))
-
-(defn lines-forward[t n]
-  (if (zero? n) t
-    (recur (line-forward t) (dec n))))
-
-(defn lines-backward[t n]
-  (if (zero? n) t
-    (recur (line-backward t) (dec n))))
-
-(defn lines-row[t n]
-  (let [y (t :y)
-        dy (- n y)]
-    (if (> dy 0)
-      (lines-forward t dy)
-      (lines-backward t (- dy)))))
-
 (defn text-start[t]
   (merge t {:x 0 :y 0 :pos 0}))
 
-(defn- text-re
-  ([t re re-fn notfound]
+(defn text-re
+  ([t re re-fn not-found]
    (let [{pos :pos
           s :str} t
-         newpos (pos-re pos s re re-fn notfound)]
+         newpos (pos-re pos s re re-fn not-found)]
      (text-update-pos t newpos)))
   ([t re re-fn]
    (text-re t re re-fn 0)))
@@ -296,7 +176,7 @@
 
 (defn re-forward
   ([t re]
-  (text-re t re pos-re-next-forward (-> t :str count))))
+  (text-re t re pos-re-next-forward (-> t :str count dec))))
 
 (defn re-backward[t re]
   (text-re t re pos-re-next-backward 0))
@@ -323,25 +203,9 @@
   (re-forward t #"(?<=\n)\n[^\n]"))
 
 (defn paragraph-backward[t]
-  (re-backward t #"((?<=\n)\n[^\n])|^"))
+  (re-backward t #"((?<=\n)\n[^\n])"))
 
-(defn line-first[t]
-  (let [s (t :str)
-        pos (t :pos)
-        newpos (pos-line-first pos s)]
-    (text-update-pos t newpos)))
-
-(defn pos-line-start[pos s]
-  (-> pos
-      (pos-line-first s)
-      (pos-re s #"[\S\n]|((?<=\s)[\S\n])" pos-re-forward)))
-
-(defn line-start[t]
-  (let [newpos (pos-line-start (t :pos) (t :str))]
-    (text-update-pos t newpos)))
-
-(defn line-end[t]
-  (text-re t #"\n" pos-re-forward (-> t :str count)))
+;(paragraph-forward {:str (text-new "aaa\nbb") :pos 0 :y 0})
 
 (defn re-forward-highlight[t re]
   (let [pos (t :pos)
@@ -384,52 +248,6 @@
         a (first (pos-re-backward b s re-word-start-border))]
     [a b]))
 
-(defn pos-line[s pos]
-  (let [b (or (last (pos-re-forward pos s #"\n")) (count s))
-        a (or (last (pos-re-next-backward pos s #"\n")) 0)]
-    [a b]))
-
-(defn current-line
-  [t]
-   "return range of line under cursor, right side is exclusive"
-   (pos-line (t :str) (t :pos)))
-
-;(current-line {:pos 1 :str (text-new "\naaa\n")})
-;(current-line {:pos 5 :str (text-new "\nbb\n\naaa\n")})
-;(pos-re-forward 0 (text-new "\n\naaa\n") #"\n")
-;(pos-eol-forward 4 (text-new "\naaa\n"))
-;(pos-eol-backward 4 (text-new "\naaa\n"))
-;(pos-re-forward 0 (text-new "\n\naaa\n") #"(?<=\n)[\s\S]")
-
-(defn lines-reverse
-  "return a lazy seq, line by line start at pos back to top"
-  [s pos]
-  (let [rg (pos-line s pos)
-        [a _] rg]
-    (if (pos? a)
-      (cons rg (lazy-seq (lines-reverse s (dec a))))
-      (list rg))))
-
-(defn lines
-  "return a lazy seq, line by line start at pos until bottom"
-  ([s pos]
-   (let [rg (pos-line s pos)
-         [_ b] rg]
-     (if (< b (count s))
-       (cons rg (lazy-seq (lines s b)))
-       (list rg))))
-  ([s p1 p2] ;both inclusive
-   (take-while
-     #(>= p2 (first %))
-     (lines s p1))))
-
-;(lines (text-new "aa\nbb\ncc\n\n") 0 0)
-
-;(let [s (text-new "aa\nbb\ncc\n\n")] 
-;  (take 30
-;        (lines s 0 9)))
-;(lines (text-new "aa\nbb\ncc\n\n") 0)
-
 ;(defn positive-numbers 
 ;  ([] (positive-numbers 1))
 ;  ([n] 
@@ -441,24 +259,6 @@
   "Return a lazy seq contains texts sub from s. Range's right point is exclusive."
   [s ranges]
   (map #(apply text-subs s %) ranges))
-
-(defn pos-next-line
-"Find first line pred is true start at next line"
-  ([s pos pred]
-   (first 
-     (filter pred (rest (lines s pos)))))
-  ([s pos]
-   (second (lines s pos))))
-
-(defn pos-prev-line
-  [s pos]
-  (second (lines-reverse s pos)))
-
-(defn pos-first-line
-  "Find first line pred is true start at current line"
-  [s pos pred]
-  (first 
-    (filter pred (lines s pos))))
 
 (defn range-blank? [s rg]
   (text-blank? (text-subs-range s rg)))
@@ -477,7 +277,7 @@
 
 ;(pos-re-forward-seq -1 (text-new "(((") #"\(")
 ;(pos-re-backward-seq -1 (text-new "(((") #"\(")
-(pos-re-forward 0 (text-new "   ()") #"\(|\)|\[|\]|\{|\}")
+;(pos-re-forward 0 (text-new "   ()") #"\(|\)|\[|\]|\{|\}")
 
 (defn pos-match-brace
   "return matched brace position, nil if not find"
@@ -503,4 +303,3 @@
                          (reduced [a])
                          newcnt))) 0 braces)]
         (if (vector? mpos) (first mpos) nil)))))
-

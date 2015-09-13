@@ -56,6 +56,10 @@
   (let [pos (t :pos)
         s (t :str)]
     (cond 
+      (zero? newpos)
+      (-> t 
+          (assoc :y 0) 
+          (assoc :pos 0))
       (> newpos pos)
       (-> t
           (text-op-size + (text-size (text-subs s pos newpos))))
