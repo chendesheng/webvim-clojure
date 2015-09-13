@@ -77,20 +77,31 @@
       text-insert-line-before
       buf-indent-current-line))
 
+(defn uncomplete-word
+  [t]
+  (let [pos (t :pos)
+        s (t :str)]
+    (if (zero? pos) nil
+      (let [b (dec pos)
+            a (or (first (pos-re-backward b s re-word-start-border)) b)]
+        (str (text-subs s a b))))))
+
+(defn keycode-to-char[keycode]
+  (cond 
+    (= 1 (count keycode))
+    keycode
+    (= "enter" keycode)
+    "\n"
+    (= "tab" keycode)
+    "\t"
+    (= "space" keycode)
+    " "
+    :else ""))
+
 (defn insert-mode-default[t keycode]
-  (let [t1 (cond 
-             (= "backspace" keycode)
+  (let [t1 (if (= "backspace" keycode)
              (text-delete-offset t -1)
-             (= "enter" keycode)
-             (text-insert t "\n")
-             (= "space" keycode)
-             (text-insert t " ")
-             (= "tab" keycode)
-             (text-insert t "\t") 
-             (= 1 (count keycode))
-             (text-insert t keycode)
-             :else
-             t)
+             (text-insert t (keycode-to-char keycode)))
         t2 (buf-update-highlight-brace-pair t1 (-> t1 :pos dec))
         t3 (if (or (re-test (-> t2 :language :indent-triggers) keycode) (= keycode "enter"))
              (-> t2 
@@ -99,11 +110,8 @@
              t2)]
     (if (empty? (-> t3 :autocompl :suggestions))
       t3
-      (let [pos (t :pos)
-            [a b] (current-word t)
-            suggestions 
-            (if (< a pos)
-              (autocompl-suggest @autocompl-words (text-subs a pos)) nil)]
+      (let [word (uncomplete-word t3)
+            suggestions (autocompl-suggest @autocompl-words word)]
         (if (= 1 (count suggestions))
           (assoc-in t3 [:autocompl :suggestions] [])
           (assoc t3 :autocompl 
@@ -222,11 +230,10 @@
 
 (defn autocompl-start[t]
   (let [pos (t :pos)
-        [a b] (current-word t)
-        suggestions 
-        (if (< a pos)
-          (autocompl-suggest @autocompl-words (text-subs a pos)) nil)]
-    (println "autocompl:")
+        word (uncomplete-word t)
+        _ (println word)
+        suggestions (autocompl-suggest @autocompl-words word)]
+    (println "autocompl:" suggestions)
     (assoc t :autocompl 
            {:suggestions suggestions 
             :suggestions-index 0})))
@@ -250,16 +257,6 @@
               (update-in [:macro :recording-keys] 
                          #(apply conj % ks)) 
               (buffer-replace-suggestion w)))))))
-
-(defn keycode-to-char[keycode]
-  (cond 
-    (= 1 (count keycode))
-    keycode
-    (= "tab" keycode)
-    "\t"
-    (= "space" keycode)
-    " "
-    :else ""))
 
 (defn move-to-next-char[b keycode]
   (let [ch (keycode-to-char keycode)]
@@ -488,12 +485,16 @@
            "^" line-start
            "$" line-end
            "f" {"esc" nop
+                "enter" nop
                 :else move-to-next-char }
            "F" {"esc" nop
+                "enter" nop
                 :else move-to-back-char }
            "t" {"esc" nop 
+                "enter" nop
                 :else move-before-next-char }
            "T" {"esc" nop 
+                "enter" nop
                 :else move-after-back-char }
            "/" (merge @ex-mode-keymap 
                       {"enter" handle-search
