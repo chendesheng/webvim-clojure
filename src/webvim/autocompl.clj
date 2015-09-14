@@ -2,10 +2,19 @@
   (:require [clojure.set :as set])
   (:use clojure.pprint
         webvim.global
+        webvim.buffer
         (clojure [string :only (split)])))
 
 ;Keep reference count of each word: {"w1" 1 "w2" 3}
 (defonce autocompl-words (atom {}))
+;init
+
+(listen :buf-inited 
+        (fn init-words[b]
+          (reset! autocompl-words 
+                  (autocompl-parse (b :str)))))
+
+(listen :str-change (fn[t] t))
 
 (defn split-words 
   "split text to word vector"

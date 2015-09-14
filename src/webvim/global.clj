@@ -160,3 +160,16 @@
         (cons {:start (+ (. m start) start) :end (+ (. m end) start) :group (. m group)} 
           (lazy-seq (step))))))))
 
+;str change event
+;require listener has 1 arity and return buffer
+(defonce listeners (atom {}))
+
+(defn listen[typ handler]
+  (swap! listeners update-in [typ] conj handler))
+
+(defn fire-event[typ b]
+  (reduce (fn[b f]
+            (println b)
+            (f b)) b (@listeners typ)))
+
+;(fire-str-changes {} :str-change)

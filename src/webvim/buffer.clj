@@ -4,8 +4,6 @@
             [clojure.java.io :as io])
   (:use clojure.pprint
         (clojure [string :only (join split blank?)])
-        webvim.autocompl
-        webvim.history
         webvim.change
         webvim.text
         webvim.indent
@@ -42,19 +40,25 @@
            :pos 0  ;offset from first char
            :x 0    ;saved x for up down motion
            :y 0    ;num of line breaks from first char
+           ;screen scrollTop row number, update after every key press
+           :scroll-top 0
 
            ;changes of current command, for writing back to client
            :changes [] 
            ;reverse of changes, 
            ;start record when enter insert mode (save :cursor at start)
-           ;stop record when exit insert mode
-           ;save to undo stack when exit insert mode
+           ;stop record when leave insert mode
+           ;save to undo stack when leave insert mode
            ;contains: {:changes [c1 c2] :cursor 100}
            :pending-undo nil 
            ;undoes and redoes are stackes only push pop peek
            ;one undo contains {:changes [] :cursor}
            :undoes []
            :redoes []
+           ;functions list called when :str changes. For features like autocompl need to update when :str changes
+           ;get latest change from :pending-undo
+           ;it's a list
+           :listeners nil
 
            ;For client display matched braces: [{:row :col} {:row :col}]
            ;TODO set initial value
@@ -96,16 +100,12 @@
                        ;0 means selection nothing (don't highlight any suggestion item)
                        ;> 0 means highlight the nth suggestion item
                        :suggestions-index 0}
-           ;screen scrollTop row number, update after every key press
-           :scroll-top 0
            ;programming language specific configs
            ;detect language by file ext name
            ;TODO detect language by file content
            :language (get languages ext (languages :else))}]
     (pprint (b :language))
-    (reset! autocompl-words 
-            (autocompl-parse (b :str)))
-    b))
+    (fire-event :str-change b)))
 
 (defn open-file
   "Create buffer from a file by slurp, return emtpy buffer if file not exists"
