@@ -77,15 +77,6 @@
       text-insert-line-before
       buf-indent-current-line))
 
-(defn uncomplete-word
-  [t]
-  (let [pos (t :pos)
-        s (t :str)]
-    (if (zero? pos) nil
-      (let [b (dec pos)
-            a (or (first (pos-re-backward b s re-word-start-border)) b)]
-        (str (text-subs s a b))))))
-
 (defn keycode-to-char[keycode]
   (cond 
     (= 1 (count keycode))
@@ -111,7 +102,7 @@
     (if (empty? (-> t3 :autocompl :suggestions))
       t3
       (let [word (uncomplete-word t3)
-            suggestions (autocompl-suggest @autocompl-words word)]
+            suggestions (autocompl-suggest word)]
         (if (= 1 (count suggestions))
           (assoc-in t3 [:autocompl :suggestions] [])
           (assoc t3 :autocompl 
@@ -231,8 +222,7 @@
 (defn autocompl-start[t]
   (let [pos (t :pos)
         word (uncomplete-word t)
-        _ (println word)
-        suggestions (autocompl-suggest @autocompl-words word)]
+        suggestions (autocompl-suggest word)]
     (println "autocompl:" suggestions)
     (assoc t :autocompl 
            {:suggestions suggestions 

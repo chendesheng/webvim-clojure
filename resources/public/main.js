@@ -513,7 +513,7 @@ function render(buf) {
 		}
 	}
 
-	scrollToCursor(buf['scroll-top'] || 0, buf.lines);
+	scrollToCursor(buf['scroll-top'] || 0, buf.str);
 
 	//render autocompl suggestions
 	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
@@ -530,9 +530,10 @@ function render(buf) {
 
 		var selectedIndex = parseInt(buf.autocompl['suggestions-index']);
 		var currentWord = buf.autocompl.suggestions[selectedIndex];
-		var x = $('.lines .cursor')[0].offsetLeft;
-		var y = $('.lines .cursor')[0].offsetTop;
-		$autocompl.empty().css('left', x-currentWord.length*9.57-10+'px')
+		//var x = $('.lines .cursor')[0].offsetLeft;
+		var h = $('.lines .cursor')[0].offsetHeight+3;
+		var res = getScreenXYByPos(buffers[buf.id], buffers[buf.id].cursor-currentWord.length);
+		$autocompl.empty().css('left', res.left+$('.lines').scrollLeft()-10+'px')
 		$(buf.autocompl.suggestions).each(function(i, word) {
 			if (i > 0) {
 				var ele = $('<pre id="suggestion-'+i+'"></pre>').text(word)
@@ -543,11 +544,12 @@ function render(buf) {
 			}
 		});
 
-		if (y+lineHeight+$autocompl.height()-$('.lines').scrollTop() < $('.lines').height()) {
-			$autocompl.css('top', y+lineHeight+'px');
+		if (res.top+h < $('.buffer').scrollTop()+$('.buffer').height()-$('.status-bar').height()) {
+			$autocompl.css('top', res.top+h+'px');
 		} else {
-			$autocompl.css('top', y-$autocompl.height()+'px');
+			$autocompl.css('top', res.top-$autocompl.height()-3+'px');
 		}
+		$autocompl.css('margin-left', -gutterWidth()+'ch')
 
 		var viewportTop = lastScrollTop;
 		var viewportBottom = lastScrollTop+240;
@@ -701,11 +703,11 @@ function renderCursor(buf) {
 	if (/\r|\n|\t/.test(res.ch)) {
 		res.ch = ' ';
 	}
-	console.log(res);
+	//console.log(res);
 	var color = getComputedStyle(res.e.parentNode, null).color;
 	var background = getComputedStyle(document.body, null).backgroundColor;
-	console.log(color);
-	console.log(background);
+	//console.log(color);
+	//console.log(background);
 	$('.lines .cursor').empty().append(res.ch).removeClass()
 		.addClass('cursor')
 		.css('left', res.left)

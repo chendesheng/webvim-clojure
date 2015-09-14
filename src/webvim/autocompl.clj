@@ -3,6 +3,7 @@
   (:use clojure.pprint
         webvim.global
         webvim.buffer
+        webvim.change
         webvim.text
         (clojure [string :only (split)])))
 
@@ -45,11 +46,12 @@
   (swap! autocompl-words merge-words (autocompl-parse txt)))
 
 (defn autocompl-words-remove[txt]
+  (println "remove words:" (str txt))
   (swap! autocompl-words 
          remove-words 
          (autocompl-parse txt)))
 
-(defn autocompl-suggest [words subject]
+(defn autocompl-suggest [subject]
   (reduce #(conj %1 (last %2)) []
           (sort-by (juxt first second str)
                    (reduce-kv 
@@ -60,7 +62,7 @@
                            (conj suggestions [(- (last indexes) 
                                                  (first indexes)) 
                                               (first indexes) word])))) 
-                     [[0 0 subject]] (dissoc words subject)))))
+                     [[0 0 subject]] (dissoc @autocompl-words subject)))))
 
 (listen
   :new-buffer
@@ -68,19 +70,30 @@
     (autocompl-words-parse (t :str))
     t))
 
-(defn range-insect? [[a1 b1] [a2 b2]]
-  (<= a1 a2 b1 b2))
-
-(defn expand-ends-word [s a b]
-  (let [a (c :pos)
-        b (+ a (c :len))
+(defn expand-ends-word [s a1 b]
+  (let [a (max (dec a1) 0)
         rg [a b]
-        rga (pos-word a news)
-        rgb (pos-word b news)]
-    [(if (range-insect? rg rga)
-       (first rga) a)
-     (if (range-insect? rg rgb)
-       (last rgb) b)]))
+        rga (pos-word a s)
+        rgb (pos-word b s)]
+    [(if (range-interact? rg rga)
+       (min (first rga) a) a)
+     (if (range-interact? rg rgb)
+       (max (last rgb) b) b)]))
+
+(defn uncomplete-word
+  [t]
+  (let [pos (t :pos)
+        s (t :str)]
+    (if (zero? pos) nil
+      (let [re-start (re-pattern (str "[" not-word-chars "](?=[" word-chars "])"))
+            a (or (last (pos-re-next-backward pos s re-start)) 0)]
+        (println a)
+        (str (text-subs s a pos))))))
+
+;(uncomplete-word {:pos 5 :str (text-new " b cd")})
+
+;(expand-ends-word (text-new "aa bb") 1 3)
+;(expand-ends-word (text-new "aa ") 0 2)
 
 (listen
   :change-buffer
@@ -89,10 +102,12 @@
           a (c :pos)
           olds (oldt :str)
           oldb (+ a (-> c :to count))
-          oldrg (expand-ends-word olds a oldb)
           news (newt :str)
-          newb (+ a (c :len))
-          newrg (expand-ends-word news a newb)]
-      (autocompl-words-remove (text-subs-range oldrg))
-      (autocompl-words-parse (text-subs-range newrg))
+          newb (+ a (c :len))]
+      (autocompl-words-remove 
+        (text-subs-range
+          olds (expand-ends-word olds a oldb)))
+      (autocompl-words-parse 
+        (text-subs-range
+          news (expand-ends-word news a newb)))
       newt)))

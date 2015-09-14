@@ -57,6 +57,10 @@
         (>= v e) e
         :else v))
 
+(defn range-interact? [[a1 b1] [a2 b2]]
+  (or (<= a1 a2 b1 b2)
+      (<= a2 a1 b2 b1)))
+
 (defn cursor-inc-col [cursor]
   (update-in cursor [:col] inc))
 

@@ -51,8 +51,6 @@
 (defn pos-re-backward
   "return backward range matches"
   [pos s re]
-  ;(println s)
-  ;(println re)
   (let [m (.matcher s (re-pattern (str "(?=" re ")")))
         m1 (.matcher s re)]
     (.useTransparentBounds m true)
@@ -63,9 +61,8 @@
       ;(println "offset:" offset)
       (if (neg? offset)
         nil
-        (let[[a b] (if (< offset 100)
-                     [0 offset]
-                     [(- offset 100) offset])]
+        (let[a (max 0 (- offset 100))
+              b offset]
           (.region m a b)
           (let [matches (find-last m)]
             ;(println matches)
@@ -73,6 +70,8 @@
             (if (nil? matches)
               (recur (dec a))
               (find-first m1 (first matches)))))))))
+
+;(pos-re-backward 2 (text-new "aa bb") #"(?<=[^a-zA-Z_\-!.?+*=<>&#\':0-9])[a-zA-Z_\-!.?+*=<>&#\':0-9]|(?<=[a-zA-Z_\-!.?+*=<>&#\':0-9\s,])[^a-zA-Z_\-!.?+*=<>&#\':0-9\s,]")
 
 (defn pos-re-next-forward 
   "return forward range matches, exclude current position"
@@ -240,16 +239,20 @@
       t
       (text-update-pos t newpos))))
 
+(defn pos-word[pos s]
+  (let [re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
+        re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
+        b (or (last (pos-re-forward pos s re-end)) (count s))
+        a (or (first (pos-re-backward b s re-start)) 0)]
+      [a b]))
+
+;(pos-word 2 (text-new "aaa"))
+
 (defn current-word[t]
   "return range of word under cursor, right side is exclusive"
   (let [{pos :pos
          s :str} t]
     (pos-word pos s)))
-
-(defn pos-word[pos s]
-  (let [b (last (pos-re-forward pos s re-word-end-border))
-        a (first (pos-re-backward b s re-word-start-border))]
-      [a b]))
 
 ;(defn positive-numbers 
 ;  ([] (positive-numbers 1))
