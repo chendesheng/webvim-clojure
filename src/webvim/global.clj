@@ -167,9 +167,12 @@
 (defn listen[typ handler]
   (swap! listeners update-in [typ] conj handler))
 
-(defn fire-event[typ b]
-  (reduce (fn[b f]
-            (println b)
-            (f b)) b (@listeners typ)))
+(defn fire-event
+  ([b typ]
+    (reduce (fn[b f]
+              (f b)) b (@listeners typ)))
+  ([b oldb typ]
+    (reduce (fn[b f]
+              (f b oldb)) b (@listeners typ))))
 
 ;(fire-str-changes {} :str-change)

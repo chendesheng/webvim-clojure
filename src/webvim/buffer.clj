@@ -105,7 +105,7 @@
            ;TODO detect language by file content
            :language (get languages ext (languages :else))}]
     (pprint (b :language))
-    (fire-event :str-change b)))
+    (fire-event b :new-buffer)))
 
 (defn open-file
   "Create buffer from a file by slurp, return emtpy buffer if file not exists"

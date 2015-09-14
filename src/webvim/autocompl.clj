@@ -3,18 +3,11 @@
   (:use clojure.pprint
         webvim.global
         webvim.buffer
+        webvim.text
         (clojure [string :only (split)])))
 
 ;Keep reference count of each word: {"w1" 1 "w2" 3}
 (defonce autocompl-words (atom {}))
-;init
-
-(listen :buf-inited 
-        (fn init-words[b]
-          (reset! autocompl-words 
-                  (autocompl-parse (b :str)))))
-
-(listen :str-change (fn[t] t))
 
 (defn split-words 
   "split text to word vector"
@@ -46,27 +39,15 @@
 
 ;(remove-words {"aa" 2 "bb" 1} {"aa" 3 "bb" 1 "cc" 2})
 
-(defn autocompl-words-parse-lines
-  "Parse a buffer lines split to words and save to global autocompl-words"
-  [lines]
-  (reset! autocompl-words 
-          (reduce (fn[words line]
-                    (merge-words words (autocompl-parse line))) @autocompl-words lines)))
-
-(defn autocompl-words-remove[txt]
-  (swap! autocompl-words 
-         remove-words 
-         (autocompl-parse txt)))
-
 (defn autocompl-words-parse
   "add to autocompl-words"
   [txt]
   (swap! autocompl-words merge-words (autocompl-parse txt)))
 
-(defn autocompl-words-remove-lines[lines]
-  (reset! autocompl-words 
-          (reduce (fn[words line]
-                    (remove-words words (autocompl-parse line))) @autocompl-words lines)))
+(defn autocompl-words-remove[txt]
+  (swap! autocompl-words 
+         remove-words 
+         (autocompl-parse txt)))
 
 (defn autocompl-suggest [words subject]
   (reduce #(conj %1 (last %2)) []
@@ -80,3 +61,38 @@
                                                  (first indexes)) 
                                               (first indexes) word])))) 
                      [[0 0 subject]] (dissoc words subject)))))
+
+(listen
+  :new-buffer
+  (fn [t]
+    (autocompl-words-parse (t :str))
+    t))
+
+(defn range-insect? [[a1 b1] [a2 b2]]
+  (<= a1 a2 b1 b2))
+
+(defn expand-ends-word [s a b]
+  (let [a (c :pos)
+        b (+ a (c :len))
+        rg [a b]
+        rga (pos-word a news)
+        rgb (pos-word b news)]
+    [(if (range-insect? rg rga)
+       (first rga) a)
+     (if (range-insect? rg rgb)
+       (last rgb) b)]))
+
+(listen
+  :change-buffer
+  (fn [newt oldt]
+    (let [c (-> newt :pending-undo :changes last)
+          a (c :pos)
+          olds (oldt :str)
+          oldb (+ a (-> c :to count))
+          oldrg (expand-ends-word olds a oldb)
+          news (newt :str)
+          newb (+ a (c :len))
+          newrg (expand-ends-word news a newb)]
+      (autocompl-words-remove (text-subs-range oldrg))
+      (autocompl-words-parse (text-subs-range newrg))
+      newt)))

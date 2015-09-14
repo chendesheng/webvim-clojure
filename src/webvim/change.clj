@@ -118,9 +118,10 @@
               :to (str to)}
            [newt rc] (text-apply-change t c)
            undo (push-pending (newt :pending-undo) rc (t :pos))]
-       (-> newt
-           (assoc :pending-undo undo)
-           (update-in [:changes] conj c))))))
+         (-> newt
+             (assoc :pending-undo undo)
+             (update-in [:changes] conj c)
+             (fire-event t :change-buffer))))))
 
 ;A change is one edit at **single** point. 
 ;For example:

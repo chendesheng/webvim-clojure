@@ -243,10 +243,13 @@
 (defn current-word[t]
   "return range of word under cursor, right side is exclusive"
   (let [{pos :pos
-         s :str} t
-        b (last (pos-re-forward pos s re-word-end-border))
+         s :str} t]
+    (pos-word pos s)))
+
+(defn pos-word[pos s]
+  (let [b (last (pos-re-forward pos s re-word-end-border))
         a (first (pos-re-backward b s re-word-start-border))]
-    [a b]))
+      [a b]))
 
 ;(defn positive-numbers 
 ;  ([] (positive-numbers 1))
