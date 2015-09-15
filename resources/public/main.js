@@ -360,11 +360,14 @@ function render(buf) {
 			var newtxt = prefix + c.to + suffix;
 
 			//delete [resa.e, resb.e] both inclusive
+			//don't delete "end-code" pivot
 			var ele = resa.e;
-			while(true) {
+			var blocknumdeleted = 0;
+			while(!endCode(ele)) {
 				var toremove = ele;
 				ele = ele.nextSibling;
 				$lines.removeChild(toremove);
+				blocknumdeleted++;
 
 				if (toremove == resb.e) {
 					break;
@@ -372,7 +375,6 @@ function render(buf) {
 			}
 
 			//delete hl.states [resa.num+1, resb.num+1]
-			var blocknumdeleted = resb.num-resa.num+1;
 			var deletedstates = hl.states.splice(resa.num+1, blocknumdeleted);
 			var savedstate = deletedstates.pop();
 
