@@ -208,15 +208,16 @@
 ; redo                  | {:changes [c1 c2]   :pending-undo []        undoes: [[~c1 ~c2]] redoes: []}
 (defn text-save-undo[t]
   (let [s (t :str)
-        pending (t :pending-undo)
-        chs (merge-changes (rseq (pending :changes)))
-        undo (assoc pending :changes chs)]
-    (println "text-save-undo:" pending)
-    (println "text-save-undo:" chs)
-    (-> t
-        (update-in [:undoes] conj undo)
-        (assoc :pending-undo nil)
-        (assoc :redoes []))))
+        pending (t :pending-undo)]
+    (if (nil? pending) t
+      (let [chs (merge-changes (rseq (pending :changes)))
+            undo (assoc pending :changes chs)]
+        (println "text-save-undo:" pending)
+        (println "text-save-undo:" chs)
+        (-> t
+            (update-in [:undoes] conj undo)
+            (assoc :pending-undo nil)
+            (assoc :redoes []))))))
 
 ;popup from undo apply changes (reverse order) then push reverse to redo
 (defn text-undo[t]
