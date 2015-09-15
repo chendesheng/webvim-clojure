@@ -54,7 +54,8 @@
 ;TODO: keep track of current line number is annoying
 (defn text-update-pos[t newpos]
   (let [pos (t :pos)
-        s (t :str)]
+        s (t :str)
+        newpos (min newpos (-> s count dec))]
     (cond 
       (zero? newpos)
       (-> t 
@@ -220,28 +221,21 @@
             (assoc :redoes []))))))
 
 ;popup from undo apply changes (reverse order) then push reverse to redo
-(defn text-undo[t]
-  (if (-> t :undoes count zero?) t
+(defn- text-undo-redo[t undoes redoes]
+  (if (-> t undoes count zero?) t
     (let [s (t :str)
-          undo (-> t :undoes peek)
+          undo (-> t undoes peek)
           chs (-> undo :changes rseq vec)
           [newt rchs] (text-apply-changes t chs)]
       (-> newt
           (assoc :changes chs)
           (text-update-pos (undo :cursor))
-          (update-in [:undoes] pop)
-          (update-in [:redoes] 
+          (update-in [undoes] pop)
+          (update-in [redoes] 
                      conj (assoc undo :changes rchs))))))
 
+(defn text-undo[t]
+  (text-undo-redo t :undoes :redoes))
+
 (defn text-redo[t]
-  (if (-> t :redoes count zero?) t
-    (let [s (t :str)
-          redo (-> t :redoes peek)
-          chs (-> redo :changes rseq vec)
-          [newt rchs] (text-apply-changes t chs)]
-      (-> newt
-          (assoc :changes chs)
-          (text-update-pos (redo :cursor))
-          (update-in [:redoes] pop)
-          (update-in [:undoes] 
-                     conj (assoc redo :changes rchs))))))
+  (text-undo-redo t :redoes :undoes))
