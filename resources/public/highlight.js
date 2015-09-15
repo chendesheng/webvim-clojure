@@ -187,10 +187,15 @@ function newHighlight(lang) {
 function hlcompile(ROOT) {
 	if (!ROOT) {
 		return {
+			parse: function(block, state) {
+				return [[], [[null, block]]];
+			},
 			parseBlock: function(block, row) {
 				return [[null, block]];
 			},
-			refreshLines: function() {}
+			refresh: function(iter) {
+				iter.render([[null, iter.text()]]);
+			}
 		};
 	}
 

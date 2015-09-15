@@ -281,7 +281,7 @@ function refreshIter(index, currentBlock, states, parentNode) {
 		next: function() {
 			ele = ele.nextSibling;
 			i++;
-			return !outOfRange(ele);
+			return !endCode(ele);
 		}
 	}
 }
