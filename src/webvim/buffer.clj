@@ -31,7 +31,10 @@
                    :else {:name "Plain Text"
                           :fn-indent auto-indent}}
         ext (if (nil? bufname) "" (re-find #"\.\w+$" bufname))
-        s (text-new txt)
+        ;make sure last line ends with line break
+        s (if (.endsWith txt "\n") 
+            (text-new txt)
+            (.append (text-new txt) \newline))
         b {:name bufname
            ;= nil if it is a special buffer like [New File] or [Quick Fix]
            :filepath filepath 

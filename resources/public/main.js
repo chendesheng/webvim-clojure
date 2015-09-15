@@ -170,6 +170,9 @@ var buffers = {};
 function outOfRange(ele) {
 	return ele == null || !/\bcode\b/.test(ele.className);
 }
+function endCode(ele) {
+	return ele != null && /\bend\-code\b/.test(ele.className);
+}
 
 function getCodeBlockByPos(buf, pos) {
 	var i = buf.pos;
@@ -177,14 +180,10 @@ function getCodeBlockByPos(buf, pos) {
 	var num = buf.currentBlockNumber;
 	var linenum = buf.currentLineNumber;
 	if (i <= pos) {
-		while (!outOfRange(ele)) {
+		while (!endCode(ele)) {
 			var j = i + ele.textContent.length;
 			if (i <= pos && pos < j) {
-				buf.currentBlock = ele;
-				buf.pos = i;
-				buf.currentBlockNumber = num;
-				buf.currentLineNumber = linenum;
-				return {e: ele, pos: i, num: num, linenum: linenum}
+				break;
 			}
 
 			i = j;
@@ -192,12 +191,14 @@ function getCodeBlockByPos(buf, pos) {
 			linenum += ele.textContent.count('\n');
 			ele = ele.nextSibling;
 		}
-	} else {
-		while (true) {
-			if (outOfRange(ele)) {
-				break;
-			}
 
+		buf.currentBlock = ele;
+		buf.pos = i;
+		buf.currentBlockNumber = num;
+		buf.currentLineNumber = linenum;
+		return {e: ele, pos: i, num: num, linenum: linenum}
+	} else {
+		while (!outOfRange(ele)) {
 			num--;
 			ele = ele.previousSibling;
 			linenum -= ele.textContent.count('\n');
@@ -221,6 +222,7 @@ function getCodeBlockByPos(buf, pos) {
 function getElementByPos(buf, pos) {
 	var res = getCodeBlockByPos(buf, pos);
 	if (res == null) return null;
+	if (endCode(res.e)) return {e: res.e, offset: 0};
 
 	var ele = res.e.firstChild;
 	var i = res.pos;
@@ -287,7 +289,6 @@ function refreshIter(index, currentBlock, states, parentNode) {
 //TODO: Future improvements: 
 //1. put syntax highlight to a dedicate web worker (or just use setTimeout)
 //2. only render “visible” parts and still make scrolling fast
-//3. render difflines into an offline DOM object first
 function render(buf) {
 	if (!buf) return;
 	
@@ -329,9 +330,9 @@ function render(buf) {
 		
 
 		//put a pivot in the end
-		//var pivot = document.createElement('SPAN');
-		//pivot.className = 'code';
-		//$lines.appendChild(pivot);
+		var pivot = document.createElement('SPAN');
+		pivot.className = 'code end-code';
+		$lines.appendChild(pivot);
 
 		buffers[buf.id].currentBlock = $lines.firstChild;
 		buffers[buf.id].currentBlockNumber = 0;
@@ -358,7 +359,7 @@ function render(buf) {
 			var suffix = resb.e.textContent.substring(c.pos+c.len-resb.pos);
 			var newtxt = prefix + c.to + suffix;
 
-			//delete [resa.e, resb] both inclusive
+			//delete [resa.e, resb.e] both inclusive
 			var ele = resa.e;
 			while(true) {
 				var toremove = ele;
@@ -398,7 +399,7 @@ function render(buf) {
 			b.currentBlockNumber = nextblock.num+blocknumdiff;
 
 			//update syntax highlight
-			if (!outOfRange(ele) && !savedstate.equal(hl.states[resa.num+blocknuminserted])) {
+			if (!endCode(ele) && !savedstate.equal(hl.states[resa.num+blocknuminserted])) {
 				//currentBlock will change
 				var saved = b.currentBlock.previousSibling;
 				hl.refresh(refreshIter(resa.num+blocknuminserted, b.currentBlock, hl.states, $lines));
