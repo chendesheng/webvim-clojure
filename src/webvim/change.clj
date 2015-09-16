@@ -100,13 +100,14 @@
 (defn text-apply-changes[t changes]
   (reduce 
     (fn [[t rchs] c]
+      (println c)
       (let [[newt rc] (text-apply-change t c)]
-        [newt (conj rchs rc)])) [t []] changes))
+        [newt (conj rchs rc)])) [t nil] changes))
 
 (defn- push-pending[pending c oldpos]
   (if (nil? pending)
     ;create one if nil
-    {:changes [c] :cursor oldpos}
+    {:changes (list c) :cursor oldpos}
     ;don't change :cursor
     (update-in pending [:changes] conj c)))
 
@@ -119,10 +120,11 @@
               :to (str to)}
            [newt rc] (text-apply-change t c)
            undo (push-pending (newt :pending-undo) rc (t :pos))]
-         (-> newt
-             (assoc :pending-undo undo)
-             (update-in [:changes] conj c)
-             (fire-event t :change-buffer))))))
+       (println "make change:" c)
+       (-> newt
+           (assoc :pending-undo undo)
+           (update-in [:changes] conj c)
+           (fire-event t :change-buffer))))))
 
 ;A change is one edit at **single** point. 
 ;For example:
@@ -157,17 +159,37 @@
         {:pos p1
          :to (str to1 to2)
          :len (+ l1 l2)}
+        (= (+ p1 lt1) (+ p2 l2))
+        {:pos (min p1 p2)
+         :to (str (subs to1 0 (max (- lt1 l2) 0)) to2)
+         :len (- (+ p1 l1) (min p1 p2))}
         :else nil))))
+
+;(merge-change {:pos 2 :len 3 :to "de"} {:pos 3 :len 1 :to "aa"})
+;(merge-change {:pos 2 :len 3 :to "de"} {:pos 0 :len 4 :to "aa"})
+;(merge-change {:pos 2 :len 3 :to "de"} {:pos 2 :len 2 :to "aa"})
 
 (defn- merge-changes
   "compress changes"
   [changes]
   (reduce 
     (fn[chs c]
+      (println chs)
       (let [merged (merge-change (peek chs) c)]
         (if (nil? merged)
           (conj chs c)
-          (conj (pop chs) merged)))) [] changes))
+          (conj (pop chs) merged)))) nil changes))
+
+;(merge-changes [{:pos 8, :len 1, :to ""} 
+;                {:pos 7, :len 1, :to ""} 
+;                {:pos 7, :len 0, :to "a"} 
+;                {:pos 8, :len 0, :to "a"} 
+;                {:pos 8, :len 1, :to ""} 
+;                {:pos 7, :len 1, :to ""} 
+;                {:pos 6, :len 1, :to ""} 
+;                {:pos 5, :len 1, :to ""} 
+;                {:pos 5, :len 1, :to ""}])
+
 
 ;(println (merge-change {:pos 1 :len 1 :to ""} {:pos 0 :len 1 :to ""}))
 ;(println (merge-changes [{:pos 1 :len 1 :to ""} {:pos 0 :len 1 :to ""}]))
@@ -201,31 +223,32 @@
 ; About undo/redo:
 ; actions               | buffer before write to client
 ;-----------------------|---------------------------------------------------------------------------------
-; --enter insert mode-- | {:changes []        :pending-undo []        undoes: []          redoes: []} 
-; apply change c1       | {:changes [c1]      :pending-undo [~c1]     undoes: []          redoes: []}  
-; apply change c2       | {:changes [c2]      :pending-undo [~c1 ~c2] undoes: []          redoes: []}
-; --exit inert mode--   | {:changes []        :pending-undo []        undoes: [[~c1 ~c2]] redoes: []}
-; undo                  | {:changes [~c2 ~c1] :pending-undo []        undoes: []          redoes: [[c2 c1]]}
-; redo                  | {:changes [c1 c2]   :pending-undo []        undoes: [[~c1 ~c2]] redoes: []}
+; --enter insert mode-- | {:changes ()        :pending-undo ()        undoes: ()          redoes: ()} 
+; apply change c1       | {:changes (c1)      :pending-undo (~c1)     undoes: ()          redoes: ()}  
+; apply change c2       | {:changes (c2)      :pending-undo (~c2 ~c1) undoes: ()          redoes: ()}
+; --exit inert mode--   | {:changes ()        :pending-undo ()        undoes: ((~c2 ~c1)) redoes: ()}
+; undo                  | {:changes (~c2 ~c1) :pending-undo ()        undoes: ()          redoes: ((c1 c2))}
+; redo                  | {:changes (c1 c2)   :pending-undo ()        undoes: ((~c2 ~c1)) redoes: ()}
 (defn text-save-undo[t]
   (let [s (t :str)
         pending (t :pending-undo)]
     (if (nil? pending) t
-      (let [chs (merge-changes (rseq (pending :changes)))
-            undo (assoc pending :changes chs)]
+      (let [chs (merge-changes (pending :changes))
+            undo (assoc pending :changes (reverse chs))]
         (println "text-save-undo:" pending)
         (println "text-save-undo:" chs)
         (-> t
             (update-in [:undoes] conj undo)
             (assoc :pending-undo nil)
-            (assoc :redoes []))))))
+            (assoc :redoes nil))))))
 
+                
 ;popup from undo apply changes (reverse order) then push reverse to redo
 (defn- text-undo-redo[t undoes redoes]
   (if (-> t undoes count zero?) t
     (let [s (t :str)
           undo (-> t undoes peek)
-          chs (-> undo :changes rseq vec)
+          chs (-> undo :changes)
           [newt rchs] (text-apply-changes t chs)]
       (-> newt
           (assoc :changes chs)
@@ -236,6 +259,8 @@
 
 (defn text-undo[t]
   (text-undo-redo t :undoes :redoes))
+
+;(text-undo (active-buffer))
 
 (defn text-redo[t]
   (text-undo-redo t :redoes :undoes))
