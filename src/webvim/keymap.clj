@@ -182,7 +182,7 @@
         (-> lastbuf
             ;(println (str "change-motion:" keycode))
             (buf-copy-range-lastbuf lastpos inclusive)
-            (text-delete (if inclusive (inc pos) (dec pos)))
+            (text-delete (if inclusive (inc pos) pos))
             (serve-keymap (@normal-mode-keymap "i") keycode))))))
 
 (defn yank-motion[b keycode]
