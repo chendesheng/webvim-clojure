@@ -391,7 +391,7 @@
     ;(println "normal-mode-after, recording-keys" (-> b :macro :recording-keys))
     ;if nothing changed there is no need to overwrite "." register
     ;so keys like i<esc> won't affect, this also exclude all motions.
-    (if-not (or (= (:lines lastbuf) (:lines b))
+    (if-not (or (= (:str lastbuf) (:str b))
                  ;These commands should not get repeat
                  (contains? #{".", "u", "c+r", "p", "P", ":"} keycode))
       (registers-put (:registers b) "." (-> b :macro :recording-keys)))
@@ -406,9 +406,8 @@
   (let [keycodes (registers-get (:registers b) ".")]
     (if (empty? keycodes)
       b
-      (let [{in :chan-in out :chan-out} b] 
-        ;remove "." from normal-mode-keymap prevent recursive, probably useless
-        (replay-keys b keycodes (dissoc @normal-mode-keymap "."))))))
+      ;remove "." from normal-mode-keymap prevent recursive, probably useless
+      (replay-keys b keycodes (dissoc @normal-mode-keymap ".")))))
 
 (defn cut-char[b]
     (let [pos (b :pos)]
