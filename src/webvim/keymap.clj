@@ -340,31 +340,26 @@
   b)
 
 (defn replay-keys [b keycodes keymap]
-  (let [in (async/chan) ;use local :chan-in :chan-out only for replay keys
-        out (async/chan)
-        registers (atom @(:registers b))
-        b1 (-> b
-               (assoc :registers registers) ;Use different reigsters when replay keys, avoid changing to the global registers.
-               (assoc :chan-in in)
-               (assoc :chan-out out))]
+  (let [b1 (-> b
+               (assoc :registers (atom @(:registers b))) ;Use different reigsters when replay keys, avoid changing to the global registers.
+               (assoc :chan-in (async/chan)) ;use local :chan-in :chan-out only for replay keys
+               (assoc :chan-out (async/chan)))]
     (println "start replay:")
     (pprint keycodes)
     (key-server b1 keymap)
-
-    ;loop through keycodes, feed :chan-in read :chan-out, return last :chan-out result
-    (loop [kc (first keycodes)
-           coll (subvec keycodes 1)]
-      (let[_ (async/>!! in kc) 
-           b2 (async/<!! out)]
-        (pprint coll)
-        (if (empty? coll)
-          (-> b2
-              buf-close-chan-in
-              ;restore back
-              (assoc :registers (:registers b))
-              (assoc :chan-in (:chan-in b))
-              (assoc :chan-out (:chan-out b)))
-          (recur (first coll) (subvec coll 1)))))))
+    (let [b2 (reduce 
+               (fn[b1 kc]
+                 (let[_ (async/>!! (b1 :chan-in) kc) 
+                      b2 (async/<!! (b1 :chan-out))]
+                   (assoc b2 
+                          :changes
+                          (concat (b1 :changes) (b2 :changes))))) b1 keycodes)]
+      (-> b2
+          buf-close-chan-in
+          ;restore back
+          (assoc :registers (b :registers))
+          (assoc :chan-in (b :chan-in))
+          (assoc :chan-out (b :chan-out))))))
 
 (defn update-x[b]
   (let [pos (b :pos)]
