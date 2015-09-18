@@ -322,7 +322,7 @@
         re (re-pattern (str "(?m)\\b" (quote-pattern word) "\\b"))]
     (registers-put (:registers b) "/" (str "/" re))
     (-> b 
-        (lines-re-forward-highlight re)
+        (re-forward-highlight re)
         (highlight-all-matches re))))
 
 (defn move-back-same-word[b]
@@ -331,7 +331,7 @@
         re (re-pattern (str "(?m)\\b" (quote-pattern word) "\\b"))]
     (registers-put (:registers b) "/" (str "?" re))
     (-> b 
-        (lines-re-backward-highlight re)
+        (re-backward-highlight re)
         (highlight-all-matches re))))
 
 (defn buf-close-chan-in[b]

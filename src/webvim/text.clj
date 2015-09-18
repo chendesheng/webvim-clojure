@@ -53,32 +53,6 @@
   (let [m (.matcher s re)]
     (find-first m pos)))
 
-(defn rg-re-forward
-  [s a b re]
-  (let [m (.matcher s re)]
-    (-> m
-        (.region a b)
-        (.useTransparentBounds true)
-        (.useAnchoringBounds true)
-        find-first)))
-
-;(rg-re-forward (text-new "c\ndef\n12\n3") 2 6 #"\w")
-
-(defn rg-re-forward-seq
-  [s a b re]
-  (let [m (.matcher s re)]
-    (-> m
-        (.region a b)
-        (.useTransparentBounds true)
-        (.useAnchoringBounds true))
-    ((fn step[]
-      (when (.find m)
-        (cons [(.start m) (.end m)] 
-              (lazy-seq (step))))))))
-
-;(first (rg-re-forward-seq (text-new "c\ndef\n12\n3") 2 6 #"\w"))
-
-
 
 (defn pos-re-backward
   "return backward range matches"
