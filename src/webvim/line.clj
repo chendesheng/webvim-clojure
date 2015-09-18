@@ -174,3 +174,24 @@
                 (reduced rg)))) pos (lines-reverse s pos)))
 
 ;(lines-re-backward (text-new "aaa\nbc\nd") 5 #"^")
+
+(defn lines-re-all-seq
+  [s re]
+  (reduce (fn[matches [a b]]
+            (concat matches (rg-re-forward-seq s a b re))) nil (lines s 0)))
+
+(defn lines-re-forward-highlight[t re]
+  (let [pos (t :pos)
+        s (t :str)
+        [a b] (lines-re-forward (inc pos) s re)]
+    (-> t
+        (text-update-pos a)
+        (update-in [:highlights] conj a (dec b)))))
+
+(defn lines-re-backward-highlight[t re]
+  (let [pos (t :pos)
+        s (t :str)
+        [a b] (lines-re-backward pos s re)]
+    (-> t
+        (text-update-pos a)
+        (update-in [:highlights] conj a (dec b)))))

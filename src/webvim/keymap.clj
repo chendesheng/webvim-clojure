@@ -323,7 +323,7 @@
         re (re-pattern (str "\\b" (quote-pattern word) "\\b"))]
     (registers-put (:registers b) "/" (str "/" re))
     (-> b 
-        (re-forward-highlight re)
+        (lines-re-forward-highlight re)
         (highlight-all-matches re))))
 
 (defn move-back-same-word[b]
@@ -332,7 +332,7 @@
         re (re-pattern (str "\\b" (quote-pattern word) "\\b"))]
     (registers-put (:registers b) "/" (str "?" re))
     (-> b 
-        (re-backward-highlight re)
+        (lines-re-backward-highlight re)
         (highlight-all-matches re))))
 
 (defn buf-close-chan-in[b]
@@ -493,7 +493,7 @@
            "n" #(let[s (or (registers-get (:registers %) "/") "/")
                      dir (first s)
                      re (re-pattern (subs s 1))
-                     fnsearch (if (= \/ dir) re-forward-highlight re-backward-highlight)]
+                     fnsearch (if (= \/ dir) lines-re-forward-highlight lines-re-backward-highlight)]
                   (-> % 
                       (dissoc :highlights)
                       (fnsearch re)
@@ -501,7 +501,7 @@
            "N" #(let[s (or (registers-get (:registers %) "/") "?")
                      dir (or (first s) "")
                      re (re-pattern (subs s 1))
-                     fnsearch (if (= \/ dir) re-backward-highlight re-forward-highlight)]
+                     fnsearch (if (= \/ dir) lines-re-backward-highlight lines-re-forward-highlight)]
                   (-> % 
                       (dissoc :highlights)
                       (fnsearch re)

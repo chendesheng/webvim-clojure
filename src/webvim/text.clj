@@ -238,21 +238,6 @@
 
 ;(paragraph-forward {:str (text-new "aaa\nbb") :pos 0 :y 0})
 
-(defn re-forward-highlight[t re]
-  (let [pos (t :pos)
-        s (t :str)
-        [a b] (pos-re-next-forward pos s re)]
-    (-> t
-        (text-update-pos a)
-        (update-in [:highlights] conj a (dec b)))))
-
-(defn re-backward-highlight[t re]
-  (let [pos (t :pos)
-        s (t :str)
-        [a b] (pos-re-next-backward pos s re)]
-    (-> t
-        (text-update-pos a)
-        (update-in [:highlights] conj a (dec b)))))
 
 (defn char-forward[t]
   (let [pos (t :pos)
