@@ -111,13 +111,12 @@
                          :suggestions-index 0})))))))
 
 (defn highlight-all-matches[b re]
-  b)
-  ;(loop [b1 (re-forward-highlight b re)
-  ;       hls (:highlights b1)]
-  ;  (if (= (b1 :pos) (b :pos))
-  ;    (assoc b :highlights (vec hls))
-  ;    (let [b2 (re-forward-highlight b1 re)]
-  ;      (recur b2 (concat hls (:highlights b2)))))))
+  (let [s (b :str)]
+    (assoc b :highlights 
+           (flatten 
+             (map (fn[[a b]]
+                    [a (dec b)])
+                  (pos-re-forward-seq 0 s re))))))
 
 (defn- buf-pos-info[b]
   (let [{nm :name 
@@ -129,7 +128,7 @@
 (defn handle-search[b]
   (registers-put (:registers b) "/" (b :ex))
   (-> b
-      (highlight-all-matches (re-pattern (subs (b :ex) 1)))
+      (highlight-all-matches (re-pattern (str "(?m)" (subs (b :ex) 1))))
       (assoc :ex "")))
 
 (def map-key-inclusive 
@@ -320,7 +319,7 @@
   (let [[start end] (current-word b)
         word (text-subs (b :str) start end)
         _ (println (str word))
-        re (re-pattern (str "\\b" (quote-pattern word) "\\b"))]
+        re (re-pattern (str "(?m)\\b" (quote-pattern word) "\\b"))]
     (registers-put (:registers b) "/" (str "/" re))
     (-> b 
         (lines-re-forward-highlight re)
@@ -329,7 +328,7 @@
 (defn move-back-same-word[b]
   (let [[start end] (current-word b)
         word (text-subs (b :str) start end)
-        re (re-pattern (str "\\b" (quote-pattern word) "\\b"))]
+        re (re-pattern (str "(?m)\\b" (quote-pattern word) "\\b"))]
     (registers-put (:registers b) "/" (str "?" re))
     (-> b 
         (lines-re-backward-highlight re)
@@ -492,16 +491,16 @@
            "#" move-back-same-word
            "n" #(let[s (or (registers-get (:registers %) "/") "/")
                      dir (first s)
-                     re (re-pattern (subs s 1))
-                     fnsearch (if (= \/ dir) lines-re-forward-highlight lines-re-backward-highlight)]
+                     re (re-pattern (str "(?m)" (subs s 1)))
+                     fnsearch (if (= \/ dir) re-forward-highlight re-backward-highlight)]
                   (-> % 
                       (dissoc :highlights)
                       (fnsearch re)
                       (highlight-all-matches re)))
            "N" #(let[s (or (registers-get (:registers %) "/") "?")
                      dir (or (first s) "")
-                     re (re-pattern (subs s 1))
-                     fnsearch (if (= \/ dir) lines-re-backward-highlight lines-re-forward-highlight)]
+                     re (re-pattern (str "(?m)" (subs s 1)))
+                     fnsearch (if (= \/ dir) re-backward-highlight re-forward-highlight)]
                   (-> % 
                       (dissoc :highlights)
                       (fnsearch re)

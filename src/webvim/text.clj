@@ -238,6 +238,30 @@
 
 ;(paragraph-forward {:str (text-new "aaa\nbb") :pos 0 :y 0})
 
+(defn re-forward-highlight[t re]
+  (let [pos (t :pos)
+        s (t :str)
+        rg (or 
+             (pos-re-next-forward pos s re)
+             (pos-re-forward 0 s re))] ;TODO: use region reduce duplicate work
+    (if (nil? rg) t
+      (let [[a b] rg]
+        (-> t
+            (text-update-pos a)
+            (update-in [:highlights] conj a (dec b)))))))
+
+(defn re-backward-highlight[t re]
+  (let [pos (t :pos)
+        s (t :str)
+        rg (or 
+             (pos-re-next-backward pos s re)
+             (pos-re-next-backward (count s) s re))]
+    (if (nil? rg) t
+      (let [[a b] rg]
+        (-> t
+            (text-update-pos a)
+            (update-in [:highlights] conj a (dec b)))))))
+
 
 (defn char-forward[t]
   (let [pos (t :pos)
@@ -259,8 +283,11 @@
 (defn pos-word[pos s]
   (let [re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
         re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
+        ;_ (println s)
+        ;_ (println re-start)
+        ;_ (println re-end)
         b (or (last (pos-re-forward pos s re-end)) (count s))
-        a (or (first (pos-re-backward b s re-start)) 0)]
+        a (or (last (pos-re-next-backward b s re-start)) 0)]
       [a b]))
 
 ;(pos-word 2 (text-new "aaa"))
@@ -269,7 +296,11 @@
   "return range of word under cursor, right side is exclusive"
   (let [{pos :pos
          s :str} t]
+    (println pos s)
     (pos-word pos s)))
+
+;(pos-word 2 (text-new "(ns w"))
+;(pos-re-backward 3 (text-new "(ns w") #"[^a-zA-Z_\-!.?+*=<>&#\':0-9](?=[a-zA-Z_\-!.?+*=<>&#\':0-9])")
 
 ;(defn positive-numbers 
 ;  ([] (positive-numbers 1))
