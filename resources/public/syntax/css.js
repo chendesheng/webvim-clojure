@@ -4,109 +4,45 @@ Category: common, css
 */
 
 function hlcss(hljs) {
-  var IDENT_RE = '[a-zA-Z-][a-zA-Z0-9_-]*';
-  var FUNCTION = {
-    className: 'function',
-    begin: IDENT_RE + '\\(',
-    end: '\\)'
-  };
-  var RULE = {
-    begin: /[A-Za-z\_\.\-]+\s*(?:)/,
-    beginCapture: function() {
-	    return 'keyword';
-    },
-    end: '$'
-    ,
-//    contains: [
-//      {
-//        className: 'attribute',
-//        begin: /\S/, end: ':', excludeEnd: true,
-//        starts: {
-//          className: 'value',
-//          endsWithParent: true, excludeEnd: true,
-          contains: [
-            FUNCTION,
-            hljs.CSS_NUMBER_MODE,
-            hljs.QUOTE_STRING_MODE,
-            hljs.APOS_STRING_MODE,
-            hljs.C_BLOCK_COMMENT_MODE,
-            {
-              className: 'number', begin: '#[0-9A-Fa-f]+'
-            }
-   // ,
-   //         {
-   //           className: 'important', begin: '!important'
-   //         }
-          ]
-//        }
-//      }
-//  ]
-  };
+	var IDENT_RE = '[a-zA-Z-][a-zA-Z0-9_-]*';
+	var RULE = {
+		begin: /[A-Za-z\_\.\-]+\s*:/,
+		beginCapture: function(ctx) { return 'keyword'; },
+		end: '\n',
+		contains: [
+			hljs.CSS_NUMBER_MODE,
+			hljs.QUOTE_STRING_MODE,
+			hljs.APOS_STRING_MODE,
+			hljs.C_BLOCK_COMMENT_MODE,
+			{
+				className: 'number', begin: '#[0-9A-Fa-f]+'
+			}
+		]
+	};
 
-  return {
-    case_insensitive: true,
-    illegal: /[=\/|'\$]/,
-    contains: [
-      hljs.C_BLOCK_COMMENT_MODE,
-      //RULE,
-      {
-        className: 'keyword',
-	begin: /\#[A-Za-z0-9_-]+/
-      },
-      {
-        className: 'keyword',
-	begin: /\.[A-Za-z0-9_-]+/
-      },
-      {
-        className: 'attr_selector',
-        begin: /\[/, end: /\]/,
-        illegal: '$'
-      },
-      {
-        className: 'pseudo',
-        begin: /:(:)?[a-zA-Z0-9\_\-\+\(\)"']+/
-      },
-      {
-        className: 'at_rule',
-        begin: '@(font-face|page)',
-        lexemes: '[a-z-]+',
-        keywords: 'font-face page'
-      },
-      {
-        className: 'at_rule',
-        begin: '@', end: '[{;]', // at_rule eating first "{" is a good thing
-                                 // because it doesn't let it to be parsed as
-                                 // a rule set but instead drops parser into
-                                 // the default mode which is how it should be.
-        contains: [
-          {
-            className: 'keyword',
-            begin: /\S+/
-          },
-          {
-            begin: /\s/, endsWithParent: true, excludeEnd: true,
-            relevance: 0,
-            contains: [
-              FUNCTION,
-              hljs.APOS_STRING_MODE, hljs.QUOTE_STRING_MODE,
-              hljs.CSS_NUMBER_MODE
-            ]
-          }
-        ]
-      },
-      {
-        className: 'keyword',
-	begin: IDENT_RE,
-        relevance: 0
-      },
-      {
-        begin: /\{/, end: /\}/,
-        illegal: /\S/,
-        contains: [
-          hljs.C_BLOCK_COMMENT_MODE,
-          RULE,
-        ]
-      }
-    ]
-  };
+	var TITLE = {
+		begin: /[^\{\n,]+/,
+		beginCapture: function() {return 'title'},
+	};
+
+
+	var BLOCK = {
+		begin: /\{/, 
+		end: /\}/,
+		contains: [
+			hljs.C_BLOCK_COMMENT_MODE,
+			RULE,
+		]
+	};
+
+	BLOCK.contains.push(BLOCK);
+
+	return {
+		case_insensitive: true,
+		contains: [
+			hljs.C_BLOCK_COMMENT_MODE,
+			TITLE,
+			BLOCK
+		]
+	};
 }
