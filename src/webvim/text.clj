@@ -147,6 +147,11 @@
 (defn text-start[t]
   (merge t {:x 0 :y 0 :pos 0}))
 
+(defn text-end[t]
+  (-> t
+      (assoc :y (-> t :linescnt dec))
+      (assoc :pos (-> t :str count dec))))
+
 (defn text-re
   ([t re re-fn not-found]
    (let [{pos :pos

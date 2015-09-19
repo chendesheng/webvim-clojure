@@ -457,7 +457,7 @@
            "k" #(lines-backward % 1)
            "j" #(lines-forward % 1)
            "g" {"g" text-start}
-           ;"G" cursor-move-end
+           "G" text-end
            "w" word-forward
            "W" WORD-forward
            "b" word-backward
