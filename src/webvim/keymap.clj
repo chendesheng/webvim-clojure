@@ -95,9 +95,7 @@
              (text-insert t (keycode-to-char keycode)))
         t2 (buf-update-highlight-brace-pair t1 (-> t1 :pos dec))
         t3 (if (or (re-test (-> t2 :language :indent-triggers) keycode) (= keycode "enter"))
-             (-> t2 
-                 buf-indent-current-line 
-                 char-forward)
+             (buf-indent-current-line t2)
              t2)]
     (if (empty? (-> t3 :autocompl :suggestions))
       t3
