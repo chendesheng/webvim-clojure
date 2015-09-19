@@ -313,11 +313,18 @@
       (set-insert-mode "c")
       (serve-keymap (@normal-mode-keymap "i") "c")))
 
+(def left-boundary (str "(?<=^|[" not-word-chars "])"))
+(def right-boundary (str "(?=[" not-word-chars "]|$)"))
+
+;(pos-re-forward 0 (text-new "a b") (re-pattern left-boundary))
+;(pos-re-forward 0 (text-new "a b") (re-pattern right-boundary))
+;(pos-re-forward 0 (text-new "abc bc") (re-pattern (str left-boundary "bc" right-boundary)))
+
 (defn move-next-same-word[b]
   (let [[start end] (current-word b)
         word (text-subs (b :str) start end)
         _ (println (str word))
-        re (re-pattern (str "(?m)\\b" (quote-pattern word) "\\b"))]
+        re (re-pattern (str left-boundary (quote-pattern word) right-boundary))]
     (registers-put (:registers b) "/" (str "/" re))
     (-> b 
         (re-forward-highlight re)
@@ -326,7 +333,7 @@
 (defn move-back-same-word[b]
   (let [[start end] (current-word b)
         word (text-subs (b :str) start end)
-        re (re-pattern (str "(?m)\\b" (quote-pattern word) "\\b"))]
+        re (re-pattern (str left-boundary (quote-pattern word) right-boundary))]
     (registers-put (:registers b) "/" (str "?" re))
     (-> b 
         (re-backward-highlight re)
