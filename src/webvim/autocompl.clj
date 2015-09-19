@@ -13,7 +13,9 @@
 (defn split-words 
   "split text to word vector"
    [txt]
-  (split txt #"[^a-zA-Z_]" -1))
+  (split txt (re-pattern (str "[" not-word-chars "]")) -1))
+
+;(split-words (text-new "(ns [me.ray])"))
 
 (defn autocompl-parse
   "Split to word with length longer than 2."
@@ -80,15 +82,26 @@
      (if (range-interact? rg rgb)
        (max (last rgb) b) b)]))
 
+(defn pos-uncomplete-word
+  [s pos]
+  (if (zero? pos) nil
+    (let [re-start (re-pattern (str "(?<=[" not-word-chars "])"))
+          a (or (last (pos-re-backward pos s re-start)) 0)]
+      [a pos])))
+
 (defn uncomplete-word
   [t]
+  (let [s (t :str)
+        pos (t :pos)
+        rg (pos-uncomplete-word s pos)]
+    (if (or (nil? rg) (= (rg 0) (rg 1))) nil
+        (str (text-subs-range s rg)))))
+
+(defn buffer-replace-suggestion[t word]
   (let [pos (t :pos)
-        s (t :str)]
-    (if (zero? pos) nil
-      (let [re-start (re-pattern (str "[" not-word-chars "](?=[" word-chars "])"))
-            a (or (last (pos-re-next-backward pos s re-start)) 0)]
-        (println a)
-        (str (text-subs s a pos))))))
+        s (t :str)
+        [a b] (pos-uncomplete-word s pos)]
+    (text-replace t a b word)))
 
 ;(uncomplete-word {:pos 5 :str (text-new " b cd")})
 

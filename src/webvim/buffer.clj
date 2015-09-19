@@ -151,12 +151,6 @@
 (defn buffer-reset-keys[b]
   (assoc b :keys []))
 
-(defn buffer-replace-suggestion[b word]
-  (let [pos (b :pos)
-        s (b :str)
-        wordstart (or (first (pos-re-backward pos s #"(?<=[^a-zA-Z])[a-zA-Z]")) 0)]
-    (text-replace b wordstart pos word)))
-
 (defn buf-copy-range[t p1 p2 inclusive]
   (let [[a b] (sort2 p1 p2)]
     (str (text-subs (t :str) a (if inclusive (inc b) b)))))
