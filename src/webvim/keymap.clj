@@ -494,22 +494,18 @@
                        :else ex-mode-default})
            "*" move-next-same-word
            "#" move-back-same-word
-           "n" #(let[s (or (registers-get (:registers %) "/") "/")
-                     dir (first s)
-                     re (re-pattern (str "(?m)" (subs s 1)))
-                     fnsearch (if (= \/ dir) re-forward-highlight re-backward-highlight)]
-                  (-> % 
-                      (dissoc :highlights)
-                      (fnsearch re)
-                      (highlight-all-matches re)))
-           "N" #(let[s (or (registers-get (:registers %) "/") "?")
-                     dir (or (first s) "")
-                     re (re-pattern (str "(?m)" (subs s 1)))
-                     fnsearch (if (= \/ dir) re-backward-highlight re-forward-highlight)]
-                  (-> % 
-                      (dissoc :highlights)
-                      (fnsearch re)
-                      (highlight-all-matches re)))
+           "n" (fn[b]
+                 (let[s (or (registers-get (:registers b) "/") "/")
+                      dir (first s)
+                      re (re-pattern (str "(?m)" (subs s 1)))
+                      fnsearch (if (= \/ dir) re-forward-highlight re-backward-highlight)]
+                   (fnsearch b re)))
+           "N" (fn[b]
+                 (let[s (or (registers-get (:registers b) "/") "?")
+                      dir (or (first s) "")
+                      re (re-pattern (str "(?m)" (subs s 1)))
+                      fnsearch (if (= \/ dir) re-backward-highlight re-forward-highlight)]
+                   (fnsearch b re)))
            "}" paragraph-forward
            "{" paragraph-backward
            "%" (fn[b]
