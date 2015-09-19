@@ -67,7 +67,7 @@
       ;(println "offset:" offset)
       (if (neg? offset)
         nil
-        (let[a (max 0 (- offset 100))
+        (let[a (max 0 (- offset 50))
               b offset]
           (.region m a b)
           (let [matches (find-last m)]

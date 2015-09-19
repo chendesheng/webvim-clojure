@@ -7,9 +7,11 @@
 (def re-line-break (re-pattern line-break))
 
 (defn pos-line[s pos]
-  (let [b (or (last (pos-re-forward pos s #"\n")) (count s))
-        a (or (last (pos-re-next-backward pos s #"\n")) 0)]
+  (let [a (first (pos-re-backward pos s #"(?m)^"))
+        b (or (first (pos-re-next-forward pos s #"(?m)^")) (count s))]
     [a b]))
+
+;(pos-line (text-new "aa\nbb") 1)
 
 (defn current-line
   [t]
@@ -20,7 +22,9 @@
 ;(current-line {:pos 5 :str (text-new "\nbb\n\naaa\n")})
 
 (defn pos-line-first[pos s]
-  (pos-re pos s #"((?<=\n)[\s\S])" pos-re-backward 0))
+  (pos-re pos s #"(?m)^" pos-re-backward 0))
+
+;(pos-line-first 4 (text-new "aa\naaa"))
 
 (defn line-first[t]
   (let [s (t :str)
@@ -38,7 +42,13 @@
     (text-update-pos t newpos)))
 
 (defn line-end[t]
-  (text-re t #"\n" pos-re-forward (-> t :str count dec)))
+  (let [newpos (first (pos-re-forward (t :pos) (t :str) #"(?m)$"))]
+    ;(println newpos)
+    (text-update-pos t newpos)))
+
+;(line-end {:x 0 :y 0 :str (text-new "aaa") :pos 0})
+
+  ;(text-re t  pos-re-forward (-> t :str count dec)))
 
 (defn lines-reverse
   "return a lazy seq, line by line start at pos back to top"
