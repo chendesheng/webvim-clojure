@@ -50,27 +50,6 @@ function isChinese(c) {
 	return /[\ufe30-\uffa0\u4e00-\u9eff\u3000-\u303F]/.test(c);
 }
 
-//TODO use regexp
-function textWidth(txt, a, b) {
-	a = a || 0;
-	b = b || txt.length;
-	var x = 0;
-	var vx = a;
-	for (var i = a; i < b; i++) {
-		if (txt[i] == '\t') {
-			x += (4-vx%4)*9.57;
-			vx += (4-vx%4);
-		} else if (isChinese(txt[i])) {
-			x+=16;
-			vx++;
-		} else {
-			x+=9.57;
-			vx++;
-		}
-	}
-	return x;
-}
-
 function replaceBinding(html, data, ifEncode) {
 	for (var p in data) {
 		if (data.hasOwnProperty(p)) {
@@ -690,9 +669,9 @@ function renderSelection($p, a, b, reverseTextColor, buf) {
 		if (mh > 0) {
 			append(0, resa.top+lineHeight, '100%', mh);
 		}
-		append(0, resb.top, resb.left, lineHeight);
+		append(0, resb.top, resb.left, '1em');
 	} else {
-		append(resa.left, resa.top, Math.abs(resa.left-resb.left), lineHeight);
+		append(resa.left, resa.top, Math.abs(resa.left-resb.left), '1em');
 	}
 }
 

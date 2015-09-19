@@ -149,6 +149,7 @@ pre {
 .line-selected {
 	white-space:pre;
 	position:absolute;
+	z-index:-1;
 }
 
 .highlights .line-selected {
