@@ -61,11 +61,10 @@
                               (reduced a)
                               (if (= (peek stack) (all-braces ch))
                                 (pop stack)
-                                (conj stack ch))))) 
-                        [] (pos-re-backward-seq (dec a) s re-braces))
+                                (conj stack ch))))) nil (pos-re-backward-seq (dec a) s re-braces))
                   mpos (if (number? tmp) tmp nil)]
               (if (nil? mpos)
-                (auto-indent s pos)
+                ""
                 (let [ch (text-char-at s mpos)
                       [a b] (pos-line s mpos)
                       cnt (- mpos a)]
