@@ -108,20 +108,11 @@
                         {:suggestions suggestions
                          :suggestions-index 0})))))))
 
-(defn highlight-all-matches[b re]
-  (let [s (b :str)]
-    (assoc b :highlights 
-           (flatten 
-             (map (fn[[a b]]
-                    [a (dec b)])
-                  (pos-re-forward-seq 0 s re))))))
-
 (defn- buf-pos-info[b]
   (let [{nm :name 
          path :filepath
          y :y} b]
     (assoc b :message (str "\"" (or path nm) "\" line " (inc y)))))
-
 
 (defn handle-search[b]
   (registers-put (:registers b) "/" (b :ex))
@@ -339,6 +330,35 @@
         (re-backward-highlight re)
         (highlight-all-matches re))))
 
+;TODO: only highlight diff parts
+;(defonce listen-change-buffer
+;  (fn [newt oldt c]
+;    (let [a1 (c :pos)
+;          b1 (+ a1 (c :len))
+;          highlights (oldt :highlights) 
+;          {insects :insects 
+;           not-insects :not-insects} (partition-by 
+;                                       (fn[[a b]] 
+;                                         (if (or (<= a a1 b) 
+;                                                 (<= a b1 b))
+;                                           :insects 
+;                                           :not-insects)) highlights)
+;          newhighlights (reduce 
+;                          (fn [[a b]]
+;                            ) nil insects)]
+;      (assoc newt
+;             :highlights (cons not-insects newhighlights)))))
+
+(defonce ^{:private true} listen-change-buffer
+  (listen 
+    :change-buffer
+    (fn [newt oldt c]
+      (let [re (-> newt :registers deref (get "/" "/") (subs 1) re-pattern)]
+        (if-not (or (-> newt :highlights empty?) (-> re str empty?))
+          (highlight-all-matches newt re)
+          newt)))))
+
+
 (defn buf-close-chan-in[b]
   (async/close! (:chan-in b))
   b)
@@ -498,14 +518,20 @@
                  (let[s (or (registers-get (:registers b) "/") "/")
                       dir (first s)
                       re (re-pattern (str "(?m)" (subs s 1)))
-                      fnsearch (if (= \/ dir) re-forward-highlight re-backward-highlight)]
-                   (fnsearch b re)))
+                      hightlightall? (-> b :highlights empty?)
+                      fnsearch (if (= \/ dir) re-forward-highlight re-backward-highlight)
+                      b1 (fnsearch b re)] ;TODO: 1. no need fnsearch if highlight all matches. 2. cache highlight-all-matches
+                   (if hightlightall?
+                     (highlight-all-matches b1 re) b1)))
            "N" (fn[b]
                  (let[s (or (registers-get (:registers b) "/") "?")
                       dir (or (first s) "")
                       re (re-pattern (str "(?m)" (subs s 1)))
-                      fnsearch (if (= \/ dir) re-backward-highlight re-forward-highlight)]
-                   (fnsearch b re)))
+                      hightlightall? (-> b :highlights empty?)
+                      fnsearch (if (= \/ dir) re-backward-highlight re-forward-highlight)
+                      b1 (fnsearch b re)]
+                   (if hightlightall?
+                     (highlight-all-matches b1 re) b1)))
            "}" paragraph-forward
            "{" paragraph-backward
            "%" (fn[b]

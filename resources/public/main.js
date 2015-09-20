@@ -598,10 +598,8 @@ function scrollToCursor(scrollTopRow, instant) {
 }
 
 function renderSelections($p, buf, ranges, reverseTextColor) {
-	for (var i = 0; i < ranges.length; i+=2) {
-		var a = ranges[i];
-		var b = ranges[i+1];
-		renderSelection($p, a, b, reverseTextColor, buf);
+	for (var i = 0; i < ranges.length; i++) {
+		renderSelection($p, ranges[i][0], ranges[i][1], reverseTextColor, buf);
 	}
 }
 

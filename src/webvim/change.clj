@@ -95,7 +95,8 @@
     [(-> t
         ;keep pos after change
         (shift-pos (c :pos) (rc :to) (c :to))
-        (assoc :str news)) rc]))
+        (assoc :str news)
+        (fire-event t c :change-buffer)) rc]))
 
 (defn text-apply-changes[t changes]
   (reduce 
@@ -123,8 +124,7 @@
        (println "make change:" c)
        (-> newt
            (assoc :pending-undo undo)
-           (update-in [:changes] conj c)
-           (fire-event t c :change-buffer))))))
+           (update-in [:changes] conj c))))))
 
 ;A change is one edit at **single** point. 
 ;For example:

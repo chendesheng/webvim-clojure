@@ -217,6 +217,12 @@
 
 ;(paragraph-forward {:str (text-new "aaa\nbb") :pos 0 :y 0})
 
+(defn add-highlight[t rg]
+  (let [highlights (t :highlights)]
+    (if (empty? (filter (fn[[a b]]
+                          (and (= a (rg 0)) (= b (rg 1)))) highlights))
+      (update-in t [:highlights] conj rg) t)))
+
 (defn re-forward-highlight[t re]
   (let [pos (t :pos)
         s (t :str)
@@ -227,7 +233,7 @@
       (let [[a b] rg]
         (-> t
             (text-update-pos a)
-            (update-in [:highlights] conj a (dec b)))))))
+            (add-highlight [a (dec b)]))))))
 
 (defn re-backward-highlight[t re]
   (let [pos (t :pos)
@@ -239,8 +245,7 @@
       (let [[a b] rg]
         (-> t
             (text-update-pos a)
-            (update-in [:highlights] conj a (dec b)))))))
-
+            (add-highlight [a (dec b)]))))))
 
 (defn char-forward[t]
   (let [pos (t :pos)
@@ -336,3 +341,11 @@
                          (reduced [a])
                          newcnt))) 0 braces)]
         (if (vector? mpos) (first mpos) nil)))))
+
+(defn highlight-all-matches[b re]
+  (let [s (b :str)]
+    (assoc b :highlights 
+           (map (fn[[a b]]
+                  [a (dec b)])
+                (pos-re-forward-seq 0 s re)))))
+
