@@ -48,7 +48,6 @@
   (swap! autocompl-words merge-words (autocompl-parse txt)))
 
 (defn autocompl-words-remove[txt]
-  (println "remove words:" (str txt))
   (swap! autocompl-words 
          remove-words 
          (autocompl-parse txt)))
@@ -66,21 +65,20 @@
                                               (first indexes) word])))) 
                      [[0 0 subject]] (dissoc @autocompl-words subject)))))
 
-(listen
-  :new-buffer
-  (fn [t]
-    (autocompl-words-parse (t :str))
-    t))
+(defonce listen-new-buffer
+  (listen
+    :new-buffer
+    (fn [t]
+      (autocompl-words-parse (t :str))
+      t)))
 
-(defn expand-ends-word [s a1 b]
-  (let [a (max (dec a1) 0)
-        rg [a b]
-        rga (pos-word a s)
-        rgb (pos-word b s)]
-    [(if (range-interact? rg rga)
-       (min (first rga) a) a)
-     (if (range-interact? rg rgb)
-       (max (last rgb) b) b)]))
+(defn expand-ends-word [s a b]
+  (let [re-left (re-pattern (str "(?<=[" not-word-chars "])"))
+        re-right (re-pattern (str "(?=[" not-word-chars "])"))]
+    [(or (first (pos-re-backward a s re-left)) 0)
+     (or (first (pos-re-forward b s re-right)) (count s))]))
+
+;(expand-ends-word (text-new "aa   bb") 1 3)
 
 (defn pos-uncomplete-word
   [s pos]
@@ -108,19 +106,24 @@
 ;(expand-ends-word (text-new "aa bb") 1 3)
 ;(expand-ends-word (text-new "aa ") 0 2)
 
-(listen
-  :change-buffer
-  (fn [newt oldt]
-    (let [c (-> newt :pending-undo :changes last)
-          a (c :pos)
-          olds (oldt :str)
-          oldb (+ a (-> c :to count))
-          news (newt :str)
-          newb (+ a (c :len))]
-      (autocompl-words-remove 
-        (text-subs-range
-          olds (expand-ends-word olds a oldb)))
-      (autocompl-words-parse 
-        (text-subs-range
-          news (expand-ends-word news a newb)))
-      newt)))
+(defn- autocompl-update
+  [news olds c]
+  (let [a (c :pos)
+        oldb (-> c :len (+ a))
+        newb (-> c :to count (+ a))]
+    (autocompl-words-remove 
+      (text-subs-range
+        olds (expand-ends-word olds a oldb)))
+    (autocompl-words-parse 
+      (text-subs-range
+        news (expand-ends-word news a newb)))))
+
+(defonce listen-change-buffer 
+  (listen
+    :change-buffer
+    (fn [newt oldt c]
+      (let [news (newt :str)
+            olds (oldt :str)]
+        (when-not (= news olds)
+          (autocompl-update news olds c))
+        newt))))

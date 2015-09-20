@@ -57,10 +57,6 @@
         (>= v e) e
         :else v))
 
-(defn range-interact? [[a1 b1] [a2 b2]]
-  (or (<= a1 a2 b1 b2)
-      (<= a2 a1 b2 b1)))
-
 (defn cursor-inc-col [cursor]
   (update-in cursor [:col] inc))
 
@@ -165,7 +161,7 @@
           (lazy-seq (step))))))))
 
 ;str change event
-;require listener has 1 arity and return buffer
+;require listener has at least 1 arity and return buffer
 (defonce listeners (atom {}))
 
 (defn listen[typ handler]
@@ -175,8 +171,8 @@
   ([b typ]
     (reduce (fn[b f]
               (f b)) b (@listeners typ)))
-  ([b oldb typ]
+  ([b oldb c typ] ;new old change
     (reduce (fn[b f]
-              (f b oldb)) b (@listeners typ))))
+              (f b oldb c)) b (@listeners typ))))
 
 ;(fire-str-changes {} :str-change)

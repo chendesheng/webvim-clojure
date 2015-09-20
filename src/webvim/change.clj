@@ -124,7 +124,7 @@
        (-> newt
            (assoc :pending-undo undo)
            (update-in [:changes] conj c)
-           (fire-event t :change-buffer))))))
+           (fire-event t c :change-buffer))))))
 
 ;A change is one edit at **single** point. 
 ;For example:
