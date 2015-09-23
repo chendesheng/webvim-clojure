@@ -535,6 +535,7 @@ function render(buf) {
 		}
 		$autocompl.css('margin-left', -gutterWidth()+'ch')
 
+		//TODO: use em instead of px
 		var viewportTop = lastScrollTop;
 		var viewportBottom = lastScrollTop+240;
 		var currentPos = (selectedIndex-1) * 24;

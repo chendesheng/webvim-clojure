@@ -201,12 +201,12 @@
           (serve-keymap (select-keys @normal-mode-keymap ["y" "d" "c" "p" "P"]) keycode)))))
 
 
-(defn visual-mode-select[b keycode]
+(defn visual-mode-select[t keycode]
   (let [m (re-find #"[ocdy]" keycode)] ;don't change cursor position if not motion
     (if (nil? m)
-      (let [pos (b :pos)]
-      (update-in b [:visual :ranges 0] 
-                 (fn[rg] (assoc rg 0 pos)))))))
+      (let [pos (t :pos)]
+        (update-in t [:visual :ranges 0] 
+                   (fn[[a b]] [pos b]))) t)))
 
 (defn autocompl-start[t]
   (let [pos (t :pos)
@@ -296,16 +296,18 @@
       (text-delete (b :pos) (-> b current-line last dec))
       (serve-keymap (@normal-mode-keymap "i") "c")))
 
-(defn delete-range[b]
-  (-> b
-      (text-delete-inclusive (b :pos) (-> b :context :lastbuf :pos))
-      text-save-undo))
+(defn delete-range[t]
+  (let [[a b] (-> t :visual :ranges first)]
+    (-> t
+        (text-delete-inclusive a b)
+        text-save-undo)))
 
-(defn change-range[b]
-  (-> b 
-      (text-delete-inclusive (b :pos) (-> b :context :lastbuf :pos))
-      (set-insert-mode "c")
-      (serve-keymap (@normal-mode-keymap "i") "c")))
+(defn change-range[t]
+  (let [[a b] (-> t :visual :ranges first)]
+    (-> t
+        (text-delete-inclusive a b)
+        (set-insert-mode "c")
+        (serve-keymap (@normal-mode-keymap "i") "c"))))
 
 (def left-boundary (str "(?<=^|[" not-word-chars "])"))
 (def right-boundary (str "(?=[" not-word-chars "]|$)"))
@@ -644,12 +646,12 @@
                               (update-x-if-not-jk (b :lastbuf) keycode)))
                  "d" delete-range
                  "c" change-range
-                 "o" (fn[b]
-                       (let [[pt1 pt2] (-> b :visual :ranges first)
-                             newb (-> b 
-                                      (update-in [:visual :ranges first] 
-                                                 (fn[[a b]][b a])))]
-                         (assoc-in newb [:context :lastbuf] newb)))})
+                 "o" (fn[t]
+                       (let [[a b] (-> t :visual :ranges first)
+                             newt (-> t
+                                      (assoc-in [:visual :ranges 0] [b a])
+                                      (text-update-pos b))]
+                             (assoc-in newt [:context :lastbuf] newt)))})
           "z" {"z" cursor-center-viewport }
           "d" (merge 
                 @motion-keymap
