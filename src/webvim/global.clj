@@ -57,46 +57,8 @@
         (>= v e) e
         :else v))
 
-(defn cursor-inc-col [cursor]
-  (update-in cursor [:col] inc))
-
-(defn cursor-dec-col [cursor]
-  (if (pos? (cursor :col))
-    (update-in cursor [:col] dec)
-    cursor))
-
-(defn inc-col [b]
-  (update-in b [:cursor] cursor-inc-col))
-
-(defn dec-col [b]
-  (if (pos? (-> b :cursor :col))
-    (update-in b [:cursor :col] dec)
-    b))
-
-(defn col-count
-  "Take row number return count length of a row."
-  [b row]
-  (count ((:lines b) row)))
-
-(defn equal-pt?[pt1 pt2]
-  (and (= (pt1 :col) (pt2 :col)) (= (pt1 :row) (pt2 :row))))
-
 (defn quote-pattern[ch]
   (java.util.regex.Pattern/quote (str ch)))
-
-(defn cursor-compare 
-  "true if cur1 \"<=\" cur2"
-  [{r1 :row c1 :col}
-   {r2 :row c2 :col}]
-  (or (< r1 r2) (and (= r1 r2) (<= c1 c2))))
-
-(defn cursor-sort [cur1 cur2]
-  (if (cursor-compare cur1 cur2)
-    [cur1 cur2]
-    [cur2 cur1]))
-
-(defn cursor-sort-range [rg]
-  (cursor-sort (rg 0) (rg 1)))
 
 (defn sort2[a b]
   (if (< a b) [a b] [b a]))

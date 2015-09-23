@@ -257,7 +257,6 @@
     (if (string? txt)
       (-> b
           (text-insert txt)
-          dec-col
           text-save-undo)
       b)))
 
@@ -265,7 +264,7 @@
   (let [txt (registers-get (:registers b) keycode)]
     (if (string? txt)
       (-> b
-          (text-insert (b :pos) txt)
+          (text-insert (inc (b :pos)) txt)
           text-save-undo)
       b)))
 
