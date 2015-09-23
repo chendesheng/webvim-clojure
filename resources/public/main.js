@@ -438,7 +438,9 @@ function render(buf) {
 	}
 
 	//render unsaved
-	$('.status-bar .buf-name').toggleClass('buf-unsaved', !!buf.unsaved);
+	if (typeof buf.dirty != 'undefined') {
+		$('.status-bar .buf-name').toggleClass('buf-unsaved', !!buf.dirty);
+	}
 
 	//render ongoing keys
 	if (typeof buf.keys != 'undefined') {

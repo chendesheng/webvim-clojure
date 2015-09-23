@@ -138,12 +138,19 @@
           (-> f fs/file fs/create)))
       (spit f s)
       (-> b
+          (assoc :dirty false)
           (assoc :message (str "\"" f "\" written"))))
     (catch Exception e 
       (println (.getMessage e))
       (.printStackTrace e)
       (let [err (str "caught exception: " (.getMessage e))]
         (assoc b :message err)))))
+
+(defonce ^{:private true} listen-change-buffer
+  (listen
+    :change-buffer
+    (fn [newt oldt c]
+      (assoc newt :dirty true))))
 
 (defn buffer-append-keys[b keycode]
   (assoc b :keys (conj (:keys b) keycode)))
