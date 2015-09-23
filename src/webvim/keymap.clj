@@ -27,7 +27,7 @@
   (merge b {:ex "" 
             :mode normal-mode 
             :keys nil
-            :visual {:type 0 :ranges []}
+            :visual {:type 0 :ranges nil}
             :autocompl {:suggestions nil 
                         :suggestions-index 0}}))
 
@@ -35,12 +35,12 @@
   (println "set-visual-mode:")
   (let [pos (b :pos)]
     (merge b {:ex "" :mode visual-mode :keys nil 
-              :visual {:type 0 :ranges [pos pos]}})))
+              :visual {:type 0 :ranges [[pos pos]]}})))
 
 (defn set-insert-mode[b keycode]
   ;(println "set-insert-mode")
   (-> b 
-      (assoc-in [:visual :ranges] [])
+      (assoc-in [:visual :ranges] nil)
       (merge {:ex "" :mode insert-mode :message nil :keys nil})))
 
 (defn set-insert-append[b keycode]
@@ -202,10 +202,11 @@
 
 
 (defn visual-mode-select[b keycode]
-  (let [m (re-find #"[ocd]" keycode)] ;don't change cursor position if not motion
+  (let [m (re-find #"[ocdy]" keycode)] ;don't change cursor position if not motion
     (if (nil? m)
-      (assoc-in b [:visual :ranges 1]
-                (b :pos)) b)))
+      (let [pos (b :pos)]
+      (update-in b [:visual :ranges 0] 
+                 (fn[rg] (assoc rg 0 pos)))))))
 
 (defn autocompl-start[t]
   (let [pos (t :pos)
@@ -257,15 +258,18 @@
     (if (string? txt)
       (-> b
           (text-insert txt)
+          char-backward
           text-save-undo)
       b)))
 
 (defn put-from-register-append[b keycode]
   (let [txt (registers-get (:registers b) keycode)]
     (if (string? txt)
-      (-> b
-          (text-insert (inc (b :pos)) txt)
-          text-save-undo)
+      (let [pos (b :pos)]
+        (-> b
+            (text-insert (inc pos) txt)
+            (text-update-pos (+ pos (count txt)))
+            text-save-undo))
       b)))
 
 (defn delete-line[t]
@@ -434,11 +438,11 @@
           (text-delete-offset 1)
           text-save-undo)))
 
-(defn yank-visual[b]
-  (let [[p1 p2] (-> b :visual :ranges)]
-    (registers-put (:registers b) (-> b :context :register) (buf-copy-range b p1 p2 true))
-    (let [[cur1 _] (apply sort2 (-> b :visual :ranges))]
-      b)))
+(defn yank-visual[t]
+  (let [[a b] (-> t :visual :ranges first)]
+    (registers-put (:registers t) (-> t :context :register) (buf-copy-range t a b true))
+    (let [[newpos  _] (sort2 a b)]
+      (text-update-pos t newpos))))
 
 (defn move-to-jumplist
   [b fndir]
@@ -641,9 +645,9 @@
                  "d" delete-range
                  "c" change-range
                  "o" (fn[b]
-                       (let [[pt1 pt2] (-> b :visual :ranges)
+                       (let [[pt1 pt2] (-> b :visual :ranges first)
                              newb (-> b 
-                                      (update-in [:visual :ranges] 
+                                      (update-in [:visual :ranges first] 
                                                  (fn[[a b]][b a])))]
                          (assoc-in newb [:context :lastbuf] newb)))})
           "z" {"z" cursor-center-viewport }
