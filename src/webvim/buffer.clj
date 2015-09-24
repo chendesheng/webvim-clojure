@@ -107,7 +107,7 @@
            ;detect language by file ext name
            ;TODO detect language by file content
            :language (get languages ext (languages :else))}]
-    (pprint (b :language))
+    ;(pprint (b :language))
     (fire-event b :new-buffer)))
 
 (defn open-file
@@ -141,7 +141,7 @@
           (assoc :dirty false)
           (assoc :message (str "\"" f "\" written"))))
     (catch Exception e 
-      (println (.getMessage e))
+      ;(println (.getMessage e))
       (.printStackTrace e)
       (let [err (str "caught exception: " (.getMessage e))]
         (assoc b :message err)))))
@@ -164,7 +164,7 @@
 
 (defn buf-update-highlight-brace-pair[b pos]
   (let [mpos (pos-match-brace (b :str) pos)]
-    (println pos mpos)
+    ;(println pos mpos)
     (if (nil? mpos)
       (dissoc b :braces)
       (assoc b :braces [pos mpos]))))

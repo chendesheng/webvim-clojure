@@ -32,7 +32,7 @@
                         :suggestions-index 0}}))
 
 (defn set-visual-mode[b]
-  (println "set-visual-mode:")
+  ;(println "set-visual-mode:")
   (let [pos (b :pos)]
     (merge b {:ex "" :mode visual-mode :keys nil 
               :visual {:type 0 :ranges [[pos pos]]}})))
@@ -65,16 +65,34 @@
         (set-insert-mode keycode)
         (text-delete-offset 1))))
 
-(defn set-insert-new-line[b keycode]
-  (-> b 
+(defn- insert-line-after[buf]
+  (let [pos (buf :pos)
+        [_ b] (current-line buf)]
+    (-> buf
+        (buf-insert b <br>)
+        (buf-set-pos b))))
+
+(defn set-insert-new-line[buf keycode]
+  (-> buf 
       (set-insert-mode keycode)
-      text-insert-line-after
+      insert-line-after
       buf-indent-current-line))
 
-(defn set-insert-new-line-before[b keycode]
-  (-> b 
+(defn- insert-line-before[buf]
+  (let [pos (buf :pos)
+        [a b] (current-line buf)]
+    (if (zero? a)
+      (-> buf
+          (buf-insert 0 <br>)
+          (buf-set-pos 0))
+      (-> buf
+          (buf-set-pos (- a 1))
+          (buf-insert <br>)))))
+
+(defn set-insert-new-line-before[buf keycode]
+  (-> buf 
       (set-insert-mode keycode)
-      text-insert-line-before
+      insert-line-before
       buf-indent-current-line))
 
 (defn keycode-to-char[keycode]
@@ -92,7 +110,7 @@
 (defn insert-mode-default[t keycode]
   (let [t1 (if (= "backspace" keycode)
              (text-delete-offset t -1)
-             (text-insert t (keycode-to-char keycode)))
+             (buf-insert t (keycode-to-char keycode)))
         t2 (buf-update-highlight-brace-pair t1 (-> t1 :pos dec))
         t3 (if (or (re-test (-> t2 :language :indent-triggers) keycode) (= keycode "enter"))
              (buf-indent-current-line t2)
@@ -156,7 +174,7 @@
       (let [inclusive (inclusive? keycode)]
         (-> lastbuf
             (buf-copy-range-lastbuf pos inclusive)
-            (text-delete (if inclusive (inc pos) pos))
+            (buf-delete (if inclusive (inc pos) pos))
             save-undo)))))
 
 (defn change-motion[b keycode]
@@ -170,7 +188,7 @@
         (-> lastbuf
             ;(println (str "change-motion:" keycode))
             (buf-copy-range-lastbuf lastpos inclusive)
-            (text-delete (if inclusive (inc pos) pos))
+            (buf-delete (if inclusive (inc pos) pos))
             (serve-keymap (@normal-mode-keymap "i") keycode))))))
 
 (defn yank-motion[b keycode]
@@ -198,8 +216,7 @@
     (if (not (nil? m))
       (-> b 
           (assoc-in [:context :register] keycode)
-          (serve-keymap (select-keys @normal-mode-keymap ["y" "d" "c" "p" "P"]) keycode)))))
-
+          (serve-keymap @normal-mode-keymap keycode)))))
 
 (defn visual-mode-select[t keycode]
   (let [m (re-find #"[ocdy]" keycode)] ;don't change cursor position if not motion
@@ -212,7 +229,7 @@
   (let [pos (t :pos)
         word (uncomplete-word t)
         suggestions (autocompl-suggest word)]
-    (println "autocompl:" suggestions)
+    ;(println "autocompl:" suggestions)
     (assoc t :autocompl 
            {:suggestions suggestions 
             :suggestions-index 0})))
@@ -257,7 +274,7 @@
   (let [txt (registers-get (:registers b) keycode)]
     (if (string? txt)
       (-> b
-          (text-insert txt)
+          (buf-insert txt)
           char-backward
           save-undo)
       b)))
@@ -267,7 +284,7 @@
     (if (string? txt)
       (let [pos (b :pos)]
         (-> b
-            (text-insert (inc pos) txt)
+            (buf-insert (inc pos) txt)
             (buf-set-pos (+ pos (count txt)))
             save-undo))
       b)))
@@ -288,24 +305,31 @@
     (registers-put (:registers t) (-> t :context :register) (buf-copy-range t pos b false))
     (-> t
       (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
-      (text-delete a b)
+      (buf-delete a b)
       save-undo)))
 
 (defn change-to-line-end[b]
   (-> b
-      (text-delete (b :pos) (-> b current-line last dec))
+      (buf-delete (b :pos) (-> b current-line last dec))
       (serve-keymap (@normal-mode-keymap "i") "c")))
+
+(defn- delete-inclusive
+  [t a b]
+  (let [[a b] (sort2 a b)]
+    (-> t
+        (buf-delete a (inc b))
+        (buf-set-pos a))))
 
 (defn delete-range[t]
   (let [[a b] (-> t :visual :ranges first)]
     (-> t
-        (text-delete-inclusive a b)
+        (delete-inclusive a b)
         save-undo)))
 
 (defn change-range[t]
   (let [[a b] (-> t :visual :ranges first)]
     (-> t
-        (text-delete-inclusive a b)
+        (delete-inclusive a b)
         (set-insert-mode "c")
         (serve-keymap (@normal-mode-keymap "i") "c"))))
 
@@ -319,7 +343,7 @@
 (defn move-next-same-word[b]
   (let [[start end] (current-word b)
         word (subr (b :str) start end)
-        _ (println (str word))
+        ;_ (println (str word))
         re (re-pattern (str left-boundary (quote-pattern word) right-boundary))]
     (registers-put (:registers b) "/" (str "/" re))
     (-> b 
@@ -373,8 +397,8 @@
                (assoc :registers (atom @(:registers b))) ;Use different reigsters when replay keys, avoid changing to the global registers.
                (assoc :chan-in (async/chan)) ;use local :chan-in :chan-out only for replay keys
                (assoc :chan-out (async/chan)))]
-    (println "start replay:")
-    (pprint keycodes)
+    ;(println "start replay:")
+    ;(pprint keycodes)
     (key-server b1 keymap)
     (let [b2 (reduce 
                (fn[b1 kc]

@@ -11,20 +11,20 @@
         b (or (first (pos-re-next-forward pos s #"(?m)^")) (count s))]
     [a b]))
 
-;(pos-line (text-new "aa\nbb") 1)
+;(pos-line (rope "aa\nbb") 1)
 
 (defn current-line
   [t]
    "return range of line under cursor, right side is exclusive"
    (pos-line (t :str) (t :pos)))
 
-;(current-line {:pos 1 :str (text-new "\naaa\n")})
-;(current-line {:pos 5 :str (text-new "\nbb\n\naaa\n")})
+;(current-line {:pos 1 :str (rope "\naaa\n")})
+;(current-line {:pos 5 :str (rope "\nbb\n\naaa\n")})
 
 (defn pos-line-first[pos s]
   (pos-re pos s #"(?m)^" pos-re-backward 0))
 
-;(pos-line-first 4 (text-new "aa\naaa"))
+;(pos-line-first 4 (rope "aa\naaa"))
 
 (defn line-first[t]
   (let [s (t :str)
@@ -46,7 +46,7 @@
     ;(println newpos)
     (buf-set-pos t newpos)))
 
-;(line-end {:x 0 :y 0 :str (text-new "aaa") :pos 0})
+;(line-end {:x 0 :y 0 :str (rope "aaa") :pos 0})
 
   ;(text-re t  pos-re-forward (-> t :str count dec)))
 
@@ -73,27 +73,27 @@
      #(>= p2 (first %))
      (lines s p1))))
 
-;(let [s (text-new "aa\nbb\ncc\n\n")] 
+;(let [s (rope "aa\nbb\ncc\n\n")] 
 ;  (take 30
 ;        (lines s 0 9)))
-;(lines (text-new "aa\nbb\ncc\n\n") 0)
+;(lines (rope "aa\nbb\ncc\n\n") 0)
 
 (defn- lines-move[t n fndir]
   (let [pos (t :pos)
         s (t :str)
         x (t :x)
         rg (nth (fndir s pos) n nil)]
-    (println rg)
+    ;(println rg)
     (if (nil? rg) t
       (let [[a b] rg
             newpos (+ a (bound-range x 0 (- b a 1)))]
-        (println newpos)
+        ;(println newpos)
         (buf-set-pos t newpos)))))
 
 (defn lines-forward[t n]
   (lines-move t n lines))
 
-;(lines-forward {:pos 0 :x 2 :str (text-new "abc\n\n") :y 0} 1)
+;(lines-forward {:pos 0 :x 2 :str (rope "abc\n\n") :y 0} 1)
 
 (defn lines-backward[t n]
   (lines-move t n -lines))
@@ -105,7 +105,7 @@
       (lines-forward t dy)
       (lines-backward t (- dy)))))
 
-;(lines (text-new "aa\nbb\ncc\n\n") 0 0)
+;(lines (rope "aa\nbb\ncc\n\n") 0 0)
 
 (defn pos-next-line
 "Find first line pred is true start at next line"
@@ -115,8 +115,8 @@
   ([s pos]
    (second (lines s pos))))
 
-;(pos-next-line (text-new "\n\n") 0)
-;(pos-prev-line (text-new "\n\n") 1)
+;(pos-next-line (rope "\n\n") 0)
+;(pos-prev-line (rope "\n\n") 1)
 
 (defn pos-prev-line
   [s pos]
@@ -127,23 +127,3 @@
   [s pos pred]
   (first 
     (filter pred (lines s pos))))
-
-(defn text-insert-line-after[t]
-  (let [pos (t :pos)
-        s (t :str)
-        [_ b] (current-line t)]
-    (-> t
-        (text-insert b <br>)
-        (buf-set-pos b))))
-
-(defn text-insert-line-before[t]
-  (let [pos (t :pos)
-        s (t :str)
-        [a b] (current-line t)]
-    (if (zero? a)
-      (-> t
-          (text-insert 0 <br>)
-          (buf-set-pos 0))
-      (-> t
-          (buf-set-pos (- a 1))
-          (text-insert <br>)))))

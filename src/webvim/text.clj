@@ -103,39 +103,32 @@
 (defn- text-save-change[t pos from to]
   (update-in t [:changes] conj {:pos pos :len (count from) :to (str to)}))
 
-(defn text-insert
+(defn buf-insert
   ([t l txt]
    (buf-replace t l l txt))
   ([t txt]
-   (text-insert t (t :pos) txt)))
+   (buf-insert t (t :pos) txt)))
 
-(defn text-delete
-  ([t l r]
-   (buf-replace t l r ""))
-  ([t pt]
+(defn buf-delete
+  ([t a b]
+   (buf-replace t a b ""))
+  ([t b]
    (let [pos (t :pos)
-         [l r] (sort2 pos pt)]
-     (text-delete t l r))))
-
-(defn text-delete-inclusive
-  [t p1 p2]
-  (let [[l r] (sort2 p1 p2)]
-    (-> t
-        (text-delete l (inc r))
-        (buf-set-pos l))))
+         [a b] (sort2 pos b)]
+     (buf-delete t a b))))
 
 (defn text-delete-range
   "delete range and set pos to end of deleted"
   [t rg]
   (-> t
-      (text-delete (first rg) (second rg))
+      (buf-delete (first rg) (second rg))
       (buf-set-pos (first rg))))
 
 (defn text-delete-offset[t offset] 
   (let [pos (t :pos)
         newpos (+ pos offset)]
     (if (neg? newpos) t
-      (text-delete t newpos))))
+      (buf-delete t newpos))))
 
 (defn char-at
   "return nil if out of range"
@@ -160,6 +153,13 @@
      (buf-set-pos t newpos)))
   ([t re re-fn]
    (text-re t re re-fn 0)))
+
+;(defn buf-move 
+;  [buf fnmove]
+;  (let [{pos :pos
+;         r :str} buf
+;        newpos (fnmove pos r)]
+;    (buf-set-pos buf newpos)))
 
 (def word-chars "a-zA-Z_\\-!.?+*=<>&#\\':0-9")
 (def not-word-chars (str "^" word-chars))
@@ -280,7 +280,7 @@
   "return range of word under cursor, right side is exclusive"
   (let [{pos :pos
          s :str} t]
-    (println pos s)
+    ;(println pos s)
     (pos-word pos s)))
 
 ;(pos-word 2 (rope "(ns w"))

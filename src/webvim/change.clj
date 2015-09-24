@@ -49,7 +49,7 @@
 
 (defn- rope-op-size
   [r op {dpos :dpos dy :dy}]
-  (println r)
+  ;(println r)
   (-> r
       (update-in [:pos] op dpos)
       (update-in [:y] op dy)))
@@ -102,7 +102,7 @@
 (defn- buf-apply-changes[buf changes]
   (reduce 
     (fn [[buf rchs] c]
-      (println c)
+      ;(println c)
       (let [[newbuf rc] (buf-apply-change buf c)]
         [newbuf (conj rchs rc)])) [buf nil] changes))
 
@@ -122,7 +122,7 @@
               :to (str to)}
            [newbuf rc] (buf-apply-change buf c)
            undo (push-pending (newbuf :pending-undo) rc (buf :pos))]
-       (println "make change:" c)
+       ;(println "make change:" c)
        (-> newbuf
            (assoc :pending-undo undo)
            (update-in [:changes] conj c))))))
@@ -175,7 +175,7 @@
   [changes]
   (reduce 
     (fn[chs c]
-      (println chs)
+      ;(println chs)
       (let [merged (merge-change (peek chs) c)]
         (if (nil? merged)
           (conj chs c)
@@ -235,8 +235,8 @@
     (if (nil? pending) buf
       (let [chs (merge-changes (pending :changes))
             undo (assoc pending :changes (reverse chs))]
-        (println "text-save-undo:" pending)
-        (println "text-save-undo:" chs)
+        ;(println "text-save-undo:" pending)
+        ;(println "text-save-undo:" chs)
         (-> buf
             (update-in [:undoes] conj undo)
             (assoc :pending-undo nil)
