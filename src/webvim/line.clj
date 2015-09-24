@@ -4,7 +4,7 @@
         webvim.text
         webvim.global))
 
-(def re-line-break (re-pattern line-break))
+(def re-line-break (re-pattern <br>))
 
 (defn pos-line[s pos]
   (let [a (first (pos-re-backward pos s #"(?m)^"))
@@ -30,7 +30,7 @@
   (let [s (t :str)
         pos (t :pos)
         newpos (pos-line-first pos s)]
-    (text-update-pos t newpos)))
+    (buf-set-pos t newpos)))
 
 (defn pos-line-start[pos s]
   (-> pos
@@ -39,24 +39,24 @@
 
 (defn line-start[t]
   (let [newpos (pos-line-start (t :pos) (t :str))]
-    (text-update-pos t newpos)))
+    (buf-set-pos t newpos)))
 
 (defn line-end[t]
   (let [newpos (first (pos-re-forward (t :pos) (t :str) #"(?m)$"))]
     ;(println newpos)
-    (text-update-pos t newpos)))
+    (buf-set-pos t newpos)))
 
 ;(line-end {:x 0 :y 0 :str (text-new "aaa") :pos 0})
 
   ;(text-re t  pos-re-forward (-> t :str count dec)))
 
-(defn lines-reverse
+(defn -lines
   "return a lazy seq, line by line start at pos back to top"
   [s pos]
   (let [rg (pos-line s pos)
         [a _] rg]
     (if (pos? a)
-      (cons rg (lazy-seq (lines-reverse s (dec a))))
+      (cons rg (lazy-seq (-lines s (dec a))))
       (list rg))))
 
 (defn lines
@@ -88,7 +88,7 @@
       (let [[a b] rg
             newpos (+ a (bound-range x 0 (- b a 1)))]
         (println newpos)
-        (text-update-pos t newpos)))))
+        (buf-set-pos t newpos)))))
 
 (defn lines-forward[t n]
   (lines-move t n lines))
@@ -96,7 +96,7 @@
 ;(lines-forward {:pos 0 :x 2 :str (text-new "abc\n\n") :y 0} 1)
 
 (defn lines-backward[t n]
-  (lines-move t n lines-reverse))
+  (lines-move t n -lines))
 
 (defn lines-row[t n]
   (let [y (t :y)
@@ -104,7 +104,6 @@
     (if (pos? dy)
       (lines-forward t dy)
       (lines-backward t (- dy)))))
-
 
 ;(lines (text-new "aa\nbb\ncc\n\n") 0 0)
 
@@ -121,7 +120,7 @@
 
 (defn pos-prev-line
   [s pos]
-  (second (lines-reverse s pos)))
+  (second (-lines s pos)))
 
 (defn pos-first-line
   "Find first line pred is true start at current line"
@@ -134,8 +133,8 @@
         s (t :str)
         [_ b] (current-line t)]
     (-> t
-        (text-insert b line-break)
-        (text-update-pos b))))
+        (text-insert b <br>)
+        (buf-set-pos b))))
 
 (defn text-insert-line-before[t]
   (let [pos (t :pos)
@@ -143,8 +142,8 @@
         [a b] (current-line t)]
     (if (zero? a)
       (-> t
-          (text-insert 0 line-break)
-          (text-update-pos 0))
+          (text-insert 0 <br>)
+          (buf-set-pos 0))
       (-> t
-          (text-update-pos (- a 1))
-          (text-insert line-break)))))
+          (buf-set-pos (- a 1))
+          (text-insert <br>)))))

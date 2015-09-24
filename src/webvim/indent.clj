@@ -17,8 +17,8 @@
 
 (defn auto-indent 
   [s pos]
-  (let [lines (filter #(-> % text-blank? not)
-                      (ranges-to-texts s (lines-reverse s pos)))
+  (let [lines (filter #(-> % rblank? not)
+                      (ranges-to-texts s (-lines s pos)))
         line (first lines)
         pline (second lines)]
     (if (nil? pline) ""
@@ -28,17 +28,17 @@
   (re-test #"^\s*;" line))
 
 (defn clojure-not-blank-or-comment? [line]
-  (not (or (text-blank? line) (clojure-comment? line))))
+  (not (or (rblank? line) (clojure-comment? line))))
 
 (defn clojure-get-indent[line]
   (cond 
     (= 1 (count (.trim line)))
     1
-    (not (= (text-char-at line 0) \())
+    (not (= (char-at line 0) \())
     1
     (re-test #"^\(\s*[^,\s]+[\s,]+[^,\s]+" line)
     (let [w (re-subs #"[^\s\[\{\(]+"
-                     (text-subs line 1))]
+                     (subr line 1 (count line)))]
       (if (contains? indent-tab-size (str w))
         2
         (-> w count (+ 2))))
@@ -52,11 +52,11 @@
     (cond 
       (zero? a)
       ""
-      (clojure-comment? (text-subs s a b))
+      (clojure-comment? (subr s a b))
       (auto-indent s pos)
       :else (let [tmp (reduce 
                         (fn[stack [a _]]
-                          (let [ch (text-char-at s a)]
+                          (let [ch (char-at s a)]
                             (if (and (contains? left-braces ch) (empty? stack))
                               (reduced a)
                               (if (= (peek stack) (all-braces ch))
@@ -65,18 +65,18 @@
                   mpos (if (number? tmp) tmp nil)]
               (if (nil? mpos)
                 ""
-                (let [ch (text-char-at s mpos)
+                (let [ch (char-at s mpos)
                       [a b] (pos-line s mpos)
                       cnt (- mpos a)]
                   (repeat-space 
                     (+ (- mpos a) 
-                       (clojure-get-indent (text-subs s mpos b))))))))))
+                       (clojure-get-indent (subr s mpos b))))))))))
 
 (defn clang-comment? [line]
   (re-test #"^\s*//" line))
 
 (defn clang-not-blank-or-comment? [line]
-  (not (or (text-blank? line) (clang-comment? line))))
+  (not (or (rblank? line) (clang-comment? line))))
 
 ;1. indent -1: line contains brace but pline not
 ;   if {
@@ -110,8 +110,8 @@
 ;   }                  <- pline
 ;   aaaa               <- line
 (defn clang-indent [s pos]
-  (let [[head & ranges] (lines-reverse s pos)
-        line (text-subs-range s head)
+  (let [[head & ranges] (-lines s pos)
+        line (subr s head)
         lines (filter clang-not-blank-or-comment?
                       (ranges-to-texts s ranges))
         _ (println (str "[" line "]"))
@@ -125,7 +125,7 @@
           (empty? pline)
           ""
           (and (not pbrace?) brace?)
-          (if (empty? pindent) "" (text-subs pindent 1))
+          (if (empty? pindent) "" (subr pindent 1))
           (and pbrace? (not brace?))
           (str pindent "\t")
           (and pbrace? brace?)
@@ -140,29 +140,29 @@
               ppindent
               pindent)))))
 
-(defn buf-indent-line[t pos]
-  (let [s (t :str)
-        indent ((-> t :language :fn-indent) s pos)
+(defn buf-indent-line[buf pos]
+  (let [s (buf :str)
+        indent ((-> buf :language :fn-indent) s pos)
         a (pos-line-first pos s)
         b (pos-line-start pos s)]
     (println a b)
-    (text-replace t a b indent)))
+    (buf-replace buf a b indent)))
 
 (defn buf-indent-lines 
   "indent from cursor row to row both inclusive"
-  [t newpos]
-  (let [s (t :str)
-        [p1 p2] (sort2 (t :pos) newpos)]
-    (loop [t (text-update-pos t p2) ;put pos at end and keep track it
-           [a _] (pos-first-line s p1 #(not (range-blank? s %)))] ;start at first non-blank line
-      (println (t :pos) a)
-      (if (< (t :pos) a) (text-update-pos t p1)
-        (let [t1 (buf-indent-line t a)
+  [buf newpos]
+  (let [s (buf :str)
+        [p1 p2] (sort2 (buf :pos) newpos)]
+    (loop [buf (buf-set-pos buf p2) ;put pos at end and keep track it
+           [a _] (pos-first-line s p1 #(not (rblank? s %)))] ;start at first non-blank line
+      (println (buf :pos) a)
+      (if (< (buf :pos) a) (buf-set-pos buf p1)
+        (let [t1 (buf-indent-line buf a)
               s1 (t1 :str)]
           (recur 
             t1
             ;use a as start, a doesn't change when indent current line
-            (pos-next-line s1 a #(not (range-blank? s1 %)))))))))
+            (pos-next-line s1 a #(not (rblank? s1 %)))))))))
 
 (defn buf-indent-current-line
   [b]

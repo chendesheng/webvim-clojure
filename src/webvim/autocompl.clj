@@ -15,7 +15,7 @@
    [txt]
   (split txt (re-pattern (str "[" not-word-chars "]")) -1))
 
-;(split-words (text-new "(ns [me.ray])"))
+;(split-words (rope "(ns [me.ray])"))
 
 (defn autocompl-parse
   "Split to word with length longer than 2."
@@ -68,9 +68,9 @@
 (defonce ^{:private true} listen-new-buffer
   (listen
     :new-buffer
-    (fn [t]
-      (autocompl-words-parse (t :str))
-      t)))
+    (fn [buf]
+      (autocompl-words-parse (buf :str))
+      buf)))
 
 (defn expand-ends-word [s a b]
   (let [re-left (re-pattern (str "(?<=[" not-word-chars "])"))
@@ -78,7 +78,7 @@
     [(or (first (pos-re-backward a s re-left)) 0)
      (or (first (pos-re-forward b s re-right)) (count s))]))
 
-;(expand-ends-word (text-new "aa   bb") 1 3)
+;(expand-ends-word (rope "aa   bb") 1 3)
 
 (defn pos-uncomplete-word
   [s pos]
@@ -88,23 +88,23 @@
       [a pos])))
 
 (defn uncomplete-word
-  [t]
-  (let [s (t :str)
-        pos (t :pos)
+  [buf]
+  (let [s (buf :str)
+        pos (buf :pos)
         rg (pos-uncomplete-word s pos)]
     (if (or (nil? rg) (= (rg 0) (rg 1))) nil
-        (str (text-subs-range s rg)))))
+        (str (subr s rg)))))
 
-(defn buffer-replace-suggestion[t word]
-  (let [pos (t :pos)
-        s (t :str)
+(defn buffer-replace-suggestion[buf word]
+  (let [pos (buf :pos)
+        s (buf :str)
         [a b] (pos-uncomplete-word s pos)]
-    (text-replace t a b word)))
+    (buf-replace buf a b word)))
 
-;(uncomplete-word {:pos 5 :str (text-new " b cd")})
+;(uncomplete-word {:pos 5 :str (rope " b cd")})
 
-;(expand-ends-word (text-new "aa bb") 1 3)
-;(expand-ends-word (text-new "aa ") 0 2)
+;(expand-ends-word (rope "aa bb") 1 3)
+;(expand-ends-word (rope "aa ") 0 2)
 
 (defn- autocompl-update
   [news olds c]
@@ -112,18 +112,18 @@
         oldb (-> c :len (+ a))
         newb (-> c :to count (+ a))]
     (autocompl-words-remove 
-      (text-subs-range
+      (subr
         olds (expand-ends-word olds a oldb)))
     (autocompl-words-parse 
-      (text-subs-range
+      (subr
         news (expand-ends-word news a newb)))))
 
 (defonce ^{:private true} listen-change-buffer 
   (listen
     :change-buffer
-    (fn [newt oldt c]
-      (let [news (newt :str)
-            olds (oldt :str)]
+    (fn [buf oldbuf c]
+      (let [news (buf :str)
+            olds (oldbuf :str)]
         (when-not (= news olds)
           (autocompl-update news olds c))
-        newt))))
+        buf))))

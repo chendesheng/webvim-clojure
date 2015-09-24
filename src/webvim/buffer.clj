@@ -33,8 +33,8 @@
         ext (if (nil? bufname) "" (re-find #"\.\w+$" bufname))
         ;make sure last line ends with line break
         s (if (.endsWith txt "\n") 
-            (text-new txt)
-            (.append (text-new txt) \newline))
+            (rope txt)
+            (.append (rope txt) \newline))
         b {:name bufname
            ;= nil if it is a special buffer like [New File] or [Quick Fix]
            :filepath filepath 
@@ -158,9 +158,9 @@
 (defn buffer-reset-keys[b]
   (assoc b :keys []))
 
-(defn buf-copy-range[t p1 p2 inclusive]
-  (let [[a b] (sort2 p1 p2)]
-    (str (text-subs (t :str) a (if inclusive (inc b) b)))))
+(defn buf-copy-range[t a b inclusive]
+  (let [[a b] (sort2 a b)]
+    (str (subr (t :str) a (if inclusive (inc b) b)))))
 
 (defn buf-update-highlight-brace-pair[b pos]
   (let [mpos (pos-match-brace (b :str) pos)]
@@ -176,7 +176,7 @@
         s (t :str)
         [a b] (pos-re-forward pos s #"\n.+?(?=(\n|\S))")]
     (if (nil? a) t
-      (text-replace t a b " "))))
+      (buf-replace t a b " "))))
 
 (defn buf-bound-scroll-top
   "Change scroll top make cursor inside viewport"
@@ -196,4 +196,4 @@
 
 (defn buf-replace-char [b ch]
   (let [pos (b :pos)]
-    (text-replace b pos (inc pos) ch)))
+    (buf-replace b pos (inc pos) ch)))

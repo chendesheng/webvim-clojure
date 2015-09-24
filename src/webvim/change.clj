@@ -2,108 +2,109 @@
   (:use webvim.global)
   (:import (org.ahmadsoft.ropes RopeBuilder)))
 
-(def line-break "\n")
+(def <br> "\n")
 
-(defn text-new[s]
+(defn rope[r]
   (let [builder (RopeBuilder.)]
-    (.build builder s)))
+    (.build builder r)))
 
-(defn text-subs
-  ([s l r]
-   (.subSequence s l r))
-  ([s l]
-   (.subSequence s l (.length s))))
+(defn subr
+  ([r a b]
+   (.subSequence r a b))
+  ([r [a b]]
+   (.subSequence r a b)))
 
-(defn str-replace
-  [s l r to]
-  (-> s
-    (.delete l r)
-    (.insert l to)))
+(defn replacer
+  [r a b to]
+  (let [r1 (if (< a b)
+             (.delete r a b) r)
+        r2 (if-not (empty? to)
+             (.insert r1 a to) r1)]
+    r2))
 
-(defn apply-change[s c]
+(defn- apply-change[r c]
   (let [{pos :pos
          len :len
          to :to} c
-        news (str-replace s pos (+ pos len) to)]
-    [news {:pos pos
+        newr (replacer r pos (+ pos len) to)]
+    [newr {:pos pos
            :len (count to)
-           :to (str (text-subs s pos (+ pos len)))}]))
+           :to (str (subr r pos (+ pos len)))}]))
 
-(defn count-lines[s]
-  (let [cnt (count line-break)]
-    (loop[s1 s n 0]
-      (let [i (if (empty? s1)
-                -1
-                (.indexOf s1 line-break))]
-        (if (= i -1)
-          n
-          (recur (text-subs s1 (+ i cnt)) (inc n)))))))
+(defn- indexr[r s]
+  (if (empty? r) -1 (.indexOf r s)))
 
-(defn text-size
-  "How many chars and lines s contains"
-  [s]
-  {:dpos (count s)
-   :dy (count-lines s)})
+(defn count-lines[r]
+  (let [cnt (count <br>)]
+    (loop[r r n 0]
+      (let [i (indexr r <br>)]
+        (if (neg? i) n
+          (recur (subr r (+ i cnt) (.length r)) (inc n)))))))
 
-(defn text-op-size
-  [t op {dpos :dpos dy :dy}]
-  (-> t
+(defn rope-size
+  "How many chars and lines rope contains"
+  [r]
+  {:dpos (.length r)
+   :dy (count-lines r)})
+
+(defn- rope-op-size
+  [r op {dpos :dpos dy :dy}]
+  (println r)
+  (-> r
       (update-in [:pos] op dpos)
       (update-in [:y] op dy)))
 
 ;TODO: keep track of current line number is annoying
-(defn text-update-pos[t newpos]
-  (let [pos (t :pos)
-        s (t :str)
-        newpos (min newpos (-> s count dec))]
+(defn buf-set-pos[buf newpos]
+  (let [pos (buf :pos)
+        r (buf :str)
+        newpos (min newpos (-> r .length dec))]
     (cond 
       (zero? newpos)
-      (-> t 
+      (-> buf 
           (assoc :y 0) 
           (assoc :pos 0))
       (> newpos pos)
-      (-> t
-          (text-op-size + (text-size (text-subs s pos newpos))))
+      (rope-op-size buf + (rope-size (subr r pos newpos)))
       (< newpos pos)
-      (-> t
-          (text-op-size - (text-size (text-subs s newpos pos))))
-      :else t)))
+      (rope-op-size buf - (rope-size (subr r newpos pos)))
+      :else buf)))
 
 (defn- shift-pos
   ;only need (t :pos) and (t :y)
-  ([t l from to]
+  ([t a from to]
    (let [pos (t :pos)
-         r (+ l (count from))
-         szfrom (text-size from)
-         szto (text-size to)
+         b (+ a (count from))
+         szfrom (rope-size from)
+         szto (rope-size to)
          t1 (cond 
-              (< pos l)
+              (< pos a)
               t
-              (>= pos r)
+              (>= pos b)
               (-> t
-                  (text-op-size - szfrom)
-                  (text-op-size + szto))
+                  (rope-op-size - szfrom)
+                  (rope-op-size + szto))
               :else
               (-> t
-                  (text-op-size - (text-size (text-subs from 0 (- pos l))))
-                  (text-op-size + szto)))]
+                  (rope-op-size - (rope-size (subr from 0 (- pos a))))
+                  (rope-op-size + szto)))]
      (update-in t1 [:linescnt] #(-> % (- (szfrom :dy)) (+ (szto :dy)))))))
 
-(defn- text-apply-change[t c]
-  (let [s (t :str)
-        [news rc] (apply-change s c)]
+(defn- buf-apply-change[t c]
+  (let [r (t :str)
+        [newr rc] (apply-change r c)]
     [(-> t
         ;keep pos after change
         (shift-pos (c :pos) (rc :to) (c :to))
-        (assoc :str news)
+        (assoc :str newr)
         (fire-event t c :change-buffer)) rc]))
 
-(defn text-apply-changes[t changes]
+(defn- buf-apply-changes[buf changes]
   (reduce 
-    (fn [[t rchs] c]
+    (fn [[buf rchs] c]
       (println c)
-      (let [[newt rc] (text-apply-change t c)]
-        [newt (conj rchs rc)])) [t nil] changes))
+      (let [[newbuf rc] (buf-apply-change buf c)]
+        [newbuf (conj rchs rc)])) [buf nil] changes))
 
 (defn- push-pending[pending c oldpos]
   (if (nil? pending)
@@ -112,17 +113,17 @@
     ;don't change :cursor
     (update-in pending [:changes] conj c)))
 
-(defn text-replace 
-  ([t l r to]
-   (if (and (= l r) (empty? to)) t
-     (let [s (t :str)
-           c {:pos l
-              :len (- r l)
+(defn buf-replace 
+  ([buf a b to]
+   (if (and (= a b) (empty? to)) buf
+     (let [r (buf :str)
+           c {:pos a
+              :len (- b a)
               :to (str to)}
-           [newt rc] (text-apply-change t c)
-           undo (push-pending (newt :pending-undo) rc (t :pos))]
+           [newbuf rc] (buf-apply-change buf c)
+           undo (push-pending (newbuf :pending-undo) rc (buf :pos))]
        (println "make change:" c)
-       (-> newt
+       (-> newbuf
            (assoc :pending-undo undo)
            (update-in [:changes] conj c))))))
 
@@ -229,38 +230,36 @@
 ; --exit inert mode--   | {:changes ()        :pending-undo ()        undoes: ((~c2 ~c1)) redoes: ()}
 ; undo                  | {:changes (~c2 ~c1) :pending-undo ()        undoes: ()          redoes: ((c1 c2))}
 ; redo                  | {:changes (c1 c2)   :pending-undo ()        undoes: ((~c2 ~c1)) redoes: ()}
-(defn text-save-undo[t]
-  (let [s (t :str)
-        pending (t :pending-undo)]
-    (if (nil? pending) t
+(defn save-undo[buf]
+  (let [pending (buf :pending-undo)]
+    (if (nil? pending) buf
       (let [chs (merge-changes (pending :changes))
             undo (assoc pending :changes (reverse chs))]
         (println "text-save-undo:" pending)
         (println "text-save-undo:" chs)
-        (-> t
+        (-> buf
             (update-in [:undoes] conj undo)
             (assoc :pending-undo nil)
             (assoc :redoes nil))))))
 
                 
 ;popup from undo apply changes (reverse order) then push reverse to redo
-(defn- text-undo-redo[t undoes redoes]
-  (if (-> t undoes count zero?) t
-    (let [s (t :str)
-          undo (-> t undoes peek)
+(defn- undo-redo[buf undoes redoes]
+  (if (-> buf undoes count zero?) buf
+    (let [undo (-> buf undoes peek)
           chs (-> undo :changes)
-          [newt rchs] (text-apply-changes t chs)]
-      (-> newt
+          [newbuf rchs] (buf-apply-changes buf chs)]
+      (-> newbuf
           (assoc :changes chs)
-          (text-update-pos (undo :cursor))
+          (buf-set-pos (undo :cursor))
           (update-in [undoes] pop)
           (update-in [redoes] 
                      conj (assoc undo :changes rchs))))))
 
-(defn text-undo[t]
-  (text-undo-redo t :undoes :redoes))
+(defn undo[buf]
+  (undo-redo buf :undoes :redoes))
 
-;(text-undo (active-buffer))
+;(undo (active-buffer))
 
-(defn text-redo[t]
-  (text-undo-redo t :redoes :undoes))
+(defn redo[buf]
+  (undo-redo buf :redoes :undoes))

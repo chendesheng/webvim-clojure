@@ -157,7 +157,7 @@
         (-> lastbuf
             (buf-copy-range-lastbuf pos inclusive)
             (text-delete (if inclusive (inc pos) pos))
-            text-save-undo)))))
+            save-undo)))))
 
 (defn change-motion[b keycode]
   ;(println "change-motion:" keycode)
@@ -191,7 +191,7 @@
       b
       (-> b 
           (buf-indent-lines lastpos)
-          text-save-undo))))
+          save-undo))))
 
 (defn start-register[b keycode]
   (let [m (re-find #"[0-9a-zA-Z/*#%.:+=\-]" keycode)]
@@ -259,7 +259,7 @@
       (-> b
           (text-insert txt)
           char-backward
-          text-save-undo)
+          save-undo)
       b)))
 
 (defn put-from-register-append[b keycode]
@@ -268,8 +268,8 @@
       (let [pos (b :pos)]
         (-> b
             (text-insert (inc pos) txt)
-            (text-update-pos (+ pos (count txt)))
-            text-save-undo))
+            (buf-set-pos (+ pos (count txt)))
+            save-undo))
       b)))
 
 (defn delete-line[t]
@@ -280,7 +280,7 @@
         (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
         (text-delete-range (current-line t))
         line-start
-        text-save-undo)))
+        save-undo)))
 
 (defn delete-to-line-end[t]
   (let [pos (t :pos)
@@ -289,7 +289,7 @@
     (-> t
       (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
       (text-delete a b)
-      text-save-undo)))
+      save-undo)))
 
 (defn change-to-line-end[b]
   (-> b
@@ -300,7 +300,7 @@
   (let [[a b] (-> t :visual :ranges first)]
     (-> t
         (text-delete-inclusive a b)
-        text-save-undo)))
+        save-undo)))
 
 (defn change-range[t]
   (let [[a b] (-> t :visual :ranges first)]
@@ -312,13 +312,13 @@
 (def left-boundary (str "(?<=^|[" not-word-chars "])"))
 (def right-boundary (str "(?=[" not-word-chars "]|$)"))
 
-;(pos-re-forward 0 (text-new "a b") (re-pattern left-boundary))
-;(pos-re-forward 0 (text-new "a b") (re-pattern right-boundary))
-;(pos-re-forward 0 (text-new "abc bc") (re-pattern (str left-boundary "bc" right-boundary)))
+;(pos-re-forward 0 (rope "a b") (re-pattern left-boundary))
+;(pos-re-forward 0 (rope "a b") (re-pattern right-boundary))
+;(pos-re-forward 0 (rope "abc bc") (re-pattern (str left-boundary "bc" right-boundary)))
 
 (defn move-next-same-word[b]
   (let [[start end] (current-word b)
-        word (text-subs (b :str) start end)
+        word (subr (b :str) start end)
         _ (println (str word))
         re (re-pattern (str left-boundary (quote-pattern word) right-boundary))]
     (registers-put (:registers b) "/" (str "/" re))
@@ -328,7 +328,7 @@
 
 (defn move-back-same-word[b]
   (let [[start end] (current-word b)
-        word (text-subs (b :str) start end)
+        word (subr (b :str) start end)
         re (re-pattern (str left-boundary (quote-pattern word) right-boundary))]
     (registers-put (:registers b) "/" (str "?" re))
     (-> b 
@@ -404,7 +404,7 @@
 (defn normal-mode-fix-pos
     "prevent cursor on top of EOL in normal mode"
     [b]
-    (let [ch (text-char-at (b :str) (b :pos))]
+    (let [ch (char-at (b :str) (b :pos))]
       (if (= (or ch \newline) \newline)
         (char-backward b) b)))
 
@@ -438,13 +438,13 @@
       (registers-put (:registers b) (-> b :context :register) (buf-copy-range b pos pos true))
       (-> b 
           (text-delete-offset 1)
-          text-save-undo)))
+          save-undo)))
 
 (defn yank-visual[t]
   (let [[a b] (-> t :visual :ranges first)]
     (registers-put (:registers t) (-> t :context :register) (buf-copy-range t a b true))
     (let [[newpos  _] (sort2 a b)]
-      (text-update-pos t newpos))))
+      (buf-set-pos t newpos))))
 
 (defn move-to-jumplist
   [b fndir]
@@ -461,10 +461,10 @@
                   newpos (pos :pos)]
               (if (= newid @active-buffer-id) 
                 ;update pos inside current buffer
-                (text-update-pos b newpos)
+                (buf-set-pos b newpos)
                 (let []
                   (change-active-buffer newid)
-                  (swap! buffer-list update-in [newid] #(text-update-pos % newpos))
+                  (swap! buffer-list update-in [newid] #(buf-set-pos % newpos))
                   b)))
             ;buffer has been modifed and cursor is no longer inside, ignore
             (recur (fndir b))))))))
@@ -544,7 +544,7 @@
                        pos (b :pos)
                        newpos (pos-match-brace s
                                 (first (pos-re-forward pos s #"\(|\)|\[|\]|\{|\}")))]
-                   (text-update-pos b newpos)))
+                   (buf-set-pos b newpos)))
            "c+u" #(cursor-move-viewport %1 -0.5) 
            "c+d" #(cursor-move-viewport %1 0.5)})
 
@@ -569,7 +569,7 @@
                         char-backward
                         update-x
                         set-normal-mode
-                        text-save-undo))})
+                        save-undo))})
 
   (reset! normal-mode-keymap @motion-keymap)
   (swap! normal-mode-keymap 
@@ -601,7 +601,7 @@
                 {"=" #(-> % 
                          (update-in [:context] dissoc :lastbuf)
                          buf-indent-current-line
-                         text-save-undo)
+                         save-undo)
                  :before save-lastbuf
                  :after indent-motion})
           ":" (merge
@@ -614,7 +614,7 @@
                          (-> b
                              (buf-replace-char "\n")
                              buf-indent-current-line
-                             text-save-undo))
+                             save-undo))
                :else (fn[b keycode]
                        (let [ch (cond
                                   (= keycode "space")
@@ -623,10 +623,10 @@
                          (if (= (count ch) 1)
                            (-> b 
                                (buf-replace-char ch)
-                               text-save-undo)
+                               save-undo)
                                b)))}
-          "u" text-undo
-          "c+r" text-redo
+          "u" undo
+          "c+r" redo
           "c+o" #(move-to-jumplist % jump-prev)
           "c+i" #(move-to-jumplist % jump-next)
           "c+g" buf-pos-info
@@ -646,11 +646,11 @@
                               (update-x-if-not-jk (b :lastbuf) keycode)))
                  "d" delete-range
                  "c" change-range
-                 "o" (fn[t]
-                       (let [[a b] (-> t :visual :ranges first)
-                             newt (-> t
+                 "o" (fn[buf]
+                       (let [[a b] (-> buf :visual :ranges first)
+                             newt (-> buf
                                       (assoc-in [:visual :ranges 0] [b a])
-                                      (text-update-pos b))]
+                                      (buf-set-pos b))]
                              (assoc-in newt [:context :lastbuf] newt)))})
           "z" {"z" cursor-center-viewport }
           "d" (merge 
@@ -668,7 +668,7 @@
           "J" (fn[b]
                 (-> b 
                     buf-join-line
-                    text-save-undo))
+                    save-undo))
           "c" (merge
                 @motion-keymap 
                 {:before save-lastbuf

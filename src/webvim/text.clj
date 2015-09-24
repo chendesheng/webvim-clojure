@@ -4,9 +4,6 @@
         webvim.global)
   (:import (org.ahmadsoft.ropes RopeBuilder)))
 
-(defn text-subs-range[s [a b]]
-  (text-subs s a b))
-
 (defn re-test[re s]
   (cond (nil? re) false
         (string? s) (.find (re-matcher re s))
@@ -17,7 +14,7 @@
         (string? s) (re-find re s)
         :else (let [m (.matcher s re)]
                 (if (.find m)
-                  (text-subs s (.start m) (.end m))
+                  (subr s (.start m) (.end m))
                   nil))))
 
 (defn count-left-spaces[s]
@@ -42,10 +39,13 @@
           matched)))
     nil))
 
-(defn text-blank? [s]
-  (or (nil? s)
-      (let [m (.matcher s #"^\s$")]
-        (.find m 0))))
+(defn rblank? 
+  ([s]
+   (or (nil? s)
+       (let [m (.matcher s #"^\s$")]
+         (.find m 0))))
+  ([s rg]
+   (rblank? (subr s rg))))
 
 (defn pos-re-forward
   "return forward range matches"
@@ -77,7 +77,7 @@
               (recur (dec a))
               (find-first m1 (first matches)))))))))
 
-;(pos-re-backward 2 (text-new "aa bb") #"(?<=[^a-zA-Z_\-!.?+*=<>&#\':0-9])[a-zA-Z_\-!.?+*=<>&#\':0-9]|(?<=[a-zA-Z_\-!.?+*=<>&#\':0-9\s,])[^a-zA-Z_\-!.?+*=<>&#\':0-9\s,]")
+;(pos-re-backward 2 (rope "aa bb") #"(?<=[^a-zA-Z_\-!.?+*=<>&#\':0-9])[a-zA-Z_\-!.?+*=<>&#\':0-9]|(?<=[a-zA-Z_\-!.?+*=<>&#\':0-9\s,])[^a-zA-Z_\-!.?+*=<>&#\':0-9\s,]")
 
 (defn pos-re-next-forward 
   "return forward range matches, exclude current position"
@@ -105,13 +105,13 @@
 
 (defn text-insert
   ([t l txt]
-   (text-replace t l l txt))
+   (buf-replace t l l txt))
   ([t txt]
    (text-insert t (t :pos) txt)))
 
 (defn text-delete
   ([t l r]
-   (text-replace t l r ""))
+   (buf-replace t l r ""))
   ([t pt]
    (let [pos (t :pos)
          [l r] (sort2 pos pt)]
@@ -122,14 +122,14 @@
   (let [[l r] (sort2 p1 p2)]
     (-> t
         (text-delete l (inc r))
-        (text-update-pos l))))
+        (buf-set-pos l))))
 
 (defn text-delete-range
   "delete range and set pos to end of deleted"
   [t rg]
   (-> t
       (text-delete (first rg) (second rg))
-      (text-update-pos (first rg))))
+      (buf-set-pos (first rg))))
 
 (defn text-delete-offset[t offset] 
   (let [pos (t :pos)
@@ -137,7 +137,7 @@
     (if (neg? newpos) t
       (text-delete t newpos))))
 
-(defn text-char-at
+(defn char-at
   "return nil if out of range"
   [s pos]
   (if (or (neg? pos) (>= pos (count s)))
@@ -157,7 +157,7 @@
    (let [{pos :pos
           s :str} t
          newpos (pos-re pos s re re-fn not-found)]
-     (text-update-pos t newpos)))
+     (buf-set-pos t newpos)))
   ([t re re-fn]
    (text-re t re re-fn 0)))
 
@@ -215,7 +215,7 @@
 (defn paragraph-backward[t]
   (re-backward t #"((?<=\n)\n[^\n])"))
 
-;(paragraph-forward {:str (text-new "aaa\nbb") :pos 0 :y 0})
+;(paragraph-forward {:str (rope "aaa\nbb") :pos 0 :y 0})
 
 (defn add-highlight[t rg]
   (let [highlights (t :highlights)]
@@ -232,7 +232,7 @@
     (if (nil? rg) t
       (let [[a b] rg]
         (-> t
-            (text-update-pos a)
+            (buf-set-pos a)
             (add-highlight [a (dec b)]))))))
 
 (defn re-backward-highlight[t re]
@@ -244,25 +244,25 @@
     (if (nil? rg) t
       (let [[a b] rg]
         (-> t
-            (text-update-pos a)
+            (buf-set-pos a)
             (add-highlight [a (dec b)]))))))
 
 (defn char-forward[t]
   (let [pos (t :pos)
         newpos (inc pos)
         s (t :str)
-        ch (text-char-at s pos)]
+        ch (char-at s pos)]
     (if (= (or ch \newline) \newline)
       t
-      (text-update-pos t newpos))))
+      (buf-set-pos t newpos))))
 
 (defn char-backward[t]
   (let [newpos (dec (t :pos))
         s (t :str)
-        ch (text-char-at s newpos)]
+        ch (char-at s newpos)]
     (if (= (or ch \newline) \newline)
       t
-      (text-update-pos t newpos))))
+      (buf-set-pos t newpos))))
 
 (defn pos-word[pos s]
   (let [re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
@@ -274,7 +274,7 @@
         a (or (last (pos-re-next-backward b s re-start)) 0)]
       [a b]))
 
-;(pos-word 2 (text-new "aaa"))
+;(pos-word 2 (rope "aaa"))
 
 (defn current-word[t]
   "return range of word under cursor, right side is exclusive"
@@ -283,8 +283,8 @@
     (println pos s)
     (pos-word pos s)))
 
-;(pos-word 2 (text-new "(ns w"))
-;(pos-re-backward 3 (text-new "(ns w") #"[^a-zA-Z_\-!.?+*=<>&#\':0-9](?=[a-zA-Z_\-!.?+*=<>&#\':0-9])")
+;(pos-word 2 (rope "(ns w"))
+;(pos-re-backward 3 (rope "(ns w") #"[^a-zA-Z_\-!.?+*=<>&#\':0-9](?=[a-zA-Z_\-!.?+*=<>&#\':0-9])")
 
 ;(defn positive-numbers 
 ;  ([] (positive-numbers 1))
@@ -296,10 +296,7 @@
 (defn ranges-to-texts
   "Return a lazy seq contains texts sub from s. Range's right point is exclusive."
   [s ranges]
-  (map #(apply text-subs s %) ranges))
-
-(defn range-blank? [s rg]
-  (text-blank? (text-subs-range s rg)))
+  (map #(subr s %) ranges))
 
 (defn pos-re-forward-seq[pos s re]
   (if (neg? pos) nil
@@ -313,14 +310,14 @@
       (if (nil? rg) nil
         (cons rg (lazy-seq (pos-re-backward-seq (-> rg first dec) s re)))))))
 
-;(pos-re-forward-seq -1 (text-new "(((") #"\(")
-;(pos-re-backward-seq -1 (text-new "(((") #"\(")
-;(pos-re-forward 0 (text-new "   ()") #"\(|\)|\[|\]|\{|\}")
+;(pos-re-forward-seq -1 (rope "(((") #"\(")
+;(pos-re-backward-seq -1 (rope "(((") #"\(")
+;(pos-re-forward 0 (rope "   ()") #"\(|\)|\[|\]|\{|\}")
 
 (defn pos-match-brace
   "return matched brace position, nil if not find"
   [s pos]
-  (let [brace (text-char-at s pos)
+  (let [brace (char-at s pos)
         m (all-braces brace)
         left? (contains? left-braces brace)
         re (re-pattern (str  (quote-pattern brace) "|" (quote-pattern m)))]
@@ -333,7 +330,7 @@
                      (pos-re-backward-seq pos s re))
             mpos (reduce 
                    (fn[cnt [a _]]
-                     (let [ch (text-char-at s a)
+                     (let [ch (char-at s a)
                            newcnt (if (inc-cnt? ch)
                                     (inc cnt)
                                     (dec cnt))]
