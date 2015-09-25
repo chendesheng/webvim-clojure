@@ -7,8 +7,13 @@
         webvim.core.rope
         webvim.core.pos
         webvim.core.event
-        webvim.indent
-        webvim.global))
+        webvim.indent))
+
+;generate buffer id and buffer id only
+(defonce gen-buf-id (atom 0))
+
+;key: buffer id, value: buffer map
+(defonce buffer-list (atom {}))
 
 (defn buffer-list-save
   "Generate buffer id (increase from 1) and add to buffer-list"
@@ -17,6 +22,14 @@
         b1 (assoc b :id id)]
     (reset! buffer-list (assoc @buffer-list id b1))
     b1))
+
+;the current editting buffer, when receving keys from client send keycode to this buffer's :chan-in
+;switch to another buffer is very easy, just do (reset! actvive-buffer b)
+;TODO Serve more than one client at once, make eash session different active-buffer
+(defonce active-buffer-id (atom int))
+
+(defn active-buffer[]
+  (@buffer-list @active-buffer-id))
 
 (defn create-buf[bufname filepath txt]
   (let [languages {".clj" "Clojure"
@@ -151,19 +164,6 @@
         [a b] (pos-re-forward pos s #"\n.+?(?=(\n|\S))")]
     (if (nil? a) t
       (buf-replace t a b " "))))
-
-(defn buf-bound-scroll-top
-  "Change scroll top make cursor inside viewport"
-  [b]
-  (let [st (-> b :scroll-top)]
-    (assoc b :scroll-top 
-           (let [y (b :y)
-                 h (-> @window :viewport :h)]
-             (cond 
-               (< y st) y
-               (< y (+ st h)) st
-               (neg? (-> y (- h) inc)) 0
-               :else (-> y (- h) inc))))))
 
 (defn save-lastbuf[b keycode]
   (-> b (assoc-in [:context :lastbuf] b)))

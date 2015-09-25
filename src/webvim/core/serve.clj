@@ -3,7 +3,6 @@
             [ring.adapter.jetty :as jetty]
             [clojure.core.async :as async])
   (:use clojure.pprint
-        webvim.global
         webvim.core.buffer))
 
 (defn- record-keys[b keycode]
@@ -16,10 +15,17 @@
 
 (defn send-out
   "write buffer to out channel"
-  [obj out]
-  (let[b (buf-bound-scroll-top obj)]
-    (async/>!! out b)
-    (assoc b :changes [])))
+  [buf out]
+  (let [before (buf :before-send-out)
+        after (buf :after-send-out)
+        newbuf (before buf)]
+    (async/>!! out newbuf)
+    (after newbuf)))
+
+(defn call-if-fn [b f & args]
+  (if (fn? f)
+    (apply f b args)
+    b))
 
 ;two types: key (leaf), keymap (internal node)
 ;when visit a keymap call :enter :leave 

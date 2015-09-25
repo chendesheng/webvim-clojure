@@ -4,8 +4,14 @@
         webvim.core.event
         webvim.core.rope
         webvim.core.pos
-        webvim.core.line
-        webvim.global))
+        webvim.core.line))
+
+(def re-braces #"(?<!\\)(\(|\[|\{|\}|\]|\))")
+(defn repeat-space[n]
+  (reduce (fn[s _]
+            (str s " ")) 
+          ""
+          (range 0 n)))
 
 (def re-js-statements #"\b(if|while|switch|for)\s*\(.*?\)\s*$")
 

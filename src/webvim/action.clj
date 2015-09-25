@@ -1,6 +1,13 @@
 (ns webvim.action
-  (:use webvim.global
-        webvim.core.line))
+  (:use webvim.core.line))
+
+;one server only serve one window at one time
+(defonce window (atom{:viewport {:w 0 :h 0}}))
+
+(defonce normal-mode 0)
+(defonce insert-mode 1)
+(defonce visual-mode 2)
+(defonce ex-mode 3)
 
 (defn round-to-zero
   "(round-to-zero -9.1) = -9; (round-to-zero 9.1) = 9"
@@ -30,4 +37,3 @@
   (assoc b :scroll-top 
             (-> b :y
                 (- (int (/ (-> @window :viewport :h) 2))))))
-

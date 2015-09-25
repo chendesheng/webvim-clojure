@@ -1,6 +1,5 @@
 (ns webvim.core.pos
-  (:use webvim.core.rope
-        webvim.global))
+  (:use webvim.core.rope))
 
 (defn- find-first
   ([m pos]
@@ -201,6 +200,16 @@
 ;(pos-re-forward-seq -1 (rope "(((") #"\(")
 ;(pos-re-backward-seq -1 (rope "(((") #"\(")
 ;(pos-re-forward 0 (rope "   ()") #"\(|\)|\[|\]|\{|\}")
+
+(defn quote-pattern[ch]
+  (java.util.regex.Pattern/quote (str ch)))
+
+(defn sort2[a b]
+  (if (< a b) [a b] [b a]))
+
+(def all-braces {\( \) \) \( \[ \] \] \[ \{ \} \} \{})
+(def left-braces #{\( \[ \{})
+(def right-braces #{\) \] \}})
 
 (defn pos-match-brace
   "return matched brace position, nil if not find"

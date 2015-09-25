@@ -7,7 +7,7 @@
         webvim.core.buffer
         webvim.core.serve
         webvim.keymap
-        webvim.global
+        webvim.action
         webvim.autocompl
         (compojure handler [core :only (GET POST defroutes)])
         (hiccup [page :only (html5)])
@@ -46,7 +46,7 @@
 
 (defn- remove-fields[b]
   (-> b 
-      (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :y :cursor :undoes :redoes :pending-undo
+      (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :y :cursor :undoes :redoes :pending-undo :before-send-out :after-send-out
           :macro :chan-in :chan-out :registers :linescnt)
       (dissoc-empty [:highlights])
       (dissoc-empty [:changes])

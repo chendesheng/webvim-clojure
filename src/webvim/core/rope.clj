@@ -1,6 +1,5 @@
 (ns webvim.core.rope
-  (:use webvim.global
-        webvim.core.event)
+  (:use webvim.core.event)
   (:import (org.ahmadsoft.ropes RopeBuilder)))
 
 (def <br> "\n")

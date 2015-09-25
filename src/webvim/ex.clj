@@ -12,7 +12,7 @@
         webvim.register
         webvim.action
         webvim.jumplist
-        webvim.global)) 
+        webvim.fuzzy)) 
 
 (declare ex-commands)
 

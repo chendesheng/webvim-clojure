@@ -11,7 +11,6 @@
         webvim.core.line
         webvim.action
         webvim.register
-        webvim.global
         webvim.jumplist
         webvim.ex
         webvim.indent
@@ -711,3 +710,23 @@
           :after normal-mode-after})
 (reset! root-keymap @normal-mode-keymap))
 
+;TODO: duplicate buf-bound-scroll-top
+(defn- buf-bound-scroll-top
+  "Change scroll top make cursor inside viewport"
+  [b]
+  (let [st (-> b :scroll-top)]
+    (assoc b :scroll-top 
+           (let [y (b :y)
+                 h (-> @window :viewport :h)]
+             (cond 
+               (< y st) y
+               (< y (+ st h)) st
+               (neg? (-> y (- h) inc)) 0
+               :else (-> y (- h) inc))))))
+
+(defonce ^{:private true} listen-new-buffer
+  (listen :new-buffer
+          (fn [buf]
+            (-> buf
+                (assoc :before-send-out buf-bound-scroll-top)
+                (assoc :after-send-out #(assoc % :changes []))))))

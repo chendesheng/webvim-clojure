@@ -1,8 +1,7 @@
 (ns webvim.core.line
   (:use clojure.pprint
         webvim.core.rope
-        webvim.core.pos
-        webvim.global))
+        webvim.core.pos))
 
 (defn pos-line[s pos]
   (let [a (first (pos-re-backward pos s #"(?m)^"))
@@ -36,6 +35,10 @@
 ;(pos-line (rope "aa\nbb") 1)
 
 (def re-line-break (re-pattern <br>))
+(defn bound-range[v s e]
+  (cond (<= v s) s
+        (>= v e) e
+        :else v))
 
 (defn- lines-move[t n fndir]
   (let [pos (t :pos)

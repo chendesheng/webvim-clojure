@@ -2,8 +2,7 @@
   (:require [me.raynes.fs :as fs]
             [clojure.core.async :as async]
             [clojure.java.io :as io])
-  (:use clojure.pprint
-        webvim.global))
+  (:use clojure.pprint))
 
 ;global list of history positions
 ;jump-list behaves different from vim's jump list: 

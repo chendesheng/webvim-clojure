@@ -1,12 +1,13 @@
 (ns webvim.autocompl
   (:require [clojure.set :as set])
   (:use clojure.pprint
-        webvim.global
         webvim.core.event
         webvim.core.rope
         webvim.core.pos
         webvim.core.buffer
+        webvim.fuzzy
         (clojure [string :only (split)])))
+
 
 ;Keep reference count of each word: {"w1" 1 "w2" 3}
 (defonce autocompl-words (atom {}))
