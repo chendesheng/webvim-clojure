@@ -42,7 +42,7 @@
       (if (contains? indent-tab-size (str w))
         2
         (-> w count (+ 2))))
-    :else 2))
+    :else 2)))
 
 ;find outer scope and align by start bracket
 (defn clojure-indent
