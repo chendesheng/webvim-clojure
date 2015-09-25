@@ -55,7 +55,6 @@
            ;get latest change from :pending-undo
            ;it's a list
            :listeners nil
-
            ;For client display matched braces: [{:row :col} {:row :col}]
            ;TODO set initial value
            :braces nil
@@ -76,26 +75,8 @@
            :chan-in (async/chan)
            ;get result from this channel after send key to :chan-in
            :chan-out (async/chan)
-
-           :macro {:recording-keys nil
-                   ;which register will macro save to
-                   :register ""}
            ;List of highlight ranges, for hlsearch.
            :highlights nil
-
-           ;Local registers, atom. Set init value to global registers so it can share cross buffers.
-           ;Use different registers in macro replaying to avoid side effect.
-           :registers registers
-
-           :autocompl {:words nil
-                       ;empty suggestions means don't display it
-                       ;every input handled in insertion mode should check if :suggestion is nil.
-                       ;  if it is not nil then continue narrow down suggestions
-                       ;ctrl+n, ctrl+p will calculate full suggestions if it is nil
-                       :suggestions nil
-                       ;0 means selection nothing (don't highlight any suggestion item)
-                       ;> 0 means highlight the nth suggestion item
-                       :suggestions-index 0}
            ;programming language specific configs
            ;detect language by file ext name
            ;TODO detect language by file content

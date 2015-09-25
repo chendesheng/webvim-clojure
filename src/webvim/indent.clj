@@ -178,9 +178,10 @@
    "XML" {:fn-indent auto-indent}
    :else {:fn-indent auto-indent}})
 
-(listen :new-buffer
-        (fn[buf]
-          (update-in buf [:language] 
-                     merge (get language-indents 
-                                (-> buf :language :name) 
-                                (language-indents :else)))))
+(defonce ^{:private true} listen-new-buffer
+  (listen :new-buffer
+          (fn[buf]
+            (update-in buf [:language] 
+                       merge (get language-indents 
+                                  (-> buf :language :name) 
+                                  (language-indents :else))))))

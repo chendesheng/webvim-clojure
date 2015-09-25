@@ -7,19 +7,6 @@
   (:use clojure.pprint
         (clojure [string :only (join split)])))
 
-;global registers. Don't access this directly, always access buffer's :registers
-(defonce registers (atom {}))
-
-(defn registers-get [regs ch]
-  (if (= ch "+")
-    (clipboard/get-text)
-    (@regs ch)))
-
-(defn registers-put [regs ch text]
-  (if (= ch "+")
-    (clipboard/set-text! text)
-    (swap! regs assoc ch text)))
-
 ;one server only serve one window at one time
 (defonce window (atom{:viewport {:w 0 :h 0}}))
 
@@ -113,12 +100,3 @@
 (def all-braces {\( \) \) \( \[ \] \] \[ \{ \} \} \{})
 
 (def re-braces #"(?<!\\)(\(|\[|\{|\}|\]|\))")
-
-;http://stackoverflow.com/questions/21191045/get-string-indices-from-the-result-of-re-seq
-(defn re-seq-pos [pattern string start] 
-  (let [m (re-matcher pattern (subs string start))] 
-    ((fn step [] 
-      (when (. m find) 
-        (cons {:start (+ (. m start) start) :end (+ (. m end) start) :group (. m group)} 
-          (lazy-seq (step))))))))
-

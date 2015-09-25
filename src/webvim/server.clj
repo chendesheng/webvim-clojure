@@ -101,8 +101,9 @@
 ;TODO How to run code only in repl env? Conditional compile?
 ;only for testing on repl
 (defonce open-test-file
-  (swap! registers 
-         assoc "%" 
+  (webvim.register/registers-put
+         webvim.register/registers
+         "%" 
          (reset! active-buffer-id 
                  (-> "testfile.clj"
                      open-file

@@ -9,6 +9,7 @@
         webvim.core.line
         webvim.core.buffer
         webvim.core.serve
+        webvim.register
         webvim.action
         webvim.jumplist
         webvim.global)) 
@@ -30,9 +31,9 @@
     [] buffers))
 
 (defn change-active-buffer[id]
-  (swap! registers assoc "#" @active-buffer-id)
+  (registers-put registers "#" @active-buffer-id)
   (reset! active-buffer-id id)
-  (swap! registers assoc "%" id))
+  (registers-put registers "%" id))
 
 (defn execute [b]
   (let [[_ excmd args] (re-find #"\s*:([^\s]+)\s*(.*)\s*" (:ex b))]

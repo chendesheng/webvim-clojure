@@ -10,6 +10,7 @@
         webvim.core.serve
         webvim.core.line
         webvim.action
+        webvim.register
         webvim.global
         webvim.jumplist
         webvim.ex

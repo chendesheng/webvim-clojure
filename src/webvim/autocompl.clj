@@ -71,7 +71,17 @@
     :new-buffer
     (fn [buf]
       (autocompl-words-parse (buf :str))
-      buf)))
+      (assoc buf 
+             :autocompl 
+             {:words nil
+              ;empty suggestions means don't display it
+              ;every input handled in insertion mode should check if :suggestion is nil.
+              ;  if it is not nil then continue narrow down suggestions
+              ;ctrl+n, ctrl+p will calculate full suggestions if it is nil
+              :suggestions nil
+              ;0 means selection nothing (don't highlight any suggestion item)
+              ;> 0 means highlight the nth suggestion item
+              :suggestions-index 0}))))
 
 (defn expand-ends-word [s a b]
   (let [re-left (re-pattern (str "(?<=[" not-word-chars "])"))
