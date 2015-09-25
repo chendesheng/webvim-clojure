@@ -1,13 +1,13 @@
-(ns webvim.core
+(ns webvim.server
   (:require [me.raynes.fs :as fs]
             [ring.adapter.jetty :as jetty]
             [clojure.core.async :as async]
             [ring.util.response :as response])
   (:use clojure.pprint
-        webvim.buffer
+        webvim.core.buffer
+        webvim.core.serve
         webvim.keymap
         webvim.global
-        webvim.serve
         webvim.autocompl
         (compojure handler [core :only (GET POST defroutes)])
         (hiccup [page :only (html5)])
@@ -169,3 +169,5 @@
       (wrap-resource "public")))
 
 (defonce run-jetty (jetty/run-jetty #'app {:port 8080 :join? false}))
+
+

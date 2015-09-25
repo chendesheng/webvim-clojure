@@ -1,10 +1,10 @@
-(ns webvim.serve
+(ns webvim.core.serve
   (:require [me.raynes.fs :as fs]
             [ring.adapter.jetty :as jetty]
             [clojure.core.async :as async])
   (:use clojure.pprint
         webvim.global
-        webvim.buffer))
+        webvim.core.buffer))
 
 (defn- record-keys[b keycode]
   (if (nil? (#{"c+n" "c+p" "c+a" "c+x"} keycode)) ;Don't record keycode for these commands

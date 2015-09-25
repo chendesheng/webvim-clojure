@@ -1,9 +1,10 @@
 (ns webvim.indent
   (:use clojure.pprint
         (clojure [string :only (join split blank?)])
-        webvim.text
-        webvim.change
-        webvim.line
+        webvim.core.event
+        webvim.core.rope
+        webvim.core.pos
+        webvim.core.line
         webvim.global))
 
 (def re-js-statements #"\b(if|while|switch|for)\s*\(.*?\)\s*$")
@@ -42,7 +43,7 @@
       (if (contains? indent-tab-size (str w))
         2
         (-> w count (+ 2))))
-    :else 2)))
+    :else 2))
 
 ;find outer scope and align by start bracket
 (defn clojure-indent
@@ -114,9 +115,9 @@
         line (subr s head)
         lines (filter clang-not-blank-or-comment?
                       (ranges-to-texts s ranges))
-        _ (println (str "[" line "]"))
+        ;_ (println (str "[" line "]"))
         pline (or (first lines) "")
-        _ (println (str "[" pline "]"))
+        ;_ (println (str "[" pline "]"))
         pindent (re-subs #"^\s*" pline)
         pbrace? (re-test #"[\{]\s*$" pline)
         brace? (re-test #"^\s*\}" line)]
@@ -145,7 +146,7 @@
         indent ((-> buf :language :fn-indent) s pos)
         a (pos-line-first pos s)
         b (pos-line-start pos s)]
-    (println a b)
+    ;(println a b)
     (buf-replace buf a b indent)))
 
 (defn buf-indent-lines 
@@ -155,7 +156,7 @@
         [p1 p2] (sort2 (buf :pos) newpos)]
     (loop [buf (buf-set-pos buf p2) ;put pos at end and keep track it
            [a _] (pos-first-line s p1 #(not (rblank? s %)))] ;start at first non-blank line
-      (println (buf :pos) a)
+      ;(println (buf :pos) a)
       (if (< (buf :pos) a) (buf-set-pos buf p1)
         (let [t1 (buf-indent-line buf a)
               s1 (t1 :str)]
@@ -167,3 +168,19 @@
 (defn buf-indent-current-line
   [b]
   (buf-indent-line b (b :pos)))
+
+(def language-indents 
+  {"Clojure" {:fn-indent clojure-indent}
+   "JavaScript" {:fn-indent clang-indent
+          :indent-triggers #"}"}
+   "CSS" {:fn-indent clang-indent
+           :indent-triggers #"}"}
+   "XML" {:fn-indent auto-indent}
+   :else {:fn-indent auto-indent}})
+
+(listen :new-buffer
+        (fn[buf]
+          (update-in buf [:language] 
+                     merge (get language-indents 
+                                (-> buf :language :name) 
+                                (language-indents :else)))))

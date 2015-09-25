@@ -1,11 +1,12 @@
-(ns webvim.buffer
+(ns webvim.core.buffer
   (:require [me.raynes.fs :as fs]
             [clojure.core.async :as async]
             [clojure.java.io :as io])
   (:use clojure.pprint
         (clojure [string :only (join split blank?)])
-        webvim.change
-        webvim.text
+        webvim.core.rope
+        webvim.core.pos
+        webvim.core.event
         webvim.indent
         webvim.global))
 
@@ -18,18 +19,11 @@
     b1))
 
 (defn create-buf[bufname filepath txt]
-  (let [languages {".clj" {:name "Clojure"
-                           :fn-indent clojure-indent}
-                   ".js" {:name "JavaScript"
-                          :fn-indent clang-indent
-                          :indent-triggers #"}"}
-                   ".css" {:name "CSS"
-                           :fn-indent clang-indent
-                           :indent-triggers #"}"}
-                   ".html" {:name "XML"
-                           :fn-indent auto-indent}
-                   :else {:name "Plain Text"
-                          :fn-indent auto-indent}}
+  (let [languages {".clj" "Clojure"
+                   ".js" "JavaScript"
+                   ".css" "CSS"
+                   ".html" "XML"
+                   :else "Plain Text"}
         ext (if (nil? bufname) "" (re-find #"\.\w+$" bufname))
         ;make sure last line ends with line break
         s (if (.endsWith txt "\n") 
@@ -45,7 +39,6 @@
            :y 0    ;num of line breaks from first char
            ;screen scrollTop row number, update after every key press
            :scroll-top 0
-
            ;changes of current command, for writing back to client
            :changes [] 
            ;reverse of changes, 
@@ -106,7 +99,7 @@
            ;programming language specific configs
            ;detect language by file ext name
            ;TODO detect language by file content
-           :language (get languages ext (languages :else))}]
+           :language {:name (get languages ext (languages :else))}}]
     ;(pprint (b :language))
     (fire-event b :new-buffer)))
 
@@ -197,3 +190,72 @@
 (defn buf-replace-char [b ch]
   (let [pos (b :pos)]
     (buf-replace b pos (inc pos) ch)))
+
+(defn- text-save-change[t pos from to]
+  (update-in t [:changes] conj {:pos pos :len (count from) :to (str to)}))
+
+(defn buf-insert
+  ([buf pos txt]
+   (buf-replace buf pos pos txt))
+  ([buf txt]
+   (buf-insert buf (buf :pos) txt)))
+
+(defn buf-delete
+  ([buf a b]
+   (buf-replace buf a b ""))
+  ([buf b]
+   (let [pos (buf :pos)
+         [a b] (sort2 pos b)]
+     (buf-delete buf a b))))
+
+(defn text-delete-range
+  "delete range and set pos to end of deleted"
+  [buf rg]
+  (-> buf
+      (buf-delete (first rg) (second rg))
+      (buf-set-pos (first rg))))
+
+(defn text-delete-offset[buf offset] 
+  (let [pos (buf :pos)
+        newpos (+ pos offset)]
+    (if (neg? newpos) buf
+      (buf-delete buf newpos))))
+
+;;highlighting
+(defn add-highlight[t rg]
+  (let [highlights (t :highlights)]
+    (if (empty? (filter (fn[[a b]]
+                          (and (= a (rg 0)) (= b (rg 1)))) highlights))
+      (update-in t [:highlights] conj rg) t)))
+
+(defn highlight-all-matches[b re]
+  (let [s (b :str)]
+    (assoc b :highlights 
+           (map (fn[[a b]]
+                  [a (dec b)])
+                (pos-re-forward-seq 0 s re)))))
+
+(defn re-forward-highlight[t re]
+  (let [pos (t :pos)
+        s (t :str)
+        rg (or 
+             (pos-re-next-forward pos s re)
+             (pos-re-forward 0 s re))] ;TODO: use region reduce duplicate work
+    (if (nil? rg) t
+      (let [[a b] rg]
+        (-> t
+            (buf-set-pos a)
+            (add-highlight [a (dec b)]))))))
+
+(defn re-backward-highlight[t re]
+  (let [pos (t :pos)
+        s (t :str)
+        rg (or 
+             (pos-re-next-backward pos s re)
+             (pos-re-next-backward (count s) s re))]
+    (if (nil? rg) t
+      (let [[a b] rg]
+        (-> t
+            (buf-set-pos a)
+            (add-highlight [a (dec b)]))))))
+

@@ -1,13 +1,6 @@
-(ns webvim.cursor
-  (:require [me.raynes.fs :as fs]
-            [clojure.core.async :as async]
-            [clojure.java.io :as io])
-  (:use clojure.pprint
-        (clojure [string :only (join split)])
-        webvim.autocompl
-        webvim.history
-        webvim.line
-        webvim.global))
+(ns webvim.action
+  (:use webvim.global
+        webvim.core.line))
 
 (defn round-to-zero
   "(round-to-zero -9.1) = -9; (round-to-zero 9.1) = 9"
@@ -37,3 +30,4 @@
   (assoc b :scroll-top 
             (-> b :y
                 (- (int (/ (-> @window :viewport :h) 2))))))
+

@@ -5,12 +5,12 @@
               [snipsnap.core :as clipboard])
   (:use clojure.pprint
         (clojure [string :only (join blank?)])
-        webvim.buffer
-        webvim.cursor
-        webvim.serve
+        webvim.core.rope
+        webvim.core.line
+        webvim.core.buffer
+        webvim.core.serve
+        webvim.action
         webvim.jumplist
-        webvim.text
-        webvim.line
         webvim.global)) 
 
 (declare ex-commands)
@@ -45,7 +45,7 @@
                                       (if (zero? (.indexOf cmd excmd)) handler nil)
                                       (let [m (re-find cmd excmd)]
                                         (if (not (nil? m)) handler nil)))) ex-commands))]
-        (println handlers)
+        ;(println handlers)
         (if (>= (count handlers) 1)
           ((first handlers) b excmd args)
           (assoc b :message "unknown command"))))))
@@ -64,7 +64,6 @@
   (merge b {:mode ex-mode :ex ":" :message nil :keys nil}))
 
 (defn set-ex-search-mode[b keycode]
-  (println "set-ex-search-mode")
   (-> b 
       (merge {:ex keycode :message nil :keys nil})
       (assoc-in [:context :lastbuf] b)))
@@ -117,7 +116,7 @@
                             ;get next id larger than current
                             (->> @buffer-list   (map #(-> % last :id)) (filter #(> % id)) sort first)
                             (-> @buffer-list first last :id))]
-               (println "nextid:" nextid)
+               ;(println "nextid:" nextid)
                (if (not (= nextid id))
                  (do
                    (change-active-buffer nextid)
@@ -150,7 +149,7 @@
                  str
                  (assoc b :message)))
    #"^(\d+)$" (fn[b row _]
-                (println "row:" row)
+                ;(println "row:" row)
                 (jump-push b)
                 (let [row (bound-range (dec (Integer. row)) 0 (-> b :linescnt dec))]
                   (move-to-line b row)))))

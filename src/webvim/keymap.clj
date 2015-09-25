@@ -3,15 +3,16 @@
             [ring.adapter.jetty :as jetty]
             [clojure.core.async :as async])
   (:use clojure.pprint
-        webvim.buffer
-        webvim.cursor
+        webvim.core.event
+        webvim.core.rope
+        webvim.core.pos
+        webvim.core.buffer
+        webvim.core.serve
+        webvim.core.line
+        webvim.action
         webvim.global
         webvim.jumplist
         webvim.ex
-        webvim.serve
-        webvim.change
-        webvim.text
-        webvim.line
         webvim.indent
         webvim.autocompl))
 

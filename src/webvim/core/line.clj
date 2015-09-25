@@ -1,54 +1,13 @@
-(ns webvim.line
+(ns webvim.core.line
   (:use clojure.pprint
-        webvim.change
-        webvim.text
+        webvim.core.rope
+        webvim.core.pos
         webvim.global))
-
-(def re-line-break (re-pattern <br>))
 
 (defn pos-line[s pos]
   (let [a (first (pos-re-backward pos s #"(?m)^"))
         b (or (first (pos-re-next-forward pos s #"(?m)^")) (count s))]
     [a b]))
-
-;(pos-line (rope "aa\nbb") 1)
-
-(defn current-line
-  [t]
-   "return range of line under cursor, right side is exclusive"
-   (pos-line (t :str) (t :pos)))
-
-;(current-line {:pos 1 :str (rope "\naaa\n")})
-;(current-line {:pos 5 :str (rope "\nbb\n\naaa\n")})
-
-(defn pos-line-first[pos s]
-  (pos-re pos s #"(?m)^" pos-re-backward 0))
-
-;(pos-line-first 4 (rope "aa\naaa"))
-
-(defn line-first[t]
-  (let [s (t :str)
-        pos (t :pos)
-        newpos (pos-line-first pos s)]
-    (buf-set-pos t newpos)))
-
-(defn pos-line-start[pos s]
-  (-> pos
-      (pos-line-first s)
-      (pos-re s #"[\S\n]|((?<=\s)[\S\n])" pos-re-forward)))
-
-(defn line-start[t]
-  (let [newpos (pos-line-start (t :pos) (t :str))]
-    (buf-set-pos t newpos)))
-
-(defn line-end[t]
-  (let [newpos (first (pos-re-forward (t :pos) (t :str) #"(?m)$"))]
-    ;(println newpos)
-    (buf-set-pos t newpos)))
-
-;(line-end {:x 0 :y 0 :str (rope "aaa") :pos 0})
-
-  ;(text-re t  pos-re-forward (-> t :str count dec)))
 
 (defn -lines
   "return a lazy seq, line by line start at pos back to top"
@@ -73,10 +32,10 @@
      #(>= p2 (first %))
      (lines s p1))))
 
-;(let [s (rope "aa\nbb\ncc\n\n")] 
-;  (take 30
-;        (lines s 0 9)))
-;(lines (rope "aa\nbb\ncc\n\n") 0)
+
+;(pos-line (rope "aa\nbb") 1)
+
+(def re-line-break (re-pattern <br>))
 
 (defn- lines-move[t n fndir]
   (let [pos (t :pos)
@@ -127,3 +86,41 @@
   [s pos pred]
   (first 
     (filter pred (lines s pos))))
+
+(defn current-line
+  [t]
+   "return range of line under cursor, right side is exclusive"
+   (pos-line (t :str) (t :pos)))
+
+;(current-line {:pos 1 :str (rope "\naaa\n")})
+;(current-line {:pos 5 :str (rope "\nbb\n\naaa\n")})
+
+(defn pos-line-first[pos s]
+  (pos-re pos s #"(?m)^" pos-re-backward 0))
+
+;(pos-line-first 4 (rope "aa\naaa"))
+
+(defn line-first[t]
+  (let [s (t :str)
+        pos (t :pos)
+        newpos (pos-line-first pos s)]
+    (buf-set-pos t newpos)))
+
+(defn pos-line-start[pos s]
+  (-> pos
+      (pos-line-first s)
+      (pos-re s #"[\S\n]|((?<=\s)[\S\n])" pos-re-forward)))
+
+(defn line-start[t]
+  (let [newpos (pos-line-start (t :pos) (t :str))]
+    (buf-set-pos t newpos)))
+
+(defn line-end[t]
+  (let [newpos (first (pos-re-forward (t :pos) (t :str) #"(?m)$"))]
+    ;(println newpos)
+    (buf-set-pos t newpos)))
+
+;(line-end {:x 0 :y 0 :str (rope "aaa") :pos 0})
+
+  ;(text-re t  pos-re-forward (-> t :str count dec)))
+

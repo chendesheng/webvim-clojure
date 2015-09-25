@@ -2,9 +2,10 @@
   (:require [clojure.set :as set])
   (:use clojure.pprint
         webvim.global
-        webvim.buffer
-        webvim.change
-        webvim.text
+        webvim.core.event
+        webvim.core.rope
+        webvim.core.pos
+        webvim.core.buffer
         (clojure [string :only (split)])))
 
 ;Keep reference count of each word: {"w1" 1 "w2" 3}

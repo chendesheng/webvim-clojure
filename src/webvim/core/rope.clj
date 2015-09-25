@@ -1,5 +1,6 @@
-(ns webvim.change
-  (:use webvim.global)
+(ns webvim.core.rope
+  (:use webvim.global
+        webvim.core.event)
   (:import (org.ahmadsoft.ropes RopeBuilder)))
 
 (def <br> "\n")
@@ -33,6 +34,14 @@
 
 (defn- indexr[r s]
   (if (empty? r) -1 (.indexOf r s)))
+
+(defn rblank? 
+  ([s]
+   (or (nil? s)
+       (let [m (.matcher s #"^\s$")]
+         (.find m 0))))
+  ([s rg]
+   (rblank? (subr s rg))))
 
 (defn count-lines[r]
   (let [cnt (count <br>)]
@@ -263,3 +272,38 @@
 
 (defn redo[buf]
   (undo-redo buf :redoes :undoes))
+
+(defn re-test[re s]
+  (cond (nil? re) false
+        (string? s) (.find (re-matcher re s))
+        :else (.find (.matcher s re))))
+
+(defn re-subs[re s]
+  (cond (nil? re) nil
+        (string? s) (re-find re s)
+        :else (let [m (.matcher s re)]
+                (if (.find m)
+                  (subr s (.start m) (.end m))
+                  nil))))
+
+(defn count-left-spaces[s]
+  (count (re-subs #"^\s*" s)))
+;(pos-re-backward 2 (rope "aa bb") #"(?<=[^a-zA-Z_\-!.?+*=<>&#\':0-9])[a-zA-Z_\-!.?+*=<>&#\':0-9]|(?<=[a-zA-Z_\-!.?+*=<>&#\':0-9\s,])[^a-zA-Z_\-!.?+*=<>&#\':0-9\s,]")
+
+;(let [s (rope "aa\nbb\ncc\n\n")] 
+;  (take 30
+;        (lines s 0 9)))
+;(lines (rope "aa\nbb\ncc\n\n") 0)
+
+(defn char-at
+  "return nil if out of range"
+  [s pos]
+  (if (or (neg? pos) (>= pos (count s)))
+    nil
+    (.charAt s pos)))
+
+(defn ranges-to-texts
+  "Return a lazy seq contains texts sub from s. Range's right point is exclusive."
+  [s ranges]
+  (map #(subr s %) ranges))
+
