@@ -85,8 +85,8 @@
                        #(contains? left-braces %)
                        #(contains? right-braces %))
             braces (if left?
-                     (pos-re-forward-seq pos r re)
-                     (pos-re-backward-seq pos r re))
+                     (pos-re-forward-seq r pos re)
+                     (pos-re-backward-seq r pos re))
             mpos (reduce 
                    (fn[cnt [a _]]
                      (let [ch (char-at r a)
@@ -115,7 +115,7 @@
   [buf]
   (let [pos (buf :pos)
         r (buf :str)
-        [a b] (pos-re+ pos r #"\n.+?(?=(\n|\S))")]
+        [a b] (pos-re+ r pos #"\n.+?(?=(\n|\S))")]
     (if (nil? a) buf
       (buf-replace buf a b " "))))
 
@@ -152,14 +152,14 @@
     (assoc b :highlights 
            (map (fn[[a b]]
                   [a (dec b)])
-                (pos-re-forward-seq 0 r re)))))
+                (pos-re-forward-seq r 0 re)))))
 
 (defn re-forward-highlight[buf re]
   (let [pos (buf :pos)
         r (buf :str)
         rg (or 
-             (pos-re+ (inc pos) r re)
-             (pos-re+ 0 r re))] ;TODO: use region reduce duplicate work
+             (pos-re+ r (inc pos) re)
+             (pos-re+ r 0 re))] ;TODO: use region reduce duplicate work
     (if (nil? rg) buf
       (let [[a b] rg]
         (-> buf
@@ -170,8 +170,8 @@
   (let [pos (buf :pos)
         r (buf :str)
         rg (or 
-             (pos-re- (dec pos) r re)
-             (pos-re- (-> r count dec) r re))]
+             (pos-re- r (dec pos) re)
+             (pos-re- r (-> r count dec) re))]
     (if (nil? rg) buf
       (let [[a b] rg]
         (-> buf

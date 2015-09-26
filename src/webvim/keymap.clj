@@ -92,7 +92,7 @@
     (if (zero? a)
       (-> buf
           (buf-insert 0 <br>)
-          (buf-set-pos 0))
+          buf-start)
       (-> buf
           (buf-set-pos (- a 1))
           (buf-insert <br>)))))
@@ -427,7 +427,7 @@
 
 (defn update-x[b]
   (let [pos (b :pos)]
-    (assoc b :x (- pos (pos-line-first pos (b :str))))))
+    (assoc b :x (- pos (pos-line-first (b :str) pos)))))
 
 (defn update-x-if-not-jk
   "update :x unless it is up down motion"
@@ -574,12 +574,12 @@
                      (highlight-all-matches b1 re) b1)))
            "}" paragraph-forward
            "{" paragraph-backward
-           "%" (fn[b]
-                 (let [s (b :str)
-                       pos (b :pos)
-                       newpos (pos-match-brace s
-                                (first (pos-re+ pos s #"\(|\)|\[|\]|\{|\}")))]
-                   (buf-set-pos b newpos)))
+           "%" (fn[buf]
+                 (buf-move buf
+                           (fn [r pos]
+                             (pos-match-brace 
+                               r
+                               (first (pos-re+ r pos #"\(|\)|\[|\]|\{|\}"))))))
            "c+u" #(cursor-move-viewport %1 -0.5) 
            "c+d" #(cursor-move-viewport %1 0.5)})
 

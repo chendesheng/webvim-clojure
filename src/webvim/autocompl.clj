@@ -87,8 +87,8 @@
 (defn expand-ends-word [s a b]
   (let [re-left (re-pattern (str "(?<=[" not-word-chars "])"))
         re-right (re-pattern (str "(?=[" not-word-chars "])"))]
-    [(or (first (pos-re- a s re-left)) 0)
-     (or (first (pos-re+ b s re-right)) (count s))]))
+    [(or (first (pos-re- s a re-left)) 0)
+     (or (first (pos-re+ s b re-right)) (count s))]))
 
 ;(expand-ends-word (rope "aa   bb") 1 3)
 
@@ -96,7 +96,7 @@
   [s pos]
   (if (zero? pos) nil
     (let [re-start (re-pattern (str "(?<=[" not-word-chars "])"))
-          a (or (last (pos-re- pos s re-start)) 0)]
+          a (or (last (pos-re- s pos re-start)) 0)]
       [a pos])))
 
 (defn uncomplete-word

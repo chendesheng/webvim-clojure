@@ -22,13 +22,13 @@
 
 (defn pos-re+
   "return forward range matches"
-  [pos r re]
+  [r pos re]
   (let [m (.matcher r re)]
     (find-first m pos)))
 
 (defn pos-re-
   "return backward range matches"
-  [pos r re]
+  [r pos re]
   (let [m (.matcher r (re-pattern (str "(?=" re ")")))
         m1 (.matcher r re)]
     (.useTransparentBounds m true)
@@ -53,7 +53,7 @@
   [buf fnmove]
   (let [{pos :pos
          r :str} buf
-        newpos (fnmove r pos)]
+        newpos (or (fnmove r pos) pos)]
       (buf-set-pos buf newpos)))
 
 (defn buf-start[buf]
@@ -90,13 +90,13 @@
 (defn re-forward [buf re]
   (buf-move buf 
             (fn[r pos]
-              (or (first (pos-re+ (inc pos) r re)) 
+              (or (first (pos-re+ r (inc pos) re)) 
                   (-> r count dec)))))
 
 (defn re-backward[buf re]
   (buf-move buf 
             (fn[r pos]
-              (or (first (pos-re- (dec pos) r re)) 0))))
+              (or (first (pos-re- r (dec pos) re)) 0))))
 
 (defn word-forward[buf]
   (re-forward buf re-word-start-border))
@@ -123,55 +123,48 @@
   (re-backward buf #"((?<=\n)\n[^\n])"))
 
 ;(paragraph-forward {:str (rope "aaa\nbb") :pos 0 :y 0})
+(defn- move-char[buf incdec]
+  (buf-move buf (fn [r pos]
+                  (let [newpos (incdec pos)
+                        ch (or (char-at r newpos) \newline)]
+                    (if (= ch \newline)
+                      pos newpos)))))
+
 (defn char-forward[buf]
-  (let [pos (buf :pos)
-        newpos (inc pos)
-        r (buf :str)
-        ch (char-at r pos)]
-    (if (= (or ch \newline) \newline)
-      buf
-      (buf-set-pos buf newpos))))
+  (move-char buf inc))
 
 (defn char-backward[buf]
-  (let [newpos (dec (buf :pos))
-        r (buf :str)
-        ch (char-at r newpos)]
-    (if (= (or ch \newline) \newline)
-      buf
-      (buf-set-pos buf newpos))))
+  (move-char buf dec))
 
-(defn pos-word[pos r]
+(defn pos-word[r pos]
   (let [re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
         re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
-        ;_ (println r)
-        ;_ (println re-start)
-        ;_ (println re-end)
-        b (or (last (pos-re+ pos r re-end)) (count r))
+        b (or (last (pos-re+ r pos re-end)) (count r))
         a (or (last (pos-re- (dec b) r re-start)) 0)]
       [a b]))
 
-;(pos-word 2 (rope "aaa"))
+;(pos-word (rope "aaa") 2)
 
 (defn current-word[buf]
   "return range of word under cursor, right side is exclusive"
   (let [{pos :pos
          r :str} buf]
     ;(println pos r)
-    (pos-word pos r)))
+    (pos-word r pos)))
 
-(defn pos-re-forward-seq[pos r re]
+(defn pos-re-forward-seq[r pos re]
   (if (neg? pos) nil
-    (let [rg (pos-re+ pos r re)]
+    (let [rg (pos-re+ r pos re)]
       (if (nil? rg) nil
-        (cons rg (lazy-seq (pos-re-forward-seq (-> rg first inc) r re)))))))
+        (cons rg (lazy-seq (pos-re-forward-seq r (-> rg first inc)re)))))))
 
-(defn pos-re-backward-seq[pos r re]
+(defn pos-re-backward-seq[r pos re]
   (if (neg? pos) nil
-    (let [rg (pos-re- pos r re)]
+    (let [rg (pos-re- r pos re)]
       (if (nil? rg) nil
-        (cons rg (lazy-seq (pos-re-backward-seq (-> rg first dec) r re)))))))
+        (cons rg (lazy-seq (pos-re-backward-seq r (-> rg first dec) re)))))))
 
 ;(pos-re-forward-seq -1 (rope "(((") #"\(")
 ;(pos-re-backward-seq -1 (rope "(((") #"\(")
-;(pos-re+ 0 (rope "   ()") #"\(|\)|\[|\]|\{|\}")
+;(pos-re+ (rope "   ()") 0 #"\(|\)|\[|\]|\{|\}")
 

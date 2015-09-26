@@ -24,9 +24,9 @@
 (def indent-tab-size #{"def" "defn" "if" "fn" "let" "cond" "loop"})
 
 (defn auto-indent 
-  [s pos]
+  [r pos]
   (let [lines (filter #(-> % rblank? not)
-                      (ranges-to-texts s (-lines s pos)))
+                      (ranges-to-texts r (-lines r pos)))
         line (first lines)
         pline (second lines)]
     (if (nil? pline) ""
@@ -55,30 +55,30 @@
 ;find outer scope and align by start bracket
 (defn clojure-indent
   "Indent by brace parsing"
-  [s pos]
-  (let [[a b] (pos-line s pos)]
+  [r pos]
+  (let [[a b] (pos-line r pos)]
     (cond 
       (zero? a)
       ""
-      (clojure-comment? (subr s a b))
-      (auto-indent s pos)
+      (clojure-comment? (subr r a b))
+      (auto-indent r pos)
       :else (let [tmp (reduce 
                         (fn[stack [a _]]
-                          (let [ch (char-at s a)]
+                          (let [ch (char-at r a)]
                             (if (and (contains? left-braces ch) (empty? stack))
                               (reduced a)
                               (if (= (peek stack) (all-braces ch))
                                 (pop stack)
-                                (conj stack ch))))) nil (pos-re-backward-seq (dec a) s re-braces))
+                                (conj stack ch))))) nil (pos-re-backward-seq r (dec a) re-braces))
                   mpos (if (number? tmp) tmp nil)]
               (if (nil? mpos)
                 ""
-                (let [ch (char-at s mpos)
-                      [a b] (pos-line s mpos)
+                (let [ch (char-at r mpos)
+                      [a b] (pos-line r mpos)
                       cnt (- mpos a)]
                   (repeat-space 
                     (+ (- mpos a) 
-                       (clojure-get-indent (subr s mpos b))))))))))
+                       (clojure-get-indent (subr r mpos b))))))))))
 
 (defn clang-comment? [line]
   (re-test #"^\s*//" line))
@@ -117,11 +117,11 @@
 ;       hello(aa==bb)  <- ppline
 ;   }                  <- pline
 ;   aaaa               <- line
-(defn clang-indent [s pos]
-  (let [[head & ranges] (-lines s pos)
-        line (subr s head)
+(defn clang-indent [r pos]
+  (let [[head & ranges] (-lines r pos)
+        line (subr r head)
         lines (filter clang-not-blank-or-comment?
-                      (ranges-to-texts s ranges))
+                      (ranges-to-texts r ranges))
         ;_ (println (str "[" line "]"))
         pline (or (first lines) "")
         ;_ (println (str "[" pline "]"))
@@ -129,7 +129,7 @@
         pbrace? (re-test #"[\{]\s*$" pline)
         brace? (re-test #"^\s*\}" line)]
     (cond (clang-comment? line)
-          (auto-indent s pos)
+          (auto-indent r pos)
           (empty? pline)
           ""
           (and (not pbrace?) brace?)
@@ -149,20 +149,20 @@
               pindent)))))
 
 (defn buf-indent-line[buf pos]
-  (let [s (buf :str)
-        indent ((-> buf :language :fn-indent) s pos)
-        a (pos-line-first pos s)
-        b (pos-line-start pos s)]
+  (let [r (buf :str)
+        indent ((-> buf :language :fn-indent) r pos)
+        a (pos-line-first r pos)
+        b (pos-line-start r pos)]
     ;(println a b)
     (buf-replace buf a b indent)))
 
 (defn buf-indent-lines 
   "indent from cursor row to row both inclusive"
   [buf newpos]
-  (let [s (buf :str)
+  (let [r (buf :str)
         [p1 p2] (sort2 (buf :pos) newpos)]
     (loop [buf (buf-set-pos buf p2) ;put pos at end and keep track it
-           [a _] (pos-first-line s p1 #(not (rblank? s %)))] ;start at first non-blank line
+           [a _] (pos-first-line r p1 #(not (rblank? r %)))] ;start at first non-blank line
       ;(println (buf :pos) a)
       (if (< (buf :pos) a) (buf-set-pos buf p1)
         (let [t1 (buf-indent-line buf a)
@@ -173,8 +173,8 @@
             (pos-next-line s1 a #(not (rblank? s1 %)))))))))
 
 (defn buf-indent-current-line
-  [b]
-  (buf-indent-line b (b :pos)))
+  [buf]
+  (buf-indent-line buf (buf :pos)))
 
 (def language-indents 
   {"Clojure" {:fn-indent clojure-indent}
