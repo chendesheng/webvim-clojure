@@ -5,27 +5,27 @@
   (:use clojure.pprint
         webvim.core.buffer))
 
-(defn- record-keys[b keycode]
+(defn- record-keys[buf keycode]
   (if (nil? (#{"c+n" "c+p" "c+a" "c+x"} keycode)) ;Don't record keycode for these commands
-    (update-in b [:macro :recording-keys] conj keycode)
-    b))
+    (update-in buf [:macro :recording-keys] conj keycode)
+    buf))
 
 (declare serve-keymap)
 (declare map-fn-else)
 
 (defn send-out
   "write buffer to out channel"
-  [buf out]
+  [buf]
   (let [before (buf :before-send-out)
         after (buf :after-send-out)
         newbuf (before buf)]
-    (async/>!! out newbuf)
+    (async/>!! (newbuf :chan-out) newbuf)
     (after newbuf)))
 
-(defn call-if-fn [b f & args]
+(defn call-if-fn [buf f & args]
   (if (fn? f)
-    (apply f b args)
-    b))
+    (apply f buf args)
+    buf))
 
 ;two types: key (leaf), keymap (internal node)
 ;when visit a keymap call :enter :leave 
@@ -33,69 +33,68 @@
 ;when visit a key call :before :after
 (defn serve-keys
   "Serve a sequence of keys until end of keymap. Recusivly walk through keymap tree (works like sytax parser)"
-  [b keymap keycode]
+  [buf keymap keycode]
   (let [f (keymap keycode)]
     (if (or (fn? f) (map? f) (fn? (:else keymap)))
-      (-> b
+      (-> buf
           (record-keys keycode)
           (call-if-fn (:before keymap) keycode)
           (map-fn-else keymap keycode)
           (call-if-fn (:after keymap) keycode))
-      b)))
+      buf)))
 
-(defn map-fn-else[b keymap keycode]
+(defn map-fn-else[buf keymap keycode]
   (let [f (keymap keycode)]
     (cond
       (map? f)
-      (serve-keymap b f keycode)
+      (serve-keymap buf f keycode)
       (fn? f)
-      (f b)
+      (f buf)
       (nil? f)
-      (call-if-fn b (:else keymap) keycode))))
+      (call-if-fn buf (:else keymap) keycode))))
 
-(defn loop-serve-keys[b keymap]
-  (let [keycode (async/<!! (:chan-in b))
-        b1 (serve-keys b keymap keycode)]
+(defn loop-serve-keys[buf keymap]
+  (let [keycode (async/<!! (:chan-in buf))
+        buf1 (serve-keys buf keymap keycode)]
     (if (and (fn? (:continue keymap))
-             ((:continue keymap) b1 keycode))
-      (recur (send-out b1 (:chan-out b1)) keymap)
-      [b1 keycode])))
+             ((:continue keymap) buf1 keycode))
+      (recur (send-out buf1) keymap)
+      [buf1 keycode])))
 
-(defn serve-keymap[b keymap keycode]
-  (let [b1 (-> b
-               (buffer-append-keys keycode)
+(defn serve-keymap[buf keymap keycode]
+  (let [buf1 (-> buf
+               (assoc :keys (conj (:keys buf) keycode))
                (call-if-fn (:enter keymap) keycode)
-               (send-out (:chan-out b)))
-        [b2 leave-keycode] (loop-serve-keys b1 keymap)]
-    (call-if-fn b2 (:leave keymap) leave-keycode)))
+               send-out)
+        [buf2 leave-keycode] (loop-serve-keys buf1 keymap)]
+    (call-if-fn buf2 (:leave keymap) leave-keycode)))
 
-(defn key-server-inner[b keymap]
-  (let [{in :chan-in out :chan-out} b]
+(defn key-server-inner[buf keymap]
+  (let [{in :chan-in out :chan-out} buf]
     (try
       (let [keycode (async/<!! in)]
         (if (nil? keycode)
           (async/close! out)
-          (-> b
+          (-> buf
               (serve-keys keymap keycode)
-              buffer-reset-keys
-              (send-out out))))
+              (assoc :keys [])
+              send-out)))
       (catch Exception e
         (let [err (str "caught exception: " e)]
           (println err)
           (.printStackTrace e)
-          (send-out (merge b {:ex "" :mode 0 :message err}) 
-                    out))))))
+          (send-out (merge buf {:ex "" :mode 0 :message err}) ))))))
 
 (defn key-server
   "Start a dedicate thread handle input keys. Close :chan-in will stop this thread."
-  [b keymap]
+  [buf keymap]
   (async/thread 
-    (loop[b1 b]
-      (if (not (nil? b1))
+    (loop[buf1 buf]
+      (if (not (nil? buf1))
         (recur (key-server-inner 
-                 b1
+                 buf1
                  keymap)))))
-  b)
+  buf)
 
 ;enter point of key sequence parser
 (defonce root-keymap (atom {}))

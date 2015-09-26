@@ -4,7 +4,8 @@
         webvim.core.event
         webvim.core.rope
         webvim.core.pos
-        webvim.core.line))
+        webvim.core.line
+        webvim.utils))
 
 (def re-braces #"(?<!\\)(\(|\[|\{|\}|\]|\))")
 (defn repeat-space[n]

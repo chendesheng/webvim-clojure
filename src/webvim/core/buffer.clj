@@ -39,14 +39,14 @@
                    :else "Plain Text"}
         ext (if (nil? bufname) "" (re-find #"\.\w+$" bufname))
         ;make sure last line ends with line break
-        s (if (.endsWith txt "\n") 
+        r (if (.endsWith txt "\n") 
             (rope txt)
             (.append (rope txt) \newline))
         b {:name bufname
            ;= nil if it is a special buffer like [New File] or [Quick Fix]
            :filepath filepath 
-           :str s
-           :linescnt (count-lines s)
+           :str r
+           :linescnt (count-lines r)
            :pos 0  ;offset from first char
            :x 0    ;saved x for up down motion
            :y 0    ;num of line breaks from first char
@@ -107,136 +107,9 @@
       ;set :last-saved-lines make buffer start as unsaved
       (assoc (create-buf nm f "") :last-saved-lines nil))))
 
-(defn buf-info[b]
-  (if (and (empty? (b :str))
-           (not (fs/exists? (b :filepath))))
-    (assoc b :message (str "[New File] " (b :filepath)))
-    (assoc b :message (str "\"" (:filepath b) "\""))))
-
-;TODO make write atomic
-(defn write-buffer
-  [b]
-  (try 
-    (let [s (b :str)
-          f (b :filepath)]
-      (if (not (fs/exists? f))
-        (do
-          (-> f fs/parent fs/mkdirs)
-          (-> f fs/file fs/create)))
-      (spit f s)
-      (-> b
-          (assoc :dirty false)
-          (assoc :message (str "\"" f "\" written"))))
-    (catch Exception e 
-      ;(println (.getMessage e))
-      (.printStackTrace e)
-      (let [err (str "caught exception: " (.getMessage e))]
-        (assoc b :message err)))))
-
 (defonce ^{:private true} listen-change-buffer
   (listen
     :change-buffer
     (fn [newt oldt c]
       (assoc newt :dirty true))))
-
-(defn buffer-append-keys[b keycode]
-  (assoc b :keys (conj (:keys b) keycode)))
-
-(defn buffer-reset-keys[b]
-  (assoc b :keys []))
-
-(defn buf-copy-range[t a b inclusive]
-  (let [[a b] (sort2 a b)]
-    (str (subr (t :str) a (if inclusive (inc b) b)))))
-
-(defn buf-update-highlight-brace-pair[b pos]
-  (let [mpos (pos-match-brace (b :str) pos)]
-    ;(println pos mpos)
-    (if (nil? mpos)
-      (dissoc b :braces)
-      (assoc b :braces [pos mpos]))))
-
-(defn buf-join-line
-  "join current line and next line"
-  [t]
-  (let [pos (t :pos)
-        s (t :str)
-        [a b] (pos-re-forward pos s #"\n.+?(?=(\n|\S))")]
-    (if (nil? a) t
-      (buf-replace t a b " "))))
-
-(defn save-lastbuf[b keycode]
-  (-> b (assoc-in [:context :lastbuf] b)))
-
-(defn buf-replace-char [b ch]
-  (let [pos (b :pos)]
-    (buf-replace b pos (inc pos) ch)))
-
-(defn- text-save-change[t pos from to]
-  (update-in t [:changes] conj {:pos pos :len (count from) :to (str to)}))
-
-(defn buf-insert
-  ([buf pos txt]
-   (buf-replace buf pos pos txt))
-  ([buf txt]
-   (buf-insert buf (buf :pos) txt)))
-
-(defn buf-delete
-  ([buf a b]
-   (buf-replace buf a b ""))
-  ([buf b]
-   (let [pos (buf :pos)
-         [a b] (sort2 pos b)]
-     (buf-delete buf a b))))
-
-(defn text-delete-range
-  "delete range and set pos to end of deleted"
-  [buf rg]
-  (-> buf
-      (buf-delete (first rg) (second rg))
-      (buf-set-pos (first rg))))
-
-(defn text-delete-offset[buf offset] 
-  (let [pos (buf :pos)
-        newpos (+ pos offset)]
-    (if (neg? newpos) buf
-      (buf-delete buf newpos))))
-
-;;highlighting
-(defn add-highlight[t rg]
-  (let [highlights (t :highlights)]
-    (if (empty? (filter (fn[[a b]]
-                          (and (= a (rg 0)) (= b (rg 1)))) highlights))
-      (update-in t [:highlights] conj rg) t)))
-
-(defn highlight-all-matches[b re]
-  (let [s (b :str)]
-    (assoc b :highlights 
-           (map (fn[[a b]]
-                  [a (dec b)])
-                (pos-re-forward-seq 0 s re)))))
-
-(defn re-forward-highlight[t re]
-  (let [pos (t :pos)
-        s (t :str)
-        rg (or 
-             (pos-re-next-forward pos s re)
-             (pos-re-forward 0 s re))] ;TODO: use region reduce duplicate work
-    (if (nil? rg) t
-      (let [[a b] rg]
-        (-> t
-            (buf-set-pos a)
-            (add-highlight [a (dec b)]))))))
-
-(defn re-backward-highlight[t re]
-  (let [pos (t :pos)
-        s (t :str)
-        rg (or 
-             (pos-re-next-backward pos s re)
-             (pos-re-next-backward (count s) s re))]
-    (if (nil? rg) t
-      (let [[a b] rg]
-        (-> t
-            (buf-set-pos a)
-            (add-highlight [a (dec b)]))))))
 

@@ -12,6 +12,7 @@
         webvim.action
         webvim.register
         webvim.jumplist
+        webvim.utils
         webvim.ex
         webvim.indent
         webvim.autocompl))
@@ -59,12 +60,18 @@
       line-start
       (set-insert-mode keycode)))
 
+(defn buf-delete-offset[buf offset] 
+  (let [pos (buf :pos)
+        newpos (+ pos offset)]
+    (if (neg? newpos) buf
+      (buf-delete buf newpos))))
+
 (defn set-insert-remove-char[b keycode]
   (let [pos (b :pos)]
     (registers-put (b :registers) (-> b :context :register) (buf-copy-range b pos pos true))
     (-> b
         (set-insert-mode keycode)
-        (text-delete-offset 1))))
+        (buf-delete-offset 1))))
 
 (defn- insert-line-after[buf]
   (let [pos (buf :pos)
@@ -110,7 +117,7 @@
 
 (defn insert-mode-default[t keycode]
   (let [t1 (if (= "backspace" keycode)
-             (text-delete-offset t -1)
+             (buf-delete-offset t -1)
              (buf-insert t (keycode-to-char keycode)))
         t2 (buf-update-highlight-brace-pair t1 (-> t1 :pos dec))
         t3 (if (or (re-test (-> t2 :language :indent-triggers) keycode) (= keycode "enter"))
@@ -290,13 +297,20 @@
             save-undo))
       b)))
 
+(defn buf-delete-range
+  "delete range and set pos to end of deleted"
+  [buf rg]
+  (-> buf
+      (buf-delete (first rg) (second rg))
+      (buf-set-pos (first rg))))
+
 (defn delete-line[t]
   (let [pos (t :pos)
         [a b] (current-line t)]
     (registers-put (:registers t) (-> t :context :register) (buf-copy-range t a b false))
     (-> t
         (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
-        (text-delete-range (current-line t))
+        (buf-delete-range (current-line t))
         line-start
         save-undo)))
 
@@ -336,10 +350,6 @@
 
 (def left-boundary (str "(?<=^|[" not-word-chars "])"))
 (def right-boundary (str "(?=[" not-word-chars "]|$)"))
-
-;(pos-re-forward 0 (rope "a b") (re-pattern left-boundary))
-;(pos-re-forward 0 (rope "a b") (re-pattern right-boundary))
-;(pos-re-forward 0 (rope "abc bc") (re-pattern (str left-boundary "bc" right-boundary)))
 
 (defn move-next-same-word[b]
   (let [[start end] (current-word b)
@@ -462,7 +472,7 @@
     (let [pos (b :pos)]
       (registers-put (:registers b) (-> b :context :register) (buf-copy-range b pos pos true))
       (-> b 
-          (text-delete-offset 1)
+          (buf-delete-offset 1)
           save-undo)))
 
 (defn yank-visual[t]
@@ -511,8 +521,8 @@
            "l" char-forward
            "k" #(lines-backward % 1)
            "j" #(lines-forward % 1)
-           "g" {"g" text-start}
-           "G" text-end
+           "g" {"g" buf-start}
+           "G" buf-end
            "w" word-forward
            "W" WORD-forward
            "b" word-backward
@@ -568,7 +578,7 @@
                  (let [s (b :str)
                        pos (b :pos)
                        newpos (pos-match-brace s
-                                (first (pos-re-forward pos s #"\(|\)|\[|\]|\{|\}")))]
+                                (first (pos-re+ pos s #"\(|\)|\[|\]|\{|\}")))]
                    (buf-set-pos b newpos)))
            "c+u" #(cursor-move-viewport %1 -0.5) 
            "c+d" #(cursor-move-viewport %1 0.5)})
