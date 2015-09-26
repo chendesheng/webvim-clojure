@@ -6,8 +6,7 @@
         (clojure [string :only (join split blank?)])
         webvim.core.rope
         webvim.core.pos
-        webvim.core.event
-        webvim.indent))
+        webvim.core.event))
 
 ;generate buffer id and buffer id only
 (defonce gen-buf-id (atom 0))
@@ -112,4 +111,31 @@
     :change-buffer
     (fn [newt oldt c]
       (assoc newt :dirty true))))
+
+;TODO make write atomic
+(defn write-buffer
+  [b]
+  (try 
+    (let [r (b :str)
+          f (b :filepath)]
+      (if (not (fs/exists? f))
+        (do
+          (-> f fs/parent fs/mkdirs)
+          (-> f fs/file fs/create)))
+      (spit f r)
+      (-> b
+          (assoc :dirty false)
+          (assoc :message (str "\"" f "\" written"))))
+    (catch Exception e 
+      ;(println (.getMessage e))
+      (.printStackTrace e)
+      (let [err (str "caught exception: " (.getMessage e))]
+        (assoc b :message err)))))
+
+(def word-chars "a-zA-Z_\\-!.?+*=<>&#\\':0-9")
+(def not-word-chars (str "^" word-chars))
+(def space-chars "\\s,")
+(def not-space-chars "^\\s,")
+(def punctuation-chars (str "^" word-chars space-chars))
+(def not-punctuation-chars (str word-chars space-chars))
 

@@ -7,7 +7,7 @@
         webvim.core.buffer
         webvim.core.serve
         webvim.keymap
-        webvim.action
+        webvim.action.window
         webvim.autocompl
         (compojure handler [core :only (GET POST defroutes)])
         (hiccup [page :only (html5)])
