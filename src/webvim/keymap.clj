@@ -15,7 +15,7 @@
         webvim.action.macro
         webvim.action.visual
         webvim.action.highlight
-        webvim.register
+        webvim.core.register
         webvim.jumplist
         webvim.utils
         webvim.ex

@@ -6,7 +6,7 @@
         webvim.core.rope
         webvim.core.pos
         webvim.core.serve
-        webvim.register
+        webvim.core.register
         webvim.indent
         webvim.utils))
 

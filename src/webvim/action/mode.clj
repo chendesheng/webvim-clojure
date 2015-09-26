@@ -4,7 +4,7 @@
         webvim.core.line
         webvim.core.serve
         webvim.indent
-        webvim.register))
+        webvim.core.register))
 
 (defonce motion-keymap (atom {}))
 (defonce edit-keymap (atom {}))

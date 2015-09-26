@@ -9,7 +9,7 @@
         webvim.core.line
         webvim.core.buffer
         webvim.core.serve
-        webvim.register
+        webvim.core.register
         webvim.action.motion
         webvim.action.edit
         webvim.action.mode

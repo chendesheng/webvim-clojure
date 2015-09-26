@@ -6,6 +6,7 @@
   (:use clojure.pprint
         webvim.core.buffer
         webvim.core.serve
+        webvim.core.register
         webvim.keymap
         webvim.action.window
         webvim.autocompl
@@ -101,8 +102,8 @@
 ;TODO How to run code only in repl env? Conditional compile?
 ;only for testing on repl
 (defonce open-test-file
-  (webvim.register/registers-put
-         webvim.register/registers
+  (registers-put
+         registers
          "%" 
          (reset! active-buffer-id 
                  (-> "testfile.clj"

@@ -3,7 +3,7 @@
         webvim.core.buffer
         webvim.jumplist
         webvim.utils
-        webvim.register
+        webvim.core.register
         webvim.core.rope))
 
 (def re-word-start-border

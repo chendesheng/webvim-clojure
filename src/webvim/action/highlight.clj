@@ -3,7 +3,7 @@
         webvim.core.rope
         webvim.core.line
         webvim.core.buffer
-        webvim.register
+        webvim.core.register
         webvim.action.motion
         webvim.utils))
 
