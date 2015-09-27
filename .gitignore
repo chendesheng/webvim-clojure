@@ -4,6 +4,7 @@
 pom.xml
 pom.xml.asc
 *.jar
+!ropes.jar
 *.class
 /.lein-*
 /.nrepl-port

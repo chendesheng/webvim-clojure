@@ -27,12 +27,13 @@ body {
 .lines .title {
 	color:#A6E22E;
 }
-.highlight-brace-pair .line-selected, .cursor {
+/*.highlight-brace-pair .line-selected, .cursor {
 	background:#F8F8F0;
 }
 .cursor {
 	opacity:0.5;
 }
+*/
 .status-bar {
 	background:#565656;
 	border-top:solid 1px #323232;

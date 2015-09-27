@@ -2,8 +2,7 @@
   (:require [me.raynes.fs :as fs]
             [clojure.core.async :as async]
             [clojure.java.io :as io])
-  (:use clojure.pprint
-        webvim.global))
+  (:use clojure.pprint))
 
 ;global list of history positions
 ;jump-list behaves different from vim's jump list: 
@@ -24,7 +23,7 @@
 ; pros: can always jump back to exact position where jump starts
 ; cons: little confuse?
 (defonce jump-list (atom {:current 0 ;index of next position in positions vector
-                          :positions [] ;{:id :cursor}
+                          :positions [] ;{:id :pos}
                           }))
 
 ;jump-push before these motions
@@ -42,8 +41,7 @@
          positions :positions} @jump-list]
     (if (>= current (dec (count positions)))
       nil
-      (let [bpos {:id (b :id) :cursor (b :cursor)}]
-        (pprint current)
+      (let [bpos {:id (b :id) :pos (b :pos)}]
         (swap! jump-list assoc-in [:positions current] bpos)
         (swap! jump-list update-in [:current] inc)
         (jump-current-pos)))))
@@ -54,17 +52,17 @@
   (let [current (@jump-list :current)]
     (if (zero? current)
       nil
-      (let [bpos {:id (b :id) :cursor (b :cursor)}]
+      (let [bpos {:id (b :id) :pos (b :pos)}]
         (swap! jump-list assoc-in [:positions current] bpos)
         (swap! jump-list update-in [:current] dec)
         (jump-current-pos)))))
 
 (defn jump-push
-  "Add :cursor to jump list"
+  "Add :pos to jump list"
   [b]
   (let [jl @jump-list
         positions (conj 
                     (subvec (jl :positions) 0 (jl :current))
-                    {:id (:id b) :cursor (:cursor b)})]
+                    {:id (:id b) :pos (:pos b)})]
     (reset! jump-list {:positions positions :current (count positions)})))
 

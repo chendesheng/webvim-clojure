@@ -18,12 +18,7 @@ $(document).keydown(function(event) {
 		}
 
 		if (key) {
-			keymap(key, function(key) {
-				inputQueue.push(key);
-				if (inputQueue.length == 1) {
-					sendQueue();
-				}
-			});
+			handleKey(key);
 		}
 	}
 });
@@ -32,14 +27,18 @@ $(document).keypress(function(event) {
 	event.preventDefault();
 	var code = event.keyCode || event.charCode || event.which;;
 
-	var ch = String.fromCharCode(code)
-	keymap(ch, function(key) {
-		inputQueue.push(key);
+	var ch = String.fromCharCode(code);
+	handleKey(ch);
+});
+
+function handleKey(key) {
+	keymap(key, function(k) {
+		inputQueue.push(k);
 		if (inputQueue.length == 1) {
 			sendQueue();
 		}
 	});
-});
+}
 
 function sendQueue() {
 	if (inputQueue.length > 0) {
@@ -60,6 +59,15 @@ function sendQueue() {
 var ongoingkeys = [];
 var ongoingkeysTimer;
 
+function showOngoingKey(key) {
+	if (key.length == 1) {
+		$('.lines .cursor').text(key).removeClass().addClass('cursor ongoing-key');
+	}
+}
+
+function hideOngoingKey() {
+	$('.lines .cursor').removeClass('ongoing-key');
+}
 
 //map key to another get return from callback
 function imap(key, callback) {
@@ -74,14 +82,16 @@ function imap(key, callback) {
 
 	if (key == 'j') {
 		if (ongoingkeys.length == 0) {
-			//$('.lines .cursor').text('j');
 			ongoingkeysTimer = setTimeout(function() {
+				hideOngoingKey();
 				callback('j');
 				ongoingkeys = [];
 			}, 1000);
 
 			ongoingkeys.push(key);
+			showOngoingKey(key);
 		} else {
+			hideOngoingKey();
 			//press twice 'j'
 			if (ongoingkeysTimer != null) {
 				clearTimeout(ongoingkeysTimer);
@@ -96,6 +106,7 @@ function imap(key, callback) {
 			clearTimeout(ongoingkeysTimer);
 			ongoingkeysTimer = null;
 		}
+		hideOngoingKey();
 
 		ongoingkeys.push(key);
 		ongoingkeys.each(function(key){

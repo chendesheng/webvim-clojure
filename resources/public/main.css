@@ -1,32 +1,38 @@
 body {
-	font-family:'Source Code Pro for Powerline';
+	font-family:'Ubuntu mono', 'Source Code Pro for Powerline', 'Courier New';
 	padding:0;
 	margin:0;
 	color:#ddd;
 	width:100%;
 	height:100%;
+	font-size:20px;
 }
-
-.line {
-	height:21px;
-	white-space:nowrap;
+body,html,.buffer{
+	height:100%;
 }
 
 .buffer {
-	position:absolute;
-	top:0;
-	left:0;
-	right:0;
-	bottom:30px;
+	bottom:1.5em;
 	overflow:auto;
 }
 
 .lines {
-	position:absolute;
-	top:0;
-	left:50px;
-	right:0;
 	overflow:auto;
+	white-space:pre;
+	position:relative;
+}
+
+.lines .code {
+	z-index:0;
+	line-height:1.2em;
+	-moz-tab-size: 4;
+	-o-tab-size:   4;
+	tab-size:      4;
+}
+
+.selections, .highlights {
+	pointer-events: none;
+	z-index:0;
 }
 
 .selections .line-selected {
@@ -35,11 +41,10 @@ body {
 }
 
 .gutter {
-	position:absolute;
-	top:0;
-	left:0;
-	width:40px;
-	padding-right:10px;
+	float:left;
+	width:5ch; /*ch means width of the zero (0) character*/
+	padding-left:1ch;
+	padding-right:1ch;
 	overflow:hidden;
 	color:#595959;
 	-webkit-user-select:none;
@@ -49,8 +54,8 @@ body {
 }
 
 .line-num {
-	height:21px;
 	text-align:right;
+	line-height:1.2em;
 }
 
 
@@ -69,11 +74,13 @@ pre {
 
 .cursor {
 	position:absolute;
-	background:#007ACC;
-	opacity:0.7;
-	width:9.57px;
-	height:21px;
-	z-index:1000000;
+	background:#ae81ff;
+	color:white;
+	z-index:99;
+	white-space:pre;
+}
+.cursor.ongoing-key {
+	z-index:100000;
 }
 
 .status-bar .cursor {
@@ -81,7 +88,9 @@ pre {
 	display:inline-block;
 	opacity:1;
 	background:#fff;
-	top:5px;
+	top:0.45em;
+	height:1em;
+	width:1ch;
 }
 
 
@@ -90,11 +99,12 @@ pre {
 	left:0;
 	right:0;
 	bottom:0;
-	height:30px;
-	line-height:30px;
+	height:1.9em;
+	line-height:1.9em;
 	padding:0 10px 0 10px;
 	overflow:auto;
 	background:#007ACC;
+	z-index:100;
 }
 
 .status-bar .buf-name{
@@ -109,7 +119,7 @@ pre {
 }
 
 .status-bar .ongoing-keys {
-	padding-left:30px;
+	padding-left:2ch;
 }
 
 .buffer::-webkit-scrollbar, .status-bar::-webkit-scrollbar, .lines::-webkit-scrollbar, .autocompl::-webkit-scrollbar{
@@ -129,7 +139,6 @@ pre {
 .autocompl pre {
 	padding: 0 10px;
 	height:24px;
-	line-height:21px;
 }
 
 .autocompl .highlight {
@@ -138,13 +147,13 @@ pre {
 }
 
 .line-selected {
-	white-space:nowrap;
-	height:21px;
+	white-space:pre;
 	position:absolute;
+	z-index:-1;
 }
 
 .highlights .line-selected {
-	background:#ffdb9e;
+	background:rgba(102, 217, 239, 0.75);
 	color:#000;
 }
 
@@ -152,7 +161,6 @@ pre {
 	background:#007acc;
 	opacity:0.3;
 	width:9.57px;
-	height:21px;
 	z-index:1000;
 }
 

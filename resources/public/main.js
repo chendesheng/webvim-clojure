@@ -1,4 +1,16 @@
-$(document).ready(function() {
+var lineHeight = 21;
+window.onload = function() { //use window.onload, not sure if stylesheet is loaded in document.ready
+	var d = document.createElement('SPAN');
+	d.className = 'line-num';
+	d.style.opacity = 0;
+	d.style.position = 'absolute';
+	d.style.right = 0;
+	d.style.bottom = 0;
+	d.textContent = "MMMMM";
+	document.body.appendChild(d);
+	lineHeight = d.offsetHeight;
+	document.body.removeChild(d);
+
 	$.getJSON('buf', function(resp) {
 		render(resp);
 
@@ -7,7 +19,7 @@ $(document).ready(function() {
 			waitForFinalEvent(setSize, 500, "resize window");
 		});
 	});
-});
+};
 
 //https://stackoverflow.com/questions/2854407/javascript-jquery-window-resize-how-to-fire-after-the-resize-is-completed/4541963#4541963
 var waitForFinalEvent = (function () {
@@ -24,35 +36,18 @@ var waitForFinalEvent = (function () {
 })();
 		
 function setSize() {
-	var sw = $('.buffer')[0].offsetHeight;
-	var w = Math.floor($('.lines')[0].offsetWidth/9.57);
-	var h = Math.floor(sw/21);
+	var zoom = window.innerWidth/$(document.body).width();
+	var pageh = $('.buffer')[0].offsetHeight;
+	var sw = pageh*zoom;
+	var w = Math.floor($('.lines')[0].offsetWidth*zoom/$('.cursor')[0].offsetWidth);
+	var h = Math.floor((window.innerHeight-$('.status-bar')[0].offsetHeight)/lineHeight);
 	$.getJSON('resize/'+w+'/'+h);
 	
-	$('.lines').css('padding-bottom', sw-21); //scroll beyond last line, leave at least one line
+	$('.lines').css('padding-bottom', pageh-lineHeight); //scroll beyond last line, leave at least one line
 }
 
 function isChinese(c) {
 	return /[\ufe30-\uffa0\u4e00-\u9eff\u3000-\u303F]/.test(c);
-}
-
-//TODO use regexp
-function textWidth(txt, a, b) {
-	var x = 0;
-	var vx = a;
-	for (var i = a; i < b; i++) {
-		if (txt[i] == '\t') {
-			x += (4-vx%4)*9.57;
-			vx += (4-vx%4);
-		} else if (isChinese(txt[i])) {
-			x+=16;
-			vx++;
-		} else {
-			x+=9.57;
-			vx++;
-		}
-	}
-	return x;
 }
 
 function replaceBinding(html, data, ifEncode) {
@@ -68,24 +63,218 @@ function replaceBinding(html, data, ifEncode) {
 var lineTemplate = '<div id="line-{row}" class="line"><pre>{line}</pre></div>';
 var gutterLineTemplate = '<div id="line-num-{row}" class="line-num">{incrow}</div>';
 
+var _gutterWidth;
+function gutterWidth(linenum) {
+	if (linenum) {
+		var w = 0;
+		while(linenum>0) {
+			linenum = Math.floor(linenum / 10);
+			w++;
+		}
+
+		_gutterWidth = w;
+		$('.gutter').width(_gutterWidth+'ch');
+	} else {
+		//linenum = parseInt($('.gutter :last-child').text());
+		return _gutterWidth+2;//left padding 1ch, right padding 1ch
+	}
+}
+
 function lineid(i) {
 	return '#line-'+i;
 }
 
+String.prototype.eachLine = function(fn) {
+	var str = this;
+	var num = 0;
+	while(true) {
+		var i = str.indexOf('\n')+1;
+		if (i == 0) {
+			fn(str, num);
+			break;
+		} else {
+			fn(str.substring(0, i), num);
+			str = str.substring(i);
+		}
+		num++;
+	}
+};
+
+String.prototype.count = function(ch) {
+	var i = 0;
+	var cnt = 0;
+	while(true) {
+		var nexti = this.indexOf(ch, i);
+		if (nexti == -1)
+			break;
+		i = nexti+ch.length;
+		cnt++;
+	}
+
+	return cnt;
+};
+
+String.prototype.eachBlock = function(fn, n) {
+	n = n || 100;
+	var str = this;
+	var num = 0;
+	while(str.length > 0) {
+		//ensure callback string length (str.length) >= 0.5n, avoid fragment code block
+		if (str.length < 1.5*n) {  
+			fn(str, num);
+			num++;
+			break;
+		} else {
+			var i = str.substring(n).search(/\s/);
+
+			if (i==-1) {
+				fn(str, num);
+				num++;
+				break;
+			} else {
+				i = i+n+1;
+				fn(str.substring(0, i), num);
+				num++;
+				str = str.substring(i);
+			}
+		}
+	}
+
+	return num;
+};
+
 //local states for each buffer, doesn't contains text content since it might be too large.
 var buffers = {};
+
+function outOfRange(ele) {
+	return ele == null || !/\bcode\b/.test(ele.className);
+}
+function endCode(ele) {
+	return ele != null && /\bend\-code\b/.test(ele.className);
+}
+
+function getCodeBlockByPos(buf, pos) {
+	var i = buf.pos;
+	var ele = buf.currentBlock;
+	var num = buf.currentBlockNumber;
+	var linenum = buf.currentLineNumber;
+	if (i <= pos) {
+		while (!endCode(ele)) {
+			var j = i + ele.textContent.length;
+			if (i <= pos && pos < j) {
+				break;
+			}
+
+			i = j;
+			num++;
+			linenum += ele.textContent.count('\n');
+			ele = ele.nextSibling;
+		}
+
+		buf.currentBlock = ele;
+		buf.pos = i;
+		buf.currentBlockNumber = num;
+		buf.currentLineNumber = linenum;
+		return {e: ele, pos: i, num: num, linenum: linenum}
+	} else {
+		while (!outOfRange(ele)) {
+			num--;
+			ele = ele.previousSibling;
+			linenum -= ele.textContent.count('\n');
+			var j = i - ele.textContent.length;
+
+			if (j <= pos && pos < i) {
+				buf.currentBlock = ele;
+				buf.pos = j;
+				buf.currentBlockNumber = num;
+				buf.currentLineNumber = linenum;
+				return {e: ele, pos: j, num: num, linenum: linenum}
+			}
+
+			i = j;
+		}
+	}
+
+	return null;
+}
+
+function getElementByPos(buf, pos) {
+	var res = getCodeBlockByPos(buf, pos);
+	if (res == null) return null;
+	if (endCode(res.e)) return {e: res.e, offset: 0};
+
+	var ele = res.e.firstChild;
+	var i = res.pos;
+	while (true) {
+		var l = ele.textContent.length;
+		if (i <= pos && pos < i+l) {
+			break;
+		}
+
+		i += l;
+		ele = ele.nextSibling;
+	}
+	if (ele.nodeType != 3) {
+		ele = ele.firstChild;
+	}
+
+	return {e: ele, offset: pos-i};
+}
+
+function getScreenXYByPos(buf, pos) {
+	var res = getElementByPos(buf, pos);
+	if (res == null) return;
+
+	var range = document.createRange();
+	range.setStart(res.e, res.offset);
+	range.setEnd(res.e, res.offset);
+
+	var list = range.getClientRects();
+	var rect = list[0];
+	if (list.length > 1 && list[0].top != list[1].top) {
+		//line break;
+		rect = list[1];
+	}
+
+	var scrollTop = $('.buffer').scrollTop();
+	var scrollLeft = $('.lines').scrollLeft();
+	var ch = res.e.textContent[res.offset];	
+	return {left: rect.left+scrollLeft, top: rect.top+scrollTop, ch: ch, e: res.e};
+}
+
+function refreshIter(index, currentBlock, states, parentNode) {
+	var i = index;
+	var ele = currentBlock;
+	return {
+		text: function() {
+			return ele.textContent;
+		},
+		index: function() {
+			return i;
+		},
+		render: function(items) {
+			var newele = renderBlock(items);
+			parentNode.replaceChild(newele, ele);
+			ele = newele;
+		},
+		next: function() {
+			ele = ele.nextSibling;
+			i++;
+			return !endCode(ele);
+		}
+	}
+}
 
 //TODO: Future improvements: 
 //1. put syntax highlight to a dedicate web worker (or just use setTimeout)
 //2. only render “visible” parts and still make scrolling fast
-//3. render difflines into an offline DOM object first
 function render(buf) {
 	if (!buf) return;
 	
 	var hl;
 
 	//render lines
-	if (buf.lines) {
+	if (typeof buf.str != 'undefined') {
 		hl = newHighlight(buf.lang);
 		buffers[buf.id] = { hl: hl };
 
@@ -98,103 +287,129 @@ function render(buf) {
 		var $gutter = document.createElement('DIV');
 		$gutter.className = 'gutter';
 
-		var lines = buf.lines;
-		hl.states = new Array(lines.length+1);
-		lines.each(function(line, i) {
-			if (line) {
-				$lines.appendChild(renderLine(i, hl.parseLine(line, i)));
+		hl.states = [];
+		var linenum = 0;
+		buf.str.eachBlock(function(block, i) {
+			hl.states.push(null);
+			if (block) {
+				$lines.appendChild(renderBlock(hl.parseBlock(block, i)));
 
-				var g = document.createElement('DIV');
-				g.id = 'line-num-'+i;
-				g.className = 'line-num';
-				g.textContent = i+1;
-				$gutter.appendChild(g);
+				var num = block.count('\n');
+				for (var j = 0; j < num; j++) {
+					var g = document.createElement('DIV');
+					g.id = 'line-num-'+linenum;
+					g.className = 'line-num';
+					g.textContent = linenum+1;
+					$gutter.appendChild(g);
+
+					linenum++;
+				}
 			}
 		});
+		
+
+		//put a pivot in the end
+		var pivot = document.createElement('SPAN');
+		pivot.className = 'code end-code';
+		$lines.appendChild(pivot);
+
+		buffers[buf.id].currentBlock = $lines.firstChild;
+		buffers[buf.id].currentBlockNumber = 0;
+		buffers[buf.id].currentLineNumber = 0;
+		buffers[buf.id].pos = 0;
+		hl.states.push(null);
 
 		$('.buffer').append($gutter);
 		$('.buffer').append($lines);
+		gutterWidth(linenum);
 	}
 
 	var $gutter = $('.gutter');
 	hl = hl || buffers[buf.id].hl;
-	var cursor = buf.cursor || buffers[buf.id].cursor;
-	buffers[buf.id].cursor = cursor;
+	
+	if (buf.changes) {
+		var b = buffers[buf.id];
+		var $lines = $('.lines')[0];
+		buf.changes.each(function(c) {
+			var resa = getCodeBlockByPos(b, c.pos);
+			var resb = getCodeBlockByPos(b, c.pos+c.len);
+			var nextblock = getCodeBlockByPos(b, resb.pos+resb.e.textContent.length);
+			var prefix = resa.e.textContent.substring(0, c.pos-resa.pos);
+			var suffix = resb.e.textContent.substring(c.pos+c.len-resb.pos);
+			var newtxt = prefix + c.to + suffix;
 
-	if (buf.difflines) {
-		var diff = buf.difflines;
-		var row = diff.row;
-		var rowstate = hl.states[row];
-		var add = diff.add;
-		if (add && add.length > 0) {
-			if (add[add.length-1] == '') {
-				add.pop();
+			//delete [resa.e, resb.e] both inclusive
+			//don't delete "end-code" pivot
+			var ele = resa.e;
+			var blocknumdeleted = 0;
+			while(!endCode(ele)) {
+				var toremove = ele;
+				ele = ele.nextSibling;
+				$lines.removeChild(toremove);
+				blocknumdeleted++;
+
+				if (toremove == resb.e) {
+					break;
+				}
 			}
-		}
 
-		var sub = diff.sub;
-		var oldcnt = parseInt($gutter.find(':last-child').text());
-		var newcnt = oldcnt+add.length-sub;
+			//delete hl.states [resa.num+1, resb.num+1]
+			var deletedstates = hl.states.splice(resa.num+1, blocknumdeleted);
+			var savedstate = deletedstates.pop();
 
-		//update gutter
-		if (newcnt > oldcnt) {
-			for (var i = oldcnt; i < newcnt; i++) {
-				$gutter.append(replaceBinding(gutterLineTemplate, {row:i,incrow:i+1}));
+			//insert and keep track hl.states
+			var blocknuminserted = newtxt.eachBlock(function(block, i) {
+				var num = i + resa.num;
+				var res = hl.parse(block, hl.states[num]);
+				hl.states.splice(num+1, 0, res[0]);
+				$lines.insertBefore(renderBlock(res[1]), ele);
+			});
+
+
+			//update local buffer
+			var linenuminserted = newtxt.count('\n'); 
+			var linenumdeleted = nextblock.linenum-resa.linenum;
+
+			var linenumdiff = linenuminserted-linenumdeleted;
+			var blocknumdiff = blocknuminserted - blocknumdeleted;
+			var posdiff = c.to.length-c.len;
+
+			b.pos = nextblock.pos + posdiff;
+			b.currentBlock = nextblock.e;
+			b.currentLineNumber = nextblock.linenum + linenumdiff;
+			b.currentBlockNumber = nextblock.num+blocknumdiff;
+
+			//update syntax highlight
+			if (!endCode(ele) && !savedstate.equal(hl.states[resa.num+blocknuminserted])) {
+				//currentBlock will change
+				var saved = b.currentBlock.previousSibling;
+				hl.refresh(refreshIter(resa.num+blocknuminserted, b.currentBlock, hl.states, $lines));
+				b.currentBlock = saved.nextSibling;
 			}
-		} else if (newcnt < oldcnt) {
-			for (var i = 0; i < oldcnt-newcnt; i++) {
-				$gutter.find(':last-child').remove();
-			}
-		}
 
+			//render gutter
+			var $gutter = $('.gutter');
+			var linenum = parseInt($gutter.find(':last-child').text());
+			if (linenumdiff > 0) {
+				for (var j = 0; j < linenumdiff; j++) {
+					var g = document.createElement('DIV');
+					g.id = 'line-num-'+linenum;
+					g.className = 'line-num';
+					g.textContent = linenum+1;
+					$gutter.append(g);
 
-		//remove sub
-		for (var i = row+sub-1; i >= row; i--) {
-			$(lineid(i)).remove();
-
-			hl.states.splice(i, 1);
-		}
-
-		var shiftcnt = -sub+add.length;
-		if (shiftcnt < 0) {
-			//shift left
-			for (var i = row+sub; i < oldcnt; i++) {
-				$(lineid(i)).attr('id', 'line-'+(i+shiftcnt));
-			}
-		} else if (shiftcnt > 0) {
-			//shift right
-			for (var i = oldcnt; i >= row+sub; i--) {
-				$(lineid(i)).attr('id', 'line-'+(i+shiftcnt));
-			}
-		}
-
-		//insert add
-		for (var i = 0; i < add.length; i++) {
-			hl.states.splice(row, 0, []);
-		}
-
-		//recover row state
-		hl.states[row] = rowstate;
-		for (var i = row,len=row+add.length; i < len; i++) {
-			var line = renderLine(i, hl.parseLine(add[i-row], i));
-			if (i > 0) {
-				$(line).insertAfter($(lineid(i-1)));
+					linenum++;
+				}
 			} else {
-				$('.lines').prepend(line);
+				for (var j = 0; j < -linenumdiff; j++) {
+					$('#line-num-'+(linenum-1)).remove();
+					linenum--;
+				}
 			}
-		}
 
-		//continue parse until equal state or EOF
-		hl.refreshLines(row+add.length, newcnt, function(row, items) {
-			var pre = renderLineInner(items);
-			var line = document.getElementById('line-'+row);
-			line.replaceChild(pre, line.firstChild);
+			gutterWidth(linenum);
 		});
-
-		for (var i = newcnt; i < oldcnt; i++) {
-			$(lineid(i)).remove();
-		}
-	} 
+	}
 
 	//emtpy file has 1 line too
 	if ($gutter[0].firstChild==null) { 
@@ -202,14 +417,16 @@ function render(buf) {
 	}
 
 
-	if (typeof buf.cursor != 'undefined') {
-		renderCursor(buf);
+	//save current cursor for local use
+	if (typeof buf.pos != 'undefined') {
+		buffers[buf.id].cursor = buf.pos;
 	}
-	
+	renderCursor(buffers[buf.id]);
+
 	//render ex
 	if (buf.ex && buf.ex.length > 0) {
 		$('.status-bar .ex').empty().text(buf.ex);
-		$('.status-bar .ex').append('<span class="cursor"> </span>');
+		$('.status-bar .ex').append('<span class="cursor">\u0020</span>');
 	} else if (buf.message) {
 		$('.status-bar .ex').empty().text(buf.message);
 	} else {
@@ -221,7 +438,9 @@ function render(buf) {
 	}
 
 	//render unsaved
-	$('.status-bar .buf-name').toggleClass('buf-unsaved', !!buf.unsaved);
+	if (typeof buf.dirty != 'undefined') {
+		$('.status-bar .buf-name').toggleClass('buf-unsaved', !!buf.dirty);
+	}
 
 	//render ongoing keys
 	if (typeof buf.keys != 'undefined') {
@@ -241,19 +460,23 @@ function render(buf) {
 	//render visual
 	$('.lines .selections').empty();
 	if (buf.visual) {
-		if (!$('.lines .selections').get(0)) {
+		if ($('.lines .selections')[0] == null) {
 			$('.lines').append('<div class="selections"></div>');
 		}
-		renderSelections($('.lines .selections'), buf.visual.ranges)
+
+		var $p = $('.lines .selections')[0];
+		renderSelections($p, buffers[buf.id], buf.visual.ranges);
 	}
 
 	//render hlsearch
 	$('.lines .highlights').empty();
 	if (buf.highlights) {
-		if (!$('.lines .highlights').get(0)) {
+		if ($('.lines .highlights')[0] == null) {
 			$('.lines').append('<div class="highlights"></div>');
 		}
-		renderSelections($('.lines .highlights'), buf.highlights, true)
+
+		var $p = $('.lines .highlights')[0];
+		renderSelections($p, buffers[buf.id], buf.highlights, true);
 	}
 
 	//render matched brace pair
@@ -262,24 +485,19 @@ function render(buf) {
 		if (!$('.lines .highlight-brace-pair').get(0)) {
 			$('.lines').append('<div class="highlight-brace-pair"></div>');
 		}
-		var cr, cc;
-		if (buf.cursor) {
-			cr = parseInt(buf.cursor.row);
-			cc = parseInt(buf.cursor.col);
-		}
 
-		var ranges = [];
+		var $p = $('.lines .highlight-brace-pair')[0];
+
 		for (var i = 0; i < buf.braces.length; i++) {
 			var pt = buf.braces[i];
-			//skip cursor, don't draw twice in same point
-			if (buf.cursor && pt.row == cr && pt.col == cc) continue; 
+			//skip cursor, don't draw twice at the same point
+			if (buffers[buf.id].cursor == pt) continue; 
 
-			ranges.push(pt, {row:pt.row, col:pt.col+1});
+			renderSelection($p, pt, pt, true, buffers[buf.id]);
 		}
-		renderSelections($('.lines .highlight-brace-pair'), ranges);
 	}
 
-	scrollToCursor(buf['scroll-top'] || 0, buf.lines);
+	scrollToCursor(buf['scroll-top'] || 0, buf.str);
 
 	//render autocompl suggestions
 	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
@@ -296,9 +514,10 @@ function render(buf) {
 
 		var selectedIndex = parseInt(buf.autocompl['suggestions-index']);
 		var currentWord = buf.autocompl.suggestions[selectedIndex];
-		var x = $('.lines .cursor')[0].offsetLeft;
-		var y = $('.lines .cursor')[0].offsetTop;
-		$autocompl.empty().css('left', x-currentWord.length*9.57-10+'px')
+		//var x = $('.lines .cursor')[0].offsetLeft;
+		var h = $('.lines .cursor')[0].offsetHeight+3;
+		var res = getScreenXYByPos(buffers[buf.id], buffers[buf.id].cursor-currentWord.length);
+		$autocompl.empty().css('left', res.left+$('.lines').scrollLeft()-10+'px')
 		$(buf.autocompl.suggestions).each(function(i, word) {
 			if (i > 0) {
 				var ele = $('<pre id="suggestion-'+i+'"></pre>').text(word)
@@ -309,12 +528,14 @@ function render(buf) {
 			}
 		});
 
-		if (y+21+$autocompl.height()-$('.lines').scrollTop() < $('.lines').height()) {
-			$autocompl.css('top', y+21+'px');
+		if (res.top+h < $('.buffer').scrollTop()+$('.buffer').height()-$('.status-bar').height()) {
+			$autocompl.css('top', res.top+h+'px');
 		} else {
-			$autocompl.css('top', y-$autocompl.height()+'px');
+			$autocompl.css('top', res.top-$autocompl.height()-3+'px');
 		}
+		$autocompl.css('margin-left', -gutterWidth()+'ch')
 
+		//TODO: use em instead of px
 		var viewportTop = lastScrollTop;
 		var viewportBottom = lastScrollTop+240;
 		var currentPos = (selectedIndex-1) * 24;
@@ -334,8 +555,10 @@ function render(buf) {
 	}
 }
 
-function renderLineInner(items) {
-	var pre = document.createElement('PRE');
+function renderBlock(items) {
+	var block = document.createElement('SPAN');
+	block.className = 'code';
+
 	items.each(function(item){
 		var className = item[0];
 		var text = item[1];
@@ -347,16 +570,10 @@ function renderLineInner(items) {
 		} else {
 			node = document.createTextNode(text);
 		}
-		pre.appendChild(node);
+		block.appendChild(node);
 	});
-	return pre;
-}
 
-function renderLine(row, items) {
-	var line = document.createElement('DIV');
-	line.id = 'line-'+row;
-	line.appendChild(renderLineInner(items));
-	return line;
+	return block;
 }
 
 var aligntop = true;
@@ -369,8 +586,8 @@ function scrollToCursor(scrollTopRow, instant) {
 	var width = $lines.width();
 
 	var oldst = $buf.scrollTop();
-	var newst = scrollTopRow * 21;
-	if (!instant && Math.abs(oldst - newst) > 3*21) {
+	var newst = scrollTopRow * lineHeight;
+	if (!instant && Math.abs(oldst - newst) > 3*lineHeight) {
 		$buf.animate({ scrollTop: newst}, 60);
 	} else {
 		$buf.scrollTop(newst);
@@ -383,87 +600,104 @@ function scrollToCursor(scrollTopRow, instant) {
 	}
 }
 
-function renderSelections($p, ranges, reverseTextColor) {
-	for (var i = 0; i < ranges.length; i+=2) {
-		var s = ranges[i];
-		var e = ranges[i+1];
-		renderSelection($p, s, e, reverseTextColor);
+function renderSelections($p, buf, ranges, reverseTextColor) {
+	for (var i = 0; i < ranges.length; i++) {
+		renderSelection($p, ranges[i][0], ranges[i][1], reverseTextColor, buf);
 	}
 }
 
-//if reverseTextColor==true copy text from lines append to line-selected
-function renderSelection($p, s, e, reverseTextColor) {
-	//sort
-	if (s.row > e.row || (s.row == e.row && s.col > e.col)) {
-		var t = s;
-		s = e;
-		e = t;
+function newsubstring(buf, a, b) { 
+	var resa = getElementByPos(buf, a); 
+	var resb = getElementByPos(buf, b); 
+	var range = document.createRange(); 
+	range.setStart(resa.e, resa.offset); 
+	range.setEnd(resb.e, resb.offset); 
+	return range.toString();
+}
+
+//extract text from DOM: [a, b)
+function substring(buf, a, b) {
+	if (a == b) return '';
+	if (a > b) throw "a must smaller or equal than b";
+
+	var res = getCodeBlockByPos(buf, a);
+	var ele = res.e;
+
+	var txt = '';
+	var start  = res.pos;  //pos of block
+	//keep [a, b)
+	while(true) {
+		if (a >= b) {
+			break;
+		}
+
+		txt += ele.textContent.substring(a-start, b-start);
+		ele = ele.nextSibling;
+		if (ele == null)
+			break;
+
+		start = start + ele.textContent.length;
+		a = start;
 	}
 
-	for (var i = s.row; i <= e.row; i++) {
-		var line = $('<div class="line-selected"></div>');
-		var w = 0;
-		var l = 0;
-		var cline = $('#line-'+i)[0].textContent;
+	return txt;
+}
 
-		if (i == s.row) {
-			w = textWidth(cline, s.col, (e.row==i)?e.col:cline.length);
-			l = textWidth(cline, 0, s.col);
-		} else if (i == e.row) {
-			w = textWidth(cline, 0, e.col);
-			l = 0;
-		} else if (cline.length==0) {
-			//empty line always contains '\n'
-			w = 9.57;
-			l = 0;
-		} else {
-			w = textWidth(cline, 0, cline.length);
-			l = 0;
+//if reverseTextColor==true copy text from lines append to line-selected
+function renderSelection($p, a, b, reverseTextColor, buf) {
+	function append(x, y, w, h) {
+		$('<span>').addClass('line-selected')
+			.css('left', x)
+			.css('top', y)
+			.css('margin-left', -gutterWidth()+'ch')
+			.height(h).width(w).appendTo($p);
+	}
+	//sort
+	if (a > b) {
+		var t = a;
+		a = b;
+		b = t;
+	}
+	b++;
+
+	var div = document.createElement('DIV');
+	var resa = getScreenXYByPos(buf, a);
+	var resb = getScreenXYByPos(buf, b);
+
+	if (resa.top != resb.top) {
+		append(resa.left, resa.top, '100%', lineHeight);
+		var mh = resb.top-resa.top-lineHeight;
+		if (mh > 0) {
+			append(0, resa.top+lineHeight, '100%', mh);
 		}
-
-		line.css('left', l+'px')
-			.css('top', (i*21+1)+'px')
-			.css('width', w+'px');
-
-		if (reverseTextColor) {
-			var txt;
-			if (i == s.row) {
-				txt = cline.substring(s.col, (e.row==i)?e.col:cline.length);
-			} else if (i == e.row) {
-				txt = cline.substring(0, e.col);
-			} else if (cline.length==0) {
-				txt = '\n';
-			} else {
-				txt = cline;
-			}
-			line.append(txt);
-		}
-
-		$p.append(line);
+		append(0, resb.top, resb.left, '1em');
+	} else {
+		append(resa.left, resa.top, Math.abs(resa.left-resb.left), '1em');
 	}
 }
 
 function renderCursor(buf) {
+	var pos = buf.cursor;
 	if (!$('.lines .cursor').get(0)) {
 		$('.lines').append('<div class="cursor"></div>');
 	}
 
-	var cr = parseInt(buf.cursor.row);
-	var cc = parseInt(buf.cursor.col);
-	var x, y, w;
-	if (document.getElementById('line-0') == null) {
-		x = 0, y = 0, w = 9.57;
-	} else {
-		var cline = $('#line-'+cr)[0].textContent;
-
-		var x = textWidth(cline, 0, cc);
-		var y = cr*21+1;
-		var w = 9.57;
-		if (isChinese(cline[cc])) {
-			w = 16;
-		}
+	var res = getScreenXYByPos(buf, pos);
+	if (/\r|\n|\t/.test(res.ch)) {
+		res.ch = ' ';
 	}
-	$('.lines .cursor').attr('style', 'left:'+x+'px;top:'+y+'px;width:'+w+'px;');
+	//console.log(res);
+	var color = getComputedStyle(res.e.parentNode, null).color;
+	var background = getComputedStyle(document.body, null).backgroundColor;
+	//console.log(color);
+	//console.log(background);
+	$('.lines .cursor').empty().append(res.ch).removeClass()
+		.addClass('cursor')
+		.css('left', res.left)
+		.css('margin-left', -gutterWidth()+'ch')
+		.css('background-color', color) //unbuntu style replace font color and background color
+		.css('color', background)
+		.css('top', res.top);
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];
