@@ -201,6 +201,6 @@
     (if (or (nil? lastbuf) (= pos lastpos))
       b
       (-> b 
-          (buf-indent-lines lastpos)
+          (buf-indent-lines (sort2 pos lastpos))
           save-undo))))
 

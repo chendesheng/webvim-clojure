@@ -56,20 +56,20 @@
         newpos (or (fnmove r pos) pos)]
       (buf-set-pos buf newpos)))
 
-(defn pos-re-forward-seq[r pos re]
+(defn pos-re-seq+[r pos re]
   (if (neg? pos) nil
     (let [rg (pos-re+ r pos re)]
       (if (nil? rg) nil
-        (cons rg (lazy-seq (pos-re-forward-seq r (-> rg first inc)re)))))))
+        (cons rg (lazy-seq (pos-re-seq+ r (-> rg first inc)re)))))))
 
-(defn pos-re-backward-seq[r pos re]
+(defn pos-re-seq-[r pos re]
   (if (neg? pos) nil
     (let [rg (pos-re- r pos re)]
       (if (nil? rg) nil
-        (cons rg (lazy-seq (pos-re-backward-seq r (-> rg first dec) re)))))))
+        (cons rg (lazy-seq (pos-re-seq- r (-> rg first dec) re)))))))
 
-;(pos-re-forward-seq -1 (rope "(((") #"\(")
-;(pos-re-backward-seq -1 (rope "(((") #"\(")
+;(pos-re-seq+ -1 (rope "(((") #"\(")
+;(pos-re-seq- -1 (rope "(((") #"\(")
 ;(pos-re+ (rope "   ()") 0 #"\(|\)|\[|\]|\{|\}")
 
 ;(paragraph-forward {:str (rope "aaa\nbb") :pos 0 :y 0})

@@ -22,13 +22,13 @@
         webvim.indent
         webvim.autocompl))
 
-(defn change-motion[b keycode]
+(defn change-motion[buf keycode]
   ;(println "change-motion:" keycode)
-  (let [lastbuf (-> b :context :lastbuf)
+  (let [lastbuf (-> buf :context :lastbuf)
         lastpos (:pos lastbuf)
-        pos (b :pos)]
+        pos (buf :pos)]
     (if (or (nil? lastbuf) (= pos lastpos))
-      b
+      buf
       (let [inclusive (inclusive? keycode)]
         (-> lastbuf
             ;(println (str "change-motion:" keycode))
@@ -56,10 +56,10 @@
                         {:suggestions suggestions
                          :suggestions-index 0})))))))
 
-(defn start-register[b keycode]
+(defn start-register[buf keycode]
   (let [m (re-find #"[0-9a-zA-Z/*#%.:+=\-]" keycode)]
     (if (not (nil? m))
-      (-> b 
+      (-> buf 
           (assoc-in [:context :register] keycode)
           (serve-keymap @normal-mode-keymap keycode)))))
 
@@ -72,10 +72,10 @@
            {:suggestions suggestions 
             :suggestions-index 0})))
 
-(defn autocompl-move[b f]
-  (let [b1 (if (empty? (-> b :autocompl :suggestions))
-             (autocompl-start b)
-             b)
+(defn autocompl-move[buf f]
+  (let [b1 (if (empty? (-> buf :autocompl :suggestions))
+             (autocompl-start buf)
+             buf)
         i (f (-> b1 :autocompl :suggestions-index))
         cnt (-> b1 :autocompl :suggestions count)]
     (if (zero? cnt)
@@ -85,7 +85,7 @@
             s (-> b1 :autocompl :suggestions (get 0))
             ;delete back then insert word
             ks (apply conj (vec (repeat (count s) "backspace")) (map str (vec w)))]
-        (if (empty? w) b
+        (if (empty? w) buf
           (-> b1 
               (assoc-in [:autocompl :suggestions-index] n)
               (update-in [:macro :recording-keys] 
@@ -102,59 +102,59 @@
           newt)))))
 
 
-(defn update-x[b]
-  (let [pos (b :pos)]
-    (assoc b :x (- pos (pos-line-first (b :str) pos)))))
+(defn update-x[buf]
+  (let [pos (buf :pos)]
+    (assoc buf :x (- pos (pos-line-first (buf :str) pos)))))
 
 (defn update-x-if-not-jk
   "update :x unless it is up down motion"
-  [b lastbuf keycode]
-  (if-not (or (= (:pos lastbuf) (:pos b)) 
+  [buf lastbuf keycode]
+  (if-not (or (= (:pos lastbuf) (:pos buf)) 
               (contains? #{"j" "k"} keycode))
-    (update-x b) b))
+    (update-x buf) buf))
 
 (defn normal-mode-fix-pos
     "prevent cursor on top of EOL in normal mode"
-    [b]
-    (let [ch (char-at (b :str) (b :pos))]
+    [buf]
+    (let [ch (char-at (buf :str) (buf :pos))]
       (if (= (or ch \newline) \newline)
-        (char-backward b) b)))
+        (char-backward buf) buf)))
 
-(defn normal-mode-after[b keycode]
-  (let [lastbuf (-> b :context :lastbuf)]
+(defn normal-mode-after[buf keycode]
+  (let [lastbuf (-> buf :context :lastbuf)]
     (if-not (nil? (motions-push-jumps keycode))
       (jump-push lastbuf))
-    ;(println "normal-mode-after, recording-keys" (-> b :macro :recording-keys))
+    ;(println "normal-mode-after, recording-keys" (-> buf :macro :recording-keys))
     ;if nothing changed there is no need to overwrite "." register
     ;so keys like i<esc> won't affect, this also exclude all motions.
-    (if-not (or (= (:str lastbuf) (:str b))
+    (if-not (or (= (:str lastbuf) (:str buf))
                  ;These commands should not get repeat
                  (contains? #{".", "u", "c+r", "p", "P", ":"} keycode))
-      (registers-put (:registers b) "." (-> b :macro :recording-keys)))
-    (-> b 
+      (registers-put (:registers buf) "." (-> buf :macro :recording-keys)))
+    (-> buf 
         normal-mode-fix-pos
         (update-x-if-not-jk lastbuf keycode)
         ;alwasy clear :recording-keys
         (assoc-in [:macro :recording-keys] [])
-        (buf-update-highlight-brace-pair (b :pos)))))
+        (buf-update-highlight-brace-pair (buf :pos)))))
 
-(defn dot-repeat[b]
-  (let [keycodes (registers-get (:registers b) ".")]
+(defn dot-repeat[buf]
+  (let [keycodes (registers-get (:registers buf) ".")]
     (if (empty? keycodes)
-      b
+      buf
       ;remove "." from normal-mode-keymap prevent recursive, probably useless
-      (replay-keys b keycodes (dissoc @normal-mode-keymap ".")))))
+      (replay-keys buf keycodes (dissoc @normal-mode-keymap ".")))))
 
-(defn- nop[b] b)
+(defn- nop[buf] buf)
 
 (defn init-keymap-tree
   []
   (reset! ex-mode-keymap
           {:continue #(not (or (= "esc" %2) (= "enter" %2) (empty? (:ex %1))))
-           :leave (fn[b keycode]
-                    (if (and (= "esc" keycode) (= \/ (-> b :ex first)))
-                      (-> b :context :lastbuf (assoc :ex ""))
-                      (assoc b :ex "")))
+           :leave (fn[buf keycode]
+                    (if (and (= "esc" keycode) (= \/ (-> buf :ex first)))
+                      (-> buf :context :lastbuf (assoc :ex ""))
+                      (assoc buf :ex "")))
            :else ex-mode-default})
 
   (reset! motion-keymap
@@ -195,22 +195,22 @@
                        :else ex-mode-default})
            "*" move-next-same-word
            "#" move-back-same-word
-           "n" (fn[b]
-                 (let[s (or (registers-get (:registers b) "/") "/")
+           "n" (fn[buf]
+                 (let[s (or (registers-get (:registers buf) "/") "/")
                       dir (first s)
                       re (re-pattern (str "(?m)" (subs s 1)))
-                      hightlightall? (-> b :highlights empty?)
+                      hightlightall? (-> buf :highlights empty?)
                       fnsearch (if (= \/ dir) re-forward-highlight re-backward-highlight)
-                      b1 (fnsearch b re)] ;TODO: 1. no need fnsearch if highlight all matches. 2. cache highlight-all-matches
+                      b1 (fnsearch buf re)] ;TODO: 1. no need fnsearch if highlight all matches. 2. cache highlight-all-matches
                    (if hightlightall?
                      (highlight-all-matches b1 re) b1)))
-           "N" (fn[b]
-                 (let[s (or (registers-get (:registers b) "/") "?")
+           "N" (fn[buf]
+                 (let[s (or (registers-get (:registers buf) "/") "?")
                       dir (or (first s) "")
                       re (re-pattern (str "(?m)" (subs s 1)))
-                      hightlightall? (-> b :highlights empty?)
+                      hightlightall? (-> buf :highlights empty?)
                       fnsearch (if (= \/ dir) re-backward-highlight re-forward-highlight)
-                      b1 (fnsearch b re)]
+                      b1 (fnsearch buf re)]
                    (if hightlightall?
                      (highlight-all-matches b1 re) b1)))
            "}" paragraph-forward
@@ -240,8 +240,8 @@
            :else insert-mode-default 
            :enter set-insert-mode
            :continue #(not (= "esc" %2))
-           :leave (fn[b keycode]
-                    (-> b
+           :leave (fn[buf keycode]
+                    (-> buf
                         char-backward
                         update-x
                         set-normal-mode
@@ -283,24 +283,24 @@
           ":" (merge
                 @ex-mode-keymap
                 {"enter" execute
-                 :enter (fn[b keycode] (set-ex-mode b))
-                 :leave (fn[b keycode] (set-normal-mode b))})
+                 :enter (fn[buf keycode] (set-ex-mode buf))
+                 :leave (fn[buf keycode] (set-normal-mode buf))})
           "r" {"esc" nop
-               "enter" (fn [b]
-                         (-> b
+               "enter" (fn [buf]
+                         (-> buf
                              (buf-replace-char "\n")
                              buf-indent-current-line
                              save-undo))
-               :else (fn[b keycode]
+               :else (fn[buf keycode]
                        (let [ch (cond
                                   (= keycode "space")
                                   " "
                                   :else keycode)]
                          (if (= (count ch) 1)
-                           (-> b 
+                           (-> buf 
                                (buf-replace-char ch)
                                save-undo)
-                               b)))}
+                               buf)))}
           "u" undo
           "c+r" redo
           "c+o" #(move-to-jumplist % jump-prev)
@@ -310,23 +310,23 @@
           "c+l" #(dissoc % :highlights) 
           "v" (merge
                 @visual-mode-keymap
-                {:enter (fn[b keycode] 
-                          (-> b
+                {:enter (fn[buf keycode] 
+                          (-> buf
                               set-visual-mode
-                              (assoc-in [:context :lastbuf] b)))
-                 :leave (fn[b keycode] (set-normal-mode b))
+                              (assoc-in [:context :lastbuf] buf)))
+                 :leave (fn[buf keycode] (set-normal-mode buf))
                  :continue #(not (or (= "d" %2) (= "c" %2) (= "esc" %2) (= "v" %2) (= "y" %2)))
-                 :after (fn[b keycode]
-                          (-> b
+                 :after (fn[buf keycode]
+                          (-> buf
                               (visual-mode-select keycode)
-                              (update-x-if-not-jk (b :lastbuf) keycode)))
+                              (update-x-if-not-jk (buf :lastbuf) keycode)))
                  "d" delete-range
                  "c" change-range
                  "o" (fn[buf]
-                       (let [[a b] (-> buf :visual :ranges first)
+                       (let [[a buf] (-> buf :visual :ranges first)
                              newt (-> buf
-                                      (assoc-in [:visual :ranges 0] [b a])
-                                      (buf-set-pos b))]
+                                      (assoc-in [:visual :ranges 0] [buf a])
+                                      (buf-set-pos buf))]
                              (assoc-in newt [:context :lastbuf] newt)))})
           "z" {"z" cursor-center-viewport }
           "d" (merge 
@@ -341,8 +341,8 @@
           "P" #(put-from-register % (-> % :context :register))
           "D" delete-to-line-end
           "C" change-to-line-end
-          "J" (fn[b]
-                (-> b 
+          "J" (fn[buf]
+                (-> buf 
                     buf-join-line
                     save-undo))
           "c" (merge
@@ -354,9 +354,9 @@
                 {:before save-lastbuf
                  :after yank-motion})
           "\"" {:else start-register}
-          :before (fn [b keycode]
-                    (-> b
-                        (assoc-in [:context :lastbuf] b)
+          :before (fn [buf keycode]
+                    (-> buf
+                        (assoc-in [:context :lastbuf] buf)
                         (assoc-in [:context :register] "\"")))
           :after normal-mode-after})
 (reset! root-keymap @normal-mode-keymap))
@@ -364,10 +364,10 @@
 ;TODO: duplicate buf-bound-scroll-top
 (defn- buf-bound-scroll-top
   "Change scroll top make cursor inside viewport"
-  [b]
-  (let [st (-> b :scroll-top)]
-    (assoc b :scroll-top 
-           (let [y (b :y)
+  [buf]
+  (let [st (-> buf :scroll-top)]
+    (assoc buf :scroll-top 
+           (let [y (buf :y)
                  h (-> @window :viewport :h)]
              (cond 
                (< y st) y

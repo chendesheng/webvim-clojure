@@ -1,10 +1,10 @@
 (ns webvim.action.mode
-  (:use webvim.action.edit
-        webvim.core.pos
+  (:use webvim.core.pos
         webvim.core.line
         webvim.core.serve
-        webvim.indent
-        webvim.core.register))
+        webvim.core.register
+        webvim.action.edit
+        webvim.indent))
 
 (defonce motion-keymap (atom {}))
 (defonce edit-keymap (atom {}))
@@ -18,46 +18,46 @@
 (defonce visual-mode 2)
 (defonce ex-mode 3)
 
-(defn set-normal-mode[b]
+(defn set-normal-mode[buf]
   ;(println "set-normal-mode:")
-  (merge b {:ex "" 
+  (merge buf {:ex "" 
             :mode normal-mode 
             :keys nil
             :visual {:type 0 :ranges nil}
             :autocompl {:suggestions nil 
                         :suggestions-index 0}}))
 
-(defn set-visual-mode[b]
+(defn set-visual-mode[buf]
   ;(println "set-visual-mode:")
-  (let [pos (b :pos)]
-    (merge b {:ex "" :mode visual-mode :keys nil 
+  (let [pos (buf :pos)]
+    (merge buf {:ex "" :mode visual-mode :keys nil 
               :visual {:type 0 :ranges [[pos pos]]}})))
 
-(defn set-insert-mode[b keycode]
+(defn set-insert-mode[buf keycode]
   ;(println "set-insert-mode")
-  (-> b 
+  (-> buf 
       (assoc-in [:visual :ranges] nil)
       (merge {:ex "" :mode insert-mode :message nil :keys nil})))
 
-(defn set-insert-append[b keycode]
-    (-> b
+(defn set-insert-append[buf keycode]
+    (-> buf
         char-forward
         (set-insert-mode keycode)))
 
-(defn set-insert-line-end[b keycode]
-  (-> b
+(defn set-insert-line-end[buf keycode]
+  (-> buf
       line-end
       (set-insert-mode keycode)))
 
-(defn set-insert-line-start[b keycode]
-  (-> b
+(defn set-insert-line-start[buf keycode]
+  (-> buf
       line-start
       (set-insert-mode keycode)))
 
-(defn set-insert-remove-char[b keycode]
-  (let [pos (b :pos)]
-    (registers-put (b :registers) (-> b :context :register) (buf-copy-range b pos pos true))
-    (-> b
+(defn set-insert-remove-char[buf keycode]
+  (let [pos (buf :pos)]
+    (registers-put (buf :registers) (-> buf :context :register) (buf-copy-range buf pos pos true))
+    (-> buf
         (set-insert-mode keycode)
         (buf-delete-offset 1))))
 

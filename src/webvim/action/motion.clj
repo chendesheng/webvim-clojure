@@ -85,8 +85,8 @@
                        #(contains? left-braces %)
                        #(contains? right-braces %))
             braces (if left?
-                     (pos-re-forward-seq r pos re)
-                     (pos-re-backward-seq r pos re))
+                     (pos-re-seq+ r pos re)
+                     (pos-re-seq- r pos re))
             mpos (reduce 
                    (fn[cnt [a _]]
                      (let [ch (char-at r a)

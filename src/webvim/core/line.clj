@@ -8,29 +8,28 @@
         b (or (first (pos-re+ r (inc pos) #"(?m)^")) (count r))]
     [a b]))
 
-(defn -lines
+(defn pos-lines-seq-
   "return a lazy seq, line by line start at pos back to top"
   [r pos]
   (let [rg (pos-line r pos)
         [a _] rg]
     (if (pos? a)
-      (cons rg (lazy-seq (-lines r (dec a))))
+      (cons rg (lazy-seq (pos-lines-seq- r (dec a))))
       (list rg))))
 
-(defn lines
+(defn pos-lines-seq+
   "return a lazy seq, line by line start at pos until bottom"
   ([r pos]
    (let [rg (pos-line r pos)
          [_ b] rg]
      (if (< b (count r))
-       (cons rg (lazy-seq (lines r b)))
+       (cons rg (lazy-seq (pos-lines-seq+ r b)))
        (list rg))))
-  ([r] (lines r 0))
-  ([r p1 p2] ;both inclusive
+  ([r] (pos-lines-seq+ r 0))
+  ([r a b] ;both inclusive
    (take-while
-     #(>= p2 (first %))
-     (lines r p1))))
-
+     #(>= b (first %))
+     (pos-lines-seq+ r a))))
 
 ;(pos-line (rope "aa\nbb") 1)
 
@@ -51,12 +50,12 @@
                       (+ a (bound-range x 0 (- b a 1))))))))))
 
 (defn lines-forward[buf n]
-  (lines-move buf n lines))
+  (lines-move buf n pos-lines-seq+))
 
 ;(lines-forward {:pos 0 :x 2 :str (rope "abc\n\n") :y 0} 1)
 
 (defn lines-backward[buf n]
-  (lines-move buf n -lines))
+  (lines-move buf n pos-lines-seq-))
 
 (defn lines-row[buf n]
   (let [y (buf :y)
@@ -65,28 +64,7 @@
       (lines-forward buf dy)
       (lines-backward buf (- dy)))))
 
-;(lines (rope "aa\nbb\ncc\n\n") 0 0)
-
-(defn pos-next-line
-"Find first line pred is true start at next line"
-  ([r pos pred]
-   (first 
-     (filter pred (rest (lines r pos)))))
-  ([r pos]
-   (second (lines r pos))))
-
-;(pos-next-line (rope "\n\n") 0)
-;(pos-prev-line (rope "\n\n") 1)
-
-(defn pos-prev-line
-  [r pos]
-  (second (-lines r pos)))
-
-(defn pos-first-line
-  "Find first line pred is true start at current line"
-  [r pos pred]
-  (first 
-    (filter pred (lines r pos))))
+;(pos-lines-seq+ (rope "aa\nbb\ncc\n\n") 0 0)
 
 (defn current-line
   [buf]
@@ -99,14 +77,14 @@
 (defn pos-line-first[r pos]
   (or (first (pos-re- r pos #"(?m)^")) 0))
 
+(defn pos-line-start[r pos]
+  (let [lf (pos-line-first r pos)]
+    (or (first (pos-re+ r lf #"[\S\n]|((?<=\s)[\S\n])")) 0)))
+
 ;(pos-line-first (rope "aa\naaa") 4)
 
 (defn line-first[buf]
   (buf-move buf pos-line-first))
-
-(defn pos-line-start[r pos]
-  (let [lf (pos-line-first r pos)]
-    (or (first (pos-re+ r lf #"[\S\n]|((?<=\s)[\S\n])")) 0)))
 
 (defn line-start[buf]
   (buf-move buf pos-line-start))

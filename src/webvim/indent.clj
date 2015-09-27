@@ -26,7 +26,7 @@
 (defn auto-indent 
   [r pos]
   (let [lines (filter #(-> % rblank? not)
-                      (ranges-to-texts r (-lines r pos)))
+                      (ranges-to-texts r (pos-lines-seq- r pos)))
         line (first lines)
         pline (second lines)]
     (if (nil? pline) ""
@@ -69,7 +69,7 @@
                               (reduced a)
                               (if (= (peek stack) (all-braces ch))
                                 (pop stack)
-                                (conj stack ch))))) nil (pos-re-backward-seq r (dec a) re-braces))
+                                (conj stack ch))))) nil (pos-re-seq- r (dec a) re-braces))
                   mpos (if (number? tmp) tmp nil)]
               (if (nil? mpos)
                 ""
@@ -118,7 +118,7 @@
 ;   }                  <- pline
 ;   aaaa               <- line
 (defn clang-indent [r pos]
-  (let [[head & ranges] (-lines r pos)
+  (let [[head & ranges] (pos-lines-seq- r pos)
         line (subr r head)
         lines (filter clang-not-blank-or-comment?
                       (ranges-to-texts r ranges))
@@ -157,20 +157,16 @@
     (buf-replace buf a b indent)))
 
 (defn buf-indent-lines 
-  "indent from cursor row to row both inclusive"
-  [buf newpos]
+  "indent from cursor row to row both inclusive. Only indent not blank line."
+  [buf [a b]]
   (let [r (buf :str)
-        [p1 p2] (sort2 (buf :pos) newpos)]
-    (loop [buf (buf-set-pos buf p2) ;put pos at end and keep track it
-           [a _] (pos-first-line r p1 #(not (rblank? r %)))] ;start at first non-blank line
-      ;(println (buf :pos) a)
-      (if (< (buf :pos) a) (buf-set-pos buf p1)
-        (let [t1 (buf-indent-line buf a)
-              s1 (t1 :str)]
-          (recur 
-            t1
-            ;use a as start, a doesn't change when indent current line
-            (pos-next-line s1 a #(not (rblank? s1 %)))))))))
+        pos (buf :pos)
+        lines (pos-lines-seq+ r a b)]
+    (line-start
+      (reduce
+        #(buf-indent-line %1 (first %2)) 
+        (buf-set-pos buf (-> lines first first))
+        (filter #(not (rblank? r %)) lines)))))
 
 (defn buf-indent-current-line
   [buf]

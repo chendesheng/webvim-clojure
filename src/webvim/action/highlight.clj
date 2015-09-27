@@ -19,7 +19,7 @@
     (assoc b :highlights 
            (map (fn[[a b]]
                   [a (dec b)])
-                (pos-re-forward-seq r 0 re)))))
+                (pos-re-seq+ r 0 re)))))
 
 (defn re-forward-highlight[buf re]
   (let [pos (buf :pos)

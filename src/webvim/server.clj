@@ -16,27 +16,27 @@
         ring.util.response
         ring.middleware.json))
 
-(defn dissoc-empty[b ks]
-  (if (empty? (get-in b ks))
+(defn dissoc-empty[buf ks]
+  (if (empty? (get-in buf ks))
     (if (= 1 (count ks))
-      (dissoc b (first ks))
-      (recur (update-in b (pop ks) dissoc (peek ks)) (pop ks)))
-    b))
+      (dissoc buf (first ks))
+      (recur (update-in buf (pop ks) dissoc (peek ks)) (pop ks)))
+    buf))
 
-(defn dissoc-nil[b k]
-  (if (nil? (b k))
-    (dissoc b k)
-    b))
+(defn dissoc-nil[buf k]
+  (if (nil? (buf k))
+    (dissoc buf k)
+    buf))
 
-(defn- remove-visual-mode[b]
-  (if (empty? (-> b :visual :ranges))
-    (dissoc b :visual)
-    b))
+(defn- remove-visual-mode[buf]
+  (if (empty? (-> buf :visual :ranges))
+    (dissoc buf :visual)
+    buf))
 
-(defn- remove-autocompl[b]
-  (if (empty? (-> b :autocompl :suggestions))
-    (dissoc b :autocompl)
-    b))
+(defn- remove-autocompl[buf]
+  (if (empty? (-> buf :autocompl :suggestions))
+    (dissoc buf :autocompl)
+    buf))
 
 (defn- equal-cursor?[c1 c2]
   (if (= c1 c2)
@@ -45,8 +45,8 @@
          (= (:col c1) (:col c2))
          (= (:lastcol c1) (:lastcol c2)))))
 
-(defn- remove-fields[b]
-  (-> b 
+(defn- remove-fields[buf]
+  (-> buf 
       (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :y :cursor :undoes :redoes :pending-undo :before-send-out :after-send-out
           :macro :chan-in :chan-out :registers :linescnt)
       (dissoc-empty [:highlights])
@@ -64,7 +64,7 @@
   "Write changes to browser."
   [before after]
   (let [txt (after :str)
-        b (cond (= before after)
+        buf (cond (= before after)
                 ""
                 (or (nil? before) (not (= (:id before) (:id after))))
                 (-> after
@@ -83,16 +83,16 @@
                     (dissoc-if-equal before :dirty)
                     (dissoc-if-equal before :message)
                     (dissoc-if-equal before :pos)))]
-    (response b)))
+    (response buf)))
 
 
 (defn restart-key-server
   "For repl"
   []
   (init-keymap-tree)
-  (let [b (active-buffer)
-        _ (async/close! (:chan-in b))
-        b2 (-> b
+  (let [buf (active-buffer)
+        _ (async/close! (:chan-in buf))
+        b2 (-> buf
                (assoc :chan-in (async/chan))
                (assoc :chan-out (async/chan)))]
     (swap! buffer-list assoc (:id b2) b2)
@@ -111,11 +111,11 @@
                      buffer-list-save
                      :id))))
 
-(defn update-buffer [b]
+(defn update-buffer [buf]
   ;not contains? means already deleted
   (swap! buffer-list 
-         #(if (contains? % (:id b))
-            (assoc % (:id b) b) %)))
+         #(if (contains? % (:id buf))
+            (assoc % (:id buf) buf) %)))
   
 (restart-key-server)
 (defn edit [keycode]
@@ -133,8 +133,7 @@
 ;I don't like include js library directly, but also don't want download it again and again.
 (defonce cache-jquery
   (let [path "resources/public/jquery.js"]
-    (or 
-      (fs/exists? path)
+    (if-not (fs/exists? path)
       (spit path (slurp "http://libs.baidu.com/jquery/2.0.3/jquery.js")))))
 
 (defn homepage
