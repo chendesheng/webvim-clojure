@@ -38,11 +38,11 @@
 
 
 (defn insert-mode-default[t keycode]
-  (let [t1 (if (= "backspace" keycode)
+  (let [t1 (if (= "<bs>" keycode)
              (buf-delete-offset t -1)
              (buf-insert t (keycode-to-char keycode)))
         t2 (buf-update-highlight-brace-pair t1 (-> t1 :pos dec))
-        t3 (if (or (re-test (-> t2 :language :indent-triggers) keycode) (= keycode "enter"))
+        t3 (if (or (re-test (-> t2 :language :indent-triggers) keycode) (= keycode "<cr>"))
              (buf-indent-current-line t2)
              t2)]
     (if (empty? (-> t3 :autocompl :suggestions))
@@ -84,7 +84,7 @@
             w (-> b1 :autocompl :suggestions (get n))
             s (-> b1 :autocompl :suggestions (get 0))
             ;delete back then insert word
-            ks (apply conj (vec (repeat (count s) "backspace")) (map str (vec w)))]
+            ks (apply conj (vec (repeat (count s) "<bs>")) (map str (vec w)))]
         (if (empty? w) buf
           (-> b1 
               (assoc-in [:autocompl :suggestions-index] n)
@@ -129,7 +129,7 @@
     ;so keys like i<esc> won't affect, this also exclude all motions.
     (if-not (or (= (:str lastbuf) (:str buf))
                  ;These commands should not get repeat
-                 (contains? #{".", "u", "c+r", "p", "P", ":"} keycode))
+                 (contains? #{".", "u", "<c+r>", "p", "P", ":"} keycode))
       (registers-put (:registers buf) "." (-> buf :macro :recording-keys)))
     (-> buf 
         normal-mode-fix-pos
@@ -150,9 +150,9 @@
 (defn init-keymap-tree
   []
   (reset! ex-mode-keymap
-          {:continue #(not (or (= "esc" %2) (= "enter" %2) (empty? (:ex %1))))
+          {:continue #(not (or (= "<esc>" %2) (= "<cr>" %2) (empty? (:ex %1))))
            :leave (fn[buf keycode]
-                    (if (and (= "esc" keycode) (= \/ (-> buf :ex first)))
+                    (if (and (= "<esc>" keycode) (= \/ (-> buf :ex first)))
                       (-> buf :context :lastbuf (assoc :ex ""))
                       (assoc buf :ex "")))
            :else ex-mode-default})
@@ -173,24 +173,24 @@
            "0" line-first
            "^" line-start
            "$" line-end
-           "f" {"esc" nop
-                "enter" nop
+           "f" {"<esc>" nop
+                "<cr>" nop
                 :else move-to-next-char }
-           "F" {"esc" nop
-                "enter" nop
+           "F" {"<esc>" nop
+                "<cr>" nop
                 :else move-to-back-char }
-           "t" {"esc" nop 
-                "enter" nop
+           "t" {"<esc>" nop 
+                "<cr>" nop
                 :else move-before-next-char }
-           "T" {"esc" nop 
-                "enter" nop
+           "T" {"<esc>" nop 
+                "<cr>" nop
                 :else move-after-back-char }
            "/" (merge @ex-mode-keymap 
-                      {"enter" handle-search
+                      {"<cr>" handle-search
                        :enter set-ex-search-mode
                        :else ex-mode-default})
            "?" (merge @ex-mode-keymap
-                      {"enter" handle-search
+                      {"<cr>" handle-search
                        :enter set-ex-search-mode
                        :else ex-mode-default})
            "*" move-next-same-word
@@ -221,8 +221,8 @@
                              (pos-match-brace 
                                r
                                (first (pos-re+ r pos #"\(|\)|\[|\]|\{|\}"))))))
-           "c+u" #(cursor-move-viewport %1 -0.5) 
-           "c+d" #(cursor-move-viewport %1 0.5)})
+           "<c+u>" #(cursor-move-viewport %1 -0.5) 
+           "<c+d>" #(cursor-move-viewport %1 0.5)})
 
 
   (reset! visual-mode-keymap @motion-keymap)
@@ -232,14 +232,14 @@
           "y" yank-visual})
 
   (reset! insert-mode-keymap 
-          {;"c+o" @normal-mode-keymap 
-           "c+n" #(autocompl-move % inc)
-           "c+p" #(autocompl-move % dec)
-           "c+r" {"esc" #(assoc % :keys [])
+          {;"<c+o>" @normal-mode-keymap 
+           "<c+n>" #(autocompl-move % inc)
+           "<c+p>" #(autocompl-move % dec)
+           "<c+r>" {"<esc>" #(assoc % :keys [])
                   :else put-from-register }
            :else insert-mode-default 
            :enter set-insert-mode
-           :continue #(not (= "esc" %2))
+           :continue #(not (= "<esc>" %2))
            :leave (fn[buf keycode]
                     (-> buf
                         char-backward
@@ -282,11 +282,11 @@
                  :after indent-motion})
           ":" (merge
                 @ex-mode-keymap
-                {"enter" execute
+                {"<cr>" execute
                  :enter (fn[buf keycode] (set-ex-mode buf))
                  :leave (fn[buf keycode] (set-normal-mode buf))})
-          "r" {"esc" nop
-               "enter" (fn [buf]
+          "r" {"<esc>" nop
+               "<cr>" (fn [buf]
                          (-> buf
                              (buf-replace-char "\n")
                              buf-indent-current-line
@@ -302,12 +302,11 @@
                                save-undo)
                                buf)))}
           "u" undo
-          "c+r" redo
-          "c+o" #(move-to-jumplist % jump-prev)
-          "c+i" #(move-to-jumplist % jump-next)
-          "c+g" buf-pos-info
-          "esc" set-normal-mode
-          "c+l" #(dissoc % :highlights) 
+          "<c+r>" redo
+          "<c+o>" #(move-to-jumplist % jump-prev)
+          "<c+i>" #(move-to-jumplist % jump-next)
+          "<c+g>" buf-pos-info
+          "<esc>" set-normal-mode
           "v" (merge
                 @visual-mode-keymap
                 {:enter (fn[buf keycode] 
@@ -315,7 +314,7 @@
                               set-visual-mode
                               (assoc-in [:context :lastbuf] buf)))
                  :leave (fn[buf keycode] (set-normal-mode buf))
-                 :continue #(not (or (= "d" %2) (= "c" %2) (= "esc" %2) (= "v" %2) (= "y" %2)))
+                 :continue #(not (or (= "d" %2) (= "c" %2) (= "<esc>" %2) (= "v" %2) (= "y" %2)))
                  :after (fn[buf keycode]
                           (-> buf
                               (visual-mode-select keycode)

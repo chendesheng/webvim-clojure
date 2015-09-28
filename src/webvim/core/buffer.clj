@@ -63,10 +63,6 @@
            ;one undo contains {:changes [] :cursor}
            :undoes []
            :redoes []
-           ;functions list called when :str changes. For features like autocompl need to update when :str changes
-           ;get latest change from :pending-undo
-           ;it's a list
-           :listeners nil
            ;For client display matched braces: [{:row :col} {:row :col}]
            ;TODO set initial value
            :braces nil

@@ -1,8 +1,8 @@
 var KEYCODE_KEYDOWN = {
-	8: "backspace",
+	8: "bs",
 	9: "tab",
 	12: "num",
-	13: "enter",
+	13: "cr", //enter
 	19: "pause",
 	20: "caps",
 	27: "esc",
@@ -43,10 +43,10 @@ var KEYCODE_KEYDOWN = {
 
 var KEYCODE_DIC = {
 	0: "\\",
-	8: "backspace",
+	8: "bs",
 	9: "tab",
 	12: "num",
-	13: "enter",
+	13: "cr",
 	16: "shift",
 	17: "ctrl",
 	18: "alt",

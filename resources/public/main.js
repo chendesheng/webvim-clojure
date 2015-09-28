@@ -12,7 +12,7 @@ window.onload = function() { //use window.onload, not sure if stylesheet is load
 	document.body.removeChild(d);
 
 	$.getJSON('buf', function(resp) {
-		render(resp);
+		render(resp[0]);
 
 		setSize();
 		$(window).resize(function() {

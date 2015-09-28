@@ -32,6 +32,11 @@ $(document).keypress(function(event) {
 });
 
 function handleKey(key) {
+	if (key.length > 1) {
+		key = '<' + escapseKeys(key) + '>';
+	} else {
+		key = escapseKeys(key);
+	}
 	keymap(key, function(k) {
 		inputQueue.push(k);
 		if (inputQueue.length == 1) {
@@ -40,11 +45,19 @@ function handleKey(key) {
 	});
 }
 
+function escapseKeys(keys) {
+	return keys.replace(/([\\<>])/, '\\$1');
+}
+
 function sendQueue() {
 	if (inputQueue.length > 0) {
-		var key = inputQueue[0];
-		$.getJSON('key?code='+encodeURIComponent(key), function(resp) {
-			render(resp);
+		var keys = inputQueue.join('');
+		inputQueue = [keys];
+
+		$.getJSON('key?code='+encodeURIComponent(keys), function(resp) {
+			resp.each(function(change) {
+				render(change);
+			});
 
 			inputQueue.shift();
 			sendQueue();
@@ -75,8 +88,8 @@ function imap(key, callback) {
 		return;
 	}
 
-	if (key == 'c+[') {
-		callback('esc');
+	if (key == '<c+[>') {
+		callback('<esc>');
 		return;
 	}
 
@@ -99,7 +112,7 @@ function imap(key, callback) {
 			}
 
 			ongoingkeys = [];
-			callback('esc');
+			callback('<esc>');
 		}
 	} else {
 		if (ongoingkeysTimer != null) {
@@ -118,7 +131,13 @@ function imap(key, callback) {
 }
 
 function nmap(key, callback) {
-	callback(key);
+	if (key == '<c+l>') {
+		callback(':nohlsearch<cr>');
+	} else if (key == '<c+[>') {
+		callback('<esc>');
+	} else {
+		callback(key);
+	}
 }
 
 var vmap = nmap;

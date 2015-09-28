@@ -61,7 +61,7 @@
   (let [re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
         re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
         b (or (last (pos-re+ r pos re-end)) (count r))
-        a (or (last (pos-re- (dec b) r re-start)) 0)]
+        a (or (last (pos-re- r (dec b) re-start)) 0)]
       [a b]))
 
 ;(pos-word (rope "aaa") 2)
@@ -109,11 +109,11 @@
   (cond 
     (= 1 (count keycode))
     keycode
-    (= "enter" keycode)
+    (= "<cr>" keycode)
     "\n"
-    (= "tab" keycode)
+    (= "<tab>" keycode)
     "\t"
-    (= "space" keycode)
+    (= "<space>" keycode)
     " "
     :else ""))
 

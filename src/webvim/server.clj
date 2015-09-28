@@ -7,6 +7,7 @@
         webvim.core.buffer
         webvim.core.serve
         webvim.core.register
+        webvim.core.keys
         webvim.keymap
         webvim.action.window
         webvim.autocompl
@@ -83,7 +84,7 @@
                     (dissoc-if-equal before :dirty)
                     (dissoc-if-equal before :message)
                     (dissoc-if-equal before :pos)))]
-    (response buf)))
+    buf))
 
 
 (defn restart-key-server
@@ -116,16 +117,24 @@
   (swap! buffer-list 
          #(if (contains? % (:id buf))
             (assoc % (:id buf) buf) %)))
-  
+
 (restart-key-server)
+
 (defn edit [keycode]
   (let [before (active-buffer)]
     (async/>!! (:chan-in before) keycode)
     (let [after (async/<!! (:chan-out before))]
       (update-buffer after)
-
       ;Always write (active-buffer) back because active-buffer-id may change by current key
       (render before (active-buffer)))))
+
+(defn handle-keys
+  [s]
+  (println s)
+  (response 
+    (reduce
+      (fn [changes keycode]
+        (conj changes (edit keycode))) [] (input-keys s))))
 
 (defn parse-int [s]
   (Integer. (re-find #"\d+" s)))
@@ -157,10 +166,10 @@
 
 (defroutes main-routes
   (GET "/" [request] (homepage request))
-  (GET "/buf" [] (render nil (active-buffer)))
+  (GET "/buf" [] (response [(render nil (active-buffer))]))
   (GET "/resize/:w/:h" [w h] 
        (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)}))
-  (GET "/key" {{keycode :code} :params} (time (edit keycode))))
+  (GET "/key" {{keycode :code} :params} (time (handle-keys keycode))))
 
 
 (def app

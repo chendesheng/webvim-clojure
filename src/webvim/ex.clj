@@ -163,11 +163,11 @@
 (defn ex-mode-default[buf keycode]
   (let [ex (:ex buf)
         newex (cond 
-                (= keycode "space")
+                (= keycode "<space>")
                 (str ex " ")
-                (= keycode "backspace")
+                (= keycode "<bs>")
                 (subs ex 0 (-> ex count dec))
-                (= keycode "tab")
+                (= keycode "<tab>")
                 (ex-tab-complete ex)
                 (= 1 (count keycode))
                 (str ex keycode)
