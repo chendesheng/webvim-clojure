@@ -21,33 +21,35 @@
     nil))
 
 (defn pos-re+
-  "return forward range matches"
+  "return forward range matches. return nil if not found"
   [r pos re]
-  (let [m (.matcher r re)]
-    (find-first m pos)))
+  (if (< pos (.length r))
+    (let [m (.matcher r re)]
+      (find-first m pos))))
 
 (defn pos-re-
-  "return backward range matches"
+  "return backward range matches. return nil if not found"
   [r pos re]
-  (let [m (.matcher r (re-pattern (str "(?=" re ")")))
-        m1 (.matcher r re)]
-    (.useTransparentBounds m true)
-    (.useTransparentBounds m1 true)
-    (.useAnchoringBounds m false)
-    (.useAnchoringBounds m1 false)
-    (loop [offset pos]
-      ;(println "offset:" offset)
-      (if (neg? offset)
-        nil
-        (let[a (max 0 (- offset 50))
-              b offset]
-          (.region m a b)
-          (let [matches (find-last m)]
-            ;(println matches)
-            ;(println a b)
-            (if (nil? matches)
-              (recur (dec a))
-              (find-first m1 (first matches)))))))))
+  (if-not (neg? pos) 
+    (let [m (.matcher r (re-pattern (str "(?=" re ")")))
+          m1 (.matcher r re)]
+      (.useTransparentBounds m true)
+      (.useTransparentBounds m1 true)
+      (.useAnchoringBounds m false)
+      (.useAnchoringBounds m1 false)
+      (loop [offset pos]
+        ;(println "offset:" offset)
+        (if (neg? offset)
+          nil
+          (let[a (max 0 (- offset 50))
+               b offset]
+            (.region m a b)
+            (let [matches (find-last m)]
+              ;(println matches)
+              ;(println a b)
+              (if (nil? matches)
+                (recur (dec a))
+                (find-first m1 (first matches))))))))))
 
 (defn buf-move 
   [buf fnmove]
@@ -57,16 +59,14 @@
       (buf-set-pos buf newpos)))
 
 (defn pos-re-seq+[r pos re]
-  (if (>= pos (.length r)) nil
-    (let [rg (pos-re+ r pos re)]
-      (if (nil? rg) nil
-        (cons rg (lazy-seq (pos-re-seq+ r (-> rg second)re)))))))
+  (let [rg (pos-re+ r pos re)]
+    (if-not (nil? rg)
+      (cons rg (lazy-seq (pos-re-seq+ r (-> rg second)re))))))
 
 (defn pos-re-seq-[r pos re]
-  (if (neg? pos) nil
-    (let [rg (pos-re- r pos re)]
-      (if (nil? rg) nil
-        (cons rg (lazy-seq (pos-re-seq- r (-> rg first dec) re)))))))
+  (let [rg (pos-re- r pos re)]
+    (if-not (nil? rg)
+      (cons rg (lazy-seq (pos-re-seq- r (-> rg first dec) re))))))
 
 ;(pos-re-seq+ -1 (rope "(((") #"\(")
 ;(pos-re-seq- -1 (rope "(((") #"\(")

@@ -5,6 +5,6 @@
 (defn input-keys
   "parse input string to keys (lazy)."
   [s]
-  (let [r (rope s)]
-    (map (fn[rg] (clojure.string/replace (apply subs s rg) #"\\(.)" "$1")) 
-      (pos-re-seq+ r 0 #"(?<!\\)<.*?(?<!\\)>|\\.|."))))
+  (map (fn[rg] 
+         (clojure.string/replace (apply subs s rg) #"\\(.)" "$1")) 
+       (pos-re-seq+ (rope s) 0 #"(?<!\\)<.*?(?<!\\)>|\\.|.")))
