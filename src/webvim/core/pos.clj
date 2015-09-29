@@ -57,10 +57,10 @@
       (buf-set-pos buf newpos)))
 
 (defn pos-re-seq+[r pos re]
-  (if (neg? pos) nil
+  (if (>= pos (.length r)) nil
     (let [rg (pos-re+ r pos re)]
       (if (nil? rg) nil
-        (cons rg (lazy-seq (pos-re-seq+ r (-> rg first inc)re)))))))
+        (cons rg (lazy-seq (pos-re-seq+ r (-> rg second)re)))))))
 
 (defn pos-re-seq-[r pos re]
   (if (neg? pos) nil
