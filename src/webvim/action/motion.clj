@@ -4,23 +4,28 @@
         webvim.jumplist
         webvim.utils
         webvim.core.register
+        webvim.core.lang
         webvim.core.rope))
 
-(def re-word-start-border
+(defn re-word-start-border[lang]
+  (let [res (word-re lang)]
   (re-pattern 
-    (str "(?<=[" not-word-chars "])[" word-chars "]|(?<=[" not-punctuation-chars "])[" punctuation-chars "]")))
+    (str "(?<=[" (res :not-word-chars) "])[" (res :word-chars) "]|(?<=[" (res :not-punctuation-chars) "])[" (res :punctuation-chars) "]"))))
 
-(def re-WORD-start-border
-  (re-pattern 
-    (str "(?<=[" space-chars "])[" not-space-chars "]")))
+(defn re-WORD-start-border[lang]
+  (let [res (word-re lang)]
+    (re-pattern 
+      (str "(?<=[" (res :space-chars) "])[" (res :not-space-chars) "]"))))
 
-(def re-word-end-border
-  (re-pattern 
-    (str "[" word-chars "](?=[" not-word-chars "])|[" punctuation-chars "](?=[" not-punctuation-chars "])")))
+(defn re-word-end-border[lang]
+  (let [res (word-re lang)]
+    (re-pattern 
+      (str "[" (res :word-chars) "](?=[" (res :not-word-chars) "])|[" (res :punctuation-chars) "](?=[" (res :not-punctuation-chars) "])"))))
 
-(def re-WORD-end-border
-  (re-pattern 
-    (str "[" not-space-chars "](?=[" space-chars "])")))
+(defn re-WORD-end-border[lang]
+  (let [res (word-re lang)]
+    (re-pattern 
+      (str "[" (res :not-space-chars) "](?=[" (res :space-chars) "])"))))
 
 (defn re-forward [buf re]
   (buf-move buf 
@@ -34,22 +39,22 @@
               (or (first (pos-re- r (dec pos) re)) 0))))
 
 (defn word-forward[buf]
-  (re-forward buf re-word-start-border))
+  (re-forward buf (re-word-start-border (buf :language))))
 
 (defn word-backward[buf]
-  (re-backward buf re-word-start-border))
+  (re-backward buf (re-word-start-border (buf :language))))
 
 (defn WORD-forward[buf]
-  (re-forward buf re-WORD-start-border))
+  (re-forward buf (re-WORD-start-border (buf :language))))
 
 (defn WORD-backward[buf]
-  (re-backward buf re-WORD-start-border))
+  (re-backward buf (re-WORD-start-border (buf :language))))
 
 (defn word-end-forward[buf]
-  (re-forward buf re-word-end-border))
+  (re-forward buf (re-word-end-border (buf :language))))
 
 (defn WORD-end-forward[buf]
-  (re-forward buf re-WORD-end-border))
+  (re-forward buf (re-WORD-end-border (buf :language))))
 
 (defn paragraph-forward[buf]
   (re-forward buf #"(?<=\n)\n[^\n]"))
@@ -57,8 +62,10 @@
 (defn paragraph-backward[buf]
   (re-backward buf #"((?<=\n)\n[^\n])"))
 
-(defn pos-word[r pos]
-  (let [re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
+(defn pos-word[lang r pos]
+  (let [{word-chars :word-chars
+         not-word-chars :not-word-chars} (word-re lang)
+        re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
         re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
         b (or (last (pos-re+ r pos re-end)) (count r))
         a (or (last (pos-re- r (dec b) re-start)) 0)]
@@ -71,7 +78,7 @@
   (let [{pos :pos
          r :str} buf]
     ;(println pos r)
-    (pos-word r pos)))
+    (pos-word (buf :language) r pos)))
 
 (defn pos-match-brace
   "return matched brace position, nil if not find"

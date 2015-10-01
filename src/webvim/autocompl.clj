@@ -5,28 +5,33 @@
         webvim.core.rope
         webvim.core.pos
         webvim.core.buffer
+        webvim.core.lang
         webvim.fuzzy
         (clojure [string :only (split)])))
 
+(println "load autocompl language")
 
 ;Keep reference count of each word: {"w1" 1 "w2" 3}
 (defonce autocompl-words (atom {}))
 
+(defn- not-word-chars[lang]
+  (-> lang word-re :not-word-chars))
+
 (defn split-words 
   "split text to word vector"
-   [txt]
-  (split txt (re-pattern (str "[" not-word-chars "]")) -1))
+   [lang txt]
+  (split txt (re-pattern (str "[" (not-word-chars lang) "]")) -1))
 
 ;(split-words (rope "(ns [me.ray])"))
 
 (defn autocompl-parse
   "Split to word with length longer than 2."
-  [txt]
+  [lang txt]
   (reduce (fn[m w]
             (let [c (m w)]
               (if (nil? c)
                 (assoc m w 1)
-                (update-in m [w] inc)))) {} (filter #(> (count %) 2) (split-words txt))))
+                (update-in m [w] inc)))) {} (filter #(> (count %) 2) (split-words lang txt))))
 
 (defn- merge-words [m1 m2]
   (reduce-kv (fn [m w c]
@@ -46,13 +51,13 @@
 
 (defn autocompl-words-parse
   "add to autocompl-words"
-  [txt]
-  (swap! autocompl-words merge-words (autocompl-parse txt)))
+  [lang txt]
+  (swap! autocompl-words merge-words (autocompl-parse lang txt)))
 
-(defn autocompl-words-remove[txt]
+(defn autocompl-words-remove[lang txt]
   (swap! autocompl-words 
          remove-words 
-         (autocompl-parse txt)))
+         (autocompl-parse lang txt)))
 
 (defn autocompl-suggest [subject]
   (reduce #(conj %1 (last %2)) []
@@ -71,7 +76,8 @@
   (listen
     :new-buffer
     (fn [buf]
-      (autocompl-words-parse (buf :str))
+      (println "autocompl new-buffer")
+      (autocompl-words-parse (buf :language) (buf :str))
       (assoc buf 
              :autocompl 
              {:words nil
@@ -84,18 +90,18 @@
               ;> 0 means highlight the nth suggestion item
               :suggestions-index 0}))))
 
-(defn expand-ends-word [s a b]
-  (let [re-left (re-pattern (str "(?<=[" not-word-chars "])"))
-        re-right (re-pattern (str "(?=[" not-word-chars "])"))]
+(defn expand-ends-word [lang s a b]
+  (let [re-left (re-pattern (str "(?<=[" (not-word-chars lang) "])"))
+        re-right (re-pattern (str "(?=[" (not-word-chars lang) "])"))]
     [(or (first (pos-re- s a re-left)) 0)
      (or (first (pos-re+ s b re-right)) (count s))]))
 
 ;(expand-ends-word (rope "aa   bb") 1 3)
 
 (defn pos-uncomplete-word
-  [s pos]
+  [lang s pos]
   (if (zero? pos) nil
-    (let [re-start (re-pattern (str "(?<=[" not-word-chars "])"))
+    (let [re-start (re-pattern (str "(?<=[" (not-word-chars lang) "])"))
           a (or (last (pos-re- s pos re-start)) 0)]
       [a pos])))
 
@@ -103,14 +109,16 @@
   [buf]
   (let [s (buf :str)
         pos (buf :pos)
-        rg (pos-uncomplete-word s pos)]
+        lang (buf :language)
+        rg (pos-uncomplete-word lang s pos)]
     (if (or (nil? rg) (= (rg 0) (rg 1))) nil
         (str (subr s rg)))))
 
 (defn buffer-replace-suggestion[buf word]
   (let [pos (buf :pos)
         s (buf :str)
-        [a b] (pos-uncomplete-word s pos)]
+        lang (buf :language)
+        [a b] (pos-uncomplete-word lang s pos)]
     (buf-replace buf a b word)))
 
 ;(uncomplete-word {:pos 5 :str (rope " b cd")})
@@ -119,16 +127,18 @@
 ;(expand-ends-word (rope "aa ") 0 2)
 
 (defn- autocompl-update
-  [news olds c]
+  [lang news olds c]
   (let [a (c :pos)
         oldb (-> c :len (+ a))
         newb (-> c :to count (+ a))]
     (autocompl-words-remove 
+      lang
       (subr
-        olds (expand-ends-word olds a oldb)))
+        olds (expand-ends-word lang olds a oldb)))
     (autocompl-words-parse 
+      lang
       (subr
-        news (expand-ends-word news a newb)))))
+        news (expand-ends-word lang news a newb)))))
 
 (defonce ^{:private true} listen-change-buffer 
   (listen
@@ -137,5 +147,5 @@
       (let [news (buf :str)
             olds (oldbuf :str)]
         (when-not (= news olds)
-          (autocompl-update news olds c))
+          (autocompl-update (buf :language) news olds c))
         buf))))

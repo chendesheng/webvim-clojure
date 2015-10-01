@@ -4,13 +4,15 @@
             [clojure.core.async :as async]
             [ring.util.response :as response])
   (:use clojure.pprint
+        webvim.lang.default
+        webvim.lang.clojure ;TODO: load language setting dynamically
+        webvim.lang.javascript
         webvim.core.buffer
         webvim.core.serve
         webvim.core.register
         webvim.core.keys
         webvim.keymap
         webvim.action.window
-        webvim.autocompl
         (compojure handler [core :only (GET POST defroutes)])
         (hiccup [page :only (html5)])
         ring.middleware.resource
@@ -87,6 +89,18 @@
     buf))
 
 
+;TODO How to run code only in repl env? Conditional compile?
+;only for testing on repl
+(defonce open-test-file
+  (registers-put
+         registers
+         "%" 
+         (reset! active-buffer-id 
+                 (-> "testfile.clj"
+                     open-file
+                     buffer-list-save
+                     :id))))
+
 (defn restart-key-server
   "For repl"
   []
@@ -99,18 +113,6 @@
     (swap! buffer-list assoc (:id b2) b2)
     (key-server b2 @root-keymap)
     nil))
-
-;TODO How to run code only in repl env? Conditional compile?
-;only for testing on repl
-(defonce open-test-file
-  (registers-put
-         registers
-         "%" 
-         (reset! active-buffer-id 
-                 (-> "testfile.clj"
-                     open-file
-                     buffer-list-save
-                     :id))))
 
 (defn update-buffer [buf]
   ;not contains? means already deleted

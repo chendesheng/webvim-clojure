@@ -4,6 +4,7 @@
         webvim.core.line
         webvim.core.buffer
         webvim.core.register
+        webvim.core.lang
         webvim.action.motion
         webvim.utils))
 
@@ -45,25 +46,27 @@
             (buf-set-pos a)
             (add-highlight [a (dec b)]))))))
 
-(def left-boundary (str "(?<=^|[" not-word-chars "])"))
-(def right-boundary (str "(?=[" not-word-chars "]|$)"))
+(defn- left-boundary[lang] 
+  (str "(?<=^|[" (-> lang word-re :not-word-chars) "])"))
+(defn- right-boundary[lang] 
+  (str "(?=[" (-> lang word-re :not-word-chars) "]|$)"))
 
-(defn move-next-same-word[b]
-  (let [[start end] (current-word b)
-        word (subr (b :str) start end)
+(defn move-next-same-word[buf]
+  (let [[start end] (current-word buf)
+        word (subr (buf :str) start end)
         ;_ (println (str word))
-        re (re-pattern (str left-boundary (quote-pattern word) right-boundary))]
-    (registers-put (:registers b) "/" (str "/" re))
-    (-> b 
+        re (re-pattern (str (left-boundary buf) (quote-pattern word) (right-boundary buf)))]
+    (registers-put (:registers buf) "/" (str "/" re))
+    (-> buf 
         (re-forward-highlight re)
         (highlight-all-matches re))))
 
-(defn move-back-same-word[b]
-  (let [[start end] (current-word b)
-        word (subr (b :str) start end)
-        re (re-pattern (str left-boundary (quote-pattern word) right-boundary))]
-    (registers-put (:registers b) "/" (str "?" re))
-    (-> b 
+(defn move-back-same-word[buf]
+  (let [[start end] (current-word buf)
+        word (subr (buf :str) start end)
+        re (re-pattern (str (left-boundary buf) (quote-pattern word) (right-boundary buf)))]
+    (registers-put (:registers buf) "/" (str "?" re))
+    (-> buf 
         (re-backward-highlight re)
         (highlight-all-matches re))))
 

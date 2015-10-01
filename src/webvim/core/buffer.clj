@@ -31,19 +31,14 @@
   (@buffer-list @active-buffer-id))
 
 (defn create-buf[bufname filepath txt]
-  (let [languages {".clj" "Clojure"
-                   ".js" "JavaScript"
-                   ".css" "CSS"
-                   ".html" "XML"
-                   :else "Plain Text"}
-        ext (if (nil? bufname) "" (re-find #"\.\w+$" bufname))
-        ;make sure last line ends with line break
+  (let [;make sure last line ends with line break
         r (if (.endsWith txt "\n") 
             (rope txt)
             (.append (rope txt) \newline))
-        b {:name bufname
+        buf {:name bufname
            ;= nil if it is a special buffer like [New File] or [Quick Fix]
            :filepath filepath 
+           :ext (or (re-find #"\.\w+$" (or bufname "")) "")
            :str r
            :linescnt (count-lines r)
            :pos 0  ;offset from first char
@@ -88,9 +83,14 @@
            ;programming language specific configs
            ;detect language by file ext name
            ;TODO detect language by file content
-           :language {:name (get languages ext (languages :else))}}]
-    ;(pprint (b :language))
-    (fire-event b :new-buffer)))
+           :language {:id ::plain-text
+                      :name "Plain Text"}}]
+    ;(pprint (buf :language))
+    (-> buf
+        ;make sure :new-buffer happens after languages loaded
+        ;TODO: kind of ugly here
+        (fire-event :load-language)
+        (fire-event :new-buffer))))
 
 (defn open-file
   "Create buffer from a file by slurp, return emtpy buffer if file not exists"
@@ -127,11 +127,4 @@
       (.printStackTrace e)
       (let [err (str "caught exception: " (.getMessage e))]
         (assoc b :message err)))))
-
-(def word-chars "a-zA-Z_\\-!.?+*=<>&#\\':0-9")
-(def not-word-chars (str "^" word-chars))
-(def space-chars "\\s,")
-(def not-space-chars "^\\s,")
-(def punctuation-chars (str "^" word-chars space-chars))
-(def not-punctuation-chars (str word-chars space-chars))
 
