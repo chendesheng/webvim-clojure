@@ -322,10 +322,10 @@
                  "d" delete-range
                  "c" change-range
                  "o" (fn[buf]
-                       (let [[a buf] (-> buf :visual :ranges first)
+                       (let [[a b] (-> buf :visual :ranges first)
                              newt (-> buf
-                                      (assoc-in [:visual :ranges 0] [buf a])
-                                      (buf-set-pos buf))]
+                                      (assoc-in [:visual :ranges 0] [b a])
+                                      (buf-set-pos b))]
                              (assoc-in newt [:context :lastbuf] newt)))})
           "z" {"z" cursor-center-viewport }
           "d" (merge 
