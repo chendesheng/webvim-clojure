@@ -19,30 +19,6 @@ var keywords = hljs.toSet(
 	'Promise import class'+
 	' + - * / = == <= >= < > || && & | ? : $');
 
-	function openBrace(ctx) {
-		return 'brace-'+(ctx.modes.length-1)%7;
-	}
-
-	function closeBrace(ctx) {
-		return 'brace-'+(ctx.modes.length-2)%7;
-	}
-
-	function openBrace2(ctx) {
-		return 'brace-'+(ctx.modes.length-2)%7;
-	}
-
-	var BRACE = {
-		begin: '\\{',
-		end: '\\}',
-		beginCapture: openBrace,
-		endCapture: closeBrace
-	};
-
-	var BRACE_CLOSE = {
-		end: /\}/,
-		endCapture: closeBrace
-	};
-
 	var CONTAINS = [
 		hljs.APOS_STRING_MODE,
 		hljs.QUOTE_STRING_MODE,
@@ -68,12 +44,10 @@ var keywords = hljs.toSet(
 			begin: /\//,
 			end:/\//
 		}),
-		BRACE,
 		{
 			begin: /\bfunction\b/,
 			beginCapture: function() {return 'keyword'},
 			end: /\{/,
-			endCapture: openBrace2,
 			contains: [
 				hljs.inherit(hljs.TITLE_MODE, {begin: /[A-Za-z$_][0-9A-Za-z$_]*/}),
 				{
@@ -85,7 +59,6 @@ var keywords = hljs.toSet(
 					]
 				}
 			],
-			starts: BRACE_CLOSE,
 			illegal: /\[|%/
 		},
 		{
@@ -106,9 +79,6 @@ var keywords = hljs.toSet(
 			}
 		},
 	];
-
-	BRACE_CLOSE.contains = CONTAINS;
-	BRACE.contains = CONTAINS;
 
 return {
 	aliases: ['js'],
