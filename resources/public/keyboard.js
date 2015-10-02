@@ -74,7 +74,9 @@ var ongoingkeysTimer;
 
 function showOngoingKey(key) {
 	if (key.length == 1) {
-		$cursor(buffers.active.id).className = 'cursor ongoing-key';
+		var cursor = $cursor(buffers.active.id);
+		cursor.textContent = key;
+		cursor.className = 'cursor ongoing-key';
 	}
 }
 

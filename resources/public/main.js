@@ -333,6 +333,7 @@ function renderAutocompl(buf) {
 				ele.textContent = word;
 				autocompl.appendChild(ele);
 				if (i == selectedIndex) {
+					ele.className = 'highlight';
 					ele.id = 'autocompl-'+buf.id+'-highlight';
 				}
 			}

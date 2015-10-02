@@ -1,6 +1,8 @@
 function $newBuffer(bufid) {
-	var tmpl = '<div id="buffer-{id}" class="buffer">'
-			+'<div id="gutter-{id}" class="gutter">'
+	var ele = document.createElement('DIV');
+	ele.id = 'buffer-'+bufid;
+	ele.className = 'buffer';
+	var tmpl = '<div id="gutter-{id}" class="gutter">'
 			+'</div>'
 			+'<div class="content">'
 				+'<div id="cursor-{id}" class="cursor">'
@@ -23,9 +25,9 @@ function $newBuffer(bufid) {
 				+'</span>'
 				+'<span id="status-bar-name-{id}" class="buf-name">'
 				+'</span>'
-			+'</div>'
-		+'</div>';
-	$(document.body).append(replaceBinding(tmpl, {'id':bufid}));
+			+'</div>';
+	ele.innerHTML = replaceBinding(tmpl, {'id': bufid});
+	document.body.appendChild(ele);
 }
 
 function $buffer(bufid) {
