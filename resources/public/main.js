@@ -15,11 +15,11 @@ window.onload = function() { //use window.onload, not sure if stylesheet is load
 		render(resp[0]);
 
 		setSize(buffers.active.id);
-		$(window).resize(function() {
+		window.onresize=function() {
 			waitForFinalEvent(function() {
 				setSize(buffers.active.id);
 			}, 500, "resize window");
-		});
+		};
 	});
 };
 
@@ -38,14 +38,13 @@ var waitForFinalEvent = (function () {
 })();
 		
 function setSize(bufid) {
-	var zoom = window.innerWidth/$(document.body).width();
+	var zoom = window.innerWidth/document.body.offsetWidth;
 	var pageh = $buffer(bufid).offsetHeight;
 	var sw = pageh*zoom;
 	var w = Math.floor($lines(bufid).offsetWidth*zoom/$cursor(bufid).offsetWidth);
 	var h = Math.floor((window.innerHeight-$statusBar(bufid).offsetHeight)/lineHeight);
 	$.getJSON('resize/'+w+'/'+h);
-	
-	$($lines(bufid)).css('padding-bottom', pageh-lineHeight); //scroll beyond last line, leave at least one line
+	$lines(bufid).style.paddingBottom = (pageh-lineHeight) + 'px'; //scroll beyond last line, leave at least one line
 }
 
 var gutterLineTemplate = '<div id="line-num-{row}" class="line-num">{incrow}</div>';
@@ -62,7 +61,6 @@ function gutterWidth(bufid, linenum) {
 		_gutterWidth = w;
 		$gutter(bufid).style.width = _gutterWidth+'ch';
 	} else {
-		//linenum = parseInt($('.gutter :last-child').text());
 		return _gutterWidth+2;//left padding 1ch, right padding 1ch
 	}
 }
@@ -160,8 +158,8 @@ function getScreenXYByPos(buf, pos) {
 		rect = list[1];
 	}
 
-	var scrollTop = $('.buffer').scrollTop();
-	var scrollLeft = $('.lines').scrollLeft();
+	var scrollTop = $buffer(buf.id).scrollTop;
+	var scrollLeft = $lines(buf.id).scrollLeft;
 	var ch = res.e.textContent[res.offset];	
 	return {left: rect.left+scrollLeft, top: rect.top+scrollTop, ch: ch, e: res.e};
 }
@@ -295,21 +293,21 @@ function renderChanges(buf) {
 		}
 
 		//render gutter
-		var gutter = $($gutter(buf.id));
-		var linenum = parseInt(gutter.find(':last-child').text());
+		var gutter = $gutter(buf.id);
+		var linenum = parseInt(gutter.lastChild.textContent);
 		if (linenumdiff > 0) {
 			for (var j = 0; j < linenumdiff; j++) {
 				var g = document.createElement('DIV');
 				g.id = 'line-num-'+linenum;
 				g.className = 'line-num';
 				g.textContent = linenum+1;
-				gutter.append(g);
+				gutter.appendChild(g);
 
 				linenum++;
 			}
 		} else {
 			for (var j = 0; j < -linenumdiff; j++) {
-				$('#line-num-'+(linenum-1)).remove();
+				$remove($lineNumber(buf.id, linenum-1));
 				linenum--;
 			}
 		}
@@ -320,49 +318,45 @@ function renderChanges(buf) {
 
 function renderAutocompl(buf) {
 	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
-		var lastSelectedIndex = 0;
-		var lastScrollTop = 0;
-		var autocompl = $($autocompl(buf.id));
-		if (autocompl.find('.highlight')[0]) {
-			lastSelectedIndex = parseInt(autocompl.find('.highlight').attr('id').split('-')[1]);
-			lastScrollTop = autocompl.scrollTop();
-		}
+		var autocompl = $autocompl(buf.id);
+		var lastScrollTop = autocompl.scrollTop;
 
 		var selectedIndex = parseInt(buf.autocompl['suggestions-index']);
 		var currentWord = buf.autocompl.suggestions[selectedIndex];
-		//var x = $('.lines .cursor')[0].offsetLeft;
 		var h = $cursor(buf.id).offsetHeight+3;
 		var res = getScreenXYByPos(buffers[buf.id], buffers[buf.id].cursor-currentWord.length);
-		autocompl.empty().css('left', res.left+$($lines(buf.id)).scrollLeft()-10+'px')
-		$(buf.autocompl.suggestions).each(function(i, word) {
+		autocompl.innerHTML = '';
+		autocompl.style.left = res.left+$lines(buf.id).scrollLeft-10+'px';
+		buf.autocompl.suggestions.each(function(word, i) {
 			if (i > 0) {
-				var ele = $('<pre id="suggestion-'+i+'">'+word+'</pre>');
-				autocompl.append(ele);
+				var ele = document.createElement('PRE');
+				ele.textContent = word;
+				autocompl.appendChild(ele);
 				if (i == selectedIndex) {
-					ele.addClass('highlight');
+					ele.id = 'autocompl-'+buf.id+'-highlight';
 				}
 			}
 		});
 
-		var $buf = $($buffer(buf.id));
-		if (res.top+h < $buf.scrollTop()+$buf.height()-$($statusBar(buf.id)).height()) {
-			autocompl.css('top', res.top+h+'px');
+		var $buf = $buffer(buf.id);
+		if (res.top+h < $buf.scrollTop+$buf.offsetHeight-$statusBar(buf.id).offsetHeight) {
+			autocompl.style.top = res.top+h+'px';
 		} else {
-			autocompl.css('top', res.top-autocompl.height()-3+'px');
+			autocompl.style.top = res.top-autocompl.offsetHeight-3+'px';
 		}
-		autocompl.css('margin-left', -gutterWidth()+'ch')
+		autocompl.style.marginLeft = -gutterWidth()+'ch';
 
 		//TODO: use em instead of px
 		var viewportTop = lastScrollTop;
 		var viewportBottom = lastScrollTop+240;
 		var currentPos = (selectedIndex-1) * 24;
 		if (currentPos < viewportTop) {
-			autocompl.scrollTop(currentPos);
+			autocompl.scrollTop=currentPos;
 		} else if (currentPos+24 >= viewportBottom) {
-			autocompl.scrollTop(currentPos-216);
+			autocompl.scrollTop=currentPos-216;
 		}
 	} else {
-		$($autocompl(buf.id)).empty();
+		$autocompl(buf.id).innerHTML = '';
 	}
 }
 
@@ -375,7 +369,7 @@ function render(buf) {
 	var $buf = $buffer(buf.id);
 	if (typeof buf.str != 'undefined') {
 		if (buffers.active && buf.id != buffers.active.id) {
-			$($buffer(buffers.active.id)).remove();
+			$remove($buffer(buffers.active.id))
 		}
 
 		renderLines(buf);
@@ -394,22 +388,34 @@ function render(buf) {
 
 	//render ex
 	if (buf.ex && buf.ex.length > 0) {
-		$($statusEx(buf.id)).empty()
-			    .text(buf.ex)
-			    .append('<span class="cursor">\u0020</span>');
+		var ele = document.createElement('SPAN');
+		ele.className = 'cursor';
+		ele.id = 'status-bar-cursor-'+buf.id;
+		ele.textContent = ' ';
+		var ex = $statusEx(buf.id);
+		ex.textContent = buf.ex;
+		ex.appendChild(ele);
 	} else if (buf.message) {
-		$($statusEx(buf.id)).empty().text(buf.message);
+		var ex = $statusEx(buf.id);
+		ex.textContent = buf.message;
 	} else {
 		if (typeof buf.mode != 'undefined' && buf.mode < MODES.length) {
-			$($statusEx(buf.id)).empty().text(MODES[buf.mode]);
+			var ex = $statusEx(buf.id);
+			ex.textContent = MODES[buf.mode];
 			keymap = keymaps[buf.mode];
 		}
-		$($statusBar(buf.id)).find('.cursor').remove();
+		$remove($statusCursor(buf.id));
 	}
 
 	//render unsaved
 	if (typeof buf.dirty != 'undefined') {
-		$($statusName(buf.id)).toggleClass('buf-unsaved', !!buf.dirty);
+		var statusName = $statusName(buf.id);
+		statusName.textContent = buf.name;
+		if (!!buf.dirty) {
+			statusName.className = 'buf-name buf-unsaved';
+		} else {
+			statusName.className = 'buf-name';
+		}
 	}
 
 	//render ongoing keys
@@ -449,7 +455,7 @@ function render(buf) {
 			//skip cursor, don't draw twice at the same point
 			if (buffers[buf.id].cursor == pt) continue; 
 
-			renderSelection($p, pt, pt, true, buffers[buf.id]);
+			renderSelection($p, pt, pt, buffers[buf.id]);
 		}
 	}
 
@@ -488,30 +494,31 @@ function renderBlock(items) {
 var aligntop = true;
 function scrollToCursor(bufid, scrollTopRow, instant) {
 	var el = $cursor(bufid);
-	var lines = $($lines(bufid));
-	var buf = $($buffer(bufid));
+	var lines = $lines(bufid);
+	var buf = $buffer(bufid);
     
-	var scrleft = lines.scrollLeft();
-	var width = lines.width();
+	var scrleft = lines.scrollLeft;
+	var width = lines.offsetWidth;
 
-	var oldst = buf.scrollTop();
+	var oldst = buf.scrollTop;
 	var newst = scrollTopRow * lineHeight;
 	if (!instant && Math.abs(oldst - newst) > 3*lineHeight) {
-		buf.animate({ scrollTop: newst}, 60);
+		//buf.scrollTop = newst; //TODO: implement animate without jQuery
+		$animateScroll(buf, newst);
 	} else {
-		buf.scrollTop(newst);
+		buf.scrollTop = newst;
 	}
 
 	if (el.offsetLeft+el.offsetWidth > scrleft+width) {
-		lines.scrollLeft(el.offsetLeft+el.offsetWidth-width);
+		lines.scrollLeft = el.offsetLeft+el.offsetWidth-width;
 	} else if (el.offsetLeft < scrleft) {
-		lines.scrollLeft(el.offsetLeft);
+		lines.scrollLeft = el.offsetLeft;
 	}
 }
 
-function renderSelections($p, buf, ranges, reverseTextColor) {
+function renderSelections($p, buf, ranges) {
 	for (var i = 0; i < ranges.length; i++) {
-		renderSelection($p, ranges[i][0], ranges[i][1], reverseTextColor, buf);
+		renderSelection($p, ranges[i][0], ranges[i][1], buf);
 	}
 }
 
@@ -552,14 +559,16 @@ function substring(buf, a, b) {
 	return txt;
 }
 
-//if reverseTextColor==true copy text from lines append to line-selected
-function renderSelection($p, a, b, reverseTextColor, buf) {
+function renderSelection($p, a, b, buf) {
 	function append(x, y, w, h) {
-		$('<span>').addClass('line-selected')
-			.css('left', x)
-			.css('top', y)
-			.css('margin-left', -gutterWidth(buf.id)+'ch')
-			.height(h).width(w).appendTo($p);
+		var sp = document.createElement('SPAN');
+		sp.className = 'line-selected';
+		sp.style.cssText = 'left:'+x+'px;'
+			+ 'top:'+y+'px;'
+			+ 'margin-left:'+(-gutterWidth(buf.id)+'ch') + ';'
+			+ 'height:'+h+';'
+			+ 'width:'+w+';';
+		$p.appendChild(sp);
 	}
 	//sort
 	if (a > b) {
@@ -574,14 +583,14 @@ function renderSelection($p, a, b, reverseTextColor, buf) {
 	var resb = getScreenXYByPos(buf, b);
 
 	if (resa.top != resb.top) {
-		append(resa.left, resa.top, '100%', lineHeight);
+		append(resa.left, resa.top, '100%', lineHeight+'px');
 		var mh = resb.top-resa.top-lineHeight;
 		if (mh > 0) {
-			append(0, resa.top+lineHeight, '100%', mh);
+			append(0, resa.top+lineHeight, '100%', mh+'px');
 		}
-		append(0, resb.top, resb.left, '1em');
+		append(0, resb.top, resb.left+'px', '1em');
 	} else {
-		append(resa.left, resa.top, Math.abs(resa.left-resb.left), '1em');
+		append(resa.left, resa.top, Math.abs(resa.left-resb.left)+'px', '1em');
 	}
 }
 
@@ -596,13 +605,14 @@ function renderCursor(localbuf) {
 	var background = getComputedStyle(document.body, null).backgroundColor;
 	//console.log(color);
 	//console.log(background);
-	$($cursor(localbuf.id)).empty().append(res.ch).removeClass()
-		.addClass('cursor')
-		.css('left', res.left)
-		.css('margin-left', -gutterWidth(localbuf.id)+'ch')
-		.css('background-color', color) //unbuntu style replace font color and background color
-		.css('color', background)
-		.css('top', res.top);
+	var cursor = $cursor(localbuf.id);
+	cursor.textContent = res.ch;
+	cursor.className = 'cursor';
+	cursor.style.cssText = 'left:'+res.left+'px;'
+		+'margin-left:' + (-gutterWidth(localbuf.id)+'ch') + ';'
+		+'background-color:' + color + ';'
+		+'color:' + background + ';'
+		+'top:' + res.top + 'px;'
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];

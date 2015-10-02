@@ -74,12 +74,12 @@ var ongoingkeysTimer;
 
 function showOngoingKey(key) {
 	if (key.length == 1) {
-		$('.lines .cursor').text(key).removeClass().addClass('cursor ongoing-key');
+		$cursor(buffers.active.id).className = 'cursor ongoing-key';
 	}
 }
 
 function hideOngoingKey() {
-	$('.lines .cursor').removeClass('ongoing-key');
+	$cursor(buffers.active.id).className = 'cursor';
 }
 
 //map key to another get return from callback

@@ -84,6 +84,38 @@ function $statusName(bufid) {
 	return _$bufid('status-bar-name-', bufid);
 }
 
+function $statusCursor(bufid) {
+	return _$bufid('status-bar-cursor-', bufid);
+}
+
 function $autocompl(bufid) {
 	return _$bufid('autocompl-', bufid);
+}
+
+function $autocomplHeight(bufid) {
+	return document.getElementById('autocompl-'+bufid+'-highlight');
+}
+
+function $remove(ele) {
+	if (!ele || !ele.parentNode) return;
+	ele.parentNode.removeChild(ele);
+}
+
+function $lineNumber(bufid, linenum) {
+	document.getElementById('gutter-'+bufid+'-num-'+linenum);
+}
+
+function _timerScroll(ele, scrollto, i) {
+	if (i > 1) {
+		ele.scrollTop = (ele.scrollTop+scrollto)/2;
+		setTimeout(function() {
+			_timerScroll(ele, scrollto, i-1);
+		}, 15);  // 1000/15=66.66 frames per second
+	} else {
+		ele.scrollTop = scrollto;
+	}
+}
+
+function $animateScroll(ele, scrollto) {
+	_timerScroll(ele, scrollto, 5);
 }
