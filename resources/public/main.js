@@ -14,9 +14,11 @@ window.onload = function() { //use window.onload, not sure if stylesheet is load
 	$.getJSON('buf', function(resp) {
 		render(resp[0]);
 
-		setSize();
+		setSize(buffers.active.id);
 		$(window).resize(function() {
-			waitForFinalEvent(setSize, 500, "resize window");
+			waitForFinalEvent(function() {
+				setSize(buffers.active.id);
+			}, 500, "resize window");
 		});
 	});
 };
@@ -35,36 +37,21 @@ var waitForFinalEvent = (function () {
 	};
 })();
 		
-function setSize() {
+function setSize(bufid) {
 	var zoom = window.innerWidth/$(document.body).width();
-	var pageh = $('.buffer')[0].offsetHeight;
+	var pageh = $buffer(bufid).offsetHeight;
 	var sw = pageh*zoom;
-	var w = Math.floor($('.lines')[0].offsetWidth*zoom/$('.cursor')[0].offsetWidth);
-	var h = Math.floor((window.innerHeight-$('.status-bar')[0].offsetHeight)/lineHeight);
+	var w = Math.floor($lines(bufid).offsetWidth*zoom/$cursor(bufid).offsetWidth);
+	var h = Math.floor((window.innerHeight-$statusBar(bufid).offsetHeight)/lineHeight);
 	$.getJSON('resize/'+w+'/'+h);
 	
-	$('.lines').css('padding-bottom', pageh-lineHeight); //scroll beyond last line, leave at least one line
+	$($lines(bufid)).css('padding-bottom', pageh-lineHeight); //scroll beyond last line, leave at least one line
 }
 
-function isChinese(c) {
-	return /[\ufe30-\uffa0\u4e00-\u9eff\u3000-\u303F]/.test(c);
-}
-
-function replaceBinding(html, data, ifEncode) {
-	for (var p in data) {
-		if (data.hasOwnProperty(p)) {
-			var v = data[p];
-			html = html.replace(new RegExp('{' + p + '}', 'g'), v);
-		}
-	}
-	return html;
-}
-
-var lineTemplate = '<div id="line-{row}" class="line"><pre>{line}</pre></div>';
 var gutterLineTemplate = '<div id="line-num-{row}" class="line-num">{incrow}</div>';
 
 var _gutterWidth;
-function gutterWidth(linenum) {
+function gutterWidth(bufid, linenum) {
 	if (linenum) {
 		var w = 0;
 		while(linenum>0) {
@@ -73,75 +60,12 @@ function gutterWidth(linenum) {
 		}
 
 		_gutterWidth = w;
-		$('.gutter').width(_gutterWidth+'ch');
+		$gutter(bufid).style.width = _gutterWidth+'ch';
 	} else {
 		//linenum = parseInt($('.gutter :last-child').text());
 		return _gutterWidth+2;//left padding 1ch, right padding 1ch
 	}
 }
-
-function lineid(i) {
-	return '#line-'+i;
-}
-
-String.prototype.eachLine = function(fn) {
-	var str = this;
-	var num = 0;
-	while(true) {
-		var i = str.indexOf('\n')+1;
-		if (i == 0) {
-			fn(str, num);
-			break;
-		} else {
-			fn(str.substring(0, i), num);
-			str = str.substring(i);
-		}
-		num++;
-	}
-};
-
-String.prototype.count = function(ch) {
-	var i = 0;
-	var cnt = 0;
-	while(true) {
-		var nexti = this.indexOf(ch, i);
-		if (nexti == -1)
-			break;
-		i = nexti+ch.length;
-		cnt++;
-	}
-
-	return cnt;
-};
-
-String.prototype.eachBlock = function(fn, n) {
-	n = n || 100;
-	var str = this;
-	var num = 0;
-	while(str.length > 0) {
-		//ensure callback string length (str.length) >= 0.5n, avoid fragment code block
-		if (str.length < 1.5*n) {  
-			fn(str, num);
-			num++;
-			break;
-		} else {
-			var i = str.substring(n).search(/\s/);
-
-			if (i==-1) {
-				fn(str, num);
-				num++;
-				break;
-			} else {
-				i = i+n+1;
-				fn(str.substring(0, i), num);
-				num++;
-				str = str.substring(i);
-			}
-		}
-	}
-
-	return num;
-};
 
 //local states for each buffer, doesn't contains text content since it might be too large.
 var buffers = {};
@@ -265,157 +189,202 @@ function refreshIter(index, currentBlock, states, parentNode) {
 	}
 }
 
+function renderLines(buf) {
+	//render lines
+	var hl = newHighlight(buf.lang);
+	buffers[buf.id] = { hl: hl, id: buf.id };
+
+	var lines = $lines(buf.id);
+	var gutter = $gutter(buf.id);
+
+	hl.states = [];
+	var linenum = 0;
+	buf.str.eachBlock(function(block, i) {
+		hl.states.push(null);
+		if (block) {
+			lines.appendChild(renderBlock(hl.parseBlock(block, i)));
+
+			var num = block.count('\n');
+			for (var j = 0; j < num; j++) {
+				var g = document.createElement('DIV');
+				g.id = 'line-num-'+linenum;
+				g.className = 'line-num';
+				g.textContent = linenum+1;
+				gutter.appendChild(g);
+
+				linenum++;
+			}
+		}
+	});
+
+
+	//put a pivot in the end
+	var pivot = document.createElement('SPAN');
+	pivot.className = 'code end-code';
+	lines.appendChild(pivot);
+
+	buffers[buf.id].currentBlock = lines.firstChild;
+	buffers[buf.id].currentBlockNumber = 0;
+	buffers[buf.id].currentLineNumber = 0;
+	buffers[buf.id].pos = 0;
+	hl.states.push(null);
+	//buffers[buf.id].hl = hl;
+
+	gutterWidth(buf.id, linenum);
+}
+
+function renderChanges(buf) {
+	var localbuf = buffers[buf.id];
+	var lines = $lines(buf.id);
+	var hl = buffers[buf.id].hl;
+	buf.changes.each(function(c) {
+		var resa = getCodeBlockByPos(localbuf, c.pos);
+		var resb = getCodeBlockByPos(localbuf, c.pos+c.len);
+		var nextblock = getCodeBlockByPos(localbuf, resb.pos+resb.e.textContent.length);
+		var prefix = resa.e.textContent.substring(0, c.pos-resa.pos);
+		var suffix = resb.e.textContent.substring(c.pos+c.len-resb.pos);
+		var newtxt = prefix + c.to + suffix;
+
+		//delete [resa.e, resb.e] both inclusive
+		//don't delete "end-code" pivot
+		var ele = resa.e;
+		var blocknumdeleted = 0;
+		while(!endCode(ele)) {
+			var toremove = ele;
+			ele = ele.nextSibling;
+			lines.removeChild(toremove);
+			blocknumdeleted++;
+
+			if (toremove == resb.e) {
+				break;
+			}
+		}
+
+		//delete hl.states [resa.num+1, resb.num+1]
+		var deletedstates = hl.states.splice(resa.num+1, blocknumdeleted);
+		var savedstate = deletedstates.pop();
+
+		//insert and keep track hl.states
+		var blocknuminserted = newtxt.eachBlock(function(block, i) {
+			var num = i + resa.num;
+			var res = hl.parse(block, hl.states[num]);
+			hl.states.splice(num+1, 0, res[0]);
+			lines.insertBefore(renderBlock(res[1]), ele);
+		});
+
+
+		//update local buffer
+		var linenuminserted = newtxt.count('\n'); 
+		var linenumdeleted = nextblock.linenum-resa.linenum;
+
+		var linenumdiff = linenuminserted-linenumdeleted;
+		var blocknumdiff = blocknuminserted - blocknumdeleted;
+		var posdiff = c.to.length-c.len;
+
+		localbuf.pos = nextblock.pos + posdiff;
+		localbuf.currentBlock = nextblock.e;
+		localbuf.currentLineNumber = nextblock.linenum + linenumdiff;
+		localbuf.currentBlockNumber = nextblock.num+blocknumdiff;
+
+		//update syntax highlight
+		if (!endCode(ele) && !savedstate.equal(hl.states[resa.num+blocknuminserted])) {
+			//currentBlock will change
+			var saved = localbuf.currentBlock.previousSibling;
+			hl.refresh(refreshIter(resa.num+blocknuminserted, localbuf.currentBlock, hl.states, lines));
+			localbuf.currentBlock = saved.nextSibling;
+		}
+
+		//render gutter
+		var gutter = $($gutter(buf.id));
+		var linenum = parseInt(gutter.find(':last-child').text());
+		if (linenumdiff > 0) {
+			for (var j = 0; j < linenumdiff; j++) {
+				var g = document.createElement('DIV');
+				g.id = 'line-num-'+linenum;
+				g.className = 'line-num';
+				g.textContent = linenum+1;
+				gutter.append(g);
+
+				linenum++;
+			}
+		} else {
+			for (var j = 0; j < -linenumdiff; j++) {
+				$('#line-num-'+(linenum-1)).remove();
+				linenum--;
+			}
+		}
+
+		gutterWidth(buf.id, linenum);
+	});
+}
+
+function renderAutocompl(buf) {
+	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
+		var lastSelectedIndex = 0;
+		var lastScrollTop = 0;
+		var autocompl = $($autocompl(buf.id));
+		if (autocompl.find('.highlight')[0]) {
+			lastSelectedIndex = parseInt(autocompl.find('.highlight').attr('id').split('-')[1]);
+			lastScrollTop = autocompl.scrollTop();
+		}
+
+		var selectedIndex = parseInt(buf.autocompl['suggestions-index']);
+		var currentWord = buf.autocompl.suggestions[selectedIndex];
+		//var x = $('.lines .cursor')[0].offsetLeft;
+		var h = $cursor(buf.id).offsetHeight+3;
+		var res = getScreenXYByPos(buffers[buf.id], buffers[buf.id].cursor-currentWord.length);
+		autocompl.empty().css('left', res.left+$($lines(buf.id)).scrollLeft()-10+'px')
+		$(buf.autocompl.suggestions).each(function(i, word) {
+			if (i > 0) {
+				var ele = $('<pre id="suggestion-'+i+'">'+word+'</pre>');
+				autocompl.append(ele);
+				if (i == selectedIndex) {
+					ele.addClass('highlight');
+				}
+			}
+		});
+
+		var $buf = $($buffer(buf.id));
+		if (res.top+h < $buf.scrollTop()+$buf.height()-$($statusBar(buf.id)).height()) {
+			autocompl.css('top', res.top+h+'px');
+		} else {
+			autocompl.css('top', res.top-autocompl.height()-3+'px');
+		}
+		autocompl.css('margin-left', -gutterWidth()+'ch')
+
+		//TODO: use em instead of px
+		var viewportTop = lastScrollTop;
+		var viewportBottom = lastScrollTop+240;
+		var currentPos = (selectedIndex-1) * 24;
+		if (currentPos < viewportTop) {
+			autocompl.scrollTop(currentPos);
+		} else if (currentPos+24 >= viewportBottom) {
+			autocompl.scrollTop(currentPos-216);
+		}
+	} else {
+		$($autocompl(buf.id)).empty();
+	}
+}
+
 //TODO: Future improvements: 
 //1. put syntax highlight to a dedicate web worker (or just use setTimeout)
 //2. only render “visible” parts and still make scrolling fast
 function render(buf) {
 	if (!buf) return;
 	
-	var hl;
-
-	//render lines
+	var $buf = $buffer(buf.id);
 	if (typeof buf.str != 'undefined') {
-		hl = newHighlight(buf.lang);
-		buffers[buf.id] = { hl: hl };
+		if (buffers.active && buf.id != buffers.active.id) {
+			$($buffer(buffers.active.id)).remove();
+		}
 
-		var css = $('.lines').remove().attr('style');
-		var $lines = document.createElement('DIV');
-		$lines.className = 'lines';
-		$lines.style.cssText = css;
-
-		$('.gutter').remove();
-		var $gutter = document.createElement('DIV');
-		$gutter.className = 'gutter';
-
-		hl.states = [];
-		var linenum = 0;
-		buf.str.eachBlock(function(block, i) {
-			hl.states.push(null);
-			if (block) {
-				$lines.appendChild(renderBlock(hl.parseBlock(block, i)));
-
-				var num = block.count('\n');
-				for (var j = 0; j < num; j++) {
-					var g = document.createElement('DIV');
-					g.id = 'line-num-'+linenum;
-					g.className = 'line-num';
-					g.textContent = linenum+1;
-					$gutter.appendChild(g);
-
-					linenum++;
-				}
-			}
-		});
-		
-
-		//put a pivot in the end
-		var pivot = document.createElement('SPAN');
-		pivot.className = 'code end-code';
-		$lines.appendChild(pivot);
-
-		buffers[buf.id].currentBlock = $lines.firstChild;
-		buffers[buf.id].currentBlockNumber = 0;
-		buffers[buf.id].currentLineNumber = 0;
-		buffers[buf.id].pos = 0;
-		hl.states.push(null);
-
-		$('.buffer').append($gutter);
-		$('.buffer').append($lines);
-		gutterWidth(linenum);
+		renderLines(buf);
+		buffers.active = buffers[buf.id];
 	}
 
-	var $gutter = $('.gutter');
-	hl = hl || buffers[buf.id].hl;
-	
 	if (buf.changes) {
-		var b = buffers[buf.id];
-		var $lines = $('.lines')[0];
-		buf.changes.each(function(c) {
-			var resa = getCodeBlockByPos(b, c.pos);
-			var resb = getCodeBlockByPos(b, c.pos+c.len);
-			var nextblock = getCodeBlockByPos(b, resb.pos+resb.e.textContent.length);
-			var prefix = resa.e.textContent.substring(0, c.pos-resa.pos);
-			var suffix = resb.e.textContent.substring(c.pos+c.len-resb.pos);
-			var newtxt = prefix + c.to + suffix;
-
-			//delete [resa.e, resb.e] both inclusive
-			//don't delete "end-code" pivot
-			var ele = resa.e;
-			var blocknumdeleted = 0;
-			while(!endCode(ele)) {
-				var toremove = ele;
-				ele = ele.nextSibling;
-				$lines.removeChild(toremove);
-				blocknumdeleted++;
-
-				if (toremove == resb.e) {
-					break;
-				}
-			}
-
-			//delete hl.states [resa.num+1, resb.num+1]
-			var deletedstates = hl.states.splice(resa.num+1, blocknumdeleted);
-			var savedstate = deletedstates.pop();
-
-			//insert and keep track hl.states
-			var blocknuminserted = newtxt.eachBlock(function(block, i) {
-				var num = i + resa.num;
-				var res = hl.parse(block, hl.states[num]);
-				hl.states.splice(num+1, 0, res[0]);
-				$lines.insertBefore(renderBlock(res[1]), ele);
-			});
-
-
-			//update local buffer
-			var linenuminserted = newtxt.count('\n'); 
-			var linenumdeleted = nextblock.linenum-resa.linenum;
-
-			var linenumdiff = linenuminserted-linenumdeleted;
-			var blocknumdiff = blocknuminserted - blocknumdeleted;
-			var posdiff = c.to.length-c.len;
-
-			b.pos = nextblock.pos + posdiff;
-			b.currentBlock = nextblock.e;
-			b.currentLineNumber = nextblock.linenum + linenumdiff;
-			b.currentBlockNumber = nextblock.num+blocknumdiff;
-
-			//update syntax highlight
-			if (!endCode(ele) && !savedstate.equal(hl.states[resa.num+blocknuminserted])) {
-				//currentBlock will change
-				var saved = b.currentBlock.previousSibling;
-				hl.refresh(refreshIter(resa.num+blocknuminserted, b.currentBlock, hl.states, $lines));
-				b.currentBlock = saved.nextSibling;
-			}
-
-			//render gutter
-			var $gutter = $('.gutter');
-			var linenum = parseInt($gutter.find(':last-child').text());
-			if (linenumdiff > 0) {
-				for (var j = 0; j < linenumdiff; j++) {
-					var g = document.createElement('DIV');
-					g.id = 'line-num-'+linenum;
-					g.className = 'line-num';
-					g.textContent = linenum+1;
-					$gutter.append(g);
-
-					linenum++;
-				}
-			} else {
-				for (var j = 0; j < -linenumdiff; j++) {
-					$('#line-num-'+(linenum-1)).remove();
-					linenum--;
-				}
-			}
-
-			gutterWidth(linenum);
-		});
+		renderChanges(buf);
 	}
-
-	//emtpy file has 1 line too
-	if ($gutter[0].firstChild==null) { 
-		$gutter.append(replaceBinding(gutterLineTemplate, {row:0,incrow:1}));
-	}
-
 
 	//save current cursor for local use
 	if (typeof buf.pos != 'undefined') {
@@ -425,21 +394,22 @@ function render(buf) {
 
 	//render ex
 	if (buf.ex && buf.ex.length > 0) {
-		$('.status-bar .ex').empty().text(buf.ex);
-		$('.status-bar .ex').append('<span class="cursor">\u0020</span>');
+		$($statusEx(buf.id)).empty()
+			    .text(buf.ex)
+			    .append('<span class="cursor">\u0020</span>');
 	} else if (buf.message) {
-		$('.status-bar .ex').empty().text(buf.message);
+		$($statusEx(buf.id)).empty().text(buf.message);
 	} else {
 		if (typeof buf.mode != 'undefined' && buf.mode < MODES.length) {
-			$('.status-bar .ex').empty().text(MODES[buf.mode]);
+			$($statusEx(buf.id)).empty().text(MODES[buf.mode]);
 			keymap = keymaps[buf.mode];
 		}
-		$('.status-bar .cursor').remove();
+		$($statusBar(buf.id)).find('.cursor').remove();
 	}
 
 	//render unsaved
 	if (typeof buf.dirty != 'undefined') {
-		$('.status-bar .buf-name').toggleClass('buf-unsaved', !!buf.dirty);
+		$($statusName(buf.id)).toggleClass('buf-unsaved', !!buf.dirty);
 	}
 
 	//render ongoing keys
@@ -451,42 +421,28 @@ function render(buf) {
 				if (k.length > 1) k = '<'+k+'>';
 				keysstr += k;
 			}
-			$('.status-bar .ongoing-keys').text(keysstr);
+			$statusKeys(buf.id).textContent = keysstr;
 		} else {
-			$('.status-bar .ongoing-keys').empty();
+			$statusKeys(buf.id).innerHTML = '';
 		}
 	}
 
 	//render visual
-	$('.lines .selections').empty();
+	$selections(buf.id).innerHTML = '';
 	if (buf.visual) {
-		if ($('.lines .selections')[0] == null) {
-			$('.lines').append('<div class="selections"></div>');
-		}
-
-		var $p = $('.lines .selections')[0];
-		renderSelections($p, buffers[buf.id], buf.visual.ranges);
+		renderSelections($selections(buf.id), buffers[buf.id], buf.visual.ranges);
 	}
 
 	//render hlsearch
-	$('.lines .highlights').empty();
+	$highlights(buf.id).innerHTML = '';
 	if (buf.highlights) {
-		if ($('.lines .highlights')[0] == null) {
-			$('.lines').append('<div class="highlights"></div>');
-		}
-
-		var $p = $('.lines .highlights')[0];
-		renderSelections($p, buffers[buf.id], buf.highlights, true);
+		renderSelections($highlights(buf.id), buffers[buf.id], buf.highlights, true);
 	}
 
 	//render matched brace pair
-	$('.lines .highlight-brace-pair').empty();
+	$cursorBrace(buf.id).innerHTML = '';
 	if (buf.braces) {
-		if (!$('.lines .highlight-brace-pair').get(0)) {
-			$('.lines').append('<div class="highlight-brace-pair"></div>');
-		}
-
-		var $p = $('.lines .highlight-brace-pair')[0];
+		var $p = $cursorBrace(buf.id);
 
 		for (var i = 0; i < buf.braces.length; i++) {
 			var pt = buf.braces[i];
@@ -497,61 +453,14 @@ function render(buf) {
 		}
 	}
 
-	scrollToCursor(buf['scroll-top'] || 0, buf.str);
+	scrollToCursor(buf.id, buf['scroll-top'] || 0, buf.str);
 
-	//render autocompl suggestions
-	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
-		var lastSelectedIndex = 0;
-		var lastScrollTop = 0;
-		var $autocompl = $('.lines .autocompl');
-		if (!$autocompl[0]) {
-			$('.lines').append('<div class="autocompl"></div>');
-			$autocompl = $('.lines .autocompl');
-		} else if ($('.lines .autocompl .highlight')[0]) {
-			lastSelectedIndex = parseInt($('.lines .autocompl .highlight').attr('id').split('-')[1]);
-			lastScrollTop = $autocompl.scrollTop();
-		}
-
-		var selectedIndex = parseInt(buf.autocompl['suggestions-index']);
-		var currentWord = buf.autocompl.suggestions[selectedIndex];
-		//var x = $('.lines .cursor')[0].offsetLeft;
-		var h = $('.lines .cursor')[0].offsetHeight+3;
-		var res = getScreenXYByPos(buffers[buf.id], buffers[buf.id].cursor-currentWord.length);
-		$autocompl.empty().css('left', res.left+$('.lines').scrollLeft()-10+'px')
-		$(buf.autocompl.suggestions).each(function(i, word) {
-			if (i > 0) {
-				var ele = $('<pre id="suggestion-'+i+'"></pre>').text(word)
-					.appendTo('.lines .autocompl');
-				if (i == selectedIndex) {
-					ele.addClass('highlight');
-				}
-			}
-		});
-
-		if (res.top+h < $('.buffer').scrollTop()+$('.buffer').height()-$('.status-bar').height()) {
-			$autocompl.css('top', res.top+h+'px');
-		} else {
-			$autocompl.css('top', res.top-$autocompl.height()-3+'px');
-		}
-		$autocompl.css('margin-left', -gutterWidth()+'ch')
-
-		//TODO: use em instead of px
-		var viewportTop = lastScrollTop;
-		var viewportBottom = lastScrollTop+240;
-		var currentPos = (selectedIndex-1) * 24;
-		if (currentPos < viewportTop) {
-			$autocompl.scrollTop(currentPos);
-		} else if (currentPos+24 >= viewportBottom) {
-			$autocompl.scrollTop(currentPos-216);
-		}
-	} else {
-		$('.lines .autocompl').empty();
-	}
+	renderAutocompl(buf);
 
 	//title
 	if (typeof buf.name != 'undefined') {
 		document.title = buf.name;
-		$('.status-bar .buf-name').text(buf.name);
+		$statusName.textContent = buf.name;
 	}
 }
 
@@ -577,26 +486,26 @@ function renderBlock(items) {
 }
 
 var aligntop = true;
-function scrollToCursor(scrollTopRow, instant) {
-	var el = $('.lines .cursor')[0];
-	var $lines = $('.lines');
-	var $buf = $('.buffer');
+function scrollToCursor(bufid, scrollTopRow, instant) {
+	var el = $cursor(bufid);
+	var lines = $($lines(bufid));
+	var buf = $($buffer(bufid));
     
-	var scrleft = $lines.scrollLeft();
-	var width = $lines.width();
+	var scrleft = lines.scrollLeft();
+	var width = lines.width();
 
-	var oldst = $buf.scrollTop();
+	var oldst = buf.scrollTop();
 	var newst = scrollTopRow * lineHeight;
 	if (!instant && Math.abs(oldst - newst) > 3*lineHeight) {
-		$buf.animate({ scrollTop: newst}, 60);
+		buf.animate({ scrollTop: newst}, 60);
 	} else {
-		$buf.scrollTop(newst);
+		buf.scrollTop(newst);
 	}
 
 	if (el.offsetLeft+el.offsetWidth > scrleft+width) {
-		$lines.scrollLeft(el.offsetLeft+el.offsetWidth-width);
+		lines.scrollLeft(el.offsetLeft+el.offsetWidth-width);
 	} else if (el.offsetLeft < scrleft) {
-		$lines.scrollLeft(el.offsetLeft);
+		lines.scrollLeft(el.offsetLeft);
 	}
 }
 
@@ -649,7 +558,7 @@ function renderSelection($p, a, b, reverseTextColor, buf) {
 		$('<span>').addClass('line-selected')
 			.css('left', x)
 			.css('top', y)
-			.css('margin-left', -gutterWidth()+'ch')
+			.css('margin-left', -gutterWidth(buf.id)+'ch')
 			.height(h).width(w).appendTo($p);
 	}
 	//sort
@@ -676,13 +585,9 @@ function renderSelection($p, a, b, reverseTextColor, buf) {
 	}
 }
 
-function renderCursor(buf) {
-	var pos = buf.cursor;
-	if (!$('.lines .cursor').get(0)) {
-		$('.lines').append('<div class="cursor"></div>');
-	}
-
-	var res = getScreenXYByPos(buf, pos);
+function renderCursor(localbuf) {
+	var pos = localbuf.cursor;
+	var res = getScreenXYByPos(localbuf, pos);
 	if (/\r|\n|\t/.test(res.ch)) {
 		res.ch = ' ';
 	}
@@ -691,10 +596,10 @@ function renderCursor(buf) {
 	var background = getComputedStyle(document.body, null).backgroundColor;
 	//console.log(color);
 	//console.log(background);
-	$('.lines .cursor').empty().append(res.ch).removeClass()
+	$($cursor(localbuf.id)).empty().append(res.ch).removeClass()
 		.addClass('cursor')
 		.css('left', res.left)
-		.css('margin-left', -gutterWidth()+'ch')
+		.css('margin-left', -gutterWidth(localbuf.id)+'ch')
 		.css('background-color', color) //unbuntu style replace font color and background color
 		.css('color', background)
 		.css('top', res.top);

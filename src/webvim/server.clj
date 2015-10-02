@@ -152,6 +152,8 @@
   (html5 
     [:head
      [:script {:src "jquery.js" :type "text/javascript"}]
+     [:script {:src "utils.js" :type "text/javascript"}]
+     [:script {:src "dom.js" :type "text/javascript"}]
      [:script {:src "keycode.js" :type "text/javascript"}]
      [:script {:src "keyboard.js" :type "text/javascript"}]
      [:script {:src "syntax/clojure.js" :type "text/javascript"}]
@@ -162,9 +164,7 @@
      [:script {:src "main.js" :type "text/javascript"}]
      [:link {:href "main.css" :rel "stylesheet"}]
      [:link {:href "monokai.css" :rel "stylesheet"}]]
-    [:body
-     [:div.buffer]
-     [:div.status-bar [:span.ex] [:span.ongoing-keys] [:span.buf-name]]]))
+    [:body]))
 
 (defroutes main-routes
   (GET "/" [request] (homepage request))

@@ -16,13 +16,13 @@ body,html,.buffer{
 	overflow:auto;
 }
 
-.lines {
+.content {
 	overflow:auto;
 	white-space:pre;
 	position:relative;
 }
 
-.lines .code {
+.code {
 	z-index:0;
 	line-height:1.2em;
 	-moz-tab-size: 4;
@@ -122,7 +122,7 @@ pre {
 	padding-left:2ch;
 }
 
-.buffer::-webkit-scrollbar, .status-bar::-webkit-scrollbar, .lines::-webkit-scrollbar, .autocompl::-webkit-scrollbar{
+.buffer::-webkit-scrollbar, .status-bar::-webkit-scrollbar, .content::-webkit-scrollbar, .autocompl::-webkit-scrollbar{
         display: none;
 }
 
@@ -157,7 +157,7 @@ pre {
 	color:#000;
 }
 
-.highlight-brace-pair .line-selected {
+.cursor-brace .line-selected {
 	background:#007acc;
 	opacity:0.3;
 	width:9.57px;
