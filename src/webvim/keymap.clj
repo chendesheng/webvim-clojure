@@ -149,6 +149,7 @@
 
 (defn init-keymap-tree
   []
+  (println "init-keymap-tree")
   (reset! ex-mode-keymap
           {:continue #(not (or (= "<esc>" %2) (= "<cr>" %2) (empty? (:ex %1))))
            :leave (fn[buf keycode]

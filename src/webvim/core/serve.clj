@@ -87,21 +87,30 @@
 
 (defn key-server
   "Start a dedicate thread handle input keys. Close :chan-in will stop this thread."
-  [buf keymap]
+  [buf]
   (async/thread 
     (loop[buf1 buf]
       (if (not (nil? buf1))
         (recur (key-server-inner 
                  buf1
-                 keymap)))))
+                 ;use buf's :root-keymap instead of buf1's
+                 ;change :root-keymap must restart key-server
+                 (buf :root-keymap))))))
   buf)
 
 ;enter point of key sequence parser
 (defonce root-keymap (atom {}))
 
+(defn- set-root-keymap[buf]
+  [buf]
+  (if (-> buf :root-keymap nil?)
+    (assoc buf :root-keymap @root-keymap)
+    buf))
+
 (defn new-file[f]
   (-> f
       open-file
+      set-root-keymap
       buffer-list-save
       ;start a new thread handle this file
-      (key-server @root-keymap)))
+      key-server))

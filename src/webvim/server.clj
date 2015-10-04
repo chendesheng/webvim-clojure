@@ -50,8 +50,7 @@
 
 (defn- remove-fields[buf]
   (-> buf 
-      (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :y :cursor :undoes :redoes :pending-undo :before-send-out :after-send-out
-          :macro :chan-in :chan-out :registers :linescnt)
+      (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :y :cursor :undoes :redoes :pending-undo :before-send-out :after-send-out :macro :chan-in :chan-out :registers :linescnt :root-keymap :ext)
       (dissoc-empty [:highlights])
       (dissoc-empty [:changes])
       (dissoc-nil :keys)
@@ -88,6 +87,7 @@
                     (dissoc-if-equal before :pos)))]
     buf))
 
+(init-keymap-tree)
 
 ;TODO How to run code only in repl env? Conditional compile?
 ;only for testing on repl
@@ -97,21 +97,19 @@
          "%" 
          (reset! active-buffer-id 
                  (-> "testfile.clj"
-                     open-file
-                     buffer-list-save
+                     new-file
                      :id))))
 
 (defn restart-key-server
   "For repl"
   []
-  (init-keymap-tree)
   (let [buf (active-buffer)
         _ (async/close! (:chan-in buf))
         b2 (-> buf
                (assoc :chan-in (async/chan))
                (assoc :chan-out (async/chan)))]
     (swap! buffer-list assoc (:id b2) b2)
-    (key-server b2 @root-keymap)
+    (key-server b2)
     nil))
 
 (defn update-buffer [buf]
