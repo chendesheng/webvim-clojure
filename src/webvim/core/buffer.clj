@@ -16,11 +16,11 @@
 
 (defn buffer-list-save
   "Generate buffer id (increase from 1) and add to buffer-list"
-  [b]
+  [buf]
   (let [id (swap! gen-buf-id inc)
-        b1 (assoc b :id id)]
-    (reset! buffer-list (assoc @buffer-list id b1))
-    b1))
+        buf (assoc buf :id id)]
+    (reset! buffer-list (assoc @buffer-list id buf))
+    buf))
 
 ;the current editting buffer, when receving keys from client send keycode to this buffer's :chan-in
 ;switch to another buffer is very easy, just do (reset! actvive-buffer b)
@@ -114,21 +114,21 @@
 
 ;TODO make write atomic
 (defn write-buffer
-  [b]
+  [buf]
   (try 
-    (let [r (b :str)
-          f (b :filepath)]
+    (let [r (buf :str)
+          f (buf :filepath)]
       (if (not (fs/exists? f))
         (do
           (-> f fs/parent fs/mkdirs)
           (-> f fs/file fs/create)))
       (spit f r)
-      (-> b
+      (-> buf
           (assoc :dirty false)
-          (assoc :message (str "\"" f "\" written"))))
+          (assoc :message (format "\"%s\" %dL, %dC written" f (buf :linescnt) (count r)))))
     (catch Exception e 
       ;(println (.getMessage e))
       (.printStackTrace e)
       (let [err (str "caught exception: " (.getMessage e))]
-        (assoc b :message err)))))
+        (assoc buf :message err)))))
 

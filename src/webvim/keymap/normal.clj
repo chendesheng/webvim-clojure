@@ -20,8 +20,8 @@
     (registers-put (buf :registers) (-> buf :context :register) (buf-copy-range buf pos pos true))
     (buf-delete-offset buf 1)))
 
-(defn- cut-char[b]
-    (-> b 
+(defn- cut-char[buf]
+    (-> buf 
         delete-char
         save-undo))
 
@@ -51,11 +51,14 @@
           (buf-replace a b " ")
           save-undo))))
 
-(defn- buf-pos-info[b]
+(defn- buf-pos-info[buf]
   (let [{nm :name 
          path :filepath
-         y :y} b]
-    (assoc b :message (str "\"" (or path nm) "\" line " (inc y)))))
+         y :y
+         x :x
+         linescnt :linescnt} buf
+        percent (-> y inc (* 100) (/ linescnt) int)]
+    (assoc buf :message (format "\"%s\" line %d of %d --%d%%-- col %d" (or path nm) (inc y) linescnt percent (inc x)))))
 
 (def map-key-inclusive 
   {"h" false
@@ -79,40 +82,40 @@
       true
       res)))
 
-(defn- buf-copy-range-lastbuf[b cur inclusive]
-  (registers-put (:registers b) (-> b :context :register) (buf-copy-range b cur (b :pos) inclusive))
-  b)
+(defn- buf-copy-range-lastbuf[buf cur inclusive]
+  (registers-put (:registers buf) (-> buf :context :register) (buf-copy-range buf cur (buf :pos) inclusive))
+  buf)
 
-(defn- delete-motion[b keycode]
+(defn- delete-motion[buf keycode]
   ;(println (str "delete-motion:" keycode))
   ;(println (str "inclusive:" (inclusive? keycode)))
-  (let [lastbuf (-> b :context :lastbuf)
-        pos (b :pos)]
+  (let [lastbuf (-> buf :context :lastbuf)
+        pos (buf :pos)]
     (if (or (nil? lastbuf) (= pos (:pos lastbuf))) ;don't do anything if cursor doesn't change
-      b
+      buf
       (let [inclusive (inclusive? keycode)]
         (-> lastbuf
             (buf-copy-range-lastbuf pos inclusive)
             (buf-delete (if inclusive (inc pos) pos))
             save-undo)))))
 
-(defn- yank-motion[b keycode]
-  (let [lastbuf (-> b :context :lastbuf)
+(defn- yank-motion[buf keycode]
+  (let [lastbuf (-> buf :context :lastbuf)
         lastpos (:pos lastbuf)
-        pos (b :pos)]
+        pos (buf :pos)]
     (if (or (nil? lastbuf) (= pos lastpos))
-      b
+      buf
       (let [inclusive (inclusive? keycode)]
-        (buf-copy-range-lastbuf b lastpos inclusive)
+        (buf-copy-range-lastbuf buf lastpos inclusive)
         lastbuf))))
 
-(defn- indent-motion[b keycode]
-  (let [lastbuf (-> b :context :lastbuf)
+(defn- indent-motion[buf keycode]
+  (let [lastbuf (-> buf :context :lastbuf)
         lastpos (:pos lastbuf)
-        pos (b :pos)]
+        pos (buf :pos)]
     (if (or (nil? lastbuf) (= pos lastpos))
-      b
-      (-> b 
+      buf
+      (-> buf 
           (buf-indent-lines (sort2 pos lastpos))
           save-undo))))
 
@@ -182,27 +185,27 @@
         (buf-update-highlight-brace-pair (buf :pos)))))
 
 (defn- move-to-jumplist
-  [b fndir]
-  (loop [pos (fndir b)]
+  [buf fndir]
+  (loop [pos (fndir buf)]
     (if (nil? pos)
-      b ;newest or oldest
+      buf ;newest or oldest
       (let [newb (@buffer-list (pos :id))]
         (if (nil? newb)
           ;buffer has been deleted, ignore
-          (recur (fndir b)) 
+          (recur (fndir buf)) 
           ;pos is avaliable
           (if (< (pos :pos) (count (newb :str)))
             (let [newid (newb :id)
                   newpos (pos :pos)]
               (if (= newid @active-buffer-id) 
                 ;update pos inside current buffer
-                (buf-set-pos b newpos)
+                (buf-set-pos buf newpos)
                 (let []
                   (change-active-buffer newid)
                   (swap! buffer-list update-in [newid] #(buf-set-pos % newpos))
-                  b)))
+                  buf)))
             ;buffer has been modifed and cursor is no longer inside, ignore
-            (recur (fndir b))))))))
+            (recur (fndir buf))))))))
 
 (defn- start-insert-mode[fnmotion insert-mode-keymap]
   (merge
@@ -219,6 +222,16 @@
               (-> buf
                   ((insert-mode-keymap :enter) keycode)
                   fnedit))}))
+
+(defn- delete-to-line-end[buf]
+  (let [a (buf :pos)
+        rg (current-line buf)
+        b (-> rg second dec)]
+    (registers-put (:registers buf) (-> buf :context :register) (buf-copy-range buf a b false))
+    (-> buf
+        (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
+        (buf-delete a b)
+        save-undo)))
 
 (defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap ex-mode-keymap]
   (let [enter-insert (insert-mode-keymap :enter)]

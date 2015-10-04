@@ -76,9 +76,10 @@
 
 (defn set-insert-mode[buf keycode]
   ;(println "set-insert-mode")
-  (-> buf 
-      (assoc-in [:visual :ranges] nil)
-      (merge {:ex "" :mode insert-mode :message nil :keys nil})))
+  (merge buf {:ex "" 
+              :mode insert-mode 
+              :message nil 
+              :keys nil}))
 
 (defn set-normal-mode[buf]
   ;(println "set-normal-mode:")
@@ -193,15 +194,6 @@
         (buf-delete-range (current-line buf))
         line-start
         save-undo)))
-
-(defn delete-to-line-end[buf]
-  (let [pos (buf :pos)
-        [a b] (current-line buf)]
-    (registers-put (:registers buf) (-> buf :context :register) (buf-copy-range buf pos b false))
-    (-> buf
-      (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
-      (buf-delete a b)
-      save-undo)))
 
 (defn delete-range[buf]
   (let [[a b] (-> buf :visual :ranges first)]
