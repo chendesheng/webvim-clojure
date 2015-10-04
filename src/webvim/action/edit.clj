@@ -21,7 +21,9 @@
         r (buf :str)
         [a b] (pos-re+ r pos #"\n.+?(?=(\n|\S))")]
     (if (nil? a) buf
-      (buf-replace buf a b " "))))
+      (-> buf
+          (buf-replace a b " ")
+          save-undo))))
 
 (defn save-lastbuf[buf keycode]
   (-> buf (assoc-in [:context :lastbuf] buf)))
@@ -204,3 +206,14 @@
           (buf-indent-lines (sort2 pos lastpos))
           save-undo))))
 
+(defn replace-char-keycode[buf keycode]
+  (let [ch (keycode-to-char buf)]
+    (if (= (count ch) 1)
+      (let [enter-indent (if (= ch "\n") 
+                           #(buf-indent-current-line %)
+                           identity)]
+        (-> buf 
+            (buf-replace-char ch)
+            enter-indent
+            save-undo))
+      buf)))

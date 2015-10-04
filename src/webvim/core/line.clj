@@ -49,20 +49,20 @@
                     (let [[a b] rg]  
                       (+ a (bound-range x 0 (- b a 1))))))))))
 
-(defn lines-forward[buf n]
+(defn lines-n+[buf n]
   (lines-move buf n pos-lines-seq+))
 
-;(lines-forward {:pos 0 :x 2 :str (rope "abc\n\n") :y 0} 1)
+;(lines-n+ {:pos 0 :x 2 :str (rope "abc\n\n") :y 0} 1)
 
-(defn lines-backward[buf n]
+(defn lines-n-[buf n]
   (lines-move buf n pos-lines-seq-))
 
 (defn lines-row[buf n]
   (let [y (buf :y)
         dy (- n y)]
     (if (pos? dy)
-      (lines-forward buf dy)
-      (lines-backward buf (- dy)))))
+      (lines-n+ buf dy)
+      (lines-n- buf (- dy)))))
 
 ;(pos-lines-seq+ (rope "aa\nbb\ncc\n\n") 0 0)
 

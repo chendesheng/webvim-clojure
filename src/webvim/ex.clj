@@ -13,7 +13,6 @@
         webvim.action.motion
         webvim.action.edit
         webvim.action.mode
-        webvim.action.highlight
         webvim.jumplist
         webvim.utils
         webvim.fuzzy)) 

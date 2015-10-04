@@ -6,13 +6,6 @@
         webvim.action.edit
         webvim.indent))
 
-(defonce motion-keymap (atom {}))
-(defonce edit-keymap (atom {}))
-(defonce normal-mode-keymap (atom {}))
-(defonce visual-mode-keymap (atom {}))
-(defonce insert-mode-keymap (atom {}))
-(defonce ex-mode-keymap (atom {}))
-
 (defonce normal-mode 0)
 (defonce insert-mode 1)
 (defonce visual-mode 2)
@@ -66,12 +59,12 @@
     (-> buf
         (delete-inclusive a b)
         (set-insert-mode "c")
-        (serve-keymap (@normal-mode-keymap "i") "c"))))
+        (serve-keymap (-> buf :root-keymap (get "i")) "c"))))
 
 (defn change-to-line-end[buf]
   (-> buf
       (buf-delete (buf :pos) (-> buf current-line last dec))
-      (serve-keymap (@normal-mode-keymap "i") "c")))
+      (serve-keymap (-> buf :root-keymap (get "i")) "c")))
 
 (defn set-insert-new-line[buf keycode]
   (-> buf 

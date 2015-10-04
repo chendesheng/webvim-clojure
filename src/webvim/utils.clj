@@ -12,3 +12,15 @@
    (if (< a b) [a b] [b a]))
   ([[a b]]
    (sort2 a b)))
+
+(defn keycode-to-char[keycode]
+  (cond 
+    (= 1 (count keycode))
+    keycode
+    (= "<cr>" keycode)
+    "\n"
+    (= "<tab>" keycode)
+    "\t"
+    (= "<space>" keycode)
+    " "
+    :else ""))

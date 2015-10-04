@@ -33,4 +33,3 @@
             (-> buf :y
                 (- (int (/ (-> @window :viewport :h) 2))))))
 
-
