@@ -54,3 +54,7 @@
 (defmethod indent-pos :default
   [lang r pos]
   (auto-indent r pos))
+
+(defmethod indent-trigger? :default
+  [lang keycode]
+  false)

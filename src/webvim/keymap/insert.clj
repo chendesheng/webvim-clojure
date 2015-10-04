@@ -6,6 +6,7 @@
         webvim.core.pos
         webvim.core.register
         webvim.core.serve
+        webvim.core.lang
         webvim.indent
         webvim.utils
         webvim.jumplist
@@ -45,7 +46,7 @@
              (buf-delete-offset t -1)
              (buf-insert t (keycode-to-char keycode)))
         t2 (buf-update-highlight-brace-pair t1 (-> t1 :pos dec))
-        t3 (if (or (re-test (-> t2 :language :indent-triggers) keycode) (= keycode "<cr>"))
+        t3 (if (or (indent-trigger? (t :language) keycode) (= keycode "<cr>"))
              (buf-indent-current-line t2)
              t2)]
     (if (empty? (-> t3 :autocompl :suggestions))

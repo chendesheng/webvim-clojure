@@ -63,10 +63,10 @@
         line (subr r head)
         lines (filter clang-not-blank-or-comment?
                       (ranges-to-texts r ranges))
-        ;_ (println (str "[" line "]"))
+        _ (println (str "[" line "]"))
         pline (or (first lines) "")
-        ;_ (println (str "[" pline "]"))
-        pindent (re-subs #"^\s*" pline)
+        _ (println (str "[" pline "]"))
+        pindent (str (re-subs #"^\s*" pline))
         pbrace? (re-test #"[\{]\s*$" pline)
         brace? (re-test #"^\s*\}" line)]
     (cond (clang-comment? line)
@@ -74,7 +74,7 @@
           (empty? pline)
           ""
           (and (not pbrace?) brace?)
-          (if (empty? pindent) "" (subr pindent 1))
+          (if (empty? pindent) "" (subs pindent 1))
           (and pbrace? (not brace?))
           (str pindent "\t")
           (and pbrace? brace?)
@@ -89,7 +89,10 @@
               ppindent
               pindent)))))
 
-
 (defmethod indent-pos ::javascript
   [lang r pos]
   (clang-indent r pos))
+
+(defmethod indent-trigger? ::javascript
+  [lang keycode]
+  (= keycode "}"))
