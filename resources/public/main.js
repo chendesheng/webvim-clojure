@@ -298,7 +298,7 @@ function renderChanges(buf) {
 		if (linenumdiff > 0) {
 			for (var j = 0; j < linenumdiff; j++) {
 				var g = document.createElement('DIV');
-				g.id = 'line-num-'+linenum;
+				g.id = 'line-'+buf.id+'-'+linenum;
 				g.className = 'line-num';
 				g.textContent = linenum+1;
 				gutter.appendChild(g);
@@ -307,8 +307,8 @@ function renderChanges(buf) {
 			}
 		} else {
 			for (var j = 0; j < -linenumdiff; j++) {
-				$remove($lineNumber(buf.id, linenum-1));
 				linenum--;
+				$remove($lineNumber(buf.id, linenum));
 			}
 		}
 

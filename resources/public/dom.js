@@ -104,7 +104,7 @@ function $remove(ele) {
 }
 
 function $lineNumber(bufid, linenum) {
-	document.getElementById('gutter-'+bufid+'-num-'+linenum);
+	return document.getElementById('line-'+bufid+'-'+linenum);
 }
 
 function _timerScroll(ele, scrollto, i) {
