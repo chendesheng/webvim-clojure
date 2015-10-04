@@ -12,7 +12,7 @@
         webvim.core.register
         webvim.core.keys
         webvim.keymap
-        webvim.action.window
+        webvim.keymap.action
         (compojure handler [core :only (GET POST defroutes)])
         (hiccup [page :only (html5)])
         ring.middleware.resource

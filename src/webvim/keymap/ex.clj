@@ -1,8 +1,8 @@
-(ns webvim.ex
-    (:require [me.raynes.fs :as fs]
-              [clojure.core.async :as async]
-              [clojure.java.io :as io]
-              [snipsnap.core :as clipboard])
+(ns webvim.keymap.ex
+  (:require [me.raynes.fs :as fs]
+            [clojure.core.async :as async]
+            [clojure.java.io :as io]
+            [snipsnap.core :as clipboard])
   (:use clojure.pprint
         (clojure [string :only (join blank?)])
         webvim.core.rope
@@ -10,27 +10,25 @@
         webvim.core.buffer
         webvim.core.serve
         webvim.core.register
-        webvim.action.motion
-        webvim.action.edit
-        webvim.action.mode
         webvim.jumplist
         webvim.utils
-        webvim.fuzzy)) 
+        webvim.fuzzy
+        webvim.keymap.action)) 
 
 (declare ex-commands)
 
-(defn buf-info[buf]
+(defn- buf-info[buf]
   (if (and (empty? (buf :str))
            (not (fs/exists? (buf :filepath))))
     (assoc buf :message (str "[New File] " (buf :filepath)))
     (assoc buf :message (str "\"" (:filepath buf) "\""))))
 
-(defn move-to-line[buf row]
+(defn- move-to-line[buf row]
   (-> buf 
       (lines-row row)
       line-start))
 
-(defn find-buffer [buffers f]
+(defn- find-buffer [buffers f]
   (reduce-kv 
     (fn [matches _ buf]
       (let [indexes (fuzzy-match (buf :name) f)]
@@ -39,7 +37,7 @@
           (conj matches buf)))) 
     [] buffers))
 
-(defn execute [buf]
+(defn- execute [buf]
   (let [[_ excmd args] (re-find #"\s*:([^\s]+)\s*(.*)\s*" (:ex buf))]
     (if (nil? excmd)
       buf
@@ -55,7 +53,7 @@
           ((first handlers) buf excmd args)
           (assoc buf :message "unknown command"))))))
 
-(defn ex-tab-complete [ex]
+(defn- ex-tab-complete [ex]
   (if (re-test #"^:\S+\s*$" ex)
     (first 
       (filter 
@@ -65,13 +63,8 @@
           #(str ":" (first %)) 
           (filter #(-> % first string?) ex-commands)))) ex))
 
-(defn set-ex-mode[buf]
+(defn- set-ex-mode[buf _]
   (merge buf {:mode ex-mode :ex ":" :message nil :keys nil}))
-
-(defn set-ex-search-mode[buf keycode]
-  (-> buf 
-      (merge {:ex keycode :message nil :keys nil})
-      (assoc-in [:context :lastbuf] buf)))
 
 (def ex-commands
   (array-map 
@@ -88,7 +81,7 @@
                   (dissoc buf :highlights))
    "edit" (fn[buf excmd file]
             (if (or (empty? file) (= file (:filepath buf)))
-              buf ;TODO maybe we should refresh something when reopen same file?
+              buf
               (let [newid (-> file new-file buf-info :id)]
                 (change-active-buffer newid)
                 (jump-push buf)
@@ -159,7 +152,7 @@
                 (let [row (bound-range (dec (Integer. row)) 0 (-> buf :linescnt dec))]
                   (move-to-line buf row)))))
 
-(defn ex-mode-default[buf keycode]
+(defn- ex-mode-default[buf keycode]
   (let [ex (:ex buf)
         newex (cond 
                 (= keycode "<space>")
@@ -190,4 +183,14 @@
              (catch Exception e newb)))
       :else
       (assoc buf :ex newex))))
+
+(defn init-ex-mode-keymap[]
+  {:enter set-ex-mode
+   "<cr>" execute
+   :else ex-mode-default
+   :continue #(not (or (= "<esc>" %2) (= "<cr>" %2) (empty? (:ex %1))))
+   :leave (fn[buf keycode]
+            (if (and (= "<esc>" keycode) (= \/ (-> buf :ex first)))
+              (-> buf :context :lastbuf (assoc :ex ""))
+              (assoc buf :ex "")))})
 

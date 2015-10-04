@@ -1,4 +1,4 @@
-(ns webvim.action.macro
+(ns webvim.keymap.macro
   (:require [clojure.core.async :as async])
   (:use webvim.core.serve))
 
