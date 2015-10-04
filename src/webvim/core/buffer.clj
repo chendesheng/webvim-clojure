@@ -3,7 +3,7 @@
             [clojure.core.async :as async]
             [clojure.java.io :as io])
   (:use clojure.pprint
-        (clojure [string :only (join split blank?)])
+        (clojure [string :only (join split blank? lower-case)])
         webvim.core.rope
         webvim.core.pos
         webvim.core.event))
@@ -38,7 +38,7 @@
         buf {:name bufname
            ;= nil if it is a special buffer like [New File] or [Quick Fix]
            :filepath filepath 
-           :ext (or (re-find #"\.\w+$" (or bufname "")) "")
+           :ext (or (lower-case (re-find #"\.\w+$" (or bufname ""))) "")
            :str r
            :linescnt (count-lines r)
            :pos 0  ;offset from first char

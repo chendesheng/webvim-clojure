@@ -7,6 +7,7 @@
         webvim.lang.default
         webvim.lang.clojure ;TODO: load language setting dynamically
         webvim.lang.javascript
+        webvim.lang.css
         webvim.core.buffer
         webvim.core.serve
         webvim.core.register
