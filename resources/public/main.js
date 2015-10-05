@@ -411,7 +411,6 @@ function render(buf) {
 	//render unsaved
 	if (typeof buf.dirty != 'undefined') {
 		var statusName = $statusName(buf.id);
-		statusName.textContent = buf.name;
 		if (!!buf.dirty) {
 			statusName.className = 'buf-name buf-unsaved';
 		} else {
@@ -467,7 +466,7 @@ function render(buf) {
 	//title
 	if (typeof buf.name != 'undefined') {
 		document.title = buf.name;
-		$statusName.textContent = buf.name;
+		$statusName(buf.id).textContent = buf.name;
 	}
 }
 
