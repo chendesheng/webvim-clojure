@@ -163,21 +163,20 @@
       (highlight-all-matches (re-pattern (str "(?m)" (subs (b :ex) 1))))
       (assoc :ex "")))
 
-(defn- repeat-search[buf reg]
-  (let[s (or (registers-get (:registers buf) "/") reg)
-       dir (first s)
+(defn- repeat-search[buf dir]
+  (let[s (or (registers-get (:registers buf) "/") "/")
        re (re-pattern (str "(?m)" (subs s 1)))
        hightlightall? (-> buf :highlights empty?)
-       fnsearch (if (= \/ dir) re-forward-highlight re-backward-highlight)
+       fnsearch (if (= (first s) dir) re-forward-highlight re-backward-highlight)
        b1 (fnsearch buf re)] ;TODO: 1. no need fnsearch if highlight all matches. 2. cache highlight-all-matches
     (if hightlightall?
       (highlight-all-matches b1 re) b1)))
 
 (defn- repeat-search+[buf]
-  (repeat-search buf "/"))
+  (repeat-search buf \/))
 
 (defn- repeat-search-[buf]
-  (repeat-search buf "?"))
+  (repeat-search buf \?))
 
 (defn- set-ex-search-mode[buf keycode]
   (-> buf 
