@@ -35,12 +35,6 @@
                  (buf-set-pos b))]
     (assoc-in newt [:context :lastbuf] newt)))
 
-(defn- yank-range[buf]
-  (let [[a b] (-> buf :visual :ranges first)]
-    (registers-put (:registers buf) (-> buf :context :register) (buf-copy-range buf a b true))
-    (let [[newpos  _] (sort2 a b)]
-      (buf-set-pos buf newpos))))
-
 (defn init-visual-mode-keymap[motion-keymap]
   (merge 
     motion-keymap 
@@ -56,7 +50,8 @@
               (-> buf
                   (visual-mode-select keycode)
                   (update-x-if-not-jk (buf :lastbuf) keycode)))
-     "d" delete-range
-     "c" change-range
+     "d" #(delete-range % true)
+     "c" #(change-range % true)
+     "=" #(indent-range % true)
      "o" swap-visual-start-end}))
 

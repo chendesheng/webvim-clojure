@@ -5,6 +5,7 @@
         webvim.core.pos
         webvim.core.register
         webvim.core.serve
+        webvim.indent
         webvim.utils))
 
 (defonce normal-mode 0)
@@ -90,30 +91,32 @@
             :autocompl {:suggestions nil 
                         :suggestions-index 0}}))
 
-(defn buf-delete
-  ([buf a b]
-   (buf-replace buf a b ""))
-  ([buf b]
-   (let [pos (buf :pos)
-         [a b] (sort2 pos b)]
-     (buf-delete buf a b))))
+(defn buf-yank[buf [a b]]
+  (let [s (buf-subr buf a b)]
+    (registers-put (buf :registers) 
+                   (-> buf :context :register)
+                   s)
+    (update-in buf [:context] dissoc :register)))
 
 (defn change-active-buffer[id]
   (registers-put registers "#" @active-buffer-id)
   (reset! active-buffer-id id)
   (registers-put registers "%" id))
 
-(defn delete-inclusive
-  [buf a b]
-  (let [[a b] (sort2 a b)]
-    (-> buf
-        (buf-delete a (inc b))
-        (buf-set-pos a))))
+;collect range argument, TODO: add linewise
+(defn range-prefix[buf inclusive?]
+  (cond 
+    (-> buf :mode (= visual-mode))
+    (-> buf :visual :ranges (get 0) (make-range inclusive?))
+    (-> buf :context :range nil? not) ;TODO: this looks like hack
+    (-> buf :context :range (make-range inclusive?))
+    (-> buf :context :lastpos nil? not)
+    (make-range (-> buf :context :lastpos) (buf :pos) inclusive?)))
 
-(defn change-range[buf]
-  (let [[a b] (-> buf :visual :ranges first)]
+(defn change-range[buf inclusive?]
+  (let [[a b] (range-prefix buf inclusive?)]
     (-> buf
-        (delete-inclusive a b)
+        (buf-delete a b)
         (set-insert-mode "c")
         (serve-keymap (-> buf :root-keymap (get "i")) "c"))))
 
@@ -160,70 +163,29 @@
             (-> buf :y
                 (- (int (/ (-> @window :viewport :h) 2))))))
 
-
-(defn buf-copy-range[buf a b inclusive]
-  (let [[a b] (sort2 a b)]
-    (str (subr (buf :str) a (if inclusive (inc b) b)))))
-
 (defn save-lastbuf[buf keycode]
   (-> buf (assoc-in [:context :lastbuf] buf)))
 
-(defn buf-replace-char [buf ch]
-  (let [pos (buf :pos)]
-    (buf-replace buf pos (inc pos) ch)))
+(defn save-lastpos[buf keycode]
+  (-> buf (assoc-in [:context :lastpos] (buf :pos))))
 
-(defn buf-insert
-  ([buf pos txt]
-   (buf-replace buf pos pos txt))
-  ([buf txt]
-   (buf-insert buf (buf :pos) txt)))
-
-(defn buf-delete-range
-  "delete range and set pos to end of deleted"
-  [buf rg]
-  (-> buf
-      (buf-delete (first rg) (second rg))
-      (buf-set-pos (first rg))))
-
-(defn delete-line[buf]
-  (let [pos (buf :pos)
-        [a b] (current-line buf)]
-    (registers-put (:registers buf) (-> buf :context :register) (buf-copy-range buf a b false))
+(defn delete-range[buf inclusive?]
+  (let [[a b] (range-prefix buf inclusive?)]
+    (println "delete-range:" a b)
     (-> buf
-        (update-in [:context] dissoc :lastbuf) ;remove :lastbuf prevent delete-motion take over.
-        (buf-delete-range (current-line buf))
-        line-start
+        (buf-yank [a b])
+        (buf-delete a b)
+        (buf-set-pos a))))
+
+(defn yank-range[buf inclusive?]
+  (let [rg (range-prefix buf inclusive?)]
+    (buf-yank buf rg)))
+
+(defn indent-range[buf inclusive?]
+  (let [[a b] (range-prefix buf inclusive?)]
+    (-> buf 
+        (buf-indent-lines [a (dec b)])
         save-undo)))
-
-(defn delete-range[buf]
-  (let [[a b] (-> buf :visual :ranges first)]
-    (-> buf
-        (delete-inclusive a b)
-        save-undo)))
-
-(defn buf-delete-offset[buf offset] 
-  (let [pos (buf :pos)
-        newpos (+ pos offset)]
-    (if (neg? newpos) buf
-      (buf-delete buf newpos))))
-
-(defn insert-line-after[buf]
-  (let [pos (buf :pos)
-        [_ b] (current-line buf)]
-    (-> buf
-        (buf-insert b <br>)
-        (buf-set-pos b))))
-
-(defn insert-line-before[buf]
-  (let [pos (buf :pos)
-        [a b] (current-line buf)]
-    (if (zero? a)
-      (-> buf
-          (buf-insert 0 <br>)
-          buf-start)
-      (-> buf
-          (buf-set-pos (- a 1))
-          (buf-insert <br>)))))
 
 (defn put-from-register[buf keycode]
   (let [txt (registers-get (:registers buf) keycode)]
@@ -244,3 +206,15 @@
             save-undo))
       buf)))
 
+;(defn begin-change[buf]
+;  (assoc-in buf [:context :lastpos] (buf :pos)))
+;
+;(defn end-change[buf putdeleted?]
+;  (let [buf (save-undo buf)
+;        chs (-> buf :undoes first :changes)]
+;    (if (and putdeleted? (-> chs count (= 1)))
+;      (let [deleted (-> chs first :to)]
+;        (if-not (empty? deleted)
+;          (registers-put (-> buf :context :register)
+;                         deleted))))
+;    (update-in buf [:context] dissoc :register)))

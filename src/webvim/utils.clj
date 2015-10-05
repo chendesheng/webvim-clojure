@@ -24,3 +24,12 @@
     (= "<space>" keycode)
     " "
     :else ""))
+
+(defn make-range
+  ([a b inclusive?]
+   (if inclusive? 
+     (let [[a b] (sort2 a b)]
+       [a (inc b)])
+     (sort2 a b)))
+  ([[a b] inclusive?]
+   (make-range a b inclusive?)))

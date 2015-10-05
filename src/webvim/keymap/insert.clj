@@ -12,12 +12,12 @@
         webvim.jumplist
         webvim.autocompl))
 
-(defn- autocompl-start[t]
-  (let [pos (t :pos)
-        word (uncomplete-word t)
+(defn- autocompl-start[buf]
+  (let [pos (buf :pos)
+        word (uncomplete-word buf)
         suggestions (autocompl-suggest word)]
     ;(println "autocompl:" suggestions)
-    (assoc t :autocompl 
+    (assoc buf :autocompl 
            {:suggestions suggestions 
             :suggestions-index 0})))
 
@@ -41,24 +41,24 @@
                          #(apply conj % ks)) 
               (buffer-replace-suggestion w)))))))
 
-(defn- insert-mode-default[t keycode]
-  (let [t1 (if (= "<bs>" keycode)
-             (buf-delete-offset t -1)
-             (buf-insert t (keycode-to-char keycode)))
-        t2 (buf-update-highlight-brace-pair t1 (-> t1 :pos dec))
-        t3 (if (or (indent-trigger? (t :language) keycode) (= keycode "<cr>"))
-             (buf-indent-current-line t2)
-             t2)]
-    (if (empty? (-> t3 :autocompl :suggestions))
-      t3
-      (let [word (uncomplete-word t3)
-            suggestions (autocompl-suggest word)]
-        (if (= 1 (count suggestions))
-          (assoc-in t3 [:autocompl :suggestions] [])
-          (assoc t3 :autocompl 
-                 (merge (:autocompl t3) 
-                        {:suggestions suggestions
-                         :suggestions-index 0})))))))
+(defn- insert-mode-default[buf keycode]
+  (let [pos (buf :pos)
+        buf1 (if (= "<bs>" keycode)
+               (if (zero? pos) buf (buf-delete buf (dec pos) pos))
+               (buf-insert buf (keycode-to-char keycode)))
+        buf2 (buf-update-highlight-brace-pair buf1 (-> buf1 :pos dec))
+        buf3 (if (or (indent-trigger? (buf :language) keycode) (= keycode "<cr>"))
+               (buf-indent-current-line buf2)
+               buf2)]
+    (if (empty? (-> buf3 :autocompl :suggestions))
+      buf3
+      (-> buf3
+          autocompl-start
+          ((fn[buf3]
+            (if (-> buf3 :autocompl :suggestions count (= 1))
+              (assoc buf3 :autocompl {:suggestions []
+                                      :suggestions-index 0})
+              buf3)))))))
 
 (defn init-insert-mode-keymap[]
   {;"<c+o>" normal-mode-keymap 

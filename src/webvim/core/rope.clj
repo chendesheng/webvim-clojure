@@ -135,6 +135,20 @@
            (assoc :pending-undo undo)
            (update-in [:changes] conj c))))))
 
+(defn buf-delete
+  [buf a b]
+  (buf-replace buf a b ""))
+
+(defn buf-insert
+  ([buf s]
+   (let [pos (buf :pos)]
+     (buf-replace buf pos pos s)))
+  ([buf pos s]
+   (buf-replace buf pos pos s)))
+
+(defn buf-subr[buf a b]
+  (-> buf :str (subr a b) str))
+
 ;A change is one edit at **single** point. 
 ;For example:
 ;  {:len 0 :to "aa" :pos 0}
