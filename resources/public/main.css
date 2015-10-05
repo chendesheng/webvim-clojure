@@ -153,7 +153,7 @@ pre {
 }
 
 .highlights .line-selected {
-	background:rgba(102, 217, 239, 0.75);
+	background:rgb(102, 217, 239);
 	color:#000;
 }
 

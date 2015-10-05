@@ -570,6 +570,7 @@ function renderSelection($p, a, b, buf) {
 			+ 'height:'+h+';'
 			+ 'width:'+w+';';
 		$p.appendChild(sp);
+		return sp;
 	}
 	//sort
 	if (a > b) {
@@ -582,17 +583,18 @@ function renderSelection($p, a, b, buf) {
 	var div = document.createElement('DIV');
 	var resa = getScreenXYByPos(buf, a);
 	var resb = getScreenXYByPos(buf, b);
-
+	var lastline;
 	if (resa.top != resb.top) {
 		append(resa.left, resa.top, '100%', lineHeight+'px');
 		var mh = resb.top-resa.top-lineHeight;
 		if (mh > 0) {
 			append(0, resa.top+lineHeight, '100%', mh+'px');
 		}
-		append(0, resb.top, resb.left+'px', '1em');
+		lastline = append(0, resb.top, resb.left+'px', '1em');
 	} else {
-		append(resa.left, resa.top, Math.abs(resa.left-resb.left)+'px', '1em');
+		lastline = append(resa.left, resa.top, Math.abs(resa.left-resb.left)+'px', '1em');
 	}
+	lastline.style.paddingBottom = '1px';
 }
 
 function renderCursor(localbuf) {
@@ -614,6 +616,7 @@ function renderCursor(localbuf) {
 		+'background-color:' + color + ';'
 		+'color:' + background + ';'
 		+'top:' + res.top + 'px;'
+		+'padding-bottom:1px;';
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];
