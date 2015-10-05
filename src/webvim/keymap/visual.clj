@@ -21,25 +21,25 @@
     (merge buf {:ex "" :mode visual-mode :keys nil 
               :visual {:type 0 :ranges [[pos pos]]}})))
 
-(defn- visual-mode-select[t keycode]
+(defn- visual-mode-select[buf keycode]
   (let [m (re-find #"[ocdy]" keycode)] ;don't change cursor position if not motion
     (if (nil? m)
-      (let [pos (t :pos)]
-        (update-in t [:visual :ranges 0] 
-                   (fn[[a b]] [pos b]))) t)))
+      (let [pos (buf :pos)]
+        (update-in buf [:visual :ranges 0] 
+                   (fn[[a b]] [pos b]))) buf)))
 
 (defn- swap-visual-start-end[buf]
   (let [[a b] (-> buf :visual :ranges first)
-        newt (-> buf
+        newbuf (-> buf
                  (assoc-in [:visual :ranges 0] [b a])
                  (buf-set-pos b))]
-    (assoc-in newt [:context :lastbuf] newt)))
+    (assoc-in newbuf [:context :lastbuf] newbuf)))
 
 (defn init-visual-mode-keymap[motion-keymap]
   (merge 
     motion-keymap 
     {"z" {"z" cursor-center-viewport}
-     "y" yank-range
+     "y" #(yank-range % true)
      :enter (fn[buf keycode] 
               (-> buf
                   set-visual-mode

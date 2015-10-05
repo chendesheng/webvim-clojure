@@ -584,10 +584,11 @@ function renderSelection($p, a, b, buf) {
 	var resb = getScreenXYByPos(buf, b);
 	var lastline;
 	if (resa.top != resb.top) {
-		append(resa.left, resa.top, '100%', lineHeight+'px');
+		var w = $buffer(buf.id).offsetWidth;
+		append(resa.left, resa.top, (w-resa.left)+'px', lineHeight+'px');
 		var mh = resb.top-resa.top-lineHeight;
 		if (mh > 0) {
-			append(0, resa.top+lineHeight, '100%', mh+'px');
+			append(0, resa.top+lineHeight, w+'px', mh+'px');
 		}
 		lastline = append(0, resb.top, resb.left+'px', '1em');
 	} else {
