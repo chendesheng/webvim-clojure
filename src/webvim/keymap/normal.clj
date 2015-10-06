@@ -85,14 +85,12 @@
 ;setup range prefix for delete/change/yank etc.
 (defn- setup-range[buf]
   (let [lastbuf (-> buf :context :lastbuf)]
+    (println "setup-range:" (lastbuf :pos) (buf :pos))
     (assoc-in lastbuf [:context :range] [(lastbuf :pos) (buf :pos)])))
 
 (defn- setup-range-line[buf]
-  (let [pos (buf :pos)
-        r (buf :str)
-        a (pos-line-first r pos)
-        b (pos-line-end r pos)] ;TODO: use current-line
-    (assoc-in buf [:context :range] [a b])))
+  (let [[a b] (current-line buf)]
+    (assoc-in buf [:context :range] [a (dec b)])))
 
 (defn- setup-range-line-end[buf]
   (let [a (buf :pos)
@@ -120,12 +118,13 @@
 
 (defn- change[buf keycode]
   (if (= "c" keycode)
-    buf
-    ;setup-range-line 
-    ;(buf-delete (-> buf :context :range))
-    ;buf-indent-current-line
-    ;(set-insert-mode "c")
-    ;(serve-keymap (-> buf :root-keymap (get "i")) "c"))
+    (-> buf
+        (buf-delete (-> buf 
+                        setup-range-line 
+                        (range-prefix false)))
+        buf-indent-current-line
+        (set-insert-mode "c")
+        (serve-keymap (-> buf :root-keymap (get "i")) "c"))
     (-> buf
         setup-range
         (change-range (inclusive? keycode)))))
@@ -182,6 +181,7 @@
                  (contains? #{".", "u", "<c+r>", "p", "P", ":"} keycode))
       (registers-put (:registers buf) "." (-> buf :macro :recording-keys)))
     (-> buf 
+        set-normal-mode
         save-undo
         normal-mode-fix-pos
         (update-x-if-not-jk lastbuf keycode)

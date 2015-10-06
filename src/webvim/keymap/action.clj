@@ -158,7 +158,7 @@
 (defn indent-range[buf inclusive?]
   (let [[a b] (range-prefix buf inclusive?)]
     (-> buf 
-        (buf-indent-lines [a (dec b)]))))
+        (buf-indent-lines [a b]))))
 
 (defn put-from-register[buf keycode]
   (let [txt (get-register buf keycode)]

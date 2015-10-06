@@ -64,10 +64,11 @@
           (filter #(-> % first string?) ex-commands)))) ex))
 
 (defn- set-ex-mode[buf keycode]
-  (-> buf
-      (merge {:mode ex-mode :ex keycode :message nil :keys nil})
-      ;rollback to :lastbuf if excute failed or <esc>
-      (assoc-in [:context :lastbuf] buf)))
+  (let [mode (if (= keycode ":") ex-mode (buf :mode))]
+    (-> buf
+        (merge {:mode mode :ex keycode :message nil :keys nil})
+        ;rollback to :lastbuf if excute failed or <esc>
+        (assoc-in [:context :lastbuf] buf))))
 
 (def ex-commands
   (array-map 

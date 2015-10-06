@@ -17,39 +17,39 @@
     (if (nil? pline) ""
       (or (re-subs #"^\s*" pline) ""))))
 
-(defn buf-indent-line[buf pos]
+(defn- buf-indent-line[buf pos]
   (let [r (buf :str)
         _ (println (buf :language))
         indent (indent-pos (buf :language) r pos) 
         a (pos-line-first r pos)
         b (pos-line-start r pos)]
-    ;(println a b)
+    (println a b (count indent))
     (buf-replace buf a b indent)))
 
 (defn buf-indent-lines 
   "indent from cursor row to row both inclusive. Only indent not blank line."
   [buf [a b]]
   (let [r (buf :str)
-        pos (buf :pos)
-        lines (pos-lines-seq+ r a b)]
+        lines (filter #(not (rblank? r %)) 
+                      (pos-lines-seq+ r a b))
+        buf (buf-set-pos buf (-> lines first first))
+        lang (buf :language)]
     (line-start
-      (reduce
-        #(buf-indent-line %1 (first %2)) 
-        (buf-set-pos buf (-> lines first first))
-        (filter #(not (rblank? r %)) lines)))))
+      (first (reduce
+               (fn[[buf delta] [pos _]]
+                 (let [r (buf :str)
+                       a (+ pos delta)
+                       b (pos-line-start r a)
+                       indent (indent-pos lang r a)]
+                   [(buf-replace buf a b indent)
+                    ;shift after buffer changed pos
+                    (+ delta (- (count indent) (- b a)))])) 
+               [buf 0]
+               lines)))))
 
 (defn buf-indent-current-line
   [buf]
   (buf-indent-line buf (buf :pos)))
-
-;(def language-indents 
-;  {"Clojure" {:fn-indent clojure-indent}
-;   "JavaScript" {:fn-indent clang-indent
-;          :indent-triggers #"}"}
-;   "CSS" {:fn-indent clang-indent
-;           :indent-triggers #"}"}
-;   "XML" {:fn-indent auto-indent}
-;   :else {:fn-indent auto-indent}})
 
 (defmethod indent-pos :default
   [lang r pos]
