@@ -17,19 +17,9 @@
 
 (defn- delete-char[buf]
   (let [pos (buf :pos)
-        [a b :as rg] [pos (inc pos)]]
-    (buf-yank buf rg)
+        [a b] [pos (inc pos)]]
+    (buf-yank buf a b)
     (buf-delete buf a b)))
-
-(defn- cut-char[buf]
-  (-> buf 
-      delete-char
-      save-undo))
-
-(defn- change-to-line-end[buf]
-  (-> buf 
-      (assoc-in [:context :lastpos] (-> buf current-line last dec))
-      (change-range false "c")))
 
 (defn- insert-new-line[buf]
   (buf-indent-current-line
@@ -59,8 +49,7 @@
         [a b] (pos-re+ r pos #"\n.+?(?=(\n|\S))")]
     (if (nil? a) buf
       (-> buf
-          (buf-replace a b " ")
-          save-undo))))
+          (buf-replace a b " ")))))
 
 (defn- buf-pos-info[buf]
   (let [{nm :name 
@@ -93,29 +82,60 @@
       true
       res)))
 
-(defn- delete-line[buf]
-  (println "delete-line")
-  (let [rg (current-line buf)]
+;setup range prefix for delete/change/yank etc.
+(defn- setup-range[buf]
+  (let [lastbuf (-> buf :context :lastbuf)]
+    (assoc-in lastbuf [:context :range] [(lastbuf :pos) (buf :pos)])))
+
+(defn- setup-range-line[buf]
+  (let [pos (buf :pos)
+        r (buf :str)
+        a (pos-line-first r pos)
+        b (pos-line-end r pos)] ;TODO: use current-line
+    (assoc-in buf [:context :range] [a b])))
+
+(defn- setup-range-line-end[buf]
+  (let [a (buf :pos)
+        b (pos-line-end (buf :str) a)]
+    (assoc-in buf [:context :range] [a b])))
+
+(defn- delete[buf keycode]
+  (if (= "d" keycode)
     (-> buf
-        (assoc-in [:context :range] rg)
-        (delete-range false)
-        line-start)))
+        setup-range-line 
+        (delete-range (inclusive? keycode))
+        line-start)
+    (-> buf
+        setup-range
+        (delete-range (inclusive? keycode)))))
 
-(defn- delete-motion[buf keycode]
-  (println "delete-motion:" keycode)
-  (save-undo 
-    (if (= keycode "d") 
-      (delete-line buf)
-      (delete-range buf (inclusive? keycode)))))
-   ;   (let [a (-> buf :context :lastpos)
-   ;         b (buf :pos)]
-   ;     (-> buf
-   ;         (assoc-in [:context :range] [a b])
-   ;         (buf-set-pos a)
-   ;         (delete-range (inclusive? keycode)))))))
+(defn- yank[buf keycode]
+  (if (= "y" keycode)
+    (-> buf
+        setup-range-line 
+        (yank-range (inclusive? keycode)))
+    (-> buf
+        setup-range
+        (yank-range (inclusive? keycode)))))
 
-(defn- yank-motion[buf keycode]
-  (yank-range buf (inclusive? keycode)))
+(defn- change[buf keycode]
+  (if (= "c" keycode)
+    buf
+    ;setup-range-line 
+    ;(buf-delete (-> buf :context :range))
+    ;buf-indent-current-line
+    ;(set-insert-mode "c")
+    ;(serve-keymap (-> buf :root-keymap (get "i")) "c"))
+    (-> buf
+        setup-range
+        (change-range (inclusive? keycode)))))
+
+(defn- indent[buf keycode]
+  (if (= "=" keycode)
+    (buf-indent-current-line buf)
+    (-> buf
+        setup-range
+        (indent-range true))))
 
 (defn- replace-char-keycode[buf keycode]
   (let [ch (keycode-to-char buf)]
@@ -126,8 +146,7 @@
             pos (buf :pos)]
         (-> buf 
             (buf-replace buf pos (inc pos) ch)
-            enter-indent
-            save-undo))
+            enter-indent))
       buf)))
 
 (defn- start-register[buf keycode]
@@ -163,6 +182,7 @@
                  (contains? #{".", "u", "<c+r>", "p", "P", ":"} keycode))
       (registers-put (:registers buf) "." (-> buf :macro :recording-keys)))
     (-> buf 
+        save-undo
         normal-mode-fix-pos
         (update-x-if-not-jk lastbuf keycode)
         ;alwasy clear :recording-keys
@@ -201,7 +221,7 @@
                   fnmotion
                   ((insert-mode-keymap :enter) keycode)))}))
 
-(defn- start-insert-mode-insert[insert-mode-keymap fnedit]
+(defn- start-insert-mode-insert[fnedit insert-mode-keymap]
   (merge
     insert-mode-keymap
     {:enter (fn[buf keycode]
@@ -210,11 +230,14 @@
                   fnedit))}))
 
 (defn- delete-to-line-end[buf]
-  (let [[_ b] (current-line buf)]
-    (-> buf
-        (assoc-in [:context :lastpos] (dec b))
-        (delete-range false)
-        save-undo)))
+  (-> buf
+      setup-range-line-end
+      (delete-range false)))
+
+(defn- change-to-line-end[buf]
+  (-> buf 
+      setup-range-line-end
+      (change-range false)))
 
 (defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap ex-mode-keymap]
   (let [enter-insert (insert-mode-keymap :enter)]
@@ -224,19 +247,10 @@
      "a" (start-insert-mode char-forward insert-mode-keymap)
      "A" (start-insert-mode line-end insert-mode-keymap)
      "I" (start-insert-mode line-start insert-mode-keymap)
-     "s" (start-insert-mode-insert insert-mode-keymap delete-char)
-     "o" (start-insert-mode-insert insert-mode-keymap insert-new-line)
-     "O" (start-insert-mode-insert insert-mode-keymap insert-new-line-before)
+     "s" (start-insert-mode-insert delete-char insert-mode-keymap)
+     "o" (start-insert-mode-insert insert-new-line insert-mode-keymap)
+     "O" (start-insert-mode-insert insert-new-line-before insert-mode-keymap)
      "." dot-repeat
-     "=" (merge 
-           motion-keymap
-           {"=" #(-> % 
-                     (update-in [:context] dissoc :lastbuf)
-                     buf-indent-current-line
-                     save-undo)
-            :before save-lastbuf
-            :after (fn[buf keycode] 
-                     (indent-range buf false))})
      ":" (merge
            ex-mode-keymap
            {:leave (fn[buf keycode] (set-normal-mode buf))})
@@ -252,23 +266,27 @@
      "z" {"z" cursor-center-viewport }
      "d" (merge 
            motion-keymap
-           {:before save-lastpos 
-            "d" identity
-            :after delete-motion})
-     "x" cut-char
-     "p" #(put-from-register-append % (-> % :context :register))
-     "P" #(put-from-register % (-> % :context :register))
-     "D" delete-to-line-end
-     "C" change-to-line-end
-     "J" join-line
+           {"d" identity
+            :after delete})
      "c" (merge
            motion-keymap 
-           {:before save-lastpos
-            :after #(change-range %1 (inclusive? %2))})
+           {"c" identity
+            :after change})
      "y" (merge
            motion-keymap
-           {:before save-lastpos
-            :after yank-motion})
+           {"y" identity
+            :after yank})
+     "=" (merge 
+           motion-keymap
+           {"=" identity
+            :after indent})
+     "D" delete-to-line-end
+     "C" change-to-line-end
+     "Y" #(yank % "y")
+     "x" delete-char
+     "p" #(put-from-register-append % (-> % :context :register))
+     "P" #(put-from-register % (-> % :context :register))
+     "J" join-line
      "\"" {:else start-register}
      :before (fn [buf keycode]
                (-> buf

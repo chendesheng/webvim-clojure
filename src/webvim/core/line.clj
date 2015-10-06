@@ -77,6 +77,9 @@
 (defn pos-line-first[r pos]
   (or (first (pos-re- r pos #"(?m)^")) 0))
 
+(defn pos-line-end[r pos]
+  (first (pos-re+ r pos #"(?m)$")))
+
 (defn pos-line-start[r pos]
   (let [lf (pos-line-first r pos)]
     (or (first (pos-re+ r lf #"[\S\n]|((?<=\s)[\S\n])")) 0)))

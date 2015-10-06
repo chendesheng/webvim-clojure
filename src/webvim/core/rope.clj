@@ -133,11 +133,15 @@
        ;(println "make change:" c)
        (-> newbuf
            (assoc :pending-undo undo)
-           (update-in [:changes] conj c))))))
+           (update-in [:changes] conj c)))))
+  ([buf [a b] to]
+   (buf-replace buf a b to)))
 
 (defn buf-delete
-  [buf a b]
-  (buf-replace buf a b ""))
+  ([buf a b]
+   (buf-replace buf a b ""))
+  ([buf [a b]]
+   (buf-delete buf a b)))
 
 (defn buf-insert
   ([buf s]

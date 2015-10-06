@@ -73,6 +73,5 @@
             (-> buf
                 char-backward
                 update-x
-                set-normal-mode
-                save-undo))})
+                set-normal-mode))})
 

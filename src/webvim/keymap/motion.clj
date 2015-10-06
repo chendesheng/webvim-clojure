@@ -202,11 +202,6 @@
 (defn- repeat-search-[buf]
   (repeat-search buf \?))
 
-(defn- set-ex-search-mode[buf keycode]
-  (-> buf 
-      (merge {:ex keycode :message nil :keys nil})
-      (assoc-in [:context :lastbuf] buf)))
-
 (defonce ^{:private true} listen-change-buffer
   (listen 
     :change-buffer
@@ -244,12 +239,10 @@
    "T" {"<esc>" identity 
         "<cr>" identity
         :else move-after-back-char }
-   "/" (merge ex-mode-keymap ;TODO: This is not ex-mode
-              {"<cr>" handle-search
-               :enter set-ex-search-mode})
+   "/" (merge ex-mode-keymap ;TODO: This is not ex-mode, add line edit mode
+              {"<cr>" handle-search})
    "?" (merge ex-mode-keymap
-              {"<cr>" handle-search
-               :enter set-ex-search-mode})
+              {"<cr>" handle-search})
    "*" move-next-same-word
    "#" move-back-same-word
    "n" repeat-search+

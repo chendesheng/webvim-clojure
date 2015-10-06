@@ -63,8 +63,11 @@
           #(str ":" (first %)) 
           (filter #(-> % first string?) ex-commands)))) ex))
 
-(defn- set-ex-mode[buf _]
-  (merge buf {:mode ex-mode :ex ":" :message nil :keys nil}))
+(defn- set-ex-mode[buf keycode]
+  (-> buf
+      (merge {:mode ex-mode :ex keycode :message nil :keys nil})
+      ;rollback to :lastbuf if excute failed or <esc>
+      (assoc-in [:context :lastbuf] buf)))
 
 (def ex-commands
   (array-map 
@@ -163,24 +166,19 @@
                 (ex-tab-complete ex)
                 (= 1 (count keycode))
                 (str ex keycode)
-                :else ex)]
+                :else ex)
+        ch (first newex)]
     (cond 
-      (= \/ (first newex))
-      (let [lb (-> buf :context :lastbuf)
-            newb (-> lb
-                     (assoc :ex newex)
-                     (dissoc :highlights)
-                     (save-lastbuf ""))] ;keep lastbuf avaiable on stack
-        (try (re-forward-highlight newb (re-pattern (subs newex 1)))
-             (catch Exception e newb)))
-      (= \? (first newex))
-      (let [lb (-> buf :context :lastbuf)
-            newb (-> lb
-                     (assoc :ex newex)
-                     (dissoc :highlights)
-                     (save-lastbuf ""))]
-        (try (re-backward-highlight newb (re-pattern (subs newex 1)))
-             (catch Exception e newb)))
+      (= \/ ch)
+      (-> buf
+          (assoc :ex newex)
+          (dissoc :highlights)
+          (re-forward-highlight (re-pattern (subs newex 1))))
+      (= \? ch)
+      (-> buf
+          (assoc :ex newex)
+          (dissoc :highlights)
+          (re-backward-highlight (re-pattern (subs newex 1))))
       :else
       (assoc buf :ex newex))))
 
@@ -190,7 +188,7 @@
    :else ex-mode-default
    :continue #(not (or (= "<esc>" %2) (= "<cr>" %2) (empty? (:ex %1))))
    :leave (fn[buf keycode]
-            (if (and (= "<esc>" keycode) (= \/ (-> buf :ex first)))
+            (if (= "<esc>" keycode)
               (-> buf :context :lastbuf (assoc :ex ""))
               (assoc buf :ex "")))})
 

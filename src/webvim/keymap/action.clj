@@ -83,6 +83,7 @@
   (merge buf {:ex "" 
               :mode insert-mode 
               :message nil 
+              :visual {:type 0 :ranges nil}
               :keys nil}))
 
 (defn set-normal-mode[buf]
@@ -94,7 +95,7 @@
             :autocompl {:suggestions nil 
                         :suggestions-index 0}}))
 
-(defn buf-yank[buf [a b]]
+(defn buf-yank[buf a b]
   (let [s (buf-subr buf a b)]
     (registers-put (buf :registers) 
                    (-> buf :context :register)
@@ -111,14 +112,14 @@
   (cond 
     (-> buf :mode (= visual-mode))
     (-> buf :visual :ranges (get 0) (make-range inclusive?))
-    (-> buf :context :range nil? not) ;TODO: this looks like hack
+    (-> buf :context :range nil? not)
     (-> buf :context :range (make-range inclusive?))
-    (-> buf :context :lastpos nil? not)
-    (make-range (-> buf :context :lastpos) (buf :pos) inclusive?)))
+    :else (throw (Exception. "no range prefix exist"))))
 
 (defn change-range[buf inclusive?]
   (let [[a b] (range-prefix buf inclusive?)]
     (-> buf
+        (buf-yank a b)
         (buf-delete a b)
         (set-insert-mode "c")
         (serve-keymap (-> buf :root-keymap (get "i")) "c"))))
@@ -142,37 +143,29 @@
             (-> buf :y
                 (- (int (/ (-> @window :viewport :h) 2))))))
 
-(defn save-lastbuf[buf keycode]
-  (-> buf (assoc-in [:context :lastbuf] buf)))
-
-(defn save-lastpos[buf keycode]
-  (-> buf (assoc-in [:context :lastpos] (buf :pos))))
-
 (defn delete-range[buf inclusive?]
   (let [[a b] (range-prefix buf inclusive?)]
     (println "delete-range:" a b)
     (-> buf
-        (buf-yank [a b])
+        (buf-yank a b)
         (buf-delete a b)
         (buf-set-pos a))))
 
 (defn yank-range[buf inclusive?]
-  (let [rg (range-prefix buf inclusive?)]
-    (buf-yank buf rg)))
+  (let [[a b] (range-prefix buf inclusive?)]
+    (buf-yank buf a b)))
 
 (defn indent-range[buf inclusive?]
   (let [[a b] (range-prefix buf inclusive?)]
     (-> buf 
-        (buf-indent-lines [a (dec b)])
-        save-undo)))
+        (buf-indent-lines [a (dec b)]))))
 
 (defn put-from-register[buf keycode]
   (let [txt (get-register buf keycode)]
     (if (string? txt)
       (-> buf
           (buf-insert txt)
-          char-backward
-          save-undo)
+          char-backward)
       buf)))
 
 (defn put-from-register-append[buf keycode]
@@ -181,19 +174,5 @@
       (let [pos (buf :pos)]
         (-> buf
             (buf-insert (inc pos) txt)
-            (buf-set-pos (+ pos (count txt)))
-            save-undo))
+            (buf-set-pos (+ pos (count txt)))))
       buf)))
-
-;(defn begin-change[buf]
-;  (assoc-in buf [:context :lastpos] (buf :pos)))
-;
-;(defn end-change[buf putdeleted?]
-;  (let [buf (save-undo buf)
-;        chs (-> buf :undoes first :changes)]
-;    (if (and putdeleted? (-> chs count (= 1)))
-;      (let [deleted (-> chs first :to)]
-;        (if-not (empty? deleted)
-;          (registers-put (-> buf :context :register)
-;                         deleted))))
-;    (update-in buf [:context] dissoc :register)))

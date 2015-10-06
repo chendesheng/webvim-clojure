@@ -424,7 +424,6 @@ function render(buf) {
 			var keysstr = '';
 			for (var i = 0; i < buf.keys.length; i++) {
 				var k = buf.keys[i];
-				if (k.length > 1) k = '<'+k+'>';
 				keysstr += k;
 			}
 			$statusKeys(buf.id).textContent = keysstr;
