@@ -138,6 +138,30 @@
         (re-backward-highlight re)
         (highlight-all-matches re))))
 
+(defn- round-to-zero
+  "(round-to-zero -9.1) = -9; (round-to-zero 9.1) = 9"
+  [i]
+  (if (> i 0)
+    (int i)
+    (- (int (- i)))))
+
+(defn- negzero[n]
+  (if (neg? n) 0 n))
+
+(defn- cursor-move-viewport
+  "Jump cursor by viewport height, deps to window's :viewport"
+  [buf factor]
+  (let [d (round-to-zero (* (:h (:viewport @window)) factor))
+        scroll-top (buf :scroll-top)
+        h (-> @window :viewport :h)
+        row (-> buf :y)
+        vrow (- row scroll-top)
+        newrow (bound-range (+ row d) 0 (buf :linescnt))
+        newst (-> newrow (- vrow) negzero)]
+    (-> buf
+        (assoc :scroll-top newst)
+        (lines-row newrow))))
+
 ;TODO: only highlight diff parts
 ;(defonce listen-change-buffer
 ;  (fn [newt oldt c]

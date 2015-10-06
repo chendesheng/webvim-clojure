@@ -145,7 +145,7 @@
         (char-backward buf) buf)))
 
 (defn- dot-repeat[buf]
-  (let [keycodes (registers-get (:registers buf) ".")]
+  (let [keycodes (get-register buf ".")]
     (if (empty? keycodes)
       buf
       ;remove "." from @root-keymap prevent recursive, probably useless
