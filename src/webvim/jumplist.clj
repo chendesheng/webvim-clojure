@@ -2,7 +2,8 @@
   (:require [me.raynes.fs :as fs]
             [clojure.core.async :as async]
             [clojure.java.io :as io])
-  (:use clojure.pprint))
+  (:use clojure.pprint
+        webvim.core.event))
 
 ;global list of history positions
 ;jump-list behaves different from vim's jump list: 
@@ -36,33 +37,49 @@
 ;TODO: handle not exist buffer
 (defn jump-next
   "If not newest, save current position then jump to next"
-  [b]
+  [buf]
   (let [{current :current
          positions :positions} @jump-list]
     (if (>= current (dec (count positions)))
       nil
-      (let [bpos {:id (b :id) :pos (b :pos)}]
+      (let [bpos {:id (buf :id) :pos (buf :pos)}]
         (swap! jump-list assoc-in [:positions current] bpos)
         (swap! jump-list update-in [:current] inc)
         (jump-current-pos)))))
 
 (defn jump-prev
   "If not oldest, save current position then jump to prev"
-  [b]
+  [buf]
   (let [current (@jump-list :current)]
     (if (zero? current)
       nil
-      (let [bpos {:id (b :id) :pos (b :pos)}]
+      (let [bpos {:id (buf :id) :pos (buf :pos)}]
         (swap! jump-list assoc-in [:positions current] bpos)
         (swap! jump-list update-in [:current] dec)
         (jump-current-pos)))))
 
 (defn jump-push
   "Add :pos to jump list"
-  [b]
+  [buf]
   (let [jl @jump-list
         positions (conj 
                     (subvec (jl :positions) 0 (jl :current))
-                    {:id (:id b) :pos (:pos b)})]
+                    {:id (:id buf) :pos (:pos buf)})]
     (reset! jump-list {:positions positions :current (count positions)})))
 
+;keep track positions when buffer changed
+(defonce ^{:private true} listen-change-buffer 
+  (listen
+    :change-buffer
+    (fn [buf oldbuf c]
+      (let [bufid (buf :id)
+            cpos (c :pos)
+            delta (- (-> c :to count) (c :len))]
+        (swap! jump-list update-in [:positions] 
+               (fn[positions]
+                 (vec (map 
+                        (fn[{id :id pos :pos :as p}]
+                          (if (and (= id bufid) (> pos cpos))
+                            {:id id :pos (+ pos delta)}
+                            p)) positions))))
+        buf))))

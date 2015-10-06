@@ -79,33 +79,33 @@
       :else buf)))
 
 (defn- shift-pos
-  ;only need (t :pos) and (t :y)
-  ([t a from to]
-   (let [pos (t :pos)
+  ;only need (buf :pos) and (buf :y)
+  ([buf a from to]
+   (let [pos (buf :pos)
          b (+ a (count from))
          szfrom (rope-size from)
          szto (rope-size to)
          t1 (cond 
               (< pos a)
-              t
+              buf
               (>= pos b)
-              (-> t
+              (-> buf
                   (rope-op-size - szfrom)
                   (rope-op-size + szto))
               :else
-              (-> t
+              (-> buf
                   (rope-op-size - (rope-size (subr from 0 (- pos a))))
                   (rope-op-size + szto)))]
      (update-in t1 [:linescnt] #(-> % (- (szfrom :dy)) (+ (szto :dy)))))))
 
-(defn- buf-apply-change[t c]
-  (let [r (t :str)
+(defn- buf-apply-change[buf c]
+  (let [r (buf :str)
         [newr rc] (apply-change r c)]
-    [(-> t
+    [(-> buf
         ;keep pos after change
         (shift-pos (c :pos) (rc :to) (c :to))
         (assoc :str newr)
-        (fire-event t c :change-buffer)) rc]))
+        (fire-event buf c :change-buffer)) rc]))
 
 (defn- buf-apply-changes[buf changes]
   (reduce 
