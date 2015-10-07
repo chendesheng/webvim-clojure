@@ -6,6 +6,7 @@
         (clojure [string :only (join split blank? lower-case)])
         webvim.core.rope
         webvim.core.pos
+        webvim.core.parallel-universe
         webvim.core.event))
 
 ;generate buffer id and buffer id only
@@ -54,10 +55,8 @@
            ;save to undo stack when leave insert mode
            ;contains: {:changes [c1 c2] :cursor 100}
            :pending-undo nil 
-           ;undoes and redoes are stackes only push pop peek
            ;one undo contains {:changes [] :cursor}
-           :undoes []
-           :redoes []
+           :history (parallel-universe)
            ;For client display matched braces: [{:row :col} {:row :col}]
            ;TODO set initial value
            :braces nil

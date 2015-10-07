@@ -51,7 +51,7 @@
 
 (defn- remove-fields[buf]
   (-> buf 
-      (dissoc :history :txt-cache :context :last-cursor :language :filepath :x :y :cursor :undoes :redoes :pending-undo :before-send-out :after-send-out :macro :chan-in :chan-out :registers :linescnt :root-keymap :ext)
+      (dissoc :history :context :last-cursor :language :filepath :x :y :cursor :pending-undo :before-send-out :after-send-out :macro :chan-in :chan-out :registers :linescnt :root-keymap :ext)
       (dissoc-empty [:highlights])
       (dissoc-empty [:changes])
       (dissoc-nil :keys)

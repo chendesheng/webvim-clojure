@@ -1,5 +1,6 @@
 (ns webvim.core.rope
-  (:use webvim.core.event)
+  (:use webvim.core.event
+        webvim.core.parallel-universe)
   (:import (org.ahmadsoft.ropes RopeBuilder)))
 
 (def <br> "\n")
@@ -264,31 +265,32 @@
         ;(println "text-save-undo:" pending)
         ;(println "text-save-undo:" chs)
         (-> buf
-            (update-in [:undoes] conj undo)
             (assoc :pending-undo nil)
-            (assoc :redoes nil))))))
+            (update-in [:history] new-future undo))))))
 
-                
-;popup from undo apply changes (reverse order) then push reverse to redo
-(defn- undo-redo[buf undoes redoes]
-  (if (-> buf undoes count zero?) buf
-    (let [undo (-> buf undoes peek)
-          chs (-> undo :changes)
-          [newbuf rchs] (buf-apply-changes buf chs)]
-      (-> newbuf
-          (assoc :changes chs)
-          (buf-set-pos (undo :cursor))
-          (update-in [undoes] pop)
-          (update-in [redoes] 
-                     conj (assoc undo :changes rchs))))))
+(defn- apply-undo[buf undo]
+  (let [chs (undo :changes)
+        [newbuf rchs] (buf-apply-changes buf chs)]
+    [(-> newbuf
+         (update-in [:changes] concat chs)
+         (buf-set-pos (undo :cursor))) rchs]))
 
 (defn undo[buf]
-  (undo-redo buf :undoes :redoes))
+  (let [item (just-now (buf :history))]
+    (if (nil? item) buf
+      (let [[newbuf rchs] (apply-undo buf item)]
+        (update-in newbuf [:history] 
+                   go-back (fn[item] 
+                             (assoc item :changes rchs)))))))
 
 ;(undo (active-buffer))
-
 (defn redo[buf]
-  (undo-redo buf :redoes :undoes))
+  (let [item (next-future (buf :history))]
+    (if (nil? item) buf
+      (let[[newbuf rchs] (apply-undo buf item)]
+        (update-in newbuf [:history] 
+                   go-future (fn[item] 
+                               (assoc item :changes rchs)))))))
 
 (defn re-test[re s]
   (cond (nil? re) false

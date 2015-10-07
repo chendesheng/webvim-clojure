@@ -3,69 +3,79 @@
             [clojure.core.async :as async]
             [clojure.java.io :as io])
   (:use clojure.pprint
-        webvim.core.event))
+        webvim.core.event
+        webvim.core.parallel-universe))
 
 ;global list of history positions
-;jump-list behaves different from vim's jump list: 
-; 1) save position **before** motions 
-; 2) history position could be changed if insert text between jump back or forth
+;1) save position **before** motions 
+;2) cursor always equal to (next-future @jump-list) if next-future is nil use buf position as next-future
 ;Example: 
-; Motions            | @jump-list                       | cursor  
-;--------------------|----------------------------------|---------
-; initial position A | {:current 0 :positions []}       | A 
-; jump to B          | {:current 1 :positions [A]}      | B  
-; jump to C          | {:current 2 :positions [A B]}    | C     
-; c+o                | {:current 1 :positions [A B C]}  | B      
-; move left to B`    | {:current 1 :positions [A B` C]} | B`   (history changed)
-; c+o                | {:current 0 :positions [A B` C]} | A
-; jump to D          | {:current 1 :positions [A D]}    | D
-;
-; FIXME:
-; pros: can always jump back to exact position where jump starts
-; cons: little confuse?
-(defonce jump-list (atom {:current 0 ;index of next position in positions vector
-                          :positions [] ;{:id :pos}
-                          }))
+; motion             | @jump-list                       | cursor after motion
+;--------------------|----------------------------------|--------------------
+; initial position A | {:before ()      :after ()}      | A 
+; jump to B          | {:before (A)     :after ()}      | B  
+; jump to C          | {:before (B A)   :after ()}      | C     
+; c+o                | {:before (A)     :after (B C)}   | B      
+; c+o                | {:before ()      :after (A B C)} | A
+; jump to D          | {:before (A)     :after ()}      | D
+; move to D'         | {:before (A)     :after ()}      | D'
+; c+o                | {:before ()      :after (A D')}  | A
+; c+i                | {:before (A)     :after (D')}    | D'
+; c+i                | {:before (A)     :after (D')}    | D'
+
+(defonce jump-list (atom (parallel-universe)))
 
 ;jump-push before these motions
 (def motions-push-jumps
   #{"/" "?" "*" "#" "n" "N" "%" "G" "c+d" "c+u" "{" "}"})
 
-(defn jump-current-pos[]
-  ((@jump-list :positions) (@jump-list :current)))
+(defn- no-next?[jl]
+  (-> jl
+      go-future
+      next-future
+      nil?))
 
-;TODO: handle not exist buffer
-(defn jump-next
-  "If not newest, save current position then jump to next"
-  [buf]
-  (let [{current :current
-         positions :positions} @jump-list]
-    (if (>= current (dec (count positions)))
-      nil
-      (let [bpos {:id (buf :id) :pos (buf :pos)}]
-        (swap! jump-list assoc-in [:positions current] bpos)
-        (swap! jump-list update-in [:current] inc)
-        (jump-current-pos)))))
+(defn- no-prev?[jl]
+  (-> jl
+      just-now
+      nil?))
 
-(defn jump-prev
-  "If not oldest, save current position then jump to prev"
-  [buf]
-  (let [current (@jump-list :current)]
-    (if (zero? current)
-      nil
-      (let [bpos {:id (buf :id) :pos (buf :pos)}]
-        (swap! jump-list assoc-in [:positions current] bpos)
-        (swap! jump-list update-in [:current] dec)
-        (jump-current-pos)))))
+;just-now is prev
+;next-future is current
+;next-future next-future is next
+(defn- no-current?[jl]
+  (-> jl
+      next-future
+      nil?))
+
+(defn- push-current[jl buf]
+  (new-future jl (select-keys buf [:id :pos])))
 
 (defn jump-push
   "Add :pos to jump list"
   [buf]
-  (let [jl @jump-list
-        positions (conj 
-                    (subvec (jl :positions) 0 (jl :current))
-                    {:id (:id buf) :pos (:pos buf)})]
-    (reset! jump-list {:positions positions :current (count positions)})))
+  (swap! jump-list push-current buf))
+
+;TODO: handle not exist buffer
+(defn jump-next
+  [buf]
+  (if (no-next? @jump-list) nil
+    (-> jump-list
+        (swap! go-future)
+        next-future)))
+
+(defn jump-prev
+  [buf]
+  (if (no-prev? @jump-list) nil
+    (-> jump-list
+        (swap! (fn [jl]
+                 (if (no-current? jl) 
+                   (-> jl
+                       (push-current buf)
+                       go-back
+                       go-back)
+                   (go-back jl))))
+        next-future)))
 
 ;keep track positions when buffer changed
 (defonce ^{:private true} listen-change-buffer 
@@ -75,11 +85,9 @@
       (let [bufid (buf :id)
             cpos (c :pos)
             delta (- (-> c :to count) (c :len))]
-        (swap! jump-list update-in [:positions] 
-               (fn[positions]
-                 (vec (map 
-                        (fn[{id :id pos :pos :as p}]
-                          (if (and (= id bufid) (> pos cpos))
-                            {:id id :pos (+ pos delta)}
-                            p)) positions))))
+        (swap! jump-list 
+               rewrite-history (fn[{id :id pos :pos :as p}]
+                                 (if (and (= id bufid) (> pos cpos))
+                                   {:id id :pos (+ pos delta)}
+                                   p)))
         buf))))
