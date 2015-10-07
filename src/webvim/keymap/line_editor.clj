@@ -31,8 +31,8 @@
                         (let [pos (linebuf :pos)
                               r (linebuf :str)
                               [a b] (sort2 pos (+ pos offset))
-                              a1 (bound-range a 1 (count r))
-                              b1 (bound-range b 1 (count r))]
+                              a1 (bound-range a 0 (count r))
+                              b1 (bound-range b 0 (count r))]
                           (linebuf-replace linebuf a1 b1 "")))))
 
 (defn- linebuf-move 
@@ -43,7 +43,7 @@
       (let [pos (linebuf :pos)
             r (linebuf :str)
             newpos (or (fnmove r pos) pos)]
-        (assoc linebuf :pos (bound-range newpos 1 (count r)))))))
+        (assoc linebuf :pos (bound-range newpos 0 (count r)))))))
 
 (defn- linebuf-char+[buf]
   (linebuf-move buf (fn [r pos] (inc pos))))

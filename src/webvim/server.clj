@@ -45,7 +45,13 @@
 (defn- line-editor[buf]
   (if (nil? (buf :line-buffer))
     buf
-    (update-in buf [:line-buffer :str] str)))
+    (let [{s :str
+           prefix :prefix
+           pos :pos} (-> buf :line-buffer)] 
+      (-> buf
+          (update-in [:line-buffer] dissoc :prefix)
+          (update-in [:line-buffer] assoc :str (str prefix s))
+          (update-in [:line-buffer] assoc :pos (+ pos (count prefix)))))))
 
 (defn- equal-cursor?[c1 c2]
   (if (= c1 c2)

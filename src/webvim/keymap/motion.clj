@@ -182,18 +182,22 @@
 ;      (assoc newt
 ;             :highlights (cons not-insects newhighlights)))))
 
+(defn- search-pattern[s]
+  (re-pattern (str "(?m)" s)))
+
 (defn- handle-search[buf]
-  (let [s (-> buf :line-buffer :str str)]
-    (registers-put (:registers buf) "/" s)
+  (let [s (-> buf :line-buffer :str str)
+        prefix (-> buf :line-buffer :prefix)]
+    (registers-put (:registers buf) "/" (str prefix s))
     (-> buf
-        (highlight-all-matches (re-pattern (str "(?m)" (subs s 1))))
+        (highlight-all-matches (search-pattern s))
         (dissoc :line-buffer))))
 
 (defn- increment-search[buf f]
   (let [linebuf (buf :line-buffer)]
     (if (nil? linebuf) buf
-      (let [s (-> linebuf :str str (subs 1))
-            re (re-pattern (str "(?m)" s))
+      (let [s (-> linebuf :str str)
+            re (search-pattern s)
             newbuf (-> buf :context :lastbuf)]
         ;(println (-> buf :context :lastbuf))
         ;(println "newbuf pos:"  (newbuf :pos))
@@ -205,7 +209,7 @@
 
 (defn- repeat-search[buf dir]
   (let[s (or (registers-get (:registers buf) "/") "/")
-       re (re-pattern (str "(?m)" (subs s 1)))
+       re (search-pattern (subs s 1))
        hightlightall? (-> buf :highlights empty?)
        fnsearch (if (= (first s) dir) re-forward-highlight re-backward-highlight)
        b1 (fnsearch buf re)] ;TODO: 1. no need fnsearch if highlight all matches. 2. cache highlight-all-matches
@@ -230,12 +234,10 @@
 (defn- enter-increment-search[buf keycode]
   (-> buf
       (assoc-in [:context :lastbuf] buf)
-      (assoc :line-buffer {:str (rope keycode) :pos (count keycode)})))
+      (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
 
 (defn- continue-increment-search[buf keycode]
-  (and (-> keycode (= "<cr>") not) 
-       (-> keycode (= "<esc>") not)
-       (-> buf :line-buffer :str count pos?)))
+  (not (contains? #{"<cr>" "<esc>"} keycode)))
 
 (defn init-motion-keymap[ex-mode-keymap line-editor-keymap]
   {"h" char-backward
