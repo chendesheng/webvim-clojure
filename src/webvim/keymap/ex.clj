@@ -183,7 +183,7 @@
       :else
       (assoc buf :ex newex))))
 
-(defn init-ex-mode-keymap[]
+(defn init-ex-mode-keymap[line-editor-keymap]
   {:enter set-ex-mode
    "<cr>" execute
    :else ex-mode-default

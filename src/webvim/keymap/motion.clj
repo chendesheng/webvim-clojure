@@ -6,6 +6,7 @@
         webvim.core.rope
         webvim.core.line
         webvim.core.event
+        webvim.keymap.line-editor
         webvim.keymap.action
         webvim.keymap.ex
         webvim.jumplist
@@ -112,9 +113,9 @@
 (defn- right-boundary[lang] 
   (str "(?=[" (-> lang word-re :not-word-chars) "]|$)"))
 
-(defn- highlight-all-matches[b re]
-  (let [r (b :str)]
-    (assoc b :highlights 
+(defn- highlight-all-matches[buf re]
+  (let [r (buf :str)]
+    (assoc buf :highlights 
            (map (fn[[a b]]
                   [a (dec b)])
                 (pos-re-seq+ r 0 re)))))
@@ -181,11 +182,26 @@
 ;      (assoc newt
 ;             :highlights (cons not-insects newhighlights)))))
 
-(defn- handle-search[b]
-  (registers-put (:registers b) "/" (b :ex))
-  (-> b
-      (highlight-all-matches (re-pattern (str "(?m)" (subs (b :ex) 1))))
-      (assoc :ex "")))
+(defn- handle-search[buf]
+  (let [s (-> buf :line-buffer :str str)]
+    (registers-put (:registers buf) "/" s)
+    (-> buf
+        (highlight-all-matches (re-pattern (str "(?m)" (subs s 1))))
+        (dissoc :line-buffer))))
+
+(defn- increment-search[buf f]
+  (let [linebuf (buf :line-buffer)]
+    (if (nil? linebuf) buf
+      (let [s (-> linebuf :str str (subs 1))
+            re (re-pattern (str "(?m)" s))
+            newbuf (-> buf :context :lastbuf)]
+        ;(println (-> buf :context :lastbuf))
+        ;(println "newbuf pos:"  (newbuf :pos))
+        (-> newbuf
+            (assoc-in [:context :lastbuf] newbuf) ;keep lastbuf for next round
+            (assoc :line-buffer linebuf)
+            (dissoc :highlights)
+            (f re))))))
 
 (defn- repeat-search[buf dir]
   (let[s (or (registers-get (:registers buf) "/") "/")
@@ -205,13 +221,23 @@
 (defonce ^{:private true} listen-change-buffer
   (listen 
     :change-buffer
-    (fn [newt oldt c]
-      (let [re (-> newt :registers deref (get "/" "/") (subs 1) re-pattern)]
-        (if-not (or (-> newt :highlights empty?) (-> re str empty?))
-          (highlight-all-matches newt re)
-          newt)))))
+    (fn [buf oldbuf c]
+      (let [re (-> buf :registers deref (get "/" "/") (subs 1) re-pattern)]
+        (if-not (or (-> buf :highlights empty?) (-> re str empty?))
+          (highlight-all-matches buf re)
+          buf)))))
 
-(defn init-motion-keymap[ex-mode-keymap]
+(defn- enter-increment-search[buf keycode]
+  (-> buf
+      (assoc-in [:context :lastbuf] buf)
+      (assoc :line-buffer {:str (rope keycode) :pos (count keycode)})))
+
+(defn- continue-increment-search[buf keycode]
+  (and (-> keycode (= "<cr>") not) 
+       (-> keycode (= "<esc>") not)
+       (-> buf :line-buffer :str count pos?)))
+
+(defn init-motion-keymap[ex-mode-keymap line-editor-keymap]
   {"h" char-backward
    "l" char-forward
    "k" #(lines-n- % 1)
@@ -239,10 +265,20 @@
    "T" {"<esc>" identity 
         "<cr>" identity
         :else move-after-back-char }
-   "/" (merge ex-mode-keymap ;TODO: This is not ex-mode, add line edit mode
-              {"<cr>" handle-search})
-   "?" (merge ex-mode-keymap
-              {"<cr>" handle-search})
+   ;   "/" (merge ex-mode-keymap ;TODO: This is not ex-mode, add line edit mode
+   ;              {"<cr>" handle-search})
+   "/" (merge line-editor-keymap
+              {:enter enter-increment-search
+               "<cr>" handle-search
+               "<esc>" #(-> % :context :lastbuf)
+               :after (fn[buf keycode] (increment-search buf re-forward-highlight))
+               :continue continue-increment-search})
+   "?" (merge line-editor-keymap
+              {:enter enter-increment-search
+               "<cr>" handle-search
+               "<esc>" #(-> % :context :lastbuf)
+               :after (fn[buf keycode] (increment-search buf re-backward-highlight))
+               :continue continue-increment-search})
    "*" move-next-same-word
    "#" move-back-same-word
    "n" repeat-search+

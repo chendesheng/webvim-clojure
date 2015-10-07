@@ -388,24 +388,21 @@ function render(buf) {
 	renderCursor(buffers[buf.id]);
 
 	//render ex
-	if (buf.ex && buf.ex.length > 0) {
-		var ele = document.createElement('SPAN');
-		ele.className = 'cursor';
-		ele.id = 'status-bar-cursor-'+buf.id;
-		ele.textContent = ' ';
-		var ex = $statusEx(buf.id);
-		ex.textContent = buf.ex;
-		ex.appendChild(ele);
+	if (typeof buf['line-buffer'] != 'undefined') {
+		renderEx(buf.id, buf['line-buffer']);
 	} else if (buf.message) {
+		$statusCursor(buf.id).style.cssText = 'display:none';
+
 		var ex = $statusEx(buf.id);
 		ex.textContent = buf.message;
 	} else {
+		$statusCursor(buf.id).style.cssText = 'display:none';
+
 		if (typeof buf.mode != 'undefined' && buf.mode < MODES.length) {
 			var ex = $statusEx(buf.id);
 			ex.textContent = MODES[buf.mode];
 			keymap = keymaps[buf.mode];
 		}
-		$remove($statusCursor(buf.id));
 	}
 
 	//render unsaved
@@ -616,6 +613,27 @@ function renderCursor(localbuf) {
 		+'color:' + background + ';'
 		+'top:' + res.top + 'px;'
 		+'padding-bottom:1px;';
+}
+
+function renderEx(bufid, linebuf) {
+	var str = linebuf.str;
+	var pos = linebuf.pos;
+	var ex = $statusEx(bufid);
+	ex.textContent = str;
+
+	//cursor
+	var range = document.createRange();
+	range.setStart(ex.firstChild, pos);
+	range.setEnd(ex.firstChild, pos);
+	var list = range.getClientRects();
+	var rect = list[0];
+	if (list.length > 1 && list[0].top != list[1].top) {
+		//line break;
+		rect = list[1];
+	}
+
+	var cursor = $statusCursor(bufid)
+	cursor.style.cssText = 'display:block;position:absolute;top:5px;padding-bottom:1px;height:1em;left:'+(rect.left)+'px;opacity:.4';
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];

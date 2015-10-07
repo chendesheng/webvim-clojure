@@ -42,6 +42,11 @@
     (dissoc buf :autocompl)
     buf))
 
+(defn- line-editor[buf]
+  (if (nil? (buf :line-buffer))
+    buf
+    (update-in buf [:line-buffer :str] str)))
+
 (defn- equal-cursor?[c1 c2]
   (if (= c1 c2)
     true
@@ -55,6 +60,7 @@
       (dissoc-empty [:highlights])
       (dissoc-empty [:changes])
       (dissoc-nil :keys)
+      line-editor
       remove-visual-mode
       remove-autocompl))
 
