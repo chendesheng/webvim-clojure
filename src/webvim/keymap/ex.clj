@@ -15,8 +15,6 @@
         webvim.fuzzy
         webvim.keymap.action)) 
 
-(declare ex-commands)
-
 (defn- buf-info[buf]
   (if (and (empty? (buf :str))
            (not (fs/exists? (buf :filepath))))
@@ -36,39 +34,6 @@
           matches
           (conj matches buf)))) 
     [] buffers))
-
-(defn- execute [buf]
-  (let [[_ excmd args] (re-find #"\s*:([^\s]+)\s*(.*)\s*" (:ex buf))]
-    (if (nil? excmd)
-      buf
-      (let [handlers (filter fn?
-                             (map (fn[[cmd handler]]
-                                    ;(println cmd)
-                                    (if (string? cmd)
-                                      (if (zero? (.indexOf cmd excmd)) handler nil)
-                                      (let [m (re-find cmd excmd)]
-                                        (if (not (nil? m)) handler nil)))) ex-commands))]
-        ;(println handlers)
-        (if (>= (count handlers) 1)
-          ((first handlers) buf excmd args)
-          (assoc buf :message "unknown command"))))))
-
-(defn- ex-tab-complete [ex]
-  (if (re-test #"^:\S+\s*$" ex)
-    (first 
-      (filter 
-        (fn[k]
-          (zero? (.indexOf k ex)))
-        (map 
-          #(str ":" (first %)) 
-          (filter #(-> % first string?) ex-commands)))) ex))
-
-(defn- set-ex-mode[buf keycode]
-  (let [mode (if (= keycode ":") ex-mode (buf :mode))]
-    (-> buf
-        (merge {:mode mode :ex keycode :message nil :keys nil})
-        ;rollback to :lastbuf if excute failed or <esc>
-        (assoc-in [:context :lastbuf] buf))))
 
 (def ex-commands
   (array-map 
@@ -156,40 +121,44 @@
                 (let [row (bound-range (dec (Integer. row)) 0 (-> buf :linescnt dec))]
                   (move-to-line buf row)))))
 
-(defn- ex-mode-default[buf keycode]
-  (let [ex (:ex buf)
-        newex (cond 
-                (= keycode "<space>")
-                (str ex " ")
-                (= keycode "<bs>")
-                (subs ex 0 (-> ex count dec))
-                (= keycode "<tab>")
-                (ex-tab-complete ex)
-                (= 1 (count keycode))
-                (str ex keycode)
-                :else ex)
-        ch (first newex)]
-    (cond 
-      (= \/ ch)
-      (-> buf
-          (assoc :ex newex)
-          (dissoc :highlights)
-          (re-forward-highlight (re-pattern (subs newex 1))))
-      (= \? ch)
-      (-> buf
-          (assoc :ex newex)
-          (dissoc :highlights)
-          (re-backward-highlight (re-pattern (subs newex 1))))
-      :else
-      (assoc buf :ex newex))))
+(defn- execute [buf]
+  (let [[_ excmd args] (re-find #"^\s*([^\s]+)\s*(.*)\s*$"
+                                (-> buf :line-buffer :str str))]
+    (if (nil? excmd)
+      buf
+      (let [handlers (filter fn?
+                             (map (fn[[cmd handler]]
+                                    ;(println cmd)
+                                    (if (string? cmd)
+                                      (if (zero? (.indexOf cmd excmd)) handler nil)
+                                      (let [m (re-find cmd excmd)]
+                                        (if (not (nil? m)) handler nil)))) ex-commands))]
+        (println excmd args)
+        (if (>= (count handlers) 1)
+          ((first handlers) buf excmd args)
+          (assoc buf :message "unknown command"))))))
+
+(defn- ex-tab-complete [{{r :str} :line-buffer :as buf}]
+  (if (re-test #"^\s*\S+\s*$" r)
+    (let [s (str r)
+          news (first 
+              (filter 
+                (fn[k]
+                  (and
+                    (string? k)
+                    (zero? (.indexOf k s))))
+                (keys ex-commands)))]
+      (if (nil? news) buf
+        (update-in buf [:line-buffer]
+                   (fn[linebuf]
+                     (merge linebuf {:str (rope news) :pos (count news)})))))
+   buf))
 
 (defn init-ex-mode-keymap[line-editor-keymap]
-  {:enter set-ex-mode
-   "<cr>" execute
-   :else ex-mode-default
-   :continue #(not (or (= "<esc>" %2) (= "<cr>" %2) (empty? (:ex %1))))
-   :leave (fn[buf keycode]
-            (if (= "<esc>" keycode)
-              (-> buf :context :lastbuf (assoc :ex ""))
-              (assoc buf :ex "")))})
-
+  (merge line-editor-keymap 
+         {:enter (fn[buf keycode]
+                   (-> buf
+                       ((line-editor-keymap :enter) keycode)
+                       (assoc :mode ex-mode)))
+          "<cr>" execute
+          "<tab>" ex-tab-complete}))

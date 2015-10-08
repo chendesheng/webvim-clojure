@@ -183,7 +183,13 @@
 ;             :highlights (cons not-insects newhighlights)))))
 
 (defn- search-pattern[s]
-  (re-pattern (str "(?m)" s)))
+  (try
+    (if (empty? s) 
+      ;http://stackoverflow.com/questions/1723182/a-regex-that-will-never-be-matched-by-anything
+      (re-pattern "(?m)(?!x)x")
+      (re-pattern (str "(?m)" s)))
+    (catch Exception e 
+      (re-pattern "(?m)(?!x)x"))))
 
 (defn- handle-search[buf]
   (let [s (-> buf :line-buffer :str str)
@@ -193,12 +199,15 @@
         (highlight-all-matches (search-pattern s))
         (dissoc :line-buffer))))
 
-(defn- increment-search[buf f]
+(defn- increment-search[buf dir]
   (let [linebuf (buf :line-buffer)]
     (if (nil? linebuf) buf
       (let [s (-> linebuf :str str)
             re (search-pattern s)
-            newbuf (-> buf :context :lastbuf)]
+            newbuf (-> buf :context :lastbuf)
+            f (if (= dir \/)
+                re-forward-highlight 
+                re-backward-highlight)]
         ;(println (-> buf :context :lastbuf))
         ;(println "newbuf pos:"  (newbuf :pos))
         (-> newbuf
@@ -206,6 +215,12 @@
             (assoc :line-buffer linebuf)
             (dissoc :highlights)
             (f re))))))
+
+(defn- increment-search+ [buf _]
+  (increment-search buf \/))
+
+(defn- increment-search- [buf _]
+  (increment-search buf \?))
 
 (defn- repeat-search[buf dir]
   (let[s (or (registers-get (:registers buf) "/") "/")
@@ -236,9 +251,6 @@
       (assoc-in [:context :lastbuf] buf)
       (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
 
-(defn- continue-increment-search[buf keycode]
-  (not (contains? #{"<cr>" "<esc>"} keycode)))
-
 (defn init-motion-keymap[ex-mode-keymap line-editor-keymap]
   {"h" char-backward
    "l" char-forward
@@ -267,20 +279,12 @@
    "T" {"<esc>" identity 
         "<cr>" identity
         :else move-after-back-char }
-   ;   "/" (merge ex-mode-keymap ;TODO: This is not ex-mode, add line edit mode
-   ;              {"<cr>" handle-search})
    "/" (merge line-editor-keymap
-              {:enter enter-increment-search
-               "<cr>" handle-search
-               "<esc>" #(-> % :context :lastbuf)
-               :after (fn[buf keycode] (increment-search buf re-forward-highlight))
-               :continue continue-increment-search})
+              {"<cr>" handle-search
+               :after increment-search+})
    "?" (merge line-editor-keymap
-              {:enter enter-increment-search
-               "<cr>" handle-search
-               "<esc>" #(-> % :context :lastbuf)
-               :after (fn[buf keycode] (increment-search buf re-backward-highlight))
-               :continue continue-increment-search})
+              {"<cr>" handle-search
+               :after increment-search-})
    "*" move-next-same-word
    "#" move-back-same-word
    "n" repeat-search+
