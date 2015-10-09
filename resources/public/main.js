@@ -388,23 +388,7 @@ function render(buf) {
 	renderCursor(buffers[buf.id]);
 
 	//render ex
-	if (typeof buf['line-buffer'] != 'undefined') {
-		renderEx(buf.id, buf['line-buffer']);
-	} else if (buf.message) {
-		$statusCursor(buf.id).style.cssText = 'display:none';
-
-		var ex = $statusEx(buf.id);
-		ex.textContent = buf.message;
-	} else {
-		$statusCursor(buf.id).style.cssText = 'display:none';
-
-		if (typeof buf.mode != 'undefined' && buf.mode < MODES.length) {
-			var ex = $statusEx(buf.id);
-			ex.textContent = MODES[buf.mode];
-			keymap = keymaps[buf.mode];
-		}
-	}
-
+	renderStatusBar(buf)
 	//render unsaved
 	if (typeof buf.dirty != 'undefined') {
 		var statusName = $statusName(buf.id);
@@ -615,10 +599,11 @@ function renderCursor(localbuf) {
 		+'padding-bottom:1px;';
 }
 
-function renderEx(bufid, linebuf) {
+function renderLineBuffer(buf) {
+	var linebuf = buf['line-buffer'];
 	var str = linebuf.str;
 	var pos = linebuf.pos;
-	var ex = $statusEx(bufid);
+	var ex = $statusBuf(buf.id);
 	ex.textContent = str;
 
 	//cursor
@@ -632,8 +617,27 @@ function renderEx(bufid, linebuf) {
 		rect = list[1];
 	}
 
-	var cursor = $statusCursor(bufid)
+	var cursor = $statusCursor(buf.id)
 	cursor.style.cssText = 'display:block;position:absolute;top:5px;padding-bottom:1px;height:1em;left:'+(rect.left)+'px;opacity:.4';
+}
+
+function renderStatusBar(buf) {
+	if (typeof buf['line-buffer'] != 'undefined') {
+		renderLineBuffer(buf);
+	} else if (buf.message) {
+		$statusCursor(buf.id).style.cssText = 'display:none';
+
+		var ex = $statusBuf(buf.id);
+		ex.textContent = buf.message;
+	} else {
+		$statusCursor(buf.id).style.cssText = 'display:none';
+
+		if (typeof buf.mode != 'undefined' && buf.mode < MODES.length) {
+			var ex = $statusBuf(buf.id);
+			ex.textContent = MODES[buf.mode];
+			keymap = keymaps[buf.mode];
+		}
+	}
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];

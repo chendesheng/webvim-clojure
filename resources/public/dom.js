@@ -13,7 +13,7 @@ function $newBuffer(bufid) {
 			+'<div id="lines-{id}" class="lines"></div>'
 		+'</div>'
 		+'<div id="status-bar-{id}" class="status-bar">'
-			+'<span id="status-bar-ex-{id}" class="ex"></span>'
+			+'<span id="status-bar-buf-{id}" class="ex"></span>'
 			+'<span id="status-bar-cursor-{id}" class="cursor"></span>'
 			+'<span id="status-bar-keys-{id}" class="ongoing-keys"></span>'
 			+'<span id="status-bar-name-{id}" class="buf-name"></span>'
@@ -66,8 +66,8 @@ function $cursor(bufid) {
 	return _$bufid('cursor-', bufid);
 }
 
-function $statusEx(bufid) {
-	return _$bufid('status-bar-ex-', bufid);
+function $statusBuf(bufid) {
+	return _$bufid('status-bar-buf-', bufid);
 }
 
 function $statusKeys(bufid) {
