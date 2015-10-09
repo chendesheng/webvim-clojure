@@ -18,7 +18,7 @@
 (defn- set-visual-mode[buf]
   ;(println "set-visual-mode:")
   (let [pos (buf :pos)]
-    (merge buf {:ex "" :mode visual-mode :keys nil 
+    (merge buf {:mode visual-mode :keys nil 
               :visual {:type 0 :ranges [[pos pos]]}})))
 
 (defn- clear-visual[buf]
@@ -41,9 +41,7 @@
      :enter (fn[buf keycode] 
               (set-visual-mode buf))
      :leave (fn[buf keycode] (clear-visual buf))
-     :continue #(not (or (= "d" %2) (= "c" %2) 
-                         (= "y" %2) (= "=" %2)
-                         (= "<esc>" %2) (= "v" %2)))
+     :continue #(not (contains? #{"d" "c" "y" "=" "<esc>" "v"} %2))
      :after (fn[buf keycode]
               (-> buf
                   visual-select

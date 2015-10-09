@@ -80,16 +80,14 @@
 
 (defn set-insert-mode[buf keycode]
   ;(println "set-insert-mode")
-  (merge buf {:ex "" 
-              :mode insert-mode 
+  (merge buf {:mode insert-mode 
               :message nil 
               :visual {:type 0 :ranges nil}
               :keys nil}))
 
 (defn set-normal-mode[buf]
   ;(println "set-normal-mode:")
-  (merge buf {:ex "" 
-            :mode normal-mode 
+  (merge buf {:mode normal-mode 
             :keys nil
             :visual {:type 0 :ranges nil}
             :autocompl {:suggestions nil 

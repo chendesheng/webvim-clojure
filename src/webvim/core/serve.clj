@@ -83,7 +83,7 @@
         (let [err (str "caught exception: " e)]
           (println err)
           (.printStackTrace e)
-          (send-out (merge buf {:ex "" :mode 0 :message err}) ))))))
+          (send-out (merge buf {:mode 0 :message err}) ))))))
 
 (defn key-server
   "Start a dedicate thread handle input keys. Close :chan-in will stop this thread."
