@@ -67,23 +67,18 @@
 (defn- paragraph-backward[buf]
   (re-backward buf #"((?<=\n)\n[^\n])"))
 
-(defn- pos-word[lang r pos]
-  (let [{word-chars :word-chars
+(defn- current-word[buf]
+  "return range of word under cursor, right side is exclusive"
+  (let [{pos :pos
+         r :str
+         lang :language} buf
+        {word-chars :word-chars
          not-word-chars :not-word-chars} (word-re lang)
         re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
         re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
         b (or (last (pos-re+ r pos re-end)) (count r))
         a (or (last (pos-re- r (dec b) re-start)) 0)]
-      [a b]))
-
-;(pos-word (rope "aaa") 2)
-
-(defn- current-word[buf]
-  "return range of word under cursor, right side is exclusive"
-  (let [{pos :pos
-         r :str} buf]
-    ;(println pos r)
-    (pos-word (buf :language) r pos)))
+    (subr r a b)))
 
 (defn- move-to-next-char[buf keycode]
   (let [ch (keycode-to-char keycode)]
@@ -113,6 +108,16 @@
 (defn- right-boundary[buf] 
   (str "(?=[" ((word-re (buf :language)) :not-word-chars) "]|$)"))
 
+(defn- re-current-word
+  "create regexp from word under cursor"
+  [buf]
+  (let [word (current-word buf)
+        not-word-chars (-> buf :language word-re :not-word-chars)
+        re-start (str "(?<=^|[" not-word-chars "])")
+        re-end (str "(?=[" not-word-chars "]|$)")]
+    (re-pattern
+      (str re-start (quote-pattern word) re-end))))
+
 (defn- highlight-all-matches[buf re]
   (let [r (buf :str)]
     (assoc buf :highlights 
@@ -120,30 +125,22 @@
                   [a (dec b)])
                 (pos-re-seq+ r 0 re)))))
 
-(defn- move-next-same-word[buf]
-  (let [[start end] (current-word buf)
-        word (subr (buf :str) start end)
-        ;_ (println (str word))
-        re (re-pattern (str (left-boundary buf) (quote-pattern word) (right-boundary buf)))]
+(defn- same-word+[buf]
+  (let [re (re-current-word buf)]
     (registers-put (:registers buf) "/" (str "/" re))
     (-> buf 
         (re-forward-highlight re)
         (highlight-all-matches re))))
 
-(defn- move-back-same-word[buf]
-  (let [[start end] (current-word buf)
-        word (subr (buf :str) start end)
-        re (re-pattern (str (left-boundary buf) (quote-pattern word) (right-boundary buf)))]
+(defn- same-word-[buf]
+  (let [re (re-current-word buf)]
     (registers-put (:registers buf) "/" (str "?" re))
     (-> buf 
         (re-backward-highlight re)
         (highlight-all-matches re))))
 
-(defn- first-match[buf]
-  (let [[start end] (current-word buf)
-        word (subr (buf :str) start end)
-        re (re-pattern (str (left-boundary buf) (quote-pattern word) (right-boundary buf)))]
-    (println re)
+(defn- same-word-first[buf]
+  (let [re (re-current-word buf)]
     (registers-put (:registers buf) "/" (str "/" re))
     (-> buf
         buf-start
@@ -268,7 +265,7 @@
    "k" #(lines-n- % 1)
    "j" #(lines-n+ % 1)
    "g" {"g" buf-start
-        "d" first-match}
+        "d" same-word-first}
    "G" buf-end
    "w" word-forward
    "W" WORD-forward
@@ -297,8 +294,8 @@
    "?" (merge line-editor-keymap
               {"<cr>" handle-search
                :after increment-search-})
-   "*" move-next-same-word
-   "#" move-back-same-word
+   "*" same-word+
+   "#" same-word-
    "n" repeat-search+
    "N" repeat-search-
    "}" paragraph-forward
