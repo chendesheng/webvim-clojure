@@ -108,10 +108,10 @@
                 r
                 (first (pos-re+ r pos #"\(|\)|\[|\]|\{|\}"))))))
 
-(defn- left-boundary[lang] 
-  (str "(?<=^|[" (-> lang word-re :not-word-chars) "])"))
-(defn- right-boundary[lang] 
-  (str "(?=[" (-> lang word-re :not-word-chars) "]|$)"))
+(defn- left-boundary[buf] 
+  (str "(?<=^|[" ((word-re (buf :language)) :not-word-chars) "])"))
+(defn- right-boundary[buf] 
+  (str "(?=[" ((word-re (buf :language)) :not-word-chars) "]|$)"))
 
 (defn- highlight-all-matches[buf re]
   (let [r (buf :str)]
@@ -137,6 +137,17 @@
     (registers-put (:registers buf) "/" (str "?" re))
     (-> buf 
         (re-backward-highlight re)
+        (highlight-all-matches re))))
+
+(defn- first-match[buf]
+  (let [[start end] (current-word buf)
+        word (subr (buf :str) start end)
+        re (re-pattern (str (left-boundary buf) (quote-pattern word) (right-boundary buf)))]
+    (println re)
+    (registers-put (:registers buf) "/" (str "/" re))
+    (-> buf
+        buf-start
+        (re-forward-highlight re)
         (highlight-all-matches re))))
 
 (defn- round-to-zero
@@ -256,7 +267,8 @@
    "l" char-forward
    "k" #(lines-n- % 1)
    "j" #(lines-n+ % 1)
-   "g" {"g" buf-start}
+   "g" {"g" buf-start
+        "d" first-match}
    "G" buf-end
    "w" word-forward
    "W" WORD-forward
