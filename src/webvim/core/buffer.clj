@@ -65,7 +65,7 @@
            ;unchanged
            :dirty false
            ;:type =0 visual =1 visual line =2 visual block
-           ;:ranges is a vector of point pairs (unordered): [{:row :col} {:row :col}]. Always contains even number of points. Both end are inclusive
+           ;:ranges is a vector of ranges (unordered): [[0 100] [101 200]]. For each range, both end are inclusive.
            :visual {:type 0 :ranges nil}
            ;=0 normal mode =1 insert mode =2 ex mode =3 visual mode
            :mode 0

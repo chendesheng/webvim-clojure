@@ -10,6 +10,7 @@
         webvim.core.pos
         webvim.core.register
         webvim.core.serve
+        webvim.core.event
         webvim.indent
         webvim.utils
         webvim.jumplist
@@ -22,7 +23,9 @@
               :visual {:type 0 :ranges [[pos pos]]}})))
 
 (defn- clear-visual[buf]
-  (assoc buf :visual {:type 0 :ranges nil}))
+  (-> buf
+      (assoc :last-visual (buf :visual)) ;keep last visual
+      (assoc :visual {:type 0 :ranges nil})))
 
 (defn- visual-select[buf]
   (let [pos (buf :pos)]
@@ -52,3 +55,17 @@
      "=" #(indent-range % true)
      "o" swap-visual-start-end}))
 
+;keep track visual ranges when buffer changed
+(defonce ^:private listen-change-buffer 
+  (listen
+    :change-buffer
+    (fn [buf oldbuf c]
+      (let [bufid (buf :id)
+            cpos (c :pos)
+            delta (- (-> c :to count) (c :len))]
+        (update-in buf [:last-visual :ranges]
+                   (fn [ranges]
+                     (map (fn[[a b :as rg]]
+                            [(if (< a cpos) a (+ a delta))
+                             (if (< b cpos) b (+ b delta))])
+                          ranges)))))))

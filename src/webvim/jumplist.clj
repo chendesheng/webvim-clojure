@@ -87,7 +87,6 @@
             delta (- (-> c :to count) (c :len))]
         (swap! jump-list 
                rewrite-history (fn[{id :id pos :pos :as p}]
-                                 (if (and (= id bufid) (> pos cpos))
-                                   {:id id :pos (+ pos delta)}
-                                   p)))
+                                 (if (and (= id bufid) (< pos cpos)) p
+                                   {:id id :pos (+ pos delta)})))
         buf))))

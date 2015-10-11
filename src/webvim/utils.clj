@@ -38,3 +38,11 @@
   (cond (<= v r) r
         (>= v e) e
         :else v))
+
+;http://dev.clojure.org/jira/browse/CLJ-1468
+(defn deep-merge
+  "Like merge, but merges maps recursively."
+  [& maps]
+  (if (every? map? maps)
+    (apply merge-with deep-merge maps)
+    (last maps)))

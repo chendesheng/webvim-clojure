@@ -267,57 +267,64 @@
 
 (defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap ex-mode-keymap]
   (let [enter-insert (insert-mode-keymap :enter)]
-  (merge 
-    motion-keymap
-    {"i" insert-mode-keymap
-     "a" (start-insert-mode char-forward insert-mode-keymap)
-     "A" (start-insert-mode line-end insert-mode-keymap)
-     "I" (start-insert-mode line-start insert-mode-keymap)
-     "s" (start-insert-mode-insert delete-char insert-mode-keymap)
-     "o" (start-insert-mode-insert insert-new-line insert-mode-keymap)
-     "O" (start-insert-mode-insert insert-new-line-before insert-mode-keymap)
-     "." dot-repeat
-     ":" (merge
-           ex-mode-keymap
-           {:leave (fn[buf keycode] (set-normal-mode buf))})
-     "r" {"<esc>" identity
-          :else replace-char-keycode}
-     "u" undo
-     "<c+r>" redo
-     "<c+o>" #(move-to-jumplist % jump-prev)
-     "<c+i>" #(move-to-jumplist % jump-next)
-     "<c+g>" buf-pos-info
-     "<esc>" set-normal-mode
-     "v" visual-mode-keymap
-     "z" {"z" cursor-center-viewport }
-     "d" (merge 
-           motion-keymap
-           {"d" identity
-            :after delete})
-     "c" (merge
-           motion-keymap 
-           {"c" identity
-            :after change})
-     "y" (merge
-           motion-keymap
-           {"y" identity
-            :after yank})
-     "=" (merge 
-           motion-keymap
-           {"=" identity
-            :after indent})
-     "D" delete-to-line-end
-     "C" change-to-line-end
-     "Y" #(yank % "y")
-     "x" delete-char
-     "p" #(put-from-register-append % (-> % :context :register))
-     "P" #(put-from-register % (-> % :context :register))
-     "J" join-line
-     "\"" {"<esc>" identity
-           :else start-register}
-     :before (fn [buf keycode]
-               (-> buf
-                   (assoc-in [:context :lastbuf] buf)
-                   (assoc-in [:context :register] "\"")))
-     :after normal-mode-after})))
+    (deep-merge
+      motion-keymap
+      {"i" insert-mode-keymap
+       "a" (start-insert-mode char-forward insert-mode-keymap)
+       "A" (start-insert-mode line-end insert-mode-keymap)
+       "I" (start-insert-mode line-start insert-mode-keymap)
+       "s" (start-insert-mode-insert delete-char insert-mode-keymap)
+       "o" (start-insert-mode-insert insert-new-line insert-mode-keymap)
+       "O" (start-insert-mode-insert insert-new-line-before insert-mode-keymap)
+       "." dot-repeat
+       ":" (merge
+             ex-mode-keymap
+             {:leave (fn[buf keycode] (set-normal-mode buf))})
+       "r" {"<esc>" identity
+            :else replace-char-keycode}
+       "u" undo
+       "<c+r>" redo
+       "<c+o>" #(move-to-jumplist % jump-prev)
+       "<c+i>" #(move-to-jumplist % jump-next)
+       "<c+g>" buf-pos-info
+       "<esc>" set-normal-mode
+       "g" {"v" (merge visual-mode-keymap
+                       {:enter (fn[buf keycode]
+                                 (let [visual (buf :last-visual)]
+                                   (-> buf
+                                       ((visual-mode-keymap :enter) keycode)
+                                       (assoc :visual visual)
+                                       (buf-set-pos (-> visual :ranges first first))))) }) }
+       "v" visual-mode-keymap
+       "z" {"z" cursor-center-viewport }
+       "d" (merge 
+             motion-keymap
+             {"d" identity
+              :after delete})
+       "c" (merge
+             motion-keymap 
+             {"c" identity
+              :after change})
+       "y" (merge
+             motion-keymap
+             {"y" identity
+              :after yank})
+       "=" (merge 
+             motion-keymap
+             {"=" identity
+              :after indent})
+       "D" delete-to-line-end
+       "C" change-to-line-end
+       "Y" #(yank % "y")
+       "x" delete-char
+       "p" #(put-from-register-append % (-> % :context :register))
+       "P" #(put-from-register % (-> % :context :register))
+       "J" join-line
+       "\"" {"<esc>" identity
+             :else start-register}
+       :before (fn [buf keycode]
+                 (-> buf
+                     (assoc-in [:context :lastbuf] buf)
+                     (assoc-in [:context :register] "\"")))
+       :after normal-mode-after})))
 
