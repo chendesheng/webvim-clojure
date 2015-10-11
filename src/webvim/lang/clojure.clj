@@ -9,7 +9,7 @@
 
 (println "load clojure language")
 
-(defonce ^{:private true} listen-new-buffer
+(defonce ^:private listen-new-buffer
   (listen
     :load-language
     (fn [buf]

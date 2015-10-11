@@ -78,7 +78,7 @@
         next-future)))
 
 ;keep track positions when buffer changed
-(defonce ^{:private true} listen-change-buffer 
+(defonce ^:private listen-change-buffer 
   (listen
     :change-buffer
     (fn [buf oldbuf c]

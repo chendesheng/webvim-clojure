@@ -8,7 +8,7 @@
         webvim.lang.javascript
         webvim.utils))
 
-(defonce ^{:private true} listen-new-buffer
+(defonce ^:private listen-new-buffer
   (listen
     :load-language
     (fn [buf]

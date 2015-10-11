@@ -18,7 +18,7 @@
 (defn- delete-char[buf]
   (let [pos (buf :pos)
         [a b] [pos (inc pos)]]
-    (buf-yank buf a b)
+    (buf-yank buf a b false)
     (buf-delete buf a b)))
 
 (defn- insert-new-line[buf]
@@ -89,8 +89,7 @@
     (assoc-in lastbuf [:context :range] [(lastbuf :pos) (buf :pos)])))
 
 (defn- setup-range-line[buf]
-  (let [[a b] (current-line buf)]
-    (assoc-in buf [:context :range] [a (dec b)])))
+  (assoc-in buf [:context :range] (current-line buf)))
 
 (defn- setup-range-line-end[buf]
   (let [a (buf :pos)
@@ -100,34 +99,35 @@
 (defn- delete[buf keycode]
   (if (= "d" keycode)
     (-> buf
-        setup-range-line 
-        (delete-range (inclusive? keycode))
+        setup-range-line       
+        (delete-range false true)
         line-start)
     (-> buf
         setup-range
-        (delete-range (inclusive? keycode)))))
+        (delete-range (inclusive? keycode) false))))
 
 (defn- yank[buf keycode]
   (if (= "y" keycode)
     (-> buf
         setup-range-line 
-        (yank-range (inclusive? keycode)))
+        (yank-range false true))
     (-> buf
         setup-range
-        (yank-range (inclusive? keycode)))))
+        (yank-range (inclusive? keycode) false))))
 
 (defn- change[buf keycode]
   (if (= "c" keycode)
     (-> buf
-        (buf-delete (-> buf 
-                        setup-range-line 
-                        (range-prefix false)))
+        setup-range-line 
+        (delete-range false true)
+        (buf-insert <br>)
+        (lines-n- 1)
         buf-indent-current-line
-        (set-insert-mode "c")
-        (serve-keymap (-> buf :root-keymap (get "i")) "c"))
+        (set-insert-mode keycode)
+        (serve-keymap (-> buf :root-keymap (get "i")) keycode))
     (-> buf
         setup-range
-        (change-range (inclusive? keycode)))))
+        (change-range (inclusive? keycode) false))))
 
 (defn- indent[buf keycode]
   (if (= "=" keycode)
@@ -232,12 +232,12 @@
 (defn- delete-to-line-end[buf]
   (-> buf
       setup-range-line-end
-      (delete-range false)))
+      (delete-range false false)))
 
 (defn- change-to-line-end[buf]
   (-> buf 
       setup-range-line-end
-      (change-range false)))
+      (change-range false false)))
 
 (defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap ex-mode-keymap]
   (let [enter-insert (insert-mode-keymap :enter)]

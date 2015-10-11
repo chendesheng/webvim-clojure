@@ -13,12 +13,12 @@
     (clipboard/get-text)
     (@regs ch)))
 
-(defn registers-put [regs ch text]
+(defn registers-put [regs ch v]
   (if (= ch "+")
-    (clipboard/set-text! text)
-    (swap! regs assoc ch text)))
+    (clipboard/set-text! v)
+    (swap! regs assoc ch v)))
 
-(defonce ^{:private true} listen-new-buffer
+(defonce ^:private listen-new-buffer
   (listen :new-buffer
           (fn[buf]
             ;Local registers, atom. Set init value to global registers so it can share cross buffers.

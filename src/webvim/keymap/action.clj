@@ -16,6 +16,9 @@
 (defn get-register[buf c]
   (registers-get (buf :registers) c))
 
+(defn put-register[buf c v]
+  (registers-put (buf :registers) c v))
+
 (defn pos-match-brace
   "return matched brace position, nil if not find"
   [r pos]
@@ -93,11 +96,9 @@
             :autocompl {:suggestions nil 
                         :suggestions-index 0}}))
 
-(defn buf-yank[buf a b]
+(defn buf-yank[buf a b linewise?]
   (let [s (buf-subr buf a b)]
-    (registers-put (buf :registers) 
-                   (-> buf :context :register)
-                   s)
+    (put-register buf (-> buf :context :register) {:str s :linewise? linewise?})
     (update-in buf [:context] dissoc :register)))
 
 (defn change-active-buffer[id]
@@ -114,10 +115,10 @@
     (-> buf :context :range (make-range inclusive?))
     :else (throw (Exception. "no range prefix exist"))))
 
-(defn change-range[buf inclusive?]
+(defn change-range[buf inclusive? linewise?]
   (let [[a b] (range-prefix buf inclusive?)]
     (-> buf
-        (buf-yank a b)
+        (buf-yank a b linewise?)
         (buf-delete a b)
         (set-insert-mode "c")
         (serve-keymap (-> buf :root-keymap (get "i")) "c"))))
@@ -141,17 +142,17 @@
             (-> buf :y
                 (- (int (/ (-> @window :viewport :h) 2))))))
 
-(defn delete-range[buf inclusive?]
+(defn delete-range[buf inclusive? linewise?]
   (let [[a b] (range-prefix buf inclusive?)]
     (println "delete-range:" a b)
     (-> buf
-        (buf-yank a b)
+        (buf-yank a b linewise?)
         (buf-delete a b)
         (buf-set-pos a))))
 
-(defn yank-range[buf inclusive?]
+(defn yank-range[buf inclusive? linewise?]
   (let [[a b] (range-prefix buf inclusive?)]
-    (buf-yank buf a b)))
+    (buf-yank buf a b linewise?)))
 
 (defn indent-range[buf inclusive?]
   (let [[a b] (range-prefix buf inclusive?)]
@@ -159,18 +160,28 @@
         (buf-indent-lines [a b]))))
 
 (defn put-from-register[buf keycode]
-  (let [txt (get-register buf keycode)]
-    (if (string? txt)
+  (let [{s :str linewise? :linewise?} (get-register buf keycode)]
+    (if linewise?
+      (let [{r :str pos :pos} buf
+            a (pos-line-first r pos)]
+        (-> buf
+            (buf-insert a s)
+            (buf-set-pos a)
+            line-start))
       (-> buf
-          (buf-insert txt)
-          char-backward)
-      buf)))
+          (buf-insert s)
+          char-backward))))
 
 (defn put-from-register-append[buf keycode]
-  (let [txt (get-register buf keycode)]
-    (if (string? txt)
-      (let [pos (buf :pos)]
+  (let [{s :str linewise? :linewise?} (get-register buf keycode)
+        pos (buf :pos)]
+    (if linewise?
+      (let [r (buf :str)
+            b (pos-line-last r pos)]
         (-> buf
-            (buf-insert (inc pos) txt)
-            (buf-set-pos (+ pos (count txt)))))
-      buf)))
+            (buf-insert b s)
+            (buf-set-pos b)
+            line-start))
+      (-> buf
+          (buf-insert (inc pos) s)
+          (buf-set-pos (+ pos (count s)))))))

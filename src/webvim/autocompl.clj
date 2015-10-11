@@ -72,7 +72,7 @@
                                               (first indexes) word])))) 
                      [[0 0 subject]] (dissoc @autocompl-words subject)))))
 
-(defonce ^{:private true} listen-new-buffer
+(defonce ^:private listen-new-buffer
   (listen
     :new-buffer
     (fn [buf]
@@ -140,7 +140,7 @@
       (subr
         news (expand-ends-word lang news a newb)))))
 
-(defonce ^{:private true} listen-change-buffer 
+(defonce ^:private listen-change-buffer 
   (listen
     :change-buffer
     (fn [buf oldbuf c]

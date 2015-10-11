@@ -105,7 +105,7 @@
       ;set :last-saved-lines make buffer start as unsaved
       (assoc (create-buf nm f "") :last-saved-lines nil))))
 
-(defonce ^{:private true} listen-change-buffer
+(defonce ^:private listen-change-buffer
   (listen
     :change-buffer
     (fn [newt oldt c]

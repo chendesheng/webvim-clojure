@@ -33,3 +33,8 @@
      (sort2 a b)))
   ([[a b] inclusive?]
    (make-range a b inclusive?)))
+
+(defn bound-range[v r e]
+  (cond (<= v r) r
+        (>= v e) e
+        :else v))

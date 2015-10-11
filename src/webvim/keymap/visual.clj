@@ -46,9 +46,9 @@
               (-> buf
                   visual-select
                   (update-x-if-not-jk (-> buf :context :lastbuf) keycode)))
-     "d" #(delete-range % true)
-     "c" #(change-range % true)
-     "y" #(yank-range % true)
+     "d" #(delete-range % true false)
+     "c" #(change-range % true false)
+     "y" #(yank-range % true false)
      "=" #(indent-range % true)
      "o" swap-visual-start-end}))
 
