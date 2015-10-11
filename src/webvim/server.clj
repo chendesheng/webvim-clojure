@@ -35,7 +35,11 @@
 (defn- remove-visual-mode[buf]
   (if (empty? (-> buf :visual :ranges))
     (dissoc buf :visual)
-    buf))
+    (if (= (-> buf :visual :type) visual-line)
+      (update-in buf [:visual :ranges] 
+                 (fn[ranges]
+                   (map #(make-linewise-range % buf) ranges)))
+      buf)))
 
 (defn- remove-autocompl[buf]
   (if (empty? (-> buf :autocompl :suggestions))

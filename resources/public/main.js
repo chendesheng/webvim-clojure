@@ -416,7 +416,13 @@ function render(buf) {
 	//render visual
 	$selections(buf.id).innerHTML = '';
 	if (buf.visual) {
-		renderSelections($selections(buf.id), buffers[buf.id], buf.visual.ranges);
+		if (buf.visual.type == 0)
+			renderSelections($selections(buf.id), buffers[buf.id], buf.visual.ranges);
+		if (buf.visual.type == 1) {
+			var ranges = buf.visual.ranges;
+			ranges[0][1] = ranges[0][1]-2;
+			renderSelections($selections(buf.id), buffers[buf.id], buf.visual.ranges);
+		}
 	}
 
 	//render hlsearch

@@ -37,6 +37,9 @@
         (assoc-in [:visual :ranges 0] [b a])
         (buf-set-pos b))))
 
+(defn- linewise? [buf]
+  (= (-> buf :visual :type) visual-line))
+
 (defn init-visual-mode-keymap[motion-keymap]
   (merge 
     motion-keymap 
@@ -49,9 +52,9 @@
               (-> buf
                   visual-select
                   (update-x-if-not-jk (-> buf :context :lastbuf) keycode)))
-     "d" #(delete-range % true false)
-     "c" #(change-range % true false)
-     "y" #(yank-range % true false)
+     "d" #(delete-range % true (linewise? %))
+     "c" #(change-range % true (linewise? %))
+     "y" #(yank-range % true (linewise? %))
      "=" #(indent-range % true)
      "o" swap-visual-start-end}))
 

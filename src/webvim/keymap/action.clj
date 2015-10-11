@@ -13,6 +13,10 @@
 (defonce visual-mode 2)
 (defonce ex-mode 3)
 
+(defonce visual-normal 0)
+(defonce visual-line 1)
+(defonce visual-block 2) ;TODO
+
 (defn get-register[buf c]
   (registers-get (buf :registers) c))
 
@@ -106,11 +110,29 @@
   (reset! active-buffer-id id)
   (registers-put! registers "%" {:str (-> @buffer-list (get id) :filepath) :id id}))
 
+
+(defn make-linewise-range [[a b] buf]
+  (println "make-linewise-range:" a b)
+  (let [{r :str pos :pos} buf
+        [a b] (sort2 a b)]
+    [(pos-line-first r a) (pos-line-last r b)]))
+
+;(make-linewise-range [14 73] {:str (rope "(ns webvim.core
+;  (:require [ring.adapter.jetty :as jetty]
+;            [me.raynes.fs :as fs]") :pos 14})
+
 ;collect range argument, TODO: add linewise
 (defn range-prefix[buf inclusive?]
   (cond 
     (-> buf :mode (= visual-mode))
-    (-> buf :visual :ranges (get 0) (make-range inclusive?))
+    (let [tp (-> buf :visual :type)]
+      (cond 
+        (= tp visual-normal)
+        (-> buf :visual :ranges (get 0) (make-range inclusive?))
+        (= tp visual-line)
+        (-> buf :visual :ranges (get 0) (make-linewise-range buf))
+        (= tp visual-block)
+        (throw (Exception. "TODO: visual-block"))))
     (-> buf :context :range nil? not)
     (-> buf :context :range (make-range inclusive?))
     :else (throw (Exception. "no range prefix exist"))))

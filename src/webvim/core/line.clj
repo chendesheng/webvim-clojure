@@ -5,7 +5,7 @@
         webvim.core.pos))
 
 (defn pos-line-first[r pos]
-  (first (pos-re- r pos #"(?m)^")))
+  (or (first (pos-re- r pos #"(?m)^")) 0))
 ;(pos-line-first (rope "aa\naaa") 4)
 
 (defn pos-line-last[r pos]

@@ -288,14 +288,23 @@
        "<c+i>" #(move-to-jumplist % jump-next)
        "<c+g>" buf-pos-info
        "<esc>" set-normal-mode
-       "g" {"v" (merge visual-mode-keymap
-                       {:enter (fn[buf keycode]
-                                 (let [visual (buf :last-visual)]
-                                   (-> buf
-                                       ((visual-mode-keymap :enter) keycode)
-                                       (assoc :visual visual)
-                                       (buf-set-pos (-> visual :ranges first first))))) }) }
+       "g" {"v" (assoc 
+                  visual-mode-keymap
+                  :enter 
+                  (fn[buf keycode]
+                    (let [visual (buf :last-visual)]
+                      (-> buf
+                          ((visual-mode-keymap :enter) keycode)
+                          (assoc :visual visual)
+                          (buf-set-pos (-> visual :ranges first first)))))) }
        "v" visual-mode-keymap
+       "V" (assoc 
+             visual-mode-keymap 
+             :enter
+             (fn[buf keycode]
+               (-> buf
+                   ((visual-mode-keymap :enter) keycode)
+                   (assoc-in [:visual :type] visual-line))))
        "z" {"z" cursor-center-viewport }
        "d" (merge 
              motion-keymap
