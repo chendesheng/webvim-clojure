@@ -16,8 +16,8 @@
 (defn get-register[buf c]
   (registers-get (buf :registers) c))
 
-(defn put-register[buf c v]
-  (registers-put (buf :registers) c v))
+(defn put-register![buf c v]
+  (registers-put! (buf :registers) c v))
 
 (defn pos-match-brace
   "return matched brace position, nil if not find"
@@ -98,13 +98,13 @@
 
 (defn buf-yank[buf a b linewise?]
   (let [s (buf-subr buf a b)]
-    (put-register buf (-> buf :context :register) {:str s :linewise? linewise?})
+    (put-register! buf (-> buf :context :register) {:str s :linewise? linewise?})
     (update-in buf [:context] dissoc :register)))
 
 (defn change-active-buffer[id]
-  (registers-put registers "#" @active-buffer-id)
+  (registers-put! registers "#" {:str ((active-buffer) :filepath) :id @active-buffer-id})
   (reset! active-buffer-id id)
-  (registers-put registers "%" id))
+  (registers-put! registers "%" {:str (-> @buffer-list (get id) :filepath) :id id}))
 
 ;collect range argument, TODO: add linewise
 (defn range-prefix[buf inclusive?]

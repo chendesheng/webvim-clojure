@@ -34,7 +34,7 @@
 (defn- buf-bound-scroll-top
   "Change scroll top make cursor inside viewport"
   [buf]
-  (let [st (-> buf :scroll-top)]
+  (let [st (buf :scroll-top)]
     (assoc buf :scroll-top 
            (let [y (buf :y)
                  h (-> @window :viewport :h)]

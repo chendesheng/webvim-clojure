@@ -10,13 +10,14 @@
 
 (defn registers-get [regs ch]
   (if (= ch "+")
-    (clipboard/get-text)
-    (@regs ch)))
+    (let [s (clipboard/get-text)]
+      (swap! regs update-in ["+"] merge {:str s :linewise? (-> s last (= \newline))})))
+  (@regs ch))
 
-(defn registers-put [regs ch v]
+(defn registers-put! [regs ch v]
   (if (= ch "+")
-    (clipboard/set-text! v)
-    (swap! regs assoc ch v)))
+    (clipboard/set-text! (v :str)))
+  (swap! regs assoc ch v))
 
 (defonce ^:private listen-new-buffer
   (listen :new-buffer

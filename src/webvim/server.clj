@@ -104,13 +104,14 @@
 ;TODO How to run code only in repl env? Conditional compile?
 ;only for testing on repl
 (defonce open-test-file
-  (registers-put
-         registers
-         "%" 
-         (reset! active-buffer-id 
-                 (-> "testfile.clj"
-                     new-file
-                     :id))))
+  (let [id (reset! active-buffer-id 
+                   (-> "testfile.clj"
+                       new-file
+                       :id))]
+    (registers-put!
+      registers
+      "%" 
+      {:str "testfile.clj" :id id})))
 
 (defn restart-key-server
   "For repl"

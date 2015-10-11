@@ -122,21 +122,21 @@
 
 (defn- same-word+[buf]
   (let [re (re-current-word buf)]
-    (put-register buf "/" {:str (str re) :forward? true})
+    (put-register! buf "/" {:str (str re) :forward? true})
     (-> buf 
         (re-forward-highlight re)
         (highlight-all-matches re))))
 
 (defn- same-word-[buf]
   (let [re (re-current-word buf)]
-    (put-register buf "/" {:str (str re) :forward? false})
+    (put-register! buf "/" {:str (str re) :forward? false})
     (-> buf 
         (re-backward-highlight re)
         (highlight-all-matches re))))
 
 (defn- same-word-first[buf]
   (let [re (re-current-word buf)]
-    (put-register buf "/" {:str (str re) :forward? true})
+    (put-register! buf "/" {:str (str re) :forward? true})
     (-> buf
         buf-start
         (re-forward-highlight re)
@@ -197,7 +197,7 @@
 (defn- increment-search-<cr>[buf]
   (let [s (-> buf :line-buffer :str str)
         prefix (-> buf :line-buffer :prefix)]
-    (put-register buf "/" {:str s :forward? (= prefix "/")})
+    (put-register! buf "/" {:str s :forward? (= prefix "/")})
     (-> buf
         (highlight-all-matches (search-pattern s))
         (dissoc :line-buffer))))

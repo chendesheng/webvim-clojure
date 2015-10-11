@@ -1,4 +1,5 @@
 (ns webvim.keymap.normal
+  (:require [clojure.string :as string])
   (:use webvim.keymap.action
         webvim.keymap.macro
         webvim.keymap.motion
@@ -84,9 +85,13 @@
 
 ;setup range prefix for delete/change/yank etc.
 (defn- setup-range[buf]
-  (let [lastbuf (-> buf :context :lastbuf)]
-    (println "setup-range:" (lastbuf :pos) (buf :pos))
-    (assoc-in lastbuf [:context :range] [(lastbuf :pos) (buf :pos)])))
+  (let [pos (buf :pos)
+        lastbuf (-> buf :context :lastbuf)
+        lastpos (lastbuf :pos)]
+    (-> buf
+        ;Restore positoin to lastbuf so that changes happen next can record correct start position. This will make cursor position in right place after undo/redo.
+        (merge (select-keys lastbuf [:pos :x :y])) 
+        (assoc-in [:context :range] [lastpos pos]))))
 
 (defn- setup-range-line[buf]
   (assoc-in buf [:context :range] (current-line buf)))
@@ -149,11 +154,14 @@
       buf)))
 
 (defn- start-register[buf keycode]
-  (let [m (re-find #"[0-9a-zA-Z/*#%.:+=\-]" keycode)]
-    (if (not (nil? m))
-      (-> buf 
-          (assoc-in [:context :register] keycode)
-          (serve-keymap (-> buf :root-keymap (dissoc "\"")) keycode)))))
+  (if (re-test #"[0-9a-zA-Z/*#%.:+=\-]" keycode)
+    (-> buf 
+        (assoc-in [:context :register] keycode)
+        (serve-keymap (-> buf :root-keymap 
+                          (dissoc "\"") 
+                          (dissoc :before)
+                          (dissoc :after)) keycode))
+    buf))
 
 (defn- normal-mode-fix-pos
     "prevent cursor on top of EOL in normal mode"
@@ -163,11 +171,23 @@
         (char-backward buf) buf)))
 
 (defn- dot-repeat[buf]
-  (let [keycodes (get-register buf ".")]
+  (let [keycodes (-> buf
+                     (get-register ".")
+                     :keys)]
+    (println "keycodes:" keycodes)
     (if (empty? keycodes)
       buf
-      ;remove "." from @root-keymap prevent recursive, probably useless
-      (replay-keys buf keycodes (-> buf :root-keymap (dissoc "."))))))
+      ;Remove "." from :root-keymap prevent recursively execute dot-repeat which will cause stackoverflow
+      ;Remove :before and :after because there are called in outside already
+      (replay-keys buf 
+                   keycodes (-> buf :root-keymap 
+                                (dissoc ".")
+                                (dissoc :before)
+                                (dissoc :after))))))
+
+;(def ^:private not-repeat-keys #{".", "u", "<c+r>", "p", "P", ":"})
+(defn- repeatable?[keycode]
+  (not (contains? #{"." "u" "<c+r>" "p" "P" ":"} keycode)))
 
 (defn- normal-mode-after[buf keycode]
   (let [lastbuf (-> buf :context :lastbuf)]
@@ -176,10 +196,14 @@
     ;(println "normal-mode-after, recording-keys" (-> buf :macro :recording-keys))
     ;if nothing changed there is no need to overwrite "." register
     ;so keys like i<esc> won't affect, this also exclude all motions.
-    (if-not (or (= (:str lastbuf) (:str buf))
-                 ;These commands should not get repeat
-                 (contains? #{".", "u", "<c+r>", "p", "P", ":"} keycode))
-      (registers-put (:registers buf) "." (-> buf :macro :recording-keys)))
+    (let [keyvec (-> buf :macro :recording-keys)]
+      (if (and (not (= (:str lastbuf) (:str buf)))
+               (repeatable? keycode)
+               ;" is just register prefix, the actual keycode is the 3rd one
+               (if (= keycode "\"")
+                 (repeatable? (nth keyvec 2))
+                 true))
+        (put-register! buf "." {:keys keyvec :str (string/join keyvec)})))
     (-> buf 
         set-normal-mode
         save-undo
@@ -287,7 +311,8 @@
      "p" #(put-from-register-append % (-> % :context :register))
      "P" #(put-from-register % (-> % :context :register))
      "J" join-line
-     "\"" {:else start-register}
+     "\"" {"<esc>" identity
+           :else start-register}
      :before (fn [buf keycode]
                (-> buf
                    (assoc-in [:context :lastbuf] buf)
