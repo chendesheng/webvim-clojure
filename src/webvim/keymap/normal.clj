@@ -25,7 +25,8 @@
 (defn- insert-new-line[buf]
   (buf-indent-current-line
     (let [pos (buf :pos)
-          [_ b] (current-line buf)]
+          r (buf :str)
+          b (pos-line-last r pos)]
       (-> buf
           (buf-insert b <br>)
           (buf-set-pos b)))))
@@ -33,7 +34,8 @@
 (defn- insert-new-line-before[buf]
   (buf-indent-current-line 
     (let [pos (buf :pos)
-          [a b] (current-line buf)]
+          r (buf :str)
+          a (pos-line-first r pos)]
       (if (zero? a)
         (-> buf
             (buf-insert 0 <br>)
@@ -94,7 +96,7 @@
         (assoc-in [:context :range] [lastpos pos]))))
 
 (defn- setup-range-line[buf]
-  (assoc-in buf [:context :range] (current-line buf)))
+  (assoc-in buf [:context :range] (pos-line (buf :str) (buf :pos))))
 
 (defn- setup-range-line-end[buf]
   (let [a (buf :pos)

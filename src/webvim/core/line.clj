@@ -18,14 +18,6 @@
 
 ;(pos-line (rope "aa\nbb") 1)
 
-(defn current-line
-  [buf]
-   "return range of line under cursor, right side is exclusive"
-   (pos-line (buf :str) (buf :pos)))
-
-;(current-line {:pos 1 :str (rope "\naaa\n")})
-;(current-line {:pos 5 :str (rope "\nbb\n\naaa\n")})
-
 (defn pos-line-start[r pos]
   (let [lf (pos-line-first r pos)]
     (or (first (pos-re+ r lf #"[\S\n]|((?<=\s)[\S\n])")) 0)))

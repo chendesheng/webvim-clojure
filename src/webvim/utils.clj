@@ -23,7 +23,7 @@
     "\t"
     (= "<space>" keycode)
     " "
-    :else ""))
+    :else nil))
 
 (defn make-range
   ([a b inclusive?]

@@ -80,21 +80,57 @@
         a (or (last (pos-re- r (dec b) re-start)) 0)]
     (subr r a b)))
 
-(defn- move-to-next-char[buf keycode]
-  (let [ch (keycode-to-char keycode)]
-    (re-forward buf (-> ch quote-pattern re-pattern))))
+(defn- move-by-char[buf ch forward? inclusive?]
+  (let [{r :str pos :pos} buf
+        a (pos-line-first r pos)
+        b (pos-line-end r pos) ;not include \n
+        line (subr r a b)  ;only jump inside current line
+        re (if inclusive?
+             (-> ch quote-pattern re-pattern)
+             (->> ch 
+                  quote-pattern
+                  (format (if forward? ".(?=%s)" "(?=%s).") ch)
+                  re-pattern))
+        _ (println re)
+        f (if forward? pos-re+ pos-re-)
+        fpos (if inclusive?  first 
+               (if forward? first last))
+        x (- pos a)
+        newpos (-> line 
+                   (f (if forward? (inc x) 
+                        (if inclusive? (dec x) (- x 2))) re)
+                   fpos 
+                   (or x)
+                   (+ a))]
+    (buf-set-pos buf newpos)))
 
-(defn- move-to-back-char[buf keycode]
-  (let [ch (keycode-to-char keycode)]
-    (re-backward buf (-> ch quote-pattern re-pattern))))
+(defn- move-to-char+[buf keycode]
+  (put-register! buf ";" {:str keycode :forward? true :inclusive? true})
+  (move-by-char buf keycode true true))
 
-(defn- move-before-next-char[buf keycode]
-  (-> buf (move-to-next-char keycode)
-      char-backward))
+(defn- move-to-char-[buf keycode]
+  (put-register! buf ";" {:str keycode :forward? false :inclusive? true})
+  (move-by-char buf keycode false true))
 
-(defn- move-after-back-char[buf keycode]
-  (-> buf (move-to-back-char keycode)
-      char-backward))
+(defn- move-before-char+[buf keycode]
+  (put-register! buf ";" {:str keycode :forward? true :inclusive? false})
+  (move-by-char buf keycode true false))
+
+(defn- move-before-char-[buf keycode]
+  (put-register! buf ";" {:str keycode :forward? false :inclusive? false})
+  (move-by-char buf keycode false false))
+
+(defn- repeat-move-by-char[buf same-dir?]
+  (let [{ch :str 
+         forward? :forward? 
+         inclusive? :inclusive?} (get-register buf ";")]
+    (move-by-char buf ch (= same-dir? forward?) inclusive?)))
+
+(defn- repeat-move-by-char+[buf]
+  (repeat-move-by-char buf true))
+
+(defn- repeat-move-by-char-[buf]
+  (repeat-move-by-char buf false))
 
 (defn- move-to-matched-braces[buf]
   (buf-move buf
@@ -272,18 +308,12 @@
    "0" line-first
    "^" line-start
    "$" line-end
-   "f" {"<esc>" identity
-        "<cr>" identity
-        :else move-to-next-char }
-   "F" {"<esc>" identity
-        "<cr>" identity
-        :else move-to-back-char }
-   "t" {"<esc>" identity 
-        "<cr>" identity
-        :else move-before-next-char }
-   "T" {"<esc>" identity 
-        "<cr>" identity
-        :else move-after-back-char }
+   "f" {:else move-to-char+}
+   "F" {:else move-to-char-}
+   "t" {:else move-before-char+}
+   "T" {:else move-before-char-}
+   ";" repeat-move-by-char+
+   "," repeat-move-by-char-
    "/" (merge line-editor-keymap
               {"<cr>" increment-search-<cr>
                :after increment-search+})
