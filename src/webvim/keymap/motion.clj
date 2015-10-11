@@ -103,11 +103,6 @@
                 r
                 (first (pos-re+ r pos #"\(|\)|\[|\]|\{|\}"))))))
 
-(defn- left-boundary[buf] 
-  (str "(?<=^|[" ((word-re (buf :language)) :not-word-chars) "])"))
-(defn- right-boundary[buf] 
-  (str "(?=[" ((word-re (buf :language)) :not-word-chars) "]|$)"))
-
 (defn- re-current-word
   "create regexp from word under cursor"
   [buf]
@@ -127,21 +122,21 @@
 
 (defn- same-word+[buf]
   (let [re (re-current-word buf)]
-    (registers-put (:registers buf) "/" (str "/" re))
+    (registers-put (:registers buf) "/" {:str (str re) :forward? true})
     (-> buf 
         (re-forward-highlight re)
         (highlight-all-matches re))))
 
 (defn- same-word-[buf]
   (let [re (re-current-word buf)]
-    (registers-put (:registers buf) "/" (str "?" re))
+    (registers-put (:registers buf) "/" {:str (str re) :forward? false})
     (-> buf 
         (re-backward-highlight re)
         (highlight-all-matches re))))
 
 (defn- same-word-first[buf]
   (let [re (re-current-word buf)]
-    (registers-put (:registers buf) "/" (str "/" re))
+    (registers-put (:registers buf) "/" {:str (str re) :forward? true})
     (-> buf
         buf-start
         (re-forward-highlight re)
@@ -199,21 +194,21 @@
     (catch Exception e 
       (re-pattern "(?m)(?!x)x"))))
 
-(defn- handle-search[buf]
+(defn- increment-search-<cr>[buf]
   (let [s (-> buf :line-buffer :str str)
         prefix (-> buf :line-buffer :prefix)]
-    (registers-put (:registers buf) "/" (str prefix s))
+    (registers-put (:registers buf) "/" {:str s :forward? (= prefix "/")})
     (-> buf
         (highlight-all-matches (search-pattern s))
         (dissoc :line-buffer))))
 
-(defn- increment-search[buf dir]
+(defn- increment-search[buf forward?]
   (let [linebuf (buf :line-buffer)]
     (if (nil? linebuf) buf
       (let [s (-> linebuf :str str)
             re (search-pattern s)
             newbuf (-> buf :context :lastbuf)
-            f (if (= dir \/)
+            f (if forward?
                 re-forward-highlight 
                 re-backward-highlight)]
         ;(println (-> buf :context :lastbuf))
@@ -225,33 +220,34 @@
             (f re))))))
 
 (defn- increment-search+ [buf _]
-  (increment-search buf \/))
+  (increment-search buf true))
 
 (defn- increment-search- [buf _]
-  (increment-search buf \?))
+  (increment-search buf false))
 
-(defn- repeat-search[buf dir]
-  (let[s (or (registers-get (:registers buf) "/") "/")
-       re (search-pattern (subs s 1))
+(defn- repeat-search[buf same-dir?]
+  (let[{s :str forward? :forward?} (or (registers-get (:registers buf) "/") 
+                                      {:str "" :forward? true})
+       re (search-pattern s)
        hightlightall? (-> buf :highlights empty?)
-       fnsearch (if (= (first s) dir) re-forward-highlight re-backward-highlight)
+       fnsearch (if (= same-dir? forward?) re-forward-highlight re-backward-highlight)
        b1 (fnsearch buf re)] ;TODO: 1. no need fnsearch if highlight all matches. 2. cache highlight-all-matches
     (if hightlightall?
       (highlight-all-matches b1 re) b1)))
 
 (defn- repeat-search+[buf]
-  (repeat-search buf \/))
+  (repeat-search buf true))
 
 (defn- repeat-search-[buf]
-  (repeat-search buf \?))
+  (repeat-search buf false))
 
-(defonce ^{:private true} listen-change-buffer
+(defonce ^:private listen-change-buffer
   (listen 
     :change-buffer
     (fn [buf oldbuf c]
-      (let [re (-> buf :registers deref (get "/" "/") (subs 1) re-pattern)]
-        (if-not (or (-> buf :highlights empty?) (-> re str empty?))
-          (highlight-all-matches buf re)
+      (let [s (-> buf :registers (registers-get "/") :str str)]
+        (if-not (or (-> buf :highlights empty?) (empty? s))
+          (highlight-all-matches buf (search-pattern s))
           buf)))))
 
 (defn- enter-increment-search[buf keycode]
@@ -289,10 +285,10 @@
         "<cr>" identity
         :else move-after-back-char }
    "/" (merge line-editor-keymap
-              {"<cr>" handle-search
+              {"<cr>" increment-search-<cr>
                :after increment-search+})
    "?" (merge line-editor-keymap
-              {"<cr>" handle-search
+              {"<cr>" increment-search-<cr>
                :after increment-search-})
    "*" same-word+
    "#" same-word-

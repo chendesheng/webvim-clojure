@@ -60,7 +60,7 @@
         percent (-> y inc (* 100) (/ linescnt) int)]
     (assoc buf :message (format "\"%s\" line %d of %d --%d%%-- col %d" (or path nm) (inc y) linescnt percent (inc x)))))
 
-(def map-key-inclusive 
+(def ^:private map-key-inclusive 
   {"h" false
    "l" false
    "w" false 
