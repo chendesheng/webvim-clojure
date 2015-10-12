@@ -27,8 +27,9 @@
         line-editor-keymap (init-line-editor-keymap)
         ex-mode-keymap (init-ex-mode-keymap line-editor-keymap)
         motion-keymap (init-motion-keymap ex-mode-keymap line-editor-keymap)
-        visual-mode-keymap (init-visual-mode-keymap motion-keymap)
-        normal-mode-keymap (init-normal-mode-keymap motion-keymap insert-mode-keymap visual-mode-keymap ex-mode-keymap)]
+        visual-mode-keymap (init-visual-mode-keymap motion-keymap visual-normal)
+        visual-line-mode-keymap (init-visual-mode-keymap motion-keymap visual-line)
+        normal-mode-keymap (init-normal-mode-keymap motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap)]
     (reset! root-keymap normal-mode-keymap)))
 
 (defn- buf-bound-scroll-top

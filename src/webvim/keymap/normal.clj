@@ -265,7 +265,7 @@
       setup-range-line-end
       (change-range false false)))
 
-(defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap ex-mode-keymap]
+(defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap]
   (let [enter-insert (insert-mode-keymap :enter)]
     (deep-merge
       motion-keymap
@@ -298,13 +298,7 @@
                           (assoc :visual visual)
                           (buf-set-pos (-> visual :ranges first first)))))) }
        "v" visual-mode-keymap
-       "V" (assoc 
-             visual-mode-keymap 
-             :enter
-             (fn[buf keycode]
-               (-> buf
-                   ((visual-mode-keymap :enter) keycode)
-                   (assoc-in [:visual :type] visual-line))))
+       "V" visual-line-mode-keymap
        "z" {"z" cursor-center-viewport }
        "d" (merge 
              motion-keymap
