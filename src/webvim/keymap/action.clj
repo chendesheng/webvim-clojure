@@ -151,10 +151,11 @@
 
 (defn update-x-if-not-jk
   "update :x unless it is up down motion"
-  [buf lastbuf keycode]
-  (if-not (or (= (:pos lastbuf) (:pos buf)) 
-              (contains? #{"j" "k"} keycode))
-    (update-x buf) buf))
+  [buf keycode]
+  (let [lastbuf (buf :context :lastbuf)]
+    (if-not (or (= (:pos lastbuf) (:pos buf)) 
+                (contains? #{"j" "k"} keycode))
+      (update-x buf) buf)))
 
 ;one server only serve one window at one time
 (defonce window (atom{:viewport {:w 0 :h 0}}))

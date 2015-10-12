@@ -77,7 +77,9 @@
    "t" true
    "T" false
    "/" false
-   "$" false})
+   "$" false
+   "a" true
+   "i" true})
 
 (defn- inclusive? [keycode]
   (let [res (map-key-inclusive keycode)]
@@ -87,13 +89,15 @@
 
 ;setup range prefix for delete/change/yank etc.
 (defn- setup-range[buf]
-  (let [pos (buf :pos)
-        lastbuf (-> buf :context :lastbuf)
-        lastpos (lastbuf :pos)]
-    (-> buf
-        ;Restore positoin to lastbuf so that changes happen next can record correct start position. This will make cursor position in right place after undo/redo.
-        (merge (select-keys lastbuf [:pos :x :y])) 
-        (assoc-in [:context :range] [lastpos pos]))))
+  (println (-> buf :context :range))
+  (if (-> buf :context :range nil?)
+    (let [pos (buf :pos)
+          lastbuf (-> buf :context :lastbuf)
+          lastpos (lastbuf :pos)]
+      (-> buf
+          ;Restore positoin to lastbuf so that changes happen next can record correct start position. This will make cursor position in right place after undo/redo.
+          (merge (select-keys lastbuf [:pos :x :y])) 
+          (assoc-in [:context :range] [lastpos pos]))) buf))
 
 (defn- setup-range-line[buf]
   (assoc-in buf [:context :range] (pos-line (buf :str) (buf :pos))))
@@ -210,7 +214,7 @@
         set-normal-mode
         save-undo
         normal-mode-fix-pos
-        (update-x-if-not-jk lastbuf keycode)
+        (update-x-if-not-jk keycode)
         ;alwasy clear :recording-keys
         (assoc-in [:macro :recording-keys] [])
         (update-in [:context] dissoc :range) 
@@ -265,7 +269,7 @@
       setup-range-line-end
       (change-range false false)))
 
-(defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap]
+(defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap pair-keymap]
   (let [enter-insert (insert-mode-keymap :enter)]
     (deep-merge
       motion-keymap
@@ -302,18 +306,22 @@
        "z" {"z" cursor-center-viewport }
        "d" (merge 
              motion-keymap
+             pair-keymap
              {"d" identity
               :after delete})
        "c" (merge
              motion-keymap 
+             pair-keymap
              {"c" identity
               :after change})
        "y" (merge
              motion-keymap
+             pair-keymap
              {"y" identity
               :after yank})
        "=" (merge 
              motion-keymap
+             pair-keymap
              {"=" identity
               :after indent})
        "D" delete-to-line-end
@@ -328,6 +336,7 @@
        :before (fn [buf keycode]
                  (-> buf
                      (assoc-in [:context :lastbuf] buf)
+                     (assoc-in [:context :range] nil)
                      (assoc-in [:context :register] "\"")))
        :after normal-mode-after})))
 
