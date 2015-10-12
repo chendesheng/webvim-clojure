@@ -40,7 +40,6 @@
 (defn- linewise? [buf]
   (= (-> buf :visual :type) visual-line))
 
-
 ;type/mode    | keycode | next
 ;-------------|---------|-------
 ;normal       |  v      | visual-normal
@@ -49,18 +48,21 @@
 ;visual-normal|  v      | normal
 ;visual-line  |  v      | visual-normal
 ;visual-line  |  V      | normal
+(defn- keycode2type[keycode]
+  ({"v" visual-normal "V" visual-line} keycode))
+
 (defn- visual-mode-continue?[buf keycode]
-  (let [typ (-> buf :context :visual-mode-type)]
-    (cond
-      (and (= typ visual-normal) (= keycode "V"))
-      true
-      (and (= typ visual-line) (= keycode "v"))
-      true
-      (and (= typ visual-normal) (= keycode "v"))
-      false
-      (and (= typ visual-line) (= keycode "V"))
-      false
-      :else (not (contains? #{"d" "c" "y" "=" "<esc>"} keycode)))))
+  (let [typ (-> buf :context :visual-mode-type)
+        newtyp (keycode2type keycode)]
+    (if (nil? newtyp)
+      (not (contains? #{"d" "c" "y" "=" "<esc>"} keycode))
+      (not (= typ newtyp)))))
+
+(defn- change-visual-mode-type[buf keycode]
+  (let [typ (-> buf :context :visual-mode-type)
+        newtyp (keycode2type keycode)]
+    (if (= typ newtyp) buf
+      (assoc-in buf [:visual :type] newtyp))))
 
 (defn init-visual-mode-keymap[motion-keymap current-type]
   (merge 
@@ -70,7 +72,8 @@
               (set-visual-mode buf current-type))
      :leave (fn[buf keycode] (clear-visual buf))
      :continue visual-mode-continue?
-     :before (fn[buf keycode] (assoc-in buf [:context :visual-mode-type] (-> buf :visual :type)))
+     :before (fn[buf keycode] (assoc-in buf [:context :visual-mode-type]
+                                        (-> buf :visual :type)))
      :after (fn[buf keycode]
               (-> buf
                   visual-select
@@ -80,18 +83,8 @@
      "y" #(yank-range % true (linewise? %))
      "=" #(indent-range % true)
      "o" swap-visual-start-end
-     "V" (fn[buf]
-            (let [typ (-> buf :visual :type)]
-              (cond 
-                (= typ visual-line)
-                (assoc-in buf [:visual :type] visual-normal)
-                (= typ visual-normal)
-                (assoc-in buf [:visual :type] visual-line)
-                :else buf)))
-     "v" (fn[buf]
-            (let [typ (-> buf :visual :type)]
-              (if (= typ visual-normal) buf
-                (assoc-in buf [:visual :type] visual-normal))))}))
+     "V" #(change-visual-mode-type % "V")
+     "v" #(change-visual-mode-type % "v")}))
 
 ;keep track visual ranges when buffer changed
 (defonce ^:private listen-change-buffer 
