@@ -42,6 +42,22 @@
             (let [rg (if around? [a b] [(inc a) (dec b)])]
               (assoc-in buf [:context :range] rg))))))))
 
+(defn- xml-tag-range[buf around?]
+  (let [{r :str pos :pos} buf
+        re #"</[^>]+>"
+        [ba bb :as rgb] (pos-re+ r pos re)]
+    (if (nil? rgb) buf
+      (let [s (subr r [(+ ba 2) (dec bb)])
+            rga (pos-re- r (dec pos) (->> s
+                                          (format "<%s>")
+                                          quote-pattern 
+                                          re-pattern))]
+        (if (nil? rga) buf
+          (let [rg (if around? 
+                     [(first rga) (-> rgb last dec)]
+                     [(-> rga last) (-> rgb first dec)])]
+            (assoc-in buf [:context :range] rg)))))))
+
 (defn- pair-keymap[around?]
   (merge (reduce-kv
            (fn[keymap left right]
@@ -57,7 +73,8 @@
              (-> keymap
                  (assoc ch (pair-quotes-range ch around?))))
            {}
-           ["\"" "'" "`"])))
+           ["\"" "'" "`"])
+         {"t" #(xml-tag-range % around?)}))
      ;"<" ">"}))
 
 (defn init-pair-keymap[]
