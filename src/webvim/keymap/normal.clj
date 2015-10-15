@@ -192,7 +192,7 @@
                                 (dissoc :after))))))
 
 ;(def ^:private not-repeat-keys #{".", "u", "<c+r>", "p", "P", ":"})
-(defn- repeatable?[keycode]
+(defn- replayable?[keycode]
   (not (contains? #{"." "u" "<c+r>" "p" "P" ":"} keycode)))
 
 (defn- normal-mode-after[buf keycode]
@@ -204,10 +204,10 @@
     ;so keys like i<esc> won't affect, this also exclude all motions.
     (let [keyvec (-> buf :macro :recording-keys)]
       (if (and (not (= (:str lastbuf) (:str buf)))
-               (repeatable? keycode)
+               (replayable? keycode)
                ;" is just register prefix, the actual keycode is the 3rd one
                (if (= keycode "\"")
-                 (repeatable? (nth keyvec 2))
+                 (replayable? (nth keyvec 2))
                  true))
         (put-register! buf "." {:keys keyvec :str (string/join keyvec)})))
     (-> buf 
