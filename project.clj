@@ -11,7 +11,7 @@
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [ring "1.4.0"]]
   :source-paths ["src" "src/webvim"]
-  :resource-paths ["thirdparty/*", "resources"]
+  :resource-paths ["thirdparty/ropes.jar", "resources"]
   :main webvim.server
   :jvm-opts ["-Dapple.awt.UIElement=true"])
 
