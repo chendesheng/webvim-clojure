@@ -292,8 +292,8 @@
       (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
 
 (defn init-motion-keymap[ex-mode-keymap line-editor-keymap]
-  {"h" char-backward
-   "l" char-forward
+  {"h" char-
+   "l" char+
    "k" #(lines-n- % 1)
    "j" #(lines-n+ % 1)
    "g" {"g" buf-start

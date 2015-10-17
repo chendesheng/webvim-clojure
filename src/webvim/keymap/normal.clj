@@ -174,7 +174,7 @@
     [buf]
     (let [ch (char-at (buf :str) (buf :pos))]
       (if (= (or ch \newline) \newline)
-        (char-backward buf) buf)))
+        (char- buf) buf)))
 
 (defn- dot-repeat[buf]
   (let [keycodes (-> buf
@@ -274,7 +274,7 @@
     (deep-merge
       motion-keymap
       {"i" insert-mode-keymap
-       "a" (start-insert-mode char-forward insert-mode-keymap)
+       "a" (start-insert-mode char+ insert-mode-keymap)
        "A" (start-insert-mode line-end insert-mode-keymap)
        "I" (start-insert-mode line-start insert-mode-keymap)
        "s" (start-insert-mode-insert delete-char insert-mode-keymap)

@@ -193,7 +193,7 @@
             line-start))
       (-> buf
           (buf-insert s)
-          char-backward))))
+          char-))))
 
 (defn put-from-register-append[buf keycode]
   (let [{s :str linewise? :linewise?} (get-register buf keycode)

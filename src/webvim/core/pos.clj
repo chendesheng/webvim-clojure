@@ -73,18 +73,19 @@
 ;(pos-re+ (rope "   ()") 0 #"\(|\)|\[|\]|\{|\}")
 
 ;(paragraph-forward {:str (rope "aaa\nbb") :pos 0 :y 0})
-(defn- move-char[buf incdec]
+
+(defn char+[buf]
   (buf-move buf (fn [r pos]
-                  (let [newpos (incdec pos)
+                  (let [ch (or (char-at r pos) \newline)]
+                    (if (= ch \newline)
+                      pos (inc pos))))))
+
+(defn char-[buf]
+  (buf-move buf (fn [r pos]
+                  (let [newpos (dec pos)
                         ch (or (char-at r newpos) \newline)]
                     (if (= ch \newline)
                       pos newpos)))))
-
-(defn char-forward[buf]
-  (move-char buf inc))
-
-(defn char-backward[buf]
-  (move-char buf dec))
 
 (defn buf-start[buf]
   (merge buf {:x 0 :y 0 :pos 0}))

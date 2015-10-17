@@ -71,7 +71,7 @@
    :continue #(not (= "<esc>" %2))
    :leave (fn[buf keycode]
             (-> buf
-                char-backward
+                char-
                 update-x
                 set-normal-mode))})
 
