@@ -69,8 +69,6 @@
            :visual {:type 0 :ranges nil}
            ;=0 normal mode =1 insert mode =2 visual mode =3 ex mode
            :mode 0
-           ;ongoing ex command
-           :ex ""
            ;ongoing command keys, display beside "-- MODE --" prompt. Only save keys trigger next keymap, right before :enter function is called.
            :keys []
            ;send key to this channel when editting this buffer

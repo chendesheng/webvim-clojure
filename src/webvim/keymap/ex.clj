@@ -154,11 +154,21 @@
                      (merge linebuf {:str (rope news) :pos (count news)})))))
    buf))
 
+(defn- append-<br>[buf]
+  (let [s (-> buf :line-buffer :str)
+        len (count s)
+        news (replacer s len len <br>)]
+    (assoc-in buf [:line-buffer :str] news)))
+
 (defn init-ex-mode-keymap[line-editor-keymap]
   (merge line-editor-keymap 
          {:enter (fn[buf keycode]
                    (-> buf
                        ((line-editor-keymap :enter) keycode)
                        (assoc :mode ex-mode)))
-          "<cr>" execute
+          "<cr>" (fn[buf]
+                   (-> buf
+                       ;append a <br> indicates this command is already executed
+                       append-<br>
+                       execute))
           "<tab>" ex-tab-complete}))

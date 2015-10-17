@@ -72,6 +72,7 @@
                     remove-fields)
                 :else
                 (-> after
+                    (dissoc-if-equal before :line-buffer)
                     remove-fields
                     (dissoc :str)
                     (dissoc-if-equal before :mode)
