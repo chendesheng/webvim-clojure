@@ -8,14 +8,14 @@
         webvim.indent
         webvim.utils))
 
-(defonce normal-mode 0)
-(defonce insert-mode 1)
-(defonce visual-mode 2)
-(defonce ex-mode 3)
+(def normal-mode 0)
+(def insert-mode 1)
+(def visual-mode 2)
+(def ex-mode 3)
 
-(defonce visual-normal 0)
-(defonce visual-line 1)
-(defonce visual-block 2) ;TODO
+(def visual-normal 0)
+(def visual-line 1)
+(def visual-block 2) ;TODO
 
 (defn get-register[buf c]
   (registers-get (buf :registers) c))

@@ -12,7 +12,8 @@
                  [ring "1.4.0"]]
   :source-paths ["src" "src/webvim"]
   :resource-paths ["thirdparty/ropes.jar", "resources"]
-  :main webvim.server
+  :main webvim.main
+  :profiles {:dev {:source-paths ["dev"]}}
   :jvm-opts ["-Dapple.awt.UIElement=true"])
 
 

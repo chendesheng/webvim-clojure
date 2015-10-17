@@ -102,8 +102,7 @@
     (if (and (not (blank? f))
              (fs/exists? f))
       (create-buf nm f (slurp f))
-      ;set :last-saved-lines make buffer start as unsaved
-      (assoc (create-buf nm f "") :last-saved-lines nil))))
+      (create-buf nm f ""))))
 
 (defonce ^:private listen-change-buffer
   (listen
