@@ -32,40 +32,40 @@
     (re-pattern 
       (str "[" (res :not-space-chars) "](?=[" (res :space-chars) "])"))))
 
-(defn- re-forward [buf re]
+(defn- re+ [buf re]
   (buf-move buf 
             (fn[r pos]
               (or (first (pos-re+ r (inc pos) re)) 
                   (-> r count dec)))))
 
-(defn- re-backward[buf re]
+(defn- re-[buf re]
   (buf-move buf 
             (fn[r pos]
               (or (first (pos-re- r (dec pos) re)) 0))))
 
-(defn- word-forward[buf]
-  (re-forward buf (re-word-start-border (buf :language))))
+(defn- word+[buf]
+  (re+ buf (re-word-start-border (buf :language))))
 
-(defn- word-backward[buf]
-  (re-backward buf (re-word-start-border (buf :language))))
+(defn- word-[buf]
+  (re- buf (re-word-start-border (buf :language))))
 
-(defn- WORD-forward[buf]
-  (re-forward buf (re-WORD-start-border (buf :language))))
+(defn- WORD+[buf]
+  (re+ buf (re-WORD-start-border (buf :language))))
 
-(defn- WORD-backward[buf]
-  (re-backward buf (re-WORD-start-border (buf :language))))
+(defn- WORD-[buf]
+  (re- buf (re-WORD-start-border (buf :language))))
 
-(defn- word-end-forward[buf]
-  (re-forward buf (re-word-end-border (buf :language))))
+(defn- word-end+[buf]
+  (re+ buf (re-word-end-border (buf :language))))
 
-(defn- WORD-end-forward[buf]
-  (re-forward buf (re-WORD-end-border (buf :language))))
+(defn- WORD-end-[buf]
+  (re+ buf (re-WORD-end-border (buf :language))))
 
-(defn- paragraph-forward[buf]
-  (re-forward buf #"(?<=\n)\n[^\n]"))
+(defn- paragraph+[buf]
+  (re+ buf #"(?<=\n)\n[^\n]"))
 
-(defn- paragraph-backward[buf]
-  (re-backward buf #"((?<=\n)\n[^\n])"))
+(defn- paragraph-[buf]
+  (re- buf #"((?<=\n)\n[^\n])"))
 
 (defn- current-word[buf]
   "return range of word under cursor, right side is exclusive"
@@ -299,12 +299,12 @@
    "g" {"g" buf-start
         "d" same-word-first}
    "G" buf-end
-   "w" word-forward
-   "W" WORD-forward
-   "b" word-backward
-   "B" WORD-backward
-   "e" word-end-forward
-   "E" WORD-end-forward
+   "w" word+
+   "W" WORD+
+   "b" word-
+   "B" WORD-
+   "e" word-end+
+   "E" WORD-end-
    "0" line-first
    "^" line-start
    "$" line-end
@@ -324,8 +324,8 @@
    "#" same-word-
    "n" repeat-search+
    "N" repeat-search-
-   "}" paragraph-forward
-   "{" paragraph-backward
+   "}" paragraph+
+   "{" paragraph-
    "%" move-to-matched-braces
    "<c+u>" #(cursor-move-viewport %1 -0.5) 
    "<c+d>" #(cursor-move-viewport %1 0.5)})
