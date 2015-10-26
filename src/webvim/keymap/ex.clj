@@ -101,13 +101,15 @@
                buf))
    "bdelete" (fn[buf execmd args]
                (swap! buffer-list dissoc (buf :id))
-               (let [lastid (@registers "#")
-                     nextid (if (nil? lastid)
-                              (-> nil new-file :id)
-                              lastid)]
-                 (reset! active-buffer-id nextid)
-                 (swap! registers assoc "%" nextid)
-                 (swap! registers assoc "#" (-> @buffer-list first :id)))
+               (let [lastbuf (@registers "#")
+                     nextbuf (or lastbuf
+                               (new-file nil))
+                     firstbuf (first @buffer-list)]
+                 (reset! active-buffer-id (nextbuf :id))
+                 (swap! registers assoc "%" {:id (nextbuf :id) :str (nextbuf :str)})
+                 (if (or (nil? firstbuf) (= (firstbuf :id) (nextbuf :id)))
+                   (swap! registers assoc "#" nil)
+                   (swap! registers assoc "#" {:id (firstbuf :id) :str (firstbuf :str)})))
                buf)
    "eval" (fn[buf execmd args]
             (->> args

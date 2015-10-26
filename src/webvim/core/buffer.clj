@@ -39,7 +39,8 @@
         buf {:name bufname
            ;= nil if it is a special buffer like [New File] or [Quick Fix]
            :filepath filepath 
-           :ext (or (lower-case (re-find #"\.\w+$" (or bufname ""))) "")
+           :ext (lower-case 
+                  (or (re-find #"\.\w+$" (or bufname "")) ""))
            :str r
            :linescnt (count-lines r)
            :pos 0  ;offset from first char
