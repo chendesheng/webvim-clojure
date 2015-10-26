@@ -375,6 +375,7 @@ function render(buf) {
 
 		renderLines(buf);
 		buffers.active = buffers[buf.id];
+		setSize(buffers.active.id);
 	}
 
 	if (buf.changes) {
