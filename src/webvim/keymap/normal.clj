@@ -210,15 +210,15 @@
                  (replayable? (nth keyvec 2))
                  true))
         (put-register! buf "." {:keys keyvec :str (string/join keyvec)})))
-    (-> buf 
-        set-normal-mode
-        save-undo
-        normal-mode-fix-pos
-        (update-x-if-not-jk keycode)
-        ;alwasy clear :recording-keys
-        (assoc-in [:macro :recording-keys] [])
-        (update-in [:context] dissoc :range) 
-        (buf-update-highlight-brace-pair (buf :pos)))))
+    (let [newbuf (normal-mode-fix-pos buf)]
+      (-> newbuf 
+          set-normal-mode
+          save-undo
+          (update-x-if-not-jk keycode)
+          ;alwasy clear :recording-keys
+          (assoc-in [:macro :recording-keys] [])
+          (update-in [:context] dissoc :range) 
+          (buf-update-highlight-brace-pair (newbuf :pos))))))
 
 (defn- move-to-jumplist
   [buf fndir]
