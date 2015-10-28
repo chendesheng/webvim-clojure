@@ -6,7 +6,7 @@ window.onload = function() { //use window.onload, not sure if stylesheet is load
 	d.style.position = 'absolute';
 	d.style.right = 0;
 	d.style.bottom = 0;
-	d.textContent = "MMMMM";
+	d.textContent = 'M';
 	document.body.appendChild(d);
 	lineHeight = d.offsetHeight;
 	document.body.removeChild(d);
