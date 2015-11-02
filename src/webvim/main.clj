@@ -84,8 +84,10 @@
   (GET "/buf" [] (response [(render nil (active-buffer))]))
   (GET "/resize/:w/:h" [w h] 
        (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)}))
-  (GET "/key" {{keycode :code} :params} (time (handle-keys keycode))))
-
+  (GET "/key" {{keycode :code w :w h :h} :params}
+       (do (when-not (nil? w)
+             (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)}))
+           (time (handle-keys keycode)))))
 
 (def app
   ;(wrap-json-response main-routes))

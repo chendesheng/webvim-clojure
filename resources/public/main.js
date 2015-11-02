@@ -1,4 +1,8 @@
+//local states for each buffer, doesn't contains text content since it might be too large.
+var buffers = {};
+var viewport = {};
 var lineHeight = 21;
+
 window.onload = function() { //use window.onload, not sure if stylesheet is loaded in document.ready
 	var d = document.createElement('SPAN');
 	d.className = 'line-num';
@@ -15,36 +19,30 @@ window.onload = function() { //use window.onload, not sure if stylesheet is load
 		render(resp[0]);
 
 		setSize(buffers.active.id);
-		window.onresize=function() {
-			waitForFinalEvent(function() {
-				setSize(buffers.active.id);
-			}, 500, "resize window");
-		};
 	});
 };
 
-//https://stackoverflow.com/questions/2854407/javascript-jquery-window-resize-how-to-fire-after-the-resize-is-completed/4541963#4541963
-var waitForFinalEvent = (function () {
-	var timers = {};
-	return function (callback, ms, uniqueId) {
-		if (!uniqueId) {
-			uniqueId = "Don't call this twice without a uniqueId";
-		}
-		if (timers[uniqueId]) {
-			clearTimeout (timers[uniqueId]);
-		}
-		timers[uniqueId] = setTimeout(callback, ms);
-	};
-})();
-		
+
+function addViewportParams(url) {
+	var sz = setSize(buffers.active.id);
+	if (sz.width != viewport.width || sz.height != viewport.height) {
+		viewport.width = sz.width;
+		viewport.height = sz.height;
+
+		url += '&w='+sz.width+'&h='+sz.height;
+	}
+
+	return url;
+}
+
 function setSize(bufid) {
 	var zoom = window.innerWidth/document.body.offsetWidth;
 	var pageh = $buffer(bufid).offsetHeight;
 	var sw = pageh*zoom;
 	var w = Math.floor($lines(bufid).offsetWidth*zoom/$cursor(bufid).offsetWidth);
 	var h = Math.floor((window.innerHeight-$statusBar(bufid).offsetHeight)/lineHeight);
-	$.getJSON('resize/'+w+'/'+h);
 	$lines(bufid).style.paddingBottom = (pageh-lineHeight) + 'px'; //scroll beyond last line, leave at least one line
+	return {width: w, height: h}
 }
 
 var gutterLineTemplate = '<div id="line-num-{row}" class="line-num">{incrow}</div>';
@@ -64,9 +62,6 @@ function gutterWidth(bufid, linenum) {
 		return _gutterWidth+2;//left padding 1ch, right padding 1ch
 	}
 }
-
-//local states for each buffer, doesn't contains text content since it might be too large.
-var buffers = {};
 
 function outOfRange(ele) {
 	return ele == null || !/\bcode\b/.test(ele.className);

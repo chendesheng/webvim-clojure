@@ -49,12 +49,15 @@ function escapseKeys(keys) {
 	return keys.replace(/([\\<>])/, '\\$1');
 }
 
+
 function sendQueue() {
 	if (inputQueue.length > 0) {
 		var keys = inputQueue.join('');
 		inputQueue = [keys];
+		var url = 'key?code='+encodeURIComponent(keys);
+		url = addViewportParams(url);
 
-		$.getJSON('key?code='+encodeURIComponent(keys), function(resp) {
+		$.getJSON(url, function(resp) {
 			resp.each(function(change) {
 				render(change);
 			});
