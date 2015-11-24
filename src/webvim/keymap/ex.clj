@@ -1,7 +1,5 @@
 (ns webvim.keymap.ex
   (:require [me.raynes.fs :as fs]
-            [clojure.core.async :as async]
-            [clojure.java.io :as io]
             [snipsnap.core :as clipboard])
   (:use clojure.pprint
         (clojure [string :only (join blank?)])

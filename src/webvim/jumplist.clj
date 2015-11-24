@@ -1,6 +1,5 @@
 (ns webvim.jumplist
-  (:require [me.raynes.fs :as fs]
-            [clojure.core.async :as async]
+  (:require [clojure.core.async :as async]
             [clojure.java.io :as io])
   (:use clojure.pprint
         webvim.core.event

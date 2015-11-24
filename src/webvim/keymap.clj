@@ -1,6 +1,5 @@
 (ns webvim.keymap
-  (:require [ring.adapter.jetty :as jetty]
-            [clojure.core.async :as async])
+  (:require [clojure.core.async :as async])
   (:use clojure.pprint
         webvim.core.event
         webvim.core.rope

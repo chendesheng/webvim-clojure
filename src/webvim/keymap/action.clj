@@ -117,10 +117,6 @@
         [a b] (sort2 a b)]
     [(pos-line-first r a) (pos-line-last r b)]))
 
-;(make-linewise-range [14 73] {:str (rope "(ns webvim.core
-;  (:require [ring.adapter.jetty :as jetty]
-;            [me.raynes.fs :as fs]") :pos 14})
-
 ;collect range argument, TODO: add linewise
 (defn range-prefix[buf inclusive?]
   (cond 

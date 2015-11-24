@@ -1,6 +1,5 @@
 (ns webvim.core.serve
   (:require [me.raynes.fs :as fs]
-            [ring.adapter.jetty :as jetty]
             [clojure.core.async :as async])
   (:use clojure.pprint
         webvim.core.buffer))

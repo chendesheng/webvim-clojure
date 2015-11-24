@@ -1,8 +1,5 @@
 (ns webvim.core.register
-  (:require [me.raynes.fs :as fs]
-            [clojure.core.async :as async]
-            [clojure.java.io :as io]
-            [snipsnap.core :as clipboard])
+  (:require [snipsnap.core :as clipboard])
   (:use webvim.core.event))
 
 ;global registers. Never access this directly, always use buffer's :registers instead
