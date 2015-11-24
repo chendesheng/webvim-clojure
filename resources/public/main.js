@@ -19,20 +19,24 @@ window.onload = function() { //use window.onload, not sure if stylesheet is load
 		render(resp[0]);
 
 		setSize(buffers.active.id);
+
+		keyboardInit();
 	});
 };
 
 
-function addViewportParams(url) {
+function updateViewportSize(fnok) {
 	var sz = setSize(buffers.active.id);
 	if (sz.width != viewport.width || sz.height != viewport.height) {
 		viewport.width = sz.width;
 		viewport.height = sz.height;
 
-		url += '&w='+sz.width+'&h='+sz.height;
+		$.get('resize/'+sz.width+'/'+sz.height, function() {
+			fnok();
+		});
+	} else {
+		fnok();
 	}
-
-	return url;
 }
 
 function setSize(bufid) {

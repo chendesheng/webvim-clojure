@@ -1,7 +1,7 @@
 (ns user
   (:require [me.raynes.fs :as fs]
-            [ring.adapter.jetty :as jetty]
-            [clojure.core.async :as async])
+            [clojure.core.async :as async]
+            [ring.adapter.jetty9 :as jetty])
   (:use webvim.core.buffer
         webvim.core.rope
         webvim.core.register
@@ -37,7 +37,7 @@
   (init-keymap-tree)
   (cache-jquery)
   (open-test-file)
-  (jetty/run-jetty #'app {:port 8080 :join? false}))
+  (run-webserver 8080 false))
 
 (defn- set-buffer![buf]
   (swap! buffer-list assoc (:id buf) buf))

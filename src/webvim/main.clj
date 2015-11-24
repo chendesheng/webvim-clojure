@@ -1,7 +1,8 @@
 (ns webvim.main
-  (:require [ring.adapter.jetty :as jetty]
-            [clojure.core.async :as async]
-            [ring.util.response :as response])
+  (:require [clojure.core.async :as async]
+            [ring.util.response :as response]
+            [cheshire.core :as json]
+            [ring.adapter.jetty9 :as jetty])
   (:use clojure.pprint
         webvim.lang.default
         webvim.lang.clojure ;TODO: load language setting dynamically
@@ -51,11 +52,9 @@
 
 (defn- handle-keys
   [s]
-  (println s)
-  (response 
-    (reduce
-      (fn [changes keycode]
-        (conj changes (edit keycode))) [] (input-keys s))))
+  (reduce
+    (fn [changes keycode]
+      (conj changes (edit keycode))) [] (input-keys s)))
 
 (defn- parse-int [s]
   (Integer. (re-find #"\d+" s)))
@@ -65,9 +64,11 @@
   (html5 
     [:head
      [:script {:src "jquery.js" :type "text/javascript"}]
+     [:script {:src "socket.js" :type "text/javascript"}]
      [:script {:src "utils.js" :type "text/javascript"}]
      [:script {:src "dom.js" :type "text/javascript"}]
      [:script {:src "keycode.js" :type "text/javascript"}]
+     [:script {:src "keymap.js" :type "text/javascript"}]
      [:script {:src "keyboard.js" :type "text/javascript"}]
      [:script {:src "syntax/clojure.js" :type "text/javascript"}]
      [:script {:src "syntax/css.js" :type "text/javascript"}]
@@ -83,11 +84,7 @@
   (GET "/" [request] (homepage request))
   (GET "/buf" [] (response [(render nil (active-buffer))]))
   (GET "/resize/:w/:h" [w h] 
-       (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)}))
-  (GET "/key" {{keycode :code w :w h :h} :params}
-       (do (when-not (nil? w)
-             (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)}))
-           (time (handle-keys keycode)))))
+       (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)})))
 
 (def app
   ;(wrap-json-response main-routes))
@@ -105,7 +102,21 @@
       "%" 
       {:str "/tmp/webvim/welcome.txt" :id id})))
 
+(def socket-handler
+  {:on-text (fn[ws keycode]
+              (println keycode)
+              (jetty/send! 
+                ws 
+                (time 
+                  (json/generate-string
+                    (handle-keys keycode)))))})
+
+(defn run-webserver[port block?]
+  (jetty/run-jetty #'app {:port port 
+                          :join? block?
+                          :websockets {"/socket" socket-handler}}))
+
 (defn -main[& args]
   (init-keymap-tree)
   (open-welcome-file)
-  (jetty/run-jetty #'app {:port 8080 :join? true}))
+  (run-webserver 8080 true))
