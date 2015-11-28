@@ -3,30 +3,17 @@ function escapseKeys(keys) {
 }
 
 function keyboardInit() {
-	var channel = connect("/socket/", 
-		function(changes) {
-			changes.each(function(ch) {
-				render(ch);
-			});
-		},
-		function() {
-			console.log("connection close");
-		},
-		function() {
-			console.log("connection error");
-		});
+	var channel = connect("/socket/");
 
 	function handleKey(key) {
-		updateViewportSize(function() {
-			if (key.length > 1) {
-				key = '<' + escapseKeys(key) + '>';
-			} else {
-				key = escapseKeys(key);
-			}
+		if (key.length > 1) {
+			key = '<' + escapseKeys(key) + '>';
+		} else {
+			key = escapseKeys(key);
+		}
 
-			keymap(key, function(k) {
-				channel.send(wrapActiveId(k));
-			});
+		keymap(key, function(k) {
+			channel.send(k);
 		});
 	}
 
