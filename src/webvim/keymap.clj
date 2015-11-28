@@ -51,4 +51,6 @@
           (fn [buf]
             (-> buf
                 (assoc :before-send-out buf-bound-scroll-top)
-                (assoc :after-send-out #(assoc % :changes []))))))
+                (assoc :after-send-out #(-> %
+                                            (assoc :changes [])
+                                            (assoc :nextid nil)))))))

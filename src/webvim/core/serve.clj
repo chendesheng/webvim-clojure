@@ -85,9 +85,9 @@
           (send-out (merge buf {:mode 0 :message err}) ))))))
 
 (defn key-server
-  "Start a dedicate thread handle input keys. Close :chan-in will stop this thread."
+  "Start a goroutine handle input keys. Close :chan-in will stop it"
   ([buf keymap]
-   (async/thread 
+   (async/go 
      (loop[buf1 buf]
        (if (not (nil? buf1))
          (recur (key-server-inner 
@@ -112,6 +112,6 @@
   (-> f
       open-file
       set-root-keymap
-      buffer-list-save
-      ;start a new thread handle this file
+      buffer-list-save!
+      ;start a new goroutine handle this file
       key-server))

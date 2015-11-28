@@ -3,6 +3,11 @@ var buffers = {};
 var viewport = {};
 var lineHeight = 21;
 
+function wrapActiveId(keys) {
+	//minimize overhead of add id to every input keys
+	return buffers.active.id+"!"+keys;
+}
+
 window.onload = function() { //use window.onload, not sure if stylesheet is loaded in document.ready
 	var d = document.createElement('SPAN');
 	d.className = 'line-num';

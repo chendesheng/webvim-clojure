@@ -21,40 +21,28 @@
         ring.util.response
         ring.middleware.json))
 
-;editor holds all global states
-;(def editor 
-;  {:buffers (atom{})
-;   :root-keymap (atom{})
-;   ;global registers. Never access this directly, always use buffer's :registers instead
-;   :registers (atom{})
-;   ;the current editting buffer, when receving keys from client send keycode to this buffer's :chan-in
-;   ;switch to another buffer is very easy, just do (reset! actvive-buffer b)
-;   ;TODO Serve more than one client at once, make eash session different active-buffer
-;   :active-buffer-id (atom int)
-;   ;one server only serve one window at one time
-;   :window (atom{:viewport {:w 0 :h 0}})
-;   :chan-in (async/chan)
-;   :chan-out (async/chan)})
+;send one keycode
+(defn- handle-key [buf keycode]
+  (async/>!! (:chan-in buf) keycode)  ;blocking
+  (let [newbuf (async/<!! (:chan-out buf))]
+    (if (nil? (@buffer-list (buf :id)))
+      (let[]
+        (async/close! (buf :chan-in))
+        [(render nil (@buffer-list (newbuf :nextid)))])
+      (let[res (render buf newbuf)]
+        (save-buffer! newbuf)
+        (if (-> newbuf :nextid nil?)
+          [res]
+          [res (render nil (@buffer-list (newbuf :nextid)))])))))
 
-(defn- update-buffer [buf]
-  ;not contains? means already deleted
-  (swap! buffer-list 
-         #(if (contains? % (:id buf))
-            (assoc % (:id buf) buf) %)))
-
-(defn- edit [keycode]
-  (let [before (active-buffer)]
-    (async/>!! (:chan-in before) keycode)
-    (let [after (async/<!! (:chan-out before))]
-      (update-buffer after)
-      ;Always write (active-buffer) back because active-buffer-id may change by current key
-      (render before (active-buffer)))))
-
+;send sequence of keycodes one by one
 (defn- handle-keys
-  [s]
-  (reduce
-    (fn [changes keycode]
-      (conj changes (edit keycode))) [] (input-keys s)))
+  [id s]
+  (let [buf (@buffer-list id)]
+    (println (buf :filepath))
+    (reduce
+      (fn [changes keycode]
+        (concat changes (handle-key buf keycode))) [] (input-keys s))))
 
 (defn- parse-int [s]
   (Integer. (re-find #"\d+" s)))
@@ -80,41 +68,54 @@
      [:link {:href "monokai.css" :rel "stylesheet"}]]
     [:body]))
 
+(defn active-buffer[]
+  (let [b (registers-get registers "%")]
+    (if (nil? b) 
+      nil
+      (@buffer-list (b :id)))))
+
 (defroutes main-routes
   (GET "/" [request] (homepage request))
-  (GET "/buf" [] (response [(render nil (active-buffer))]))
+  (GET "/buf" [] (response [(render nil (or (active-buffer)
+                                            (second 
+                                              (first @buffer-list))))]))
   (GET "/resize/:w/:h" [w h] 
        (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)})))
 
 (def app
-  ;(wrap-json-response main-routes))
   (-> (compojure.handler/api main-routes)
       (wrap-json-response)
       (wrap-resource "public")))
 
 (defn- open-welcome-file[]
-  (let [id (reset! active-buffer-id 
-                   (-> "/tmp/webvim/welcome.txt"
-                       new-file
-                       :id))]
-    (registers-put!
-      registers
-      "%" 
-      {:str "/tmp/webvim/welcome.txt" :id id})))
+  (let [f "/tmp/webvim/welcome.txt" 
+        id (-> f new-file :id)]
+    (registers-put! registers "%" {:str f :id id})))
 
-(def socket-handler
-  {:on-text (fn[ws keycode]
-              (println keycode)
-              (jetty/send! 
-                ws 
-                (time 
-                  (json/generate-string
-                    (handle-keys keycode)))))})
+(defn parse-input[body]
+  (let [[id keycode] 
+        (-> #"(?s)(\d+)\!(.*)"
+            (re-seq body)
+            first
+            rest)]
+    [(Integer. id) keycode]))
+
+;(parse-input "123!!\n")
+
+(defn handle-socket[req]
+  {:on-text (fn[ws body]
+              (let [[id keycode] (parse-input body)]
+                (println keycode)
+                (jetty/send! 
+                  ws 
+                  (time 
+                    (json/generate-string
+                      (handle-keys id keycode))))))})
 
 (defn run-webserver[port block?]
   (jetty/run-jetty #'app {:port port 
                           :join? block?
-                          :websockets {"/socket" socket-handler}}))
+                          :websockets {"/socket" handle-socket}}))
 
 (defn -main[& args]
   (init-keymap-tree)

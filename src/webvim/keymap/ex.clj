@@ -44,71 +44,74 @@
                 (if (nil? (buf :filepath))
                   (assoc buf :message "No file name")
                   (write-buffer buf))))
-   "nohlsearch" (fn[buf _ _]
-                  (dissoc buf :highlights))
-   "edit" (fn[buf excmd file]
-            (if (or (empty? file) (= file (:filepath buf)))
-              buf
-              (let [newid (-> file new-file buf-info :id)]
-                (change-active-buffer newid)
-                (jump-push buf)
-                buf)))
-   "buffer" (fn [buf execmd file]
-              (let [matches (find-buffer @buffer-list file)
-                    cnt (count matches)
-                    equals (filter #(= (% :name) file) matches)]
-                (cond 
-                  (= (count equals) 1)
-                  (let[id (-> equals first :id)]
-                    (change-active-buffer id)
-                    (if (not (= id (buf :id)))
-                      (jump-push buf))
-                    buf)
-                  (= 0 (count matches))
-                  (assoc buf :message "No file match")
-                  (= 1 (count matches))
-                  (let[id (-> matches first :id)]
-                    (change-active-buffer id)
-                    (if (not (= id (buf :id)))
-                      (jump-push buf))
-                    buf)
-                  (> (count matches) 1)
-                  ;display matched buffers at most 5 buffers
-                  (assoc buf :message (str "which one? " (join ", " (map :name (take 5 matches))))))))
-   "bnext" (fn[buf execmd args]
-             (let [id (buf :id)
-                   nextid (or
-                            ;get next id larger than current
-                            (->> @buffer-list   (map #(-> % last :id)) (filter #(> % id)) sort first)
-                            (-> @buffer-list first last :id))]
-               ;(println "nextid:" nextid)
-               (if (not (= nextid id))
-                 (do
-                   (change-active-buffer nextid)
-                   (jump-push buf)))
-               buf))
-   "bprev" (fn[buf execmd args]
-             (let [id (buf :id)
-                   nextid (or
-                            (->> @buffer-list   (map #(-> % last :id)) (filter #(> % id)) sort first)
-                            (-> @buffer-list first last :id))]
-               (if (not (= nextid id))
-                 (do
-                   (change-active-buffer nextid)
-                   (jump-push buf)))
-               buf))
-   "bdelete" (fn[buf execmd args]
-               (swap! buffer-list dissoc (buf :id))
-               (let [lastbuf (@registers "#")
-                     nextbuf (or lastbuf
-                               (new-file nil))
-                     firstbuf (first @buffer-list)]
-                 (reset! active-buffer-id (nextbuf :id))
-                 (swap! registers assoc "%" {:id (nextbuf :id) :str (nextbuf :str)})
-                 (if (or (nil? firstbuf) (= (firstbuf :id) (nextbuf :id)))
-                   (swap! registers assoc "#" nil)
-                   (swap! registers assoc "#" {:id (firstbuf :id) :str (firstbuf :str)})))
-               buf)
+    "nohlsearch" (fn[buf _ _]
+                   (dissoc buf :highlights))
+    "edit" (fn[buf excmd file]
+             (if (or (empty? file) (= file (:filepath buf)))
+               buf
+               (let [newbuf (-> file new-file buf-info)
+                     newid (newbuf :id)]
+                 (change-active-buffer (buf :id) newid)
+                 (jump-push buf)
+                 (assoc buf :nextid newid))))
+    "buffer" (fn [buf execmd file]
+               (let [matches (find-buffer @buffer-list file)
+                     cnt (count matches)
+                     equals (filter #(= (% :name) file) matches)]
+                 (cond 
+                   (= (count equals) 1)
+                   (let[id (buf :id)
+                        nextid (-> equals first :id)]
+                     (if (not= id nextid)
+                       (let[]
+                         (jump-push buf)
+                         (change-active-buffer id nextid)))
+                     (assoc buf :nextid nextid))
+                   (= 0 (count matches))
+                   (assoc buf :message "No file match")
+                   (= 1 (count matches))
+                   (let[id (buf :id)
+                        nextid (-> matches first :id)]
+                     (if (not= id nextid)
+                       (let []
+                         (jump-push buf)
+                         (change-active-buffer id nextid)))
+                     (assoc buf :nextid nextid))
+                   (> (count matches) 1)
+                   ;display matched buffers at most 5 buffers
+                   (assoc buf :message (str "which one? " (join ", " (map :name (take 5 matches))))))))
+    "bnext" (fn[buf execmd args]
+              (let [id (buf :id)
+                    nextid (or
+                             ;get next id larger than current
+                             (->> @buffer-list (map #(-> % last :id)) (filter #(> % id)) sort first)
+                             (-> @buffer-list first last :id))]
+                ;(println "nextid:" nextid)
+                (if (not (= nextid id))
+                  (do
+                    (change-active-buffer id nextid)
+                    (jump-push buf)))
+                (assoc buf :nextid nextid)))
+    "bprev" (fn[buf execmd args]
+              (let [id (buf :id)
+                    nextid (or
+                             (->> @buffer-list (map #(-> % last :id)) (filter #(> % id)) sort first)
+                             (-> @buffer-list first last :id))]
+                (if (not (= nextid id))
+                  (do
+                    (change-active-buffer id nextid)
+                    (jump-push buf)))
+                (assoc buf :nextid nextid)))
+    "bdelete" (fn[buf execmd args]
+                (swap! buffer-list dissoc (buf :id))
+                (let [nextbuf (or (@registers "#") (new-file nil))
+                      firstbuf (first @buffer-list)
+                      nextid (nextbuf :id)]
+                  (registers-put! "%" {:id nextid :str (nextbuf :filepath)})
+                  (if (or (nil? firstbuf) (= (firstbuf :id) nextid))
+                    (registers-put! "#" nil)
+                    (registers-put! "#" {:id (firstbuf :id) :str (firstbuf :filepath)}))
+                  (assoc buf :nextid nextid)))
    "eval" (fn[buf execmd args]
             (->> args
                  read-string

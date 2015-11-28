@@ -24,14 +24,9 @@
       (spit path (slurp "http://libs.baidu.com/jquery/2.0.3/jquery.js")))))
 
 (defn- open-test-file[]
-  (let [id (reset! active-buffer-id 
-                   (-> "testfile.clj"
-                       new-file
-                       :id))]
-    (registers-put!
-      registers
-      "%" 
-      {:str "testfile.clj" :id id})))
+  (let [f "testfile.clj" 
+        id (-> f new-file :id)]
+    (registers-put!  registers "%" {:str f :id id})))
 
 (defn start[]
   (init-keymap-tree)
@@ -39,14 +34,12 @@
   (open-test-file)
   (run-webserver 8080 false))
 
-(defn- set-buffer![buf]
-  (swap! buffer-list assoc (:id buf) buf))
-
-(defn restart[]
-  (-> (active-buffer)
-      (assoc :root-keymap (init-keymap-tree))
-      restart-key-server
-      set-buffer!)
+(defn restart![]
+  (for [buf @buffer-list]
+    (-> buf
+        (assoc :root-keymap (init-keymap-tree))
+        restart-key-server
+        save-buffer!))
   "ok")
 
 (defonce ^:private editor

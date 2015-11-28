@@ -15,7 +15,7 @@
 ;key: buffer id, value: buffer map
 (defonce buffer-list (atom {}))
 
-(defn buffer-list-save
+(defn buffer-list-save!
   "Generate buffer id (increase from 1) and add to buffer-list"
   [buf]
   (let [id (swap! gen-buf-id inc)
@@ -23,13 +23,8 @@
     (reset! buffer-list (assoc @buffer-list id buf))
     buf))
 
-;the current editting buffer, when receving keys from client send keycode to this buffer's :chan-in
-;switch to another buffer is very easy, just do (reset! actvive-buffer b)
-;TODO Serve more than one client at once, make eash session different active-buffer
-(defonce active-buffer-id (atom int))
-
-(defn active-buffer[]
-  (@buffer-list @active-buffer-id))
+(defn save-buffer![buf]
+  (swap! buffer-list assoc (:id buf) buf))
 
 (defn create-buf[bufname filepath txt]
   (let [;make sure last line ends with line break
@@ -73,7 +68,7 @@
            ;ongoing command keys, display beside "-- MODE --" prompt. Only save keys trigger next keymap, right before :enter function is called.
            :keys []
            ;send key to this channel when editting this buffer
-           :chan-in (async/chan)
+           :chan-in (async/chan 5)
            ;get result from this channel after send key to :chan-in
            :chan-out (async/chan)
            ;List of highlight ranges, for hlsearch.

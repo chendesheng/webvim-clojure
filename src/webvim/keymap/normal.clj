@@ -222,7 +222,7 @@
 
 (defn- move-to-jumplist
   [buf fndir]
-  (loop [pos (fndir buf)]
+  (loop [pos (fndir buf)]  ;TODO: filter lazy seq instead of loop
     (if (nil? pos)
       buf ;newest or oldest
       (let [newb (@buffer-list (pos :id))]
@@ -231,15 +231,16 @@
           (recur (fndir buf)) 
           ;pos is avaliable
           (if (< (pos :pos) (count (newb :str)))
-            (let [newid (newb :id)
+            (let [id (buf :id)
+                  newid (pos :id)
                   newpos (pos :pos)]
-              (if (= newid @active-buffer-id) 
+              (if (= newid id) 
                 ;update pos inside current buffer
                 (buf-set-pos buf newpos)
                 (let []
-                  (change-active-buffer newid)
-                  (swap! buffer-list update-in [newid] #(buf-set-pos % newpos))
-                  buf)))
+                  (change-active-buffer id newid)
+                  ;(swap! buffer-list update-in [newid] #(buf-set-pos % newpos))
+                  (assoc buf :nextid newid))))
             ;buffer has been modifed and cursor is no longer inside, ignore
             (recur (fndir buf))))))))
 

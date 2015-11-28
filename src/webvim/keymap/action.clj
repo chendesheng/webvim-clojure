@@ -105,10 +105,11 @@
     (put-register! buf (-> buf :context :register) {:str s :linewise? linewise?})
     (update-in buf [:context] dissoc :register)))
 
-(defn change-active-buffer[id]
-  (registers-put! registers "#" {:str ((active-buffer) :filepath) :id @active-buffer-id})
-  (reset! active-buffer-id id)
-  (registers-put! registers "%" {:str (-> @buffer-list (get id) :filepath) :id id}))
+(defn change-active-buffer[id nextid]
+  (if (not= id nextid)
+    (do
+      (registers-put! registers "#" {:str (-> @buffer-list (get id) :filepath) :id id})
+      (registers-put! registers "%" {:str (-> @buffer-list (get nextid) :filepath) :id nextid}))))
 
 
 (defn make-linewise-range [[a b] buf]

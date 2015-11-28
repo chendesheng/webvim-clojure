@@ -25,7 +25,7 @@ function keyboardInit() {
 			}
 
 			keymap(key, function(k) {
-				channel.send(k);
+				channel.send(wrapActiveId(k));
 			});
 		});
 	}
