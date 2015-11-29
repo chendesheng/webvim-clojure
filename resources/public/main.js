@@ -643,13 +643,13 @@ function renderLineBuffer(buf) {
 }
 
 function renderStatusBar(buf) {
-	if (typeof buf['line-buffer'] != 'undefined') {
-		renderLineBuffer(buf);
-	} else if (buf.message) {
+	if (buf.message) {
 		$statusCursor(buf.id).style.cssText = 'display:none';
 
 		var ex = $statusBuf(buf.id);
 		ex.textContent = buf.message;
+	} else if (typeof buf['line-buffer'] != 'undefined') {
+		renderLineBuffer(buf);
 	} else {
 		$statusCursor(buf.id).style.cssText = 'display:none';
 
