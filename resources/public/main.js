@@ -437,14 +437,14 @@ function render(buf) {
 	}
 
 	//render hlsearch
-	$highlights(buf.id).innerHTML = '';
-	if (buf.highlights) {
+	if (typeof buf.highlights != 'undefined') {
+		$highlights(buf.id).innerHTML = '';
 		renderSelections($highlights(buf.id), buffers[buf.id], buf.highlights, true);
 	}
 
 	//render matched brace pair
-	$cursorBrace(buf.id).innerHTML = '';
-	if (buf.braces) {
+	if (typeof buf.braces != 'undefined') {
+		$cursorBrace(buf.id).innerHTML = '';
 		var $p = $cursorBrace(buf.id);
 
 		for (var i = 0; i < buf.braces.length; i++) {

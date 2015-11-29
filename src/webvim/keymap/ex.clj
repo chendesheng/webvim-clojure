@@ -45,7 +45,7 @@
                   (assoc buf :message "No file name")
                   (write-buffer buf))))
     "nohlsearch" (fn[buf _ _]
-                   (dissoc buf :highlights))
+                   (assoc buf :highlights []))
     "edit" (fn[buf excmd file]
              (if (or (empty? file) (= file (:filepath buf)))
                buf

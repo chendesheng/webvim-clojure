@@ -46,7 +46,6 @@
 (defn- remove-fields[buf]
   (-> buf 
       (dissoc :history :context :last-cursor :language :filepath :x :y :cursor :pending-undo :before-send-out :after-send-out :macro :chan-in :chan-out :registers :linescnt :root-keymap :ext :last-visual :nextid)
-      (dissoc-empty [:highlights])
       (dissoc-empty [:changes])
       (dissoc-nil :keys)
       line-editor
@@ -76,10 +75,12 @@
                     remove-fields
                     (dissoc :str)
                     (dissoc-if-equal before :mode)
+                    (dissoc-if-equal before :braces)
                     (dissoc-if-equal before :keys)
                     (dissoc-if-equal before :name)
                     (dissoc-if-equal before :dirty)
                     (dissoc-if-equal before :message)
+                    (dissoc-if-equal before :highlights)
                     (dissoc-if-equal before :pos)))]
     buf))
 

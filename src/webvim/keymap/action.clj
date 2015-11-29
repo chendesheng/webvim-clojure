@@ -52,7 +52,7 @@
   (let [mpos (pos-match-brace (buf :str) pos)]
     ;(println pos mpos)
     (if (nil? mpos)
-      (dissoc buf :braces)
+      (assoc buf :braces [])
       (assoc buf :braces [pos mpos]))))
 
 (defn- add-highlight[buf rg]
