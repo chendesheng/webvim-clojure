@@ -132,17 +132,20 @@ function newHighlight(lang) {
 
 function hlcompile(ROOT) {
 	if (!ROOT) {
-		return {
+		var hl = {
 			parse: function(block, state) {
 				return [[], [[null, block]]];
 			},
 			parseBlock: function(block, row) {
+				if (hl.states[row] == null)
+					hl.states[row]=[];
 				return [[null, block]];
 			},
 			refresh: function(iter) {
 				iter.render([[null, iter.text()]]);
 			}
 		};
+		return hl;
 	}
 
 	function reStr(re) {
