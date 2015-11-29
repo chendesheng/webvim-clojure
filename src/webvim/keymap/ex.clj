@@ -179,6 +179,8 @@
                    (-> buf
                        ((line-editor-keymap :enter) keycode)
                        (assoc :mode ex-mode)))
+          :after (fn[buf keycode]
+                   (dissoc buf :keys))
           "<cr>" (fn[buf]
                    (-> buf
                        ;append a <br> indicates this command is already executed
