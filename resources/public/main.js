@@ -439,7 +439,7 @@ function render(buf) {
 	//render hlsearch
 	if (typeof buf.highlights != 'undefined') {
 		$highlights(buf.id).innerHTML = '';
-		renderSelections($highlights(buf.id), buffers[buf.id], buf.highlights, true);
+		if (buf.highlights) renderSelections($highlights(buf.id), buffers[buf.id], buf.highlights, true);
 	}
 
 	//render matched brace pair
@@ -447,12 +447,14 @@ function render(buf) {
 		$cursorBrace(buf.id).innerHTML = '';
 		var $p = $cursorBrace(buf.id);
 
-		for (var i = 0; i < buf.braces.length; i++) {
-			var pt = buf.braces[i];
-			//skip cursor, don't draw twice at the same point
-			if (buffers[buf.id].cursor == pt) continue; 
+		if (buf.braces) {
+			for (var i = 0; i < buf.braces.length; i++) {
+				var pt = buf.braces[i];
+				//skip cursor, don't draw twice at the same point
+				if (buffers[buf.id].cursor == pt) continue; 
 
-			renderSelection($p, pt, pt, buffers[buf.id]);
+				renderSelection($p, pt, pt, buffers[buf.id]);
+			}
 		}
 	}
 
