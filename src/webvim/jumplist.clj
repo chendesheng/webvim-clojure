@@ -26,7 +26,7 @@
 
 ;jump-push before these motions
 (def motions-push-jumps
-  #{"/" "?" "*" "#" "n" "N" "%" "G" "c+d" "c+u" "{" "}"})
+  #{"/" "?" "*" "#" "n" "N" "%" "G" "<c+d>" "<c+u>" "{" "}" "gg" "gd"})
 
 (defn- no-next?[jl]
   (-> jl

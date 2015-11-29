@@ -43,14 +43,15 @@
       buf)))
 
 (defn map-fn-else[buf keymap keycode]
-  (let [f (keymap keycode)]
+  (let [buf1 (assoc buf :keys (conj (:keys buf) keycode))
+        f (keymap keycode)]
     (cond
       (map? f)
-      (serve-keymap buf f keycode)
+      (serve-keymap buf1 f keycode)
       (fn? f)
-      (f buf)
+      (f buf1)
       (nil? f)
-      (call-if-fn buf (:else keymap) keycode))))
+      (call-if-fn buf1 (:else keymap) keycode))))
 
 (defn loop-serve-keys[buf keymap]
   (let [keycode (async/<!! (:chan-in buf))
@@ -62,7 +63,6 @@
 
 (defn serve-keymap[buf keymap keycode]
   (let [buf1 (-> buf
-               (assoc :keys (conj (:keys buf) keycode))
                (call-if-fn (:enter keymap) keycode)
                send-out)
         [buf2 leave-keycode] (loop-serve-keys buf1 keymap)]

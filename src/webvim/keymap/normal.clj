@@ -197,7 +197,7 @@
 
 (defn- normal-mode-after[buf keycode]
   (let [lastbuf (-> buf :context :lastbuf)]
-    (if-not (nil? (motions-push-jumps keycode))
+    (if-not (nil? (motions-push-jumps (string/join (buf :keys))))
       (jump-push lastbuf))
     ;(println "normal-mode-after, recording-keys" (-> buf :macro :recording-keys))
     ;if nothing changed there is no need to overwrite "." register
