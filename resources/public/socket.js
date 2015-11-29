@@ -5,11 +5,7 @@ function connect(path) {
 	function _connect() {
 		_conn = new WebSocket(window.location.href.replace(/^http(s?:\/\/[^/]*)(\/.*)?/i, "ws$1")+path);
 		_conn.onmessage = function(message) {
-			var changes = JSON.parse(message.data);
-
-			changes.each(function(ch) {
-				render(ch);
-			});
+			render(JSON.parse(message.data));
 		};
 		_conn.onopen = function() {
 			_flushBuffer();

@@ -21,29 +21,6 @@
         ring.util.response
         ring.middleware.json))
 
-;send one keycode
-(defn- handle-key [buf keycode]
-  (async/>!! (:chan-in buf) keycode)  ;blocking
-  (let [newbuf (async/<!! (:chan-out buf))]
-    (if (nil? (@buffer-list (buf :id)))
-      (let[]
-        (async/close! (buf :chan-in))
-        [(render nil (@buffer-list (newbuf :nextid)))])
-      (let[res (render buf newbuf)]
-        (save-buffer! newbuf)
-        (if (-> newbuf :nextid nil?)
-          [res]
-          [res (render nil (@buffer-list (newbuf :nextid)))])))))
-
-;send sequence of keycodes one by one
-(defn- handle-keys
-  [id s]
-  (let [buf (@buffer-list id)]
-    (println (buf :filepath))
-    (reduce
-      (fn [changes keycode]
-        (concat changes (handle-key buf keycode))) [] (input-keys s))))
-
 (defn- parse-int [s]
   (Integer. (re-find #"\d+" s)))
 
@@ -68,7 +45,7 @@
      [:link {:href "monokai.css" :rel "stylesheet"}]]
     [:body]))
 
-(defn active-buffer[]
+(defn- active-buffer[]
   (let [b (registers-get registers "%")]
     (if (nil? b) 
       nil
@@ -82,17 +59,16 @@
   (GET "/resize/:w/:h" [w h] 
        (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)})))
 
-(def app
+(def ^:private app
   (-> (compojure.handler/api main-routes)
       (wrap-json-response)
       (wrap-resource "public")))
 
-(defn- open-welcome-file[]
-  (let [f "/tmp/webvim/welcome.txt" 
-        id (-> f new-file :id)]
+(defn- start-file[f]
+  (let [id (-> f new-file :id)]
     (registers-put! registers "%" {:str f :id id})))
 
-(defn parse-input[body]
+(defn- parse-input[body]
   (let [[id keycode] 
         (-> #"(?s)(\d+)\!(.*)"
             (re-seq body)
@@ -101,23 +77,70 @@
     [(Integer. id) keycode]))
 
 ;(parse-input "123!!\n")
+(defonce ^:private ws-out (atom nil))
 
-(defn handle-socket[req]
-  {:on-text (fn[ws body]
-              (let [[id keycode] (parse-input body)]
-                (println keycode)
-                (jetty/send! 
-                  ws 
-                  (time 
-                    (json/generate-string
-                      (handle-keys id keycode))))))})
+(defn- read-output![buffers]
+  (let [[buf _] (async/alts!! (vec (map 
+                      (fn[[_ buf]] (buf :chan-out))
+                      buffers)))]
+    [(dissoc buf :nextid) (buf :nextid)]))
 
-(defn run-webserver[port block?]
-  (jetty/run-jetty #'app {:port port 
-                          :join? block?
-                          :websockets {"/socket" handle-socket}}))
+;try to send changes to client
+;if exception happens return rest of chs
+;else return emtpy vector
+;almost always contains only one change
+(defn- flush-changes! [ws changes]
+  (loop [chs changes]
+    (if (empty? chs) 
+      []
+      (let [success? (try
+                       (do
+                         (jetty/send! ws (json/generate-string (first chs)))
+                         true)
+                       (catch Exception e
+                         (println e)
+                         (reset! ws-out nil)
+                         false))]
+        (if success?
+          (recur (rest chs))
+          chs)))))
+
+(defn- listen-output[]
+  (async/thread
+    (loop[changes []]
+      (let [[newbuf nextid] (read-output! @buffer-list)
+            id (newbuf :id)
+            buf (@buffer-list id)
+            nextbuf (@buffer-list nextid)
+            ws @ws-out
+            chs (flush-changes! ws (conj changes (render buf newbuf)))]
+        (save-buffer! newbuf)
+        (if (or (nil? nextid) (= id nextid))
+          (recur chs)
+          (recur (flush-changes! ws 
+                             (conj changes (render nil nextbuf)))))))))
+
+(defn- handle-socket[req]
+  {:on-connect (fn[ws]
+                 (reset! ws-out ws))
+   :on-text (fn[ws body]
+              (let [[id keycode] (parse-input body)
+                    buf (@buffer-list id)]
+                (loop [ks (input-keys keycode)] ;I don't known why "for" form doesn't work here
+                  (if-not (empty? ks)
+                    (do
+                      (async/>!! (buf :chan-in) (first ks))
+                      (recur (rest ks)))))))})
+
+;start app with init file and webserver configs
+(defn start[file options]
+  (init-keymap-tree)
+  (start-file file)
+  (listen-output)
+  (jetty/run-jetty #'app 
+                   (assoc options :websockets {"/socket" handle-socket})))
 
 (defn -main[& args]
-  (init-keymap-tree)
-  (open-welcome-file)
-  (run-webserver 8080 true))
+  (start 
+    "/tmp/webvim/welcome.txt" 
+    {:port 8080 :join? true}))

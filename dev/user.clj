@@ -23,17 +23,6 @@
     (if-not (fs/exists? path)
       (spit path (slurp "http://libs.baidu.com/jquery/2.0.3/jquery.js")))))
 
-(defn- open-test-file[]
-  (let [f "testfile.clj" 
-        id (-> f new-file :id)]
-    (registers-put!  registers "%" {:str f :id id})))
-
-(defn start[]
-  (init-keymap-tree)
-  (cache-jquery)
-  (open-test-file)
-  (run-webserver 8080 false))
-
 (defn restart![]
   (for [buf @buffer-list]
     (-> buf
@@ -42,5 +31,9 @@
         save-buffer!))
   "ok")
 
-(defonce ^:private editor
-  (start))
+(defonce ^:private main
+  (do
+    (cache-jquery)
+    (start 
+      "testfile.clj"
+      {:port 8080 :join? false})))
