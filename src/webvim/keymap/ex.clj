@@ -105,12 +105,12 @@
     "bdelete" (fn[buf execmd args]
                 (swap! buffer-list dissoc (buf :id))
                 (let [nextbuf (or (@registers "#") (new-file nil))
-                      firstbuf (first @buffer-list)
+                      [_ firstbuf] (first @buffer-list)
                       nextid (nextbuf :id)]
-                  (registers-put! "%" {:id nextid :str (nextbuf :filepath)})
+                  (registers-put! registers "%" {:id nextid :str (nextbuf :filepath)})
                   (if (or (nil? firstbuf) (= (firstbuf :id) nextid))
-                    (registers-put! "#" nil)
-                    (registers-put! "#" {:id (firstbuf :id) :str (firstbuf :filepath)}))
+                    (registers-put! registers "#" nil)
+                    (registers-put! registers "#" {:id (firstbuf :id) :str (firstbuf :filepath)}))
                   (assoc buf :nextid nextid)))
    "eval" (fn[buf execmd args]
             (->> args
