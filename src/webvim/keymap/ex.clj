@@ -33,6 +33,13 @@
           (conj matches buf)))) 
     [] buffers))
 
+(defn- expand-home[f]
+  (str (fs/expand-home f)))
+
+(defn- path=[f1 f2]
+  (= (str (fs/absolute f1))
+     (str (fs/absolute f2))))
+
 (def ex-commands
   (array-map 
     "write" (fn[buf _ file]
@@ -47,9 +54,12 @@
     "nohlsearch" (fn[buf _ _]
                    (assoc buf :highlights []))
     "edit" (fn[buf excmd file]
-             (if (or (empty? file) (= file (:filepath buf)))
+             (if (or (empty? file) (path= file (:filepath buf)))
                buf
-               (let [newbuf (-> file new-file buf-info)
+               (let [buf-exists (some #(path= file (-> % second :filepath)) @buffer-list)
+                     newbuf (if (nil? buf-exists)
+                              (-> file expand-home new-file buf-info)
+                              buf-exists)
                      newid (newbuf :id)]
                  (change-active-buffer (buf :id) newid)
                  (jump-push buf)
