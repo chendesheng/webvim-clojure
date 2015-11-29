@@ -89,7 +89,7 @@
              (-> ch quote-pattern re-pattern)
              (->> ch 
                   quote-pattern
-                  (format (if forward? ".(?=%s)" "(?=%s).") ch)
+                  (format (if forward? ".(?=%s)" "(?=%s)."))
                   re-pattern))
         _ (println re)
         f (if forward? pos-re+ pos-re-)
