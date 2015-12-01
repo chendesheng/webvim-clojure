@@ -67,6 +67,8 @@
    "<c+r>" {"<esc>" #(assoc % :keys [])
             :else put-from-register }
    :else insert-mode-default 
+   :after (fn[buf keycode]
+            (dissoc buf :keys))
    :enter set-insert-mode
    :continue #(not (= "<esc>" %2))
    :leave (fn[buf keycode]
