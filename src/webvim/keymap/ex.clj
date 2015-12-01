@@ -56,7 +56,7 @@
     "edit" (fn[buf excmd file]
              (if (or (empty? file) (path= file (:filepath buf)))
                buf
-               (let [buf-exists (some #(path= file (-> % second :filepath)) @buffer-list)
+               (let [buf-exists (some #(if (path= file (-> % second :filepath)) file) @buffer-list)
                      newbuf (if (nil? buf-exists)
                               (-> file expand-home new-file buf-info)
                               buf-exists)
