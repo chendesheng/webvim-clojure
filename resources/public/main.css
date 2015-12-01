@@ -84,15 +84,18 @@ pre {
 }
 
 .status-bar .cursor {
-	position:relative;
-	display:inline-block;
-	opacity:1;
+	opacity:.4;
 	background:#fff;
-	top:0.45em;
 	height:1em;
 	width:1ch;
+	position:relative;
+	top:0.25em;
+	margin-left:1px;
 }
 
+.status-bar-left {
+	float:left;
+}	
 
 .status-bar {
 	position:fixed;
@@ -108,18 +111,18 @@ pre {
 }
 
 .status-bar .buf-name{
-	position:absolute;
-	top:0;
-	right:10px;
-	bottom:0;
-	display:block;
+	float:right;
 }
 .status-bar .buf-name.buf-unsaved{
 	opacity:0.7;
 }
 
 .status-bar .ongoing-keys {
-	padding-left:2ch;
+	margin-left:2ch;
+}
+
+.status-bar .ex {
+	white-space: pre;	
 }
 
 .buffer::-webkit-scrollbar, .status-bar::-webkit-scrollbar, .content::-webkit-scrollbar, .autocompl::-webkit-scrollbar{

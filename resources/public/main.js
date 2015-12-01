@@ -627,20 +627,9 @@ function renderLineBuffer(buf) {
 
 	//cursor
 	if (str[str.length-1] == '\n') {
-		$statusCursor(buf.id).style.cssText = 'display:none';
+		$statusCursor(buf.id).style.display= 'none';
 	} else {
-		var range = document.createRange();
-		range.setStart(ex.firstChild, pos);
-		range.setEnd(ex.firstChild, pos);
-		var list = range.getClientRects();
-		var rect = list[0];
-		if (list.length > 1 && list[0].top != list[1].top) {
-			//line break;
-			rect = list[1];
-		}
-
-		var cursor = $statusCursor(buf.id)
-		cursor.style.cssText = 'display:block;position:absolute;top:5px;padding-bottom:1px;height:1em;left:'+(rect.left)+'px;opacity:.4';
+		$statusCursor(buf.id).style.display = 'inline';
 	}
 }
 
