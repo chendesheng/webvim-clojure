@@ -291,7 +291,7 @@
       (assoc-in [:context :lastbuf] buf)
       (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
 
-(defn init-motion-keymap[ex-mode-keymap line-editor-keymap]
+(defn init-motion-keymap[line-editor-keymap]
   {"h" char-
    "l" char+
    "k" #(lines-n- % 1)

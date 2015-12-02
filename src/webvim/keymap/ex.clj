@@ -1,5 +1,6 @@
 (ns webvim.keymap.ex
-  (:require [me.raynes.fs :as fs]
+  (:require [clojure.core.async :as async]
+            [me.raynes.fs :as fs]
             [snipsnap.core :as clipboard])
   (:use clojure.pprint
         (clojure [string :only (join blank?)])
@@ -11,6 +12,7 @@
         webvim.jumplist
         webvim.utils
         webvim.fuzzy
+        webvim.keymap.external
         webvim.keymap.action)) 
 
 (defn- buf-info[buf]
@@ -40,7 +42,15 @@
   (= (str (fs/absolute f1))
      (str (fs/absolute f2))))
 
-(def ex-commands
+(defonce ^:private grep-buf-name "*grep*")
+
+(defn- new-grep[motion-keymap]
+  (-> (open-file grep-buf-name)
+      (assoc :root-keymap (init-external-output-keymap motion-keymap))
+      buffer-list-save!
+      key-server))
+
+(defn- ex-commands[motion-keymap]
   (array-map 
     "write" (fn[buf _ file]
               (if (not (blank? file))
@@ -128,13 +138,34 @@
                  eval
                  str
                  (assoc buf :message)))
+   "grep" (fn[buf execmd args]
+            (let [grepbuf (or (some (fn[[_ buf]] 
+                                      (if (= (buf :name) grep-buf-name) buf nil))
+                                    @buffer-list)
+                              (new-grep motion-keymap))
+                  nextid (grepbuf :id)
+                  id (buf :id)]
+              (change-active-buffer id nextid)
+              (jump-push buf)
+              (async/go 
+                (loop[]
+                  (Thread/sleep 50)
+                  (if (and (async/>! (grepbuf :chan-in) "<append>")
+                           (async/>! (grepbuf :chan-in) (str args "\n")))
+                    (recur)
+                    (-> grepbuf
+                        (assoc :chan-in (async/chan))
+                        (assoc :chan-out (async/chan))
+                        save-buffer!
+                        key-server))))
+              (assoc buf :nextid nextid)))
    #"^(\d+)$" (fn[buf row _]
                 ;(println "row:" row)
                 (jump-push buf)
                 (let [row (bound-range (dec (Integer. row)) 0 (-> buf :linescnt dec))]
                   (move-to-line buf row)))))
 
-(defn- execute [buf]
+(defn- execute [buf cmds]
   (let [[_ excmd args] (re-find #"^\s*([^\s]+)\s*(.*)\s*$"
                                 (-> buf :line-buffer :str str))]
     (if (nil? excmd)
@@ -145,13 +176,13 @@
                                     (if (string? cmd)
                                       (if (zero? (.indexOf cmd excmd)) handler nil)
                                       (let [m (re-find cmd excmd)]
-                                        (if (not (nil? m)) handler nil)))) ex-commands))]
+                                        (if (not (nil? m)) handler nil)))) cmds))]
         (println excmd args)
         (if (>= (count handlers) 1)
           ((first handlers) buf excmd args)
           (assoc buf :message "unknown command"))))))
 
-(defn- ex-tab-complete [{{r :str} :line-buffer :as buf}]
+(defn- ex-tab-complete [{{r :str} :line-buffer :as buf} cmds]
   (if (re-test #"^\s*\S+\s*$" r)
     (let [s (str r)
           news (first 
@@ -160,12 +191,13 @@
                   (and
                     (string? k)
                     (zero? (.indexOf k s))))
-                (keys ex-commands)))]
+                (keys cmds)))]
       (if (nil? news) buf
         (update-in buf [:line-buffer]
                    (fn[linebuf]
                      (merge linebuf {:str (rope news) :pos (count news)})))))
    buf))
+
 
 (defn- append-<br>[buf]
   (let [s (-> buf :line-buffer :str)
@@ -173,17 +205,19 @@
         news (replacer s len len <br>)]
     (assoc-in buf [:line-buffer :str] news)))
 
-(defn init-ex-mode-keymap[line-editor-keymap]
-  (merge line-editor-keymap 
-         {:enter (fn[buf keycode]
-                   (-> buf
-                       ((line-editor-keymap :enter) keycode)
-                       (assoc :mode ex-mode)))
-          :after (fn[buf keycode]
-                   (dissoc buf :keys))
-          "<cr>" (fn[buf]
-                   (-> buf
-                       ;append a <br> indicates this command is already executed
-                       append-<br>
-                       execute))
-          "<tab>" ex-tab-complete}))
+(defn init-ex-mode-keymap[motion-keymap line-editor-keymap]
+  (let [cmds (ex-commands motion-keymap)]
+    (merge line-editor-keymap 
+           {:enter (fn[buf keycode]
+                     (-> buf
+                         ((line-editor-keymap :enter) keycode)
+                         (assoc :mode ex-mode)))
+            :after (fn[buf keycode]
+                     (dissoc buf :keys))
+            "<cr>" (fn[buf]
+                     (-> buf
+                         ;append a <br> indicates this command is already executed
+                         append-<br>
+                         (execute cmds)))
+            "<tab>" (fn[buf]
+                      (ex-tab-complete cmds))})))

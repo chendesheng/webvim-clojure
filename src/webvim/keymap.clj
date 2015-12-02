@@ -26,8 +26,8 @@
   (let [insert-mode-keymap (init-insert-mode-keymap)
         pair-keymap (init-pair-keymap)
         line-editor-keymap (init-line-editor-keymap)
-        ex-mode-keymap (init-ex-mode-keymap line-editor-keymap)
-        motion-keymap (init-motion-keymap ex-mode-keymap line-editor-keymap)
+        motion-keymap (init-motion-keymap line-editor-keymap)
+        ex-mode-keymap (init-ex-mode-keymap motion-keymap line-editor-keymap)
         visual-mode-keymap (init-visual-mode-keymap motion-keymap pair-keymap visual-normal)
         visual-line-mode-keymap (init-visual-mode-keymap motion-keymap pair-keymap visual-line)
         normal-mode-keymap (init-normal-mode-keymap motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap pair-keymap)]

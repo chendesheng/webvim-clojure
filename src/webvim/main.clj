@@ -83,7 +83,9 @@
   (let [[buf _] (async/alts!! (vec (map 
                       (fn[[_ buf]] (buf :chan-out))
                       buffers)))]
-    [(dissoc buf :nextid) (buf :nextid)]))
+    (if (nil? buf)
+      [nil nil]
+      [(dissoc buf :nextid) (buf :nextid)])))
 
 ;try to send changes to client
 ;if exception happens return rest of chs
@@ -108,17 +110,19 @@
 (defn- listen-output[]
   (async/thread
     (loop[changes []]
-      (let [[newbuf nextid] (read-output! @buffer-list)
-            id (newbuf :id)
-            buf (@buffer-list id)
-            nextbuf (@buffer-list nextid)
-            ws @ws-out
-            chs (flush-changes! ws (conj changes (render buf newbuf)))]
-        (save-buffer! newbuf)
-        (if (or (nil? nextid) (= id nextid))
-          (recur chs)
-          (recur (flush-changes! ws 
-                             (conj changes (render nil nextbuf)))))))))
+      (let [[newbuf nextid] (read-output! @buffer-list)]
+        (if (nil? newbuf) 
+          (recur changes)
+          (let [id (newbuf :id)
+                buf (@buffer-list id)
+                nextbuf (@buffer-list nextid)
+                ws @ws-out
+                chs (flush-changes! ws (conj changes (render buf newbuf)))]
+            (save-buffer! newbuf)
+            (if (or (nil? nextid) (= id nextid))
+              (recur chs)
+              (recur (flush-changes! ws 
+                                     (conj changes (render nil nextbuf)))))))))))
 
 (defn- handle-socket[req]
   {:on-connect (fn[ws]
