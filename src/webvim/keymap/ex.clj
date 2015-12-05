@@ -1,13 +1,11 @@
 (ns webvim.keymap.ex
-  (:require [clojure.core.async :as async]
-            [me.raynes.fs :as fs]
+  (:require [me.raynes.fs :as fs]
             [snipsnap.core :as clipboard])
   (:use clojure.pprint
         (clojure [string :only (join blank?)])
         webvim.core.rope
         webvim.core.line
         webvim.core.buffer
-        webvim.core.serve
         webvim.core.register
         webvim.jumplist
         webvim.utils
@@ -146,17 +144,6 @@
                   id (buf :id)]
               (change-active-buffer id nextid)
               (jump-push buf)
-              (async/go 
-                (loop[]
-                  (Thread/sleep 50)
-                  (if (and (async/>! (grepbuf :chan-in) "<append>")
-                           (async/>! (grepbuf :chan-in) (str args "\n")))
-                    (recur)
-                    (-> grepbuf
-                        (assoc :chan-in (async/chan))
-                        (assoc :chan-out (async/chan))
-                        save-buffer!
-                        key-server))))
               (assoc buf :nextid nextid)))
    #"^(\d+)$" (fn[buf row _]
                 ;(println "row:" row)

@@ -99,7 +99,3 @@
   ([buf]
    (key-server buf (buf :root-keymap))))
 
-(defn new-file[f]
-  (-> f
-      open-file
-      buffer-list-save!))

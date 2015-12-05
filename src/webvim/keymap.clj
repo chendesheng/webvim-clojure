@@ -5,7 +5,6 @@
         webvim.core.rope
         webvim.core.pos
         webvim.core.buffer
-        webvim.core.serve
         webvim.core.line
         webvim.keymap.motion
         webvim.keymap.visual
@@ -43,6 +42,10 @@
 ;  (fn[ctx path]
 ;    (str ctx (-> path first val))) "" {:a {:aa "haha" :c {:cc "ccc"} } :b "hehe"})
 
+(defn- record-keys[buf keycode]
+  (if (nil? (#{"c+n" "c+p" "c+a" "c+x"} keycode)) ;Don't record keycode for these commands
+    (update-in buf [:macro :recording-keys] conj keycode)
+    buf))
 
 (defn- nop[buf keycode]
   buf)
@@ -55,7 +58,7 @@
     (fn[ctx [[_ {enter :enter}] [_ {before :before}] & _ :as path]]
       (assoc ctx 
              (clojure.string/join (map key path))
-             `(~#(update-in %1 [:keys] conj %2) ~enter ~before)))
+             `(~#(update-in %1 [:keys] conj %2) ~enter ~before ~record-keys)))
     (fn[ctx [[keycode func] & [[_ {before :before after :after continue? :continue}] & _ :as allparents] :as path]]
       (if (contains? #{:enter :leave :before :after :continue} keycode)
         ctx
@@ -63,7 +66,7 @@
                      func
                      (fn[buf keycode]
                        (func buf)))
-              funcs `(~func ~before)]
+              funcs `(~func ~before ~record-keys)]
           (assoc ctx
                  (clojure.string/join (map key path))
                  (conj funcs 

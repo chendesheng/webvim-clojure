@@ -6,16 +6,7 @@
         webvim.core.rope
         webvim.core.register
         webvim.keymap
-        webvim.main
-        webvim.core.serve))
-
-(defn- restart-key-server
-  [buf]
-  (let [_ (async/close! (:chan-in buf))
-        buf1 (-> buf
-               (assoc :chan-in (async/chan))
-               (assoc :chan-out (async/chan)))]
-    (key-server buf1)))
+        webvim.main))
 
 ;I don't like include js library directly, but also don't want download it again and again.
 (defn- cache-jquery[]
@@ -28,7 +19,6 @@
     (for [buf @buffer-list]
       (-> buf
           (assoc :root-keymap keymap)
-          restart-key-server
           save-buffer!)))
   "ok")
 

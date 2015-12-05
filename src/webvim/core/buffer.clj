@@ -67,10 +67,6 @@
            :mode 0
            ;Ongoing command keys. This holds recent keycodes, MUST NOT changed by keymap handler directly.
            :keys nil
-           ;send key to this channel when editting this buffer
-           :chan-in (async/chan 5)
-           ;get result from this channel after send key to :chan-in
-           :chan-out (async/chan)
            ;List of highlight ranges, for hlsearch.
            :highlights nil
            ;programming language specific configs
@@ -97,6 +93,11 @@
              (fs/exists? f))
       (create-buf nm f (slurp f))
       (create-buf nm f ""))))
+
+(defn new-file[f]
+  (-> f
+      open-file
+      buffer-list-save!))
 
 (defonce ^:private listen-change-buffer
   (listen
