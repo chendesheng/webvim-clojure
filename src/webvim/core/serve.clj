@@ -99,17 +99,7 @@
   ([buf]
    (key-server buf (buf :root-keymap))))
 
-;enter point of key sequence parser
-(defonce root-keymap (atom {}))
-
-(defn- set-root-keymap[buf]
-  [buf]
-  (if (-> buf :root-keymap nil?)
-    (assoc buf :root-keymap @root-keymap)
-    buf))
-
 (defn new-file[f]
   (-> f
       open-file
-      set-root-keymap
       buffer-list-save!))

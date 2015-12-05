@@ -24,11 +24,12 @@
       (spit path (slurp "http://libs.baidu.com/jquery/2.0.3/jquery.js")))))
 
 (defn restart![]
-  (for [buf @buffer-list]
-    (-> buf
-        (assoc :root-keymap (init-keymap-tree))
-        restart-key-server
-        save-buffer!))
+  (let [keymap (init-keymap-tree)]
+    (for [buf @buffer-list]
+      (-> buf
+          (assoc :root-keymap keymap)
+          restart-key-server
+          save-buffer!)))
   "ok")
 
 (defonce ^:private main

@@ -67,9 +67,19 @@ Array.prototype.each = function(fn) {
 	}
 };
 
+Array.prototype.contains = function(item) {
+	for (var i = 0; i < this.length; i++) {
+		if (this[i] == item) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 Array.prototype.equal = function(arr) {
-	if (arr.length != this.length) return false;
 	if (arr == this) return true;
+	if (arr.length != this.length) return false;
 
 	for (var i = 0; i < arr.length; i++) {
 		if (this[i] != arr[i])
@@ -125,3 +135,4 @@ function replaceBinding(html, data) {
 	}
 	return html;
 }
+

@@ -15,7 +15,10 @@
   :resource-paths ["thirdparty/ropes.jar", "resources"]
   :main webvim.main
   :profiles {:dev {:source-paths ["dev"]}}
-  :jvm-opts ["-Dapple.awt.UIElement=true"])
+  :jvm-opts ["-Dapple.awt.UIElement=true" 
+             ;Prevent Exceptions With “trace missing”
+             ;http://theholyjava.wordpress.com/2014/05/19/clojurejava-prevent-exceptions-with-trace-missing/?utm_source=tuicool&utm_medium=referral
+             "-XX:-OmitStackTraceInFastThrow"])
 
 
 

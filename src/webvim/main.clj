@@ -79,24 +79,11 @@
 ;(parse-input "123!!\n")
 (defonce ^:private ws-out (atom nil))
 
-(defn- read-output![buffers]
-  (let [[buf _] (async/alts!! (vec (map 
-                      (fn[[_ buf]] (buf :chan-out))
-                      buffers)))]
-    (if (nil? buf)
-      [nil nil]
-      [(dissoc buf :nextid) (buf :nextid)])))
-
-
-(defn- change-func[keycode]
-  (fn[buf]
-    (webvim.core.rope/buf-insert buf (str keycode "\n"))))
-
 (defn- change-buffer![buf keycodes ws]
   (println keycodes)
   (let [[newbuf changes] (reduce 
                            (fn[[buf changes] keycode]
-                             (let [newbuf ((change-func keycode) buf)
+                             (let [newbuf (apply-keycode buf keycode)
                                    newchanges (newbuf :changes)]
                                [(assoc newbuf :changes []) 
                                 (concat changes newchanges)])) [buf nil] keycodes)
@@ -105,51 +92,13 @@
     (jetty/send! ws (json/generate-string diff))
     newbuf))
 
-;try to send changes to client
-;if exception happens return rest of chs
-;else return emtpy vector
-;almost always contains only one change
-(defn- flush-changes! [ws changes]
-  (loop [chs changes]
-    (if (empty? chs) 
-      []
-      (let [success? (try
-                       (do
-                         (let [s (json/generate-string (first chs))]
-                           (time (jetty/send! ws s)))
-                         true)
-                       (catch Exception e
-                         (println e)
-                         (reset! ws-out nil)
-                         false))]
-        (if success?
-          (recur (rest chs))
-          chs)))))
-
-(defn- listen-output[]
-  (async/thread
-    (loop[changes []]
-      (let [[newbuf nextid] (read-output! @buffer-list)]
-        (if (nil? newbuf) 
-          (recur changes)
-          (let [id (newbuf :id)
-                buf (@buffer-list id)
-                nextbuf (@buffer-list nextid)
-                ws @ws-out
-                chs (flush-changes! ws (conj changes (render buf newbuf)))]
-            (save-buffer! newbuf)
-            (if (or (nil? nextid) (= id nextid))
-              (recur chs)
-              (recur (flush-changes! ws 
-                                     (conj changes (render nil nextbuf)))))))))))
-
 (defn- handle-socket[req]
   {:on-connect (fn[ws]
                  (reset! ws-out ws))
    :on-text (fn[ws body]
               (let [[id keycode] (parse-input body)]
                 ;It's ok to use send here because this server only serve one client.
-                (send (@buffer-list id) change-buffer! (input-keys keycode) ws)))})
+                (send-off (@buffer-list id) change-buffer! (input-keys keycode) ws)))})
 
 ;start app with init file and webserver configs
 (defn start[file options]

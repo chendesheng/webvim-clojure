@@ -48,7 +48,7 @@ function imap(key, callback) {
 
 function nmap(key, callback) {
 	if (key == '<c+l>') {
-		callback(':nohlsearch<cr>');
+		callback(':nohl<cr>');
 	} else if (key == '<c+[>') {
 		callback('<esc>');
 	} else {
