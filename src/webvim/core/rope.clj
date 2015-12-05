@@ -131,7 +131,6 @@
               :to (str to)}
            [newbuf rc] (buf-apply-change buf c)
            undo (push-pending (newbuf :pending-undo) rc (buf :pos))]
-       ;(println "make change:" c)
        (-> newbuf
            (assoc :pending-undo undo)
            (update-in [:changes] conj c)))))

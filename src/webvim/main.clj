@@ -53,9 +53,9 @@
 
 (defroutes main-routes
   (GET "/" [request] (homepage request))
-  (GET "/buf" [] (response [(render nil (or (active-buffer)
-                                            (second 
-                                              (first @buffer-list))))]))
+  (GET "/buf" [] (response [(render nil (or @(active-buffer)
+                                            @(second 
+                                               (first @buffer-list))))]))
   (GET "/resize/:w/:h" [w h] 
        (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)})))
 
@@ -65,8 +65,8 @@
       (wrap-resource "public")))
 
 (defn- start-file[f]
-  (let [id (-> f new-file :id)]
-    (registers-put! registers "%" {:str f :id id})))
+  (let [buf @(new-file f)]
+    (registers-put! registers "%" {:str f :id (buf :id)})))
 
 (defn- parse-input[body]
   (let [[id keycode] 
@@ -87,6 +87,24 @@
       [nil nil]
       [(dissoc buf :nextid) (buf :nextid)])))
 
+
+(defn- change-func[keycode]
+  (fn[buf]
+    (webvim.core.rope/buf-insert buf (str keycode "\n"))))
+
+(defn- change-buffer![buf keycodes ws]
+  (println keycodes)
+  (let [[newbuf changes] (reduce 
+                           (fn[[buf changes] keycode]
+                             (let [newbuf ((change-func keycode) buf)
+                                   newchanges (newbuf :changes)]
+                               [(assoc newbuf :changes []) 
+                                (concat changes newchanges)])) [buf nil] keycodes)
+        diff (render buf (assoc newbuf :changes changes))]
+    (println diff)
+    (jetty/send! ws (json/generate-string diff))
+    newbuf))
+
 ;try to send changes to client
 ;if exception happens return rest of chs
 ;else return emtpy vector
@@ -97,7 +115,8 @@
       []
       (let [success? (try
                        (do
-                         (jetty/send! ws (json/generate-string (first chs)))
+                         (let [s (json/generate-string (first chs))]
+                           (time (jetty/send! ws s)))
                          true)
                        (catch Exception e
                          (println e)
@@ -128,19 +147,14 @@
   {:on-connect (fn[ws]
                  (reset! ws-out ws))
    :on-text (fn[ws body]
-              (let [[id keycode] (parse-input body)
-                    buf (@buffer-list id)]
-                (loop [ks (input-keys keycode)] ;I don't known why "for" form doesn't work here
-                  (if-not (empty? ks)
-                    (do
-                      (async/>!! (buf :chan-in) (first ks))
-                      (recur (rest ks)))))))})
+              (let [[id keycode] (parse-input body)]
+                ;It's ok to use send here because this server only serve one client.
+                (send (@buffer-list id) change-buffer! (input-keys keycode) ws)))})
 
 ;start app with init file and webserver configs
 (defn start[file options]
   (init-keymap-tree)
   (start-file file)
-  (listen-output)
   (jetty/run-jetty #'app 
                    (assoc options :websockets {"/socket" handle-socket})))
 

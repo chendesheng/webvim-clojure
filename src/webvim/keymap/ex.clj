@@ -47,8 +47,7 @@
 (defn- new-grep[motion-keymap]
   (-> (open-file grep-buf-name)
       (assoc :root-keymap (init-external-output-keymap motion-keymap))
-      buffer-list-save!
-      key-server))
+      buffer-list-save!))
 
 (defn- ex-commands[motion-keymap]
   (array-map 

@@ -112,6 +112,4 @@
   (-> f
       open-file
       set-root-keymap
-      buffer-list-save!
-      ;start a new goroutine handle this file
-      key-server))
+      buffer-list-save!))

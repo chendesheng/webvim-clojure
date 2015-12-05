@@ -12,16 +12,16 @@
 ;generate buffer id and buffer id only
 (defonce gen-buf-id (atom 0))
 
-;key: buffer id, value: buffer map
+;key: buffer id, value: buffer agent
 (defonce buffer-list (atom {}))
 
 (defn buffer-list-save!
   "Generate buffer id (increase from 1) and add to buffer-list"
   [buf]
   (let [id (swap! gen-buf-id inc)
-        buf (assoc buf :id id)]
-    (reset! buffer-list (assoc @buffer-list id buf))
-    buf))
+        abuf (agent (assoc buf :id id))]
+    (reset! buffer-list (assoc @buffer-list id abuf))
+    abuf))
 
 (defn save-buffer![buf]
   (swap! buffer-list assoc (:id buf) buf))
