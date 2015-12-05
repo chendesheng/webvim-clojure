@@ -18,8 +18,8 @@
 (defn- set-visual-mode[buf, typ]
   ;(println "set-visual-mode:")
   (let [pos (buf :pos)]
-    (merge buf {:mode visual-mode :keys nil 
-              :visual {:type typ :ranges [[pos pos]]}})))
+    (merge buf {:mode visual-mode
+                :visual {:type typ :ranges [[pos pos]]}})))
 
 (defn- clear-visual[buf]
   (-> buf

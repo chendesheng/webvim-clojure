@@ -243,7 +243,7 @@
     (if (nil? linebuf) buf
       (let [s (-> linebuf :str str)
             re (search-pattern s)
-            newbuf (-> buf :context :lastbuf)
+            newbuf (-> buf :context :lastbuf (assoc :keys (buf :keys)))
             f (if forward?
                 re-forward-highlight 
                 re-backward-highlight)]

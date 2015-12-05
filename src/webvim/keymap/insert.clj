@@ -64,11 +64,9 @@
   {;"<c+o>" normal-mode-keymap 
    "<c+n>" #(autocompl-move % inc)
    "<c+p>" #(autocompl-move % dec)
-   "<c+r>" {"<esc>" #(assoc % :keys [])
+   "<c+r>" {"<esc>" identity
             :else put-from-register }
    :else insert-mode-default 
-;   :after (fn[buf keycode]
-;            (dissoc buf :keys))
    :enter set-insert-mode
    :continue #(not (= "<esc>" %2))
    :leave (fn[buf keycode]

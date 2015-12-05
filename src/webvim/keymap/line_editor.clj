@@ -107,7 +107,7 @@
    "<bs>" line-editor-<bs>
    "<c+h>" line-editor-<bs>
    "<c+d>" #(linebuf-delete % 1)
-   "<esc>" #(-> % :context :lastbuf)
+   "<esc>" #(-> % :context :lastbuf (assoc :keys (% :keys)))
    "<c+r>" {"<esc>" identity
             :else line-editor-put}
    "<c+w>" line-editor-<c+w>

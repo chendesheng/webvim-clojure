@@ -89,13 +89,11 @@
   ;(println "set-insert-mode")
   (merge buf {:mode insert-mode 
               :message nil 
-              :visual {:type 0 :ranges nil}
-              :keys nil}))
+              :visual {:type 0 :ranges nil}}))
 
 (defn set-normal-mode[buf]
   ;(println "set-normal-mode:")
   (merge buf {:mode normal-mode 
-            :keys nil
             :visual {:type 0 :ranges nil}
             :autocompl {:suggestions nil 
                         :suggestions-index 0}}))
@@ -139,8 +137,7 @@
     (-> buf
         (buf-yank a b linewise?)
         (buf-delete a b)
-        (set-insert-mode "c")
-        (serve-keymap (-> buf :root-keymap (get "i")) "c"))))
+        (set-insert-mode "c"))))
 
 (defn update-x[buf]
   (let [pos (buf :pos)]

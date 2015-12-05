@@ -21,27 +21,6 @@
         webvim.autocompl))
 
 
-(defn- tree-reduce-recur[visit-branch visit-leaf path ctx root]
-  (reduce 
-    (fn[ctx [k v :as node]]
-      (let [path (conj path node)]
-        (if (map? v)
-          (visit-branch 
-            (tree-reduce-recur 
-              visit-branch visit-leaf path ctx v) path)
-          (visit-leaf ctx path)))) ctx root))
-
-;deep first order
-(defn- tree-reduce[visit-branch visit-leaf ctx root]
-  (tree-reduce-recur visit-branch visit-leaf (seq {"" root}) ctx root))
-
-;(tree-reduce 
-;  (fn[ctx path]
-;    ;(println (first path))
-;    ctx)
-;  (fn[ctx path]
-;    (str ctx (-> path first val))) "" {:a {:aa "haha" :c {:cc "ccc"} } :b "hehe"})
-
 (defn- record-keys[buf keycode]
   (if (nil? (#{"c+n" "c+p" "c+a" "c+x"} keycode)) ;Don't record keycode for these commands
     (update-in buf [:macro :recording-keys] conj keycode)
@@ -67,21 +46,24 @@
                      (fn[buf keycode]
                        (func buf)))
               funcs `(~func ~before ~record-keys)]
+          ;(println "keycode:" keycode)
           (assoc ctx
                  (clojure.string/join (map key path))
                  (conj funcs 
                        (fn[buf keycode]
+                         ;(println "keycode:" keycode)
                          (if (empty? allparents) buf
                            (let [buf (update-in buf [:keys] conj keycode)]
-                             ;(println "parents" allparents)
+                             (println "keys:" (buf :keys))
                              (reduce
                                (fn[buf [_ {after :after continue? :continue leave :leave}]]
                                  (let [keycode (-> buf :keys first)
                                        after (or after nop)
                                        continue? (or continue? stop)
                                        leave (or leave nop)
+                                   _ (println "keys:3" (buf :keys))
                                        buf1 (after buf keycode)]
-                                   ;;(println "keys:" (buf1 :keys))
+                                   (println "keys:2" (buf1 :keys))
                                    (if (continue? buf1 keycode)
                                      (-> buf1
                                          (update-in [:keys] pop)
@@ -107,8 +89,7 @@
   (let [keymap (buf :root-keymap)
         allkeycode (conj (buf :keys) keycode)
         ;_ (println (buf :keys))
-        _ (println allkeycode)
-        ;_ (pprint (apply comp (filter (comp not nil?) (actions (clojure.string/join (conj (buf :keys) ":else"))))))
+        ;_ (println allkeycode)
         func (or (keymap-comp (keymap (clojure.string/join allkeycode))) 
                  (keymap-comp (keymap (clojure.string/join (conj (buf :keys) ":else"))))
                  nop)]
@@ -146,17 +127,18 @@
           (fn [buf]
             (assoc buf :root-keymap @root-keymap))))
 
+(defn- print2[buf]
+  (println (buf :keys))
+  buf)
+
 (defn test-keymap[]
   (str ((let [buf (assoc (open-file nil) :root-keymap (init-keymap-tree)) ]
           (-> buf
-              (apply-keycode "i")
-              (apply-keycode "a")
-              (apply-keycode "a")
-              (apply-keycode "a")
-              (apply-keycode "<esc>")
-              (apply-keycode "h")
-              (apply-keycode "h"))) :pos)))
+              (apply-keycode "/")
+              (apply-keycode "w")
+              (print2)
+              (apply-keycode "a"))) :str)))
 
 ;(test-keymap)
 ;(pprint 
-;  ((compile-keymap @root-keymap) "h"))
+;  ((compile-keymap @root-keymap) ":elsewc"))

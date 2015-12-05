@@ -1,6 +1,7 @@
 (ns webvim.keymap.normal
   (:require [clojure.string :as string])
-  (:use webvim.keymap.action
+  (:use clojure.pprint
+        webvim.keymap.action
         webvim.keymap.macro
         webvim.keymap.motion
         webvim.keymap.insert
@@ -10,7 +11,6 @@
         webvim.core.line
         webvim.core.pos
         webvim.core.register
-        webvim.core.serve
         webvim.indent
         webvim.utils
         webvim.jumplist
@@ -126,20 +126,6 @@
         setup-range
         (yank-range (inclusive? keycode) false))))
 
-(defn- change[buf keycode]
-  (if (= "c" keycode)
-    (-> buf
-        setup-range-line 
-        (delete-range false true)
-        (buf-insert <br>)
-        (lines-n- 1)
-        buf-indent-current-line
-        (set-insert-mode keycode)
-        (serve-keymap (-> buf :root-keymap (get "i")) keycode))
-    (-> buf
-        setup-range
-        (change-range (inclusive? keycode) false))))
-
 (defn- indent[buf keycode]
   (if (= "=" keycode)
     (buf-indent-current-line buf)
@@ -161,12 +147,7 @@
 
 (defn- start-register[buf keycode]
   (if (re-test #"[0-9a-zA-Z/*#%.:+=\-]" keycode)
-    (-> buf 
-        (assoc-in [:context :register] keycode)
-        (serve-keymap (-> buf :root-keymap 
-                          (dissoc "\"") 
-                          (dissoc :before)
-                          (dissoc :after)) keycode))
+    (assoc-in buf [:context :register] keycode)
     buf))
 
 (defn- normal-mode-fix-pos
@@ -270,6 +251,20 @@
       setup-range-line-end
       (change-range false false)))
 
+(defn- delete-and-insert[keymap insert-mode-keymap]
+  (tree-map 
+    (fn[k f]
+      (if (contains? #{:else :before :after :enter :leave :continue} k)
+        f
+        (assoc 
+          insert-mode-keymap
+          :enter 
+          (fn[buf keycode]
+            (-> buf
+                f
+                setup-range
+                (change-range (inclusive? keycode) false)))))) keymap))
+
 (defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap pair-keymap]
   (let [enter-insert (insert-mode-keymap :enter)]
     (deep-merge
@@ -311,10 +306,9 @@
              {"d" identity
               :after delete})
        "c" (merge
-             motion-keymap 
-             pair-keymap
-             {"c" identity
-              :after change})
+             (delete-and-insert motion-keymap insert-mode-keymap)
+             (delete-and-insert pair-keymap insert-mode-keymap)
+             {"c" identity})
        "y" (merge
              motion-keymap
              pair-keymap

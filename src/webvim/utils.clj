@@ -46,3 +46,44 @@
   (if (every? map? maps)
     (apply merge-with deep-merge maps)
     (last maps)))
+
+;"tree" actually means nested map like {:a {:aa "haha" :c {:cc "ccc"} } :b "hehe"}
+;(map? node) equals true then node is a branch node (or a sub tree)
+;(map? node) equals false then node is a leaf
+(defn- tree-reduce-recur[visit-branch visit-leaf path ctx root]
+  (reduce 
+    (fn[ctx [k v :as node]]
+      (let [path (conj path node)]
+        (if (map? v)
+          (visit-branch 
+            (tree-reduce-recur 
+              visit-branch visit-leaf path ctx v) path)
+          (visit-leaf ctx path)))) ctx root))
+
+;deep first order
+(defn tree-reduce[visit-branch visit-leaf ctx root]
+  (tree-reduce-recur visit-branch visit-leaf (seq {"" root}) ctx root))
+
+(defn tree-map
+  "only map leaf nodes"
+  [f root]
+  (tree-reduce-recur
+    (fn[ctx path]
+      ctx)
+    (fn[ctx path]
+      ;(println path)
+      (let [ks (reverse (map key path))]
+        ;(println (get-in root ks))
+        (assoc-in ctx ks (f (key (first path)) (get-in ctx ks)))))
+    nil root root))
+
+;(tree-map (fn[item]
+;            (println item)
+;            (clojure.string/reverse item)) {:a {:empty {} :aa "haha" :c {:cc "123"} } :b "hehe"})
+
+;(tree-reduce 
+;  (fn[ctx path]
+;    ;(println (first path))
+;    ctx)
+;  (fn[ctx path]
+;    (str ctx (-> path first val))) "" {:a {:aa "haha" :c {:cc "ccc"} } :b "hehe"})
