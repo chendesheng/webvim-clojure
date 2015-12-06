@@ -32,7 +32,7 @@
           (buf-set-pos b)))))
 
 (defn- insert-new-line-before[buf]
-  (buf-indent-current-line 
+  (buf-indent-current-line
     (let [pos (buf :pos)
           r (buf :str)
           a (pos-line-first r pos)]
@@ -55,7 +55,7 @@
           (buf-replace a b " ")))))
 
 (defn- buf-pos-info[buf]
-  (let [{nm :name 
+  (let [{nm :name
          path :filepath
          y :y
          x :x
@@ -63,15 +63,15 @@
         percent (-> y inc (* 100) (/ linescnt) int)]
     (assoc buf :message (format "\"%s\" line %d of %d --%d%%-- col %d" (or path nm) (inc y) linescnt percent (inc x)))))
 
-(def ^:private map-key-inclusive 
+(def ^:private map-key-inclusive
   {"h" false
    "l" false
-   "w" false 
-   "W" false 
-   "e" true 
-   "E" true 
-   "b" false 
-   "B" false 
+   "w" false
+   "W" false
+   "e" true
+   "E" true
+   "b" false
+   "B" false
    "f" true
    "F" false
    "t" true
@@ -96,7 +96,7 @@
           lastpos (lastbuf :pos)]
       (-> buf
           ;Restore positoin to lastbuf so that changes happen next can record correct start position. This will make cursor position in right place after undo/redo.
-          (merge (select-keys lastbuf [:pos :x :y])) 
+          (merge (select-keys lastbuf [:pos :x :y]))
           (assoc-in [:context :range] [lastpos pos]))) buf))
 
 (defn- setup-range-line[buf]
@@ -110,7 +110,7 @@
 (defn- delete[buf keycode]
   (if (= "d" keycode)
     (-> buf
-        setup-range-line       
+        setup-range-line
         (delete-range false true)
         line-start)
     (-> buf
@@ -120,7 +120,7 @@
 (defn- yank[buf keycode]
   (if (= "y" keycode)
     (-> buf
-        setup-range-line 
+        setup-range-line
         (yank-range false true))
     (-> buf
         setup-range
@@ -136,11 +136,11 @@
 (defn- replace-char-keycode[buf keycode]
   (let [ch (keycode-to-char buf)]
     (if (= (count ch) 1)
-      (let [enter-indent (if (= ch "\n") 
+      (let [enter-indent (if (= ch "\n")
                            #(buf-indent-current-line %)
                            identity)
             pos (buf :pos)]
-        (-> buf 
+        (-> buf
             (buf-replace buf pos (inc pos) ch)
             enter-indent))
       buf)))
@@ -166,11 +166,9 @@
       buf
       ;Remove "." from :root-keymap prevent recursively execute dot-repeat which will cause stackoverflow
       ;Remove :before and :after because there are called in outside already
-      (replay-keys buf 
-                   keycodes (-> buf :root-keymap 
-                                (dissoc ".")
-                                (dissoc :before)
-                                (dissoc :after))))))
+      (replay-keys buf
+                   keycodes (-> buf :root-keymap
+                                (dissoc "."))))))
 
 ;(def ^:private not-repeat-keys #{".", "u", "<c+r>", "p", "P", ":"})
 (defn- replayable?[keycode]
@@ -192,13 +190,13 @@
                  true))
         (put-register! buf "." {:keys keyvec :str (string/join keyvec)})))
     (let [newbuf (normal-mode-fix-pos buf)]
-      (-> newbuf 
+      (-> newbuf
           set-normal-mode
           save-undo
           (update-x-if-not-jk keycode)
           ;alwasy clear :recording-keys
           (assoc-in [:macro :recording-keys] [])
-          (update-in [:context] dissoc :range) 
+          (update-in [:context] dissoc :range)
           (buf-update-highlight-brace-pair (newbuf :pos))))))
 
 (defn- move-to-jumplist
@@ -209,13 +207,13 @@
       (let [newb @(@buffer-list (pos :id))]
         (if (nil? newb)
           ;buffer has been deleted, ignore
-          (recur (fndir buf)) 
+          (recur (fndir buf))
           ;pos is avaliable
           (if (< (pos :pos) (count (newb :str)))
             (let [id (buf :id)
                   newid (pos :id)
                   newpos (pos :pos)]
-              (if (= newid id) 
+              (if (= newid id)
                 ;update pos inside current buffer
                 (buf-set-pos buf newpos)
                 (let []
@@ -247,23 +245,23 @@
       (delete-range false false)))
 
 (defn- change-to-line-end[buf]
-  (-> buf 
+  (-> buf
       setup-range-line-end
       (change-range false false)))
 
 (defn- delete-and-insert[keymap insert-mode-keymap]
-  (tree-map 
+  (tree-map
     (fn[ks f]
-      (if 
+      (if
         (let [s (clojure.string/join ks)]
-          (or (and 
+          (or (and
                 (contains? #{:else :before :after :enter :leave :continue "<esc>"} (first ks))
                 (not (contains? #{":elset" ":elseT" ":elsef" ":elseF"} s)))
               (contains? #{"<bs>/"} s)))
         f
-        (assoc 
+        (assoc
           insert-mode-keymap
-          :enter 
+          :enter
           (let [f (if (= (first ks) :else) f (fn[buf keycode] (f buf)))]
             (fn[buf keycode]
               (println "bufkeycode:" keycode)
@@ -295,9 +293,9 @@
        "<c+i>" #(move-to-jumplist % jump-next)
        "<c+g>" buf-pos-info
        "<esc>" set-normal-mode
-       "g" {"v" (assoc 
+       "g" {"v" (assoc
                   visual-mode-keymap
-                  :enter 
+                  :enter
                   (fn[buf keycode]
                     (let [visual (buf :last-visual)]
                       (-> buf
@@ -307,7 +305,7 @@
        "v" visual-mode-keymap
        "V" visual-line-mode-keymap
        "z" {"z" cursor-center-viewport }
-       "d" (merge 
+       "d" (merge
              motion-keymap
              pair-keymap
              {"d" identity
@@ -321,7 +319,7 @@
              pair-keymap
              {"y" identity
               :after yank})
-       "=" (merge 
+       "=" (merge
              motion-keymap
              pair-keymap
              {"=" identity

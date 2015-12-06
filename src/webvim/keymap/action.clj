@@ -31,13 +31,13 @@
         left? (contains? left-braces brace)
         re (re-pattern (str  (quote-pattern brace) "|" (quote-pattern m)))]
     (if (nil? m) nil
-      (let [inc-cnt? (if left? 
+      (let [inc-cnt? (if left?
                        #(contains? left-braces %)
                        #(contains? right-braces %))
             braces (if left?
                      (pos-re-seq+ r pos re)
                      (pos-re-seq- r pos re))
-            mpos (reduce 
+            mpos (reduce
                    (fn[cnt [a _]]
                      (let [ch (char-at r a)
                            newcnt (if (inc-cnt? ch)
@@ -64,7 +64,7 @@
 (defn re-forward-highlight[buf re]
   (let [pos (buf :pos)
         r (buf :str)
-        rg (or 
+        rg (or
              (pos-re+ r (inc pos) re)
              (pos-re+ r 0 re))] ;TODO: use region reduce duplicate work
     (if (nil? rg) buf
@@ -76,7 +76,7 @@
 (defn re-backward-highlight[buf re]
   (let [pos (buf :pos)
         r (buf :str)
-        rg (or 
+        rg (or
              (pos-re- r (dec pos) re)
              (pos-re- r (-> r count dec) re))]
     (if (nil? rg) buf
@@ -87,15 +87,15 @@
 
 (defn set-insert-mode[buf keycode]
   ;(println "set-insert-mode")
-  (merge buf {:mode insert-mode 
-              :message nil 
+  (merge buf {:mode insert-mode
+              :message nil
               :visual {:type 0 :ranges nil}}))
 
 (defn set-normal-mode[buf]
   ;(println "set-normal-mode:")
-  (merge buf {:mode normal-mode 
+  (merge buf {:mode normal-mode
             :visual {:type 0 :ranges nil}
-            :autocompl {:suggestions nil 
+            :autocompl {:suggestions nil
                         :suggestions-index 0}}))
 
 (defn buf-yank[buf a b linewise?]
@@ -118,10 +118,10 @@
 
 ;collect range argument, TODO: add linewise
 (defn range-prefix[buf inclusive?]
-  (cond 
+  (cond
     (-> buf :mode (= visual-mode))
     (let [tp (-> buf :visual :type)]
-      (cond 
+      (cond
         (= tp visual-normal)
         (-> buf :visual :ranges (get 0) (make-range inclusive?))
         (= tp visual-line)
@@ -147,7 +147,7 @@
   "update :x unless it is up down motion"
   [buf keycode]
   (let [lastbuf (buf :context :lastbuf)]
-    (if-not (or (= (:pos lastbuf) (:pos buf)) 
+    (if-not (or (= (:pos lastbuf) (:pos buf))
                 (contains? #{"j" "k"} keycode))
       (update-x buf) buf)))
 
@@ -155,7 +155,7 @@
 (defonce window (atom{:viewport {:w 0 :h 0}}))
 
 (defn cursor-center-viewport[buf]
-  (assoc buf :scroll-top 
+  (assoc buf :scroll-top
             (-> buf :y
                 (- (int (/ (-> @window :viewport :h) 2))))))
 
@@ -173,7 +173,7 @@
 
 (defn indent-range[buf inclusive?]
   (let [[a b] (range-prefix buf inclusive?)]
-    (-> buf 
+    (-> buf
         (buf-indent-lines [a b]))))
 
 (defn put-from-register[buf keycode]
@@ -202,3 +202,33 @@
       (-> buf
           (buf-insert (inc pos) s)
           (buf-set-pos (+ pos (count s)))))))
+
+(defn- keymap-comp[funcs]
+  (let [funcs (filter (comp not nil?) funcs)]
+                                        ;(pprint funcs)
+    (if (empty? funcs)
+      nil
+      (fn[buf keycode]
+        (reduce
+         (fn[buf f]
+           (f buf keycode)) buf (reverse funcs))))))
+
+(defn nop[buf keycode]
+  buf)
+
+(defn apply-keycode[buf keycode]
+  (let [keymap (buf :root-keymap)
+        allkeycode (conj (buf :keys) keycode)
+                                        ;_ (println (buf :keys))
+                                        ;_ (println allkeycode)
+        func (or (keymap-comp
+                  (or (keymap (clojure.string/join allkeycode))
+                      (keymap (clojure.string/join (conj (buf :keys) ":else")))
+                      (if (-> buf :keys empty? not)
+                        (or
+                         (keymap (clojure.string/join (conj (pop (buf :keys)) ":else" keycode))) ;last :else can be map too
+                         (keymap (clojure.string/join (conj (pop (buf :keys)) ":else:else")))))))
+                 nop)]
+    (func buf keycode)))
+
+
