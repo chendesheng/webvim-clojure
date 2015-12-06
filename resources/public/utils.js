@@ -120,6 +120,14 @@ RegExp.quote = function(str) {
 	    return (str+'').replace(/[.?*+^$[\]\\(){}|-]/g, "\\$&");
 };
 
+Array.prototype.reverse = function () {
+	var arr = [];
+	for (var i = this.length-1; i >= 0; i--) {
+		arr.push(this[i]);
+	}
+	return arr;
+};
+
 
 
 function isChinese(c) {

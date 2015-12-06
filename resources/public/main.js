@@ -413,12 +413,7 @@ function render(buf) {
 	//render ongoing keys
 	if (typeof buf.keys != 'undefined') {
 		if (buf.keys && buf.keys.length > 0 && buf.keys[0] != ':') {
-			var keysstr = '';
-			for (var i = 0; i < buf.keys.length; i++) {
-				var k = buf.keys[i];
-				keysstr += k;
-			}
-			$statusKeys(buf.id).textContent = keysstr;
+			$statusKeys(buf.id).textContent = buf.keys.reverse().join('');
 		} else {
 			$statusKeys(buf.id).innerHTML = '';
 		}
