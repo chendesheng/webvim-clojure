@@ -26,7 +26,7 @@
 
 (defn- homepage
   [request]
-  (html5 
+  (html5
     [:head
      [:script {:src "jquery.js" :type "text/javascript"}]
      [:script {:src "socket.js" :type "text/javascript"}]
@@ -47,16 +47,16 @@
 
 (defn- active-buffer[]
   (let [b (registers-get registers "%")]
-    (if (nil? b) 
+    (if (nil? b)
       nil
       (@buffer-list (b :id)))))
 
 (defroutes main-routes
   (GET "/" [request] (homepage request))
   (GET "/buf" [] (response [(render nil (or @(active-buffer)
-                                            @(second 
+                                            @(second
                                                (first @buffer-list))))]))
-  (GET "/resize/:w/:h" [w h] 
+  (GET "/resize/:w/:h" [w h]
        (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)})))
 
 (def ^:private app
@@ -70,7 +70,7 @@
     (registers-put! registers "%" {:str f :id (buf :id)})))
 
 (defn- parse-input[body]
-  (let [[id keycode] 
+  (let [[id keycode]
         (-> #"(?s)(\d+)\!(.*)"
             (re-seq body)
             first
@@ -82,24 +82,33 @@
 
 (defn- change-buffer![buf keycodes ws]
   (time
-   (let [[newbuf changes] (reduce 
-                           (fn[[buf changes] keycode]
-                             (let [newbuf (apply-keycode buf keycode)
-                                   newchanges (newbuf :changes)]
-                               [(assoc newbuf :changes []) 
-                                (concat changes newchanges)])) [buf nil] keycodes)
-         diff (render buf (assoc newbuf :changes changes))]
-     (println diff)
-     (jetty/send! ws (json/generate-string diff))
-     (println "nextid1" (newbuf :nextid))
-     (let [nextid (newbuf :nextid)]
-       (if (nil? nextid) newbuf
-           (do
-             (let [nextbuf (@buffer-list nextid)]
-               (println "nextid" nextid)
-               (if-not (nil? nextbuf)
-                 (jetty/send! ws (json/generate-string (render nil @nextbuf)))))
-             (dissoc newbuf :nextid)))))))
+   (try
+     (let [[newbuf changes]
+           (reduce
+            (fn[[buf changes] keycode]
+              (let [newbuf (apply-keycode buf keycode)
+                    newchanges (newbuf :changes)]
+                [(assoc newbuf :changes [])
+                 (concat changes newchanges)])) [buf nil] keycodes)
+           diff (render buf (assoc newbuf :changes changes))]
+       ;(println diff)
+       (jetty/send! ws (json/generate-string diff))
+       ;(println "nextid1" (newbuf :nextid))
+       (let [nextid (newbuf :nextid)]
+         (if (nil? nextid) newbuf
+             (do
+               (let [nextbuf (@buffer-list nextid)]
+                 (println "nextid" nextid)
+                 (if-not (nil? nextbuf)
+                   (jetty/send! ws (json/generate-string (render nil @nextbuf)))))
+               (dissoc newbuf :nextid)))))
+     (catch Exception ex
+       (println ex)
+       (let [newbuf (-> buf
+                        ;(dissoc :keys)
+                        (assoc :message (str ex)))]
+         (jetty/send! ws (json/generate-string (render buf newbuf)))
+         newbuf)))))
 
 (defn- handle-socket[req]
   {:on-connect (fn[ws]
@@ -112,10 +121,10 @@
 (defn start[file options]
   (init-keymap-tree)
   (start-file file)
-  (jetty/run-jetty #'app 
+  (jetty/run-jetty #'app
                    (assoc options :websockets {"/socket" handle-socket})))
 
 (defn -main[& args]
-  (start 
-    "/tmp/webvim/welcome.txt" 
+  (start
+    "/tmp/webvim/welcome.txt"
     {:port 8080 :join? true}))
