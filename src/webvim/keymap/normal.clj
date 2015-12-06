@@ -253,17 +253,24 @@
 
 (defn- delete-and-insert[keymap insert-mode-keymap]
   (tree-map 
-    (fn[k f]
-      (if (contains? #{:else :before :after :enter :leave :continue} k)
+    (fn[ks f]
+      (if 
+        (let [s (clojure.string/join ks)]
+          (or (and 
+                (contains? #{:else :before :after :enter :leave :continue "<esc>"} (first ks))
+                (not (contains? #{":elset" ":elseT" ":elsef" ":elseF"} s)))
+              (contains? #{"<bs>/"} s)))
         f
         (assoc 
           insert-mode-keymap
           :enter 
-          (fn[buf keycode]
-            (-> buf
-                f
-                setup-range
-                (change-range (inclusive? keycode) false)))))) keymap))
+          (let [f (if (= (first ks) :else) f (fn[buf keycode] (f buf)))]
+            (fn[buf keycode]
+              (println "bufkeycode:" keycode)
+              (-> buf
+                  (f keycode)
+                  setup-range
+                  (change-range (inclusive? keycode) false))))))) keymap))
 
 (defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap pair-keymap]
   (let [enter-insert (insert-mode-keymap :enter)]

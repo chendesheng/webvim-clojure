@@ -74,7 +74,7 @@
       ;(println path)
       (let [ks (reverse (map key path))]
         ;(println (get-in root ks))
-        (assoc-in ctx ks (f (key (first path)) (get-in ctx ks)))))
+        (assoc-in ctx ks (f (reverse ks) (get-in ctx ks)))))
     nil root root))
 
 ;(tree-map (fn[item]

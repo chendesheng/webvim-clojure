@@ -90,8 +90,11 @@
         allkeycode (conj (buf :keys) keycode)
         ;_ (println (buf :keys))
         ;_ (println allkeycode)
-        func (or (keymap-comp (keymap (clojure.string/join allkeycode))) 
-                 (keymap-comp (keymap (clojure.string/join (conj (buf :keys) ":else"))))
+        func (or (keymap-comp 
+                   (or (keymap (clojure.string/join allkeycode))
+                       (keymap (clojure.string/join (conj (buf :keys) ":else")))
+                       (keymap (clojure.string/join (conj (pop (buf :keys)) ":else" keycode))) ;last :else can be map too
+                       (keymap (clojure.string/join (conj (pop (buf :keys)) ":else:else")))))
                  nop)]
     (func buf keycode)))
 
@@ -141,4 +144,4 @@
 
 ;(test-keymap)
 ;(pprint 
-;  ((compile-keymap @root-keymap) ":elsewc"))
+;  ((compile-keymap @root-keymap) ":else:elsetc"))
