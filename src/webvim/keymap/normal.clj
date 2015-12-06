@@ -206,7 +206,7 @@
   (loop [pos (fndir buf)]  ;TODO: filter lazy seq instead of loop
     (if (nil? pos)
       buf ;newest or oldest
-      (let [newb (@buffer-list (pos :id))]
+      (let [newb @(@buffer-list (pos :id))]
         (if (nil? newb)
           ;buffer has been deleted, ignore
           (recur (fndir buf)) 

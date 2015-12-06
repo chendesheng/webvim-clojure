@@ -64,6 +64,7 @@
       (wrap-json-response)
       (wrap-resource "public")))
 
+
 (defn- start-file[f]
   (let [buf @(new-file f)]
     (registers-put! registers "%" {:str f :id (buf :id)})))
@@ -80,24 +81,31 @@
 (defonce ^:private ws-out (atom nil))
 
 (defn- change-buffer![buf keycodes ws]
-  (println keycodes)
-  (let [[newbuf changes] (reduce 
+  (time
+   (let [[newbuf changes] (reduce 
                            (fn[[buf changes] keycode]
                              (let [newbuf (apply-keycode buf keycode)
                                    newchanges (newbuf :changes)]
                                [(assoc newbuf :changes []) 
                                 (concat changes newchanges)])) [buf nil] keycodes)
-        diff (render buf (assoc newbuf :changes changes))]
-    (println diff)
-    (jetty/send! ws (json/generate-string diff))
-    newbuf))
+         diff (render buf (assoc newbuf :changes changes))]
+     (println diff)
+     (jetty/send! ws (json/generate-string diff))
+     (println "nextid1" (newbuf :nextid))
+     (let [nextid (newbuf :nextid)]
+       (if (nil? nextid) newbuf
+           (do
+             (let [nextbuf (@buffer-list nextid)]
+               (println "nextid" nextid)
+               (if-not (nil? nextbuf)
+                 (jetty/send! ws (json/generate-string (render nil @nextbuf)))))
+             (dissoc newbuf :nextid)))))))
 
 (defn- handle-socket[req]
   {:on-connect (fn[ws]
                  (reset! ws-out ws))
    :on-text (fn[ws body]
               (let [[id keycode] (parse-input body)]
-                ;It's ok to use send here because this server only serve one client.
                 (send-off (@buffer-list id) change-buffer! (input-keys keycode) ws)))})
 
 ;start app with init file and webserver configs

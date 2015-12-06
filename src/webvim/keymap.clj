@@ -35,7 +35,7 @@
 (defn- compile-keymap[keymap]
   (tree-reduce
     (fn[ctx [[_ {enter :enter}] [_ {before :before}] & _ :as path]]
-      (assoc ctx 
+      (assoc ctx
              (clojure.string/join (map key path))
              `(~#(update-in %1 [:keys] conj %2) ~enter ~before ~record-keys)))
     (fn[ctx [[keycode func] & [[_ {before :before after :after continue? :continue}] & _ :as allparents] :as path]]
@@ -49,7 +49,7 @@
           ;(println "keycode:" keycode)
           (assoc ctx
                  (clojure.string/join (map key path))
-                 (conj funcs 
+                 (conj funcs
                        (fn[buf keycode]
                          ;(println "keycode:" keycode)
                          (if (empty? allparents) buf
@@ -93,8 +93,10 @@
         func (or (keymap-comp 
                    (or (keymap (clojure.string/join allkeycode))
                        (keymap (clojure.string/join (conj (buf :keys) ":else")))
-                       (keymap (clojure.string/join (conj (pop (buf :keys)) ":else" keycode))) ;last :else can be map too
-                       (keymap (clojure.string/join (conj (pop (buf :keys)) ":else:else")))))
+                       (if (-> buf :keys empty? not)
+                         (or
+                          (keymap (clojure.string/join (conj (pop (buf :keys)) ":else" keycode))) ;last :else can be map too
+                          (keymap (clojure.string/join (conj (pop (buf :keys)) ":else:else")))))))
                  nop)]
     (func buf keycode)))
 
