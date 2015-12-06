@@ -4,7 +4,6 @@
         webvim.core.line
         webvim.core.pos
         webvim.core.register
-        webvim.core.serve
         webvim.indent
         webvim.core.utils
         webvim.render))

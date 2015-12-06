@@ -9,7 +9,6 @@
         webvim.lang.javascript
         webvim.lang.css
         webvim.core.buffer
-        webvim.core.serve
         webvim.core.register
         webvim.core.keys
         webvim.keymap

@@ -9,7 +9,6 @@
         webvim.core.line
         webvim.core.pos
         webvim.core.register
-        webvim.core.serve
         webvim.core.event
         webvim.indent
         webvim.core.utils
