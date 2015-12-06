@@ -171,6 +171,10 @@
 (defn- replayable?[keycode]
   (not (contains? #{"." "u" "<c+r>" "p" "P" ":"} keycode)))
 
+(defn- reset-context-register[buf keycode]
+  (if (= keycode "\"") buf
+    (assoc-in buf [:context :register] "\""))) ;reset
+
 (defn- normal-mode-after[buf keycode]
   (let [lastbuf (-> buf :context :lastbuf)]
     (if-not (nil? (motions-push-jumps (string/join (buf :keys))))
@@ -188,12 +192,14 @@
         (put-register! buf "." {:keys keyvec :str (string/join keyvec)})))
     (let [newbuf (normal-mode-fix-pos buf)]
       (-> newbuf
+          (reset-context-register keycode)
           set-normal-mode
           save-undo
           (update-x-if-not-jk keycode)
           ;alwasy clear :recording-keys
           (assoc-in [:macro :recording-keys] [])
           (update-in [:context] dissoc :range)
+          ;TODO make brace match async
           (buf-update-highlight-brace-pair (newbuf :pos))))))
 
 (defn- move-to-jumplist
@@ -332,7 +338,6 @@
        :before (fn [buf keycode]
                  (-> buf
                      (assoc-in [:context :lastbuf] buf)
-                     (assoc-in [:context :range] nil)
-                     (assoc-in [:context :register] "\"")))
+                     (assoc-in [:context :range] nil)))
        :after normal-mode-after})))
 
