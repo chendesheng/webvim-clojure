@@ -37,9 +37,14 @@
 (defn- expand-home[f]
   (str (fs/expand-home f)))
 
+;TODO: get rid of this, fs/absolute is a IO operation
 (defn- path=[f1 f2]
-  (= (str (fs/absolute f1))
-     (str (fs/absolute f2))))
+  (try
+    (= (str (fs/absolute f1))
+       (str (fs/absolute f2)))
+    (catch Exception ex
+      (println ex)
+      false)))
 
 (defonce ^:private grep-buf-name "*grep*")
 
