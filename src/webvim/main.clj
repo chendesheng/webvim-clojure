@@ -11,6 +11,7 @@
         webvim.core.buffer
         webvim.core.register
         webvim.core.keys
+        webvim.core.utils
         webvim.keymap
         webvim.keymap.action
         webvim.render
@@ -76,15 +77,14 @@
     [(Integer. id) keycode]))
 
 ;(parse-input "123!!\n")
-(defonce ^:private ws-out (atom nil))
 
-(defn- change-buffer![buf keycodes ws]
+(defn- change-buffer![buf keycodes]
   (time
    (try
      (let [[newbuf changes] (apply-keycodes buf (buf :root-keymap) keycodes)
            diff (render buf (assoc newbuf :changes changes))]
        ;(println diff)
-       (jetty/send! ws (json/generate-string diff))
+       (jetty/send! @ws-out (json/generate-string diff))
        ;(println "nextid1" (newbuf :nextid))
        (let [nextid (newbuf :nextid)]
          (if (nil? nextid) newbuf
@@ -92,13 +92,13 @@
                (let [nextbuf (@buffer-list nextid)]
                  (println "nextid" nextid)
                  (if-not (nil? nextbuf)
-                   (jetty/send! ws (json/generate-string (render nil @nextbuf)))))
+                   (jetty/send! @ws-out (json/generate-string (render nil @nextbuf)))))
                (dissoc newbuf :nextid)))))
      (catch Exception e
        (println e)
        (.printStackTrace e)
        (let [newbuf (assoc buf :message (str e))]
-         (jetty/send! ws (json/generate-string (render buf newbuf)))
+         (jetty/send! @ws-out (json/generate-string (render buf newbuf)))
          newbuf)))))
 
 (defn- handle-socket[req]
@@ -106,7 +106,7 @@
                  (reset! ws-out ws))
    :on-text (fn[ws body]
               (let [[id keycode] (parse-input body)]
-                (send-off (@buffer-list id) change-buffer! (input-keys keycode) ws)))})
+                (send-off (@buffer-list id) change-buffer! (input-keys keycode))))})
 
 ;start app with init file and webserver configs
 (defn start[file options]

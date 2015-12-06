@@ -1,12 +1,16 @@
 (ns webvim.keymap.ex
   (:require [me.raynes.fs :as fs]
-            [snipsnap.core :as clipboard])
+            [snipsnap.core :as clipboard]
+            [clojure.core.async :as async]
+            [cheshire.core :as json]
+            [ring.adapter.jetty9 :as jetty])
   (:use clojure.pprint
         (clojure [string :only (join blank?)])
         webvim.core.rope
         webvim.core.line
         webvim.core.buffer
         webvim.core.register
+        webvim.core.pos
         webvim.jumplist
         webvim.core.utils
         webvim.fuzzy
@@ -142,13 +146,25 @@
                  str
                  (assoc buf :message)))
    "grep" (fn[buf execmd args]
-            (let [agrepbuf (or (some (fn[[_ buf]]
-                                      (if (= (buf :name) grep-buf-name) buf nil))
+            (let [agrepbuf (or (some (fn[[_ abuf]]
+                                      (if (= (@abuf :name) grep-buf-name) abuf nil))
                                     @buffer-list)
                               (new-grep motion-keymap))
                   grepbuf @agrepbuf
                   nextid (grepbuf :id)
                   id (buf :id)]
+              (async/go
+                (let [s ((clojure.java.shell/sh "grep" args "-r" ".") :out)]
+                  (println s)
+                  (send agrepbuf (fn[buf]
+                                   (let [newbuf (-> buf
+                                                    buf-end
+                                                    (buf-insert "\n")
+                                                    (buf-insert "\n")
+                                                    buf-end
+                                                    (buf-insert s))]
+                                     (jetty/send! @ws-out (json/generate-string (webvim.render/render buf newbuf)))
+                                     newbuf)))))
               (change-active-buffer id nextid)
               (jump-push buf)
               (assoc buf :nextid nextid)))
