@@ -211,4 +211,4 @@
                          append-<br>
                          (execute cmds)))
             "<tab>" (fn[buf]
-                      (ex-tab-complete cmds))})))
+                      (ex-tab-complete buf cmds))})))
