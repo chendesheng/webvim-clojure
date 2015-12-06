@@ -6,7 +6,8 @@
         webvim.core.register
         webvim.core.serve
         webvim.indent
-        webvim.utils))
+        webvim.core.utils
+        webvim.render))
 
 (def normal-mode 0)
 (def insert-mode 1)
@@ -110,12 +111,6 @@
       (registers-put! registers "%" {:str (-> @buffer-list (get nextid) :filepath) :id nextid}))))
 
 
-(defn make-linewise-range [[a b] buf]
-  (println "make-linewise-range:" a b)
-  (let [{r :str pos :pos} buf
-        [a b] (sort2 a b)]
-    [(pos-line-first r a) (pos-line-last r b)]))
-
 ;collect range argument, TODO: add linewise
 (defn range-prefix[buf inclusive?]
   (cond
@@ -216,9 +211,8 @@
 (defn nop[buf keycode]
   buf)
 
-(defn apply-keycode[buf keycode]
-  (let [keymap (buf :root-keymap)
-        allkeycode (conj (buf :keys) keycode)
+(defn apply-keycode[buf keycode keymap]
+  (let [allkeycode (conj (buf :keys) keycode)
                                         ;_ (println (buf :keys))
                                         ;_ (println allkeycode)
         func (or (keymap-comp
@@ -230,5 +224,14 @@
                          (keymap (clojure.string/join (conj (pop (buf :keys)) ":else:else")))))))
                  nop)]
     (func buf keycode)))
+
+(defn apply-keycodes[buf keymap keycodes]
+  (reduce
+    (fn[[buf changes] keycode]
+      (let [newbuf (apply-keycode buf keycode keymap)
+            newchanges (newbuf :changes)]
+        [(assoc newbuf :changes [])
+         (concat changes newchanges)])) [buf nil] keycodes))
+
 
 

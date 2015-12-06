@@ -2,6 +2,7 @@
 (ns webvim.core.line
   (:use clojure.pprint
         webvim.core.rope
+        webvim.core.utils
         webvim.core.pos))
 
 (defn pos-line-first[r pos]
@@ -65,11 +66,6 @@
 
 ;(pos-lines-seq+ (rope "aa\nbb\ncc\n\n") 0 0)
 
-(defn- bound-range[v r e]
-  (cond (<= v r) r
-        (>= v e) e
-        :else v))
-
 (defn- lines-move[buf n fndir]
   (let [x (buf :x)]
     (buf-move buf
@@ -93,3 +89,10 @@
     (if (pos? dy)
       (lines-n+ buf dy)
       (lines-n- buf (- dy)))))
+
+(defn make-linewise-range [[a b] buf]
+  (println "make-linewise-range:" a b)
+  (let [{r :str pos :pos} buf
+        [a b] (sort2 a b)]
+    [(pos-line-first r a) (pos-line-last r b)]))
+

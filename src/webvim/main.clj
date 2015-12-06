@@ -64,7 +64,6 @@
       (wrap-json-response)
       (wrap-resource "public")))
 
-
 (defn- start-file[f]
   (let [buf @(new-file f)]
     (registers-put! registers "%" {:str f :id (buf :id)})))
@@ -83,13 +82,7 @@
 (defn- change-buffer![buf keycodes ws]
   (time
    (try
-     (let [[newbuf changes]
-           (reduce
-            (fn[[buf changes] keycode]
-              (let [newbuf (apply-keycode buf keycode)
-                    newchanges (newbuf :changes)]
-                [(assoc newbuf :changes [])
-                 (concat changes newchanges)])) [buf nil] keycodes)
+     (let [[newbuf changes] (apply-keycodes buf (buf :root-keymap) keycodes)
            diff (render buf (assoc newbuf :changes changes))]
        ;(println diff)
        (jetty/send! ws (json/generate-string diff))
@@ -102,11 +95,10 @@
                  (if-not (nil? nextbuf)
                    (jetty/send! ws (json/generate-string (render nil @nextbuf)))))
                (dissoc newbuf :nextid)))))
-     (catch Exception ex
-       (println ex)
-       (let [newbuf (-> buf
-                        ;(dissoc :keys)
-                        (assoc :message (str ex)))]
+     (catch Exception e
+       (println e)
+       (.printStackTrace e)
+       (let [newbuf (assoc buf :message (str e))]
          (jetty/send! ws (json/generate-string (render buf newbuf)))
          newbuf)))))
 

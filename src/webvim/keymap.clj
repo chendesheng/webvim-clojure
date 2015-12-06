@@ -16,7 +16,7 @@
         webvim.keymap.action
         webvim.core.register
         webvim.jumplist
-        webvim.utils
+        webvim.core.utils
         webvim.indent
         webvim.autocompl))
 

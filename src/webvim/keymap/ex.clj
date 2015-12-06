@@ -8,7 +8,7 @@
         webvim.core.buffer
         webvim.core.register
         webvim.jumplist
-        webvim.utils
+        webvim.core.utils
         webvim.fuzzy
         webvim.keymap.external
         webvim.keymap.action))

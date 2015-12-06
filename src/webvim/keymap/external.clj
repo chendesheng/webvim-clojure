@@ -1,6 +1,6 @@
 (ns webvim.keymap.external
   (:require [clojure.core.async :as async])
-  (:use webvim.utils
+  (:use webvim.core.utils
         webvim.core.rope
         webvim.core.buffer
         webvim.core.pos

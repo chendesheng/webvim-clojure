@@ -3,7 +3,7 @@
         webvim.core.pos
         webvim.core.line
         webvim.keymap.action
-        webvim.utils)) 
+        webvim.core.utils)) 
 
 (defn- linebuf-update-pos[linebuf a b to]
   (let [pos (linebuf :pos)

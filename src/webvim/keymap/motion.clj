@@ -10,7 +10,7 @@
         webvim.keymap.action
         webvim.keymap.ex
         webvim.jumplist
-        webvim.utils))
+        webvim.core.utils))
 
 (defn- re-word-start-border[lang]
   (let [res (word-re lang)]

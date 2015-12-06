@@ -11,7 +11,7 @@
         webvim.core.serve
         webvim.core.event
         webvim.indent
-        webvim.utils
+        webvim.core.utils
         webvim.jumplist
         webvim.autocompl))
 

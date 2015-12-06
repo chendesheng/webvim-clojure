@@ -6,7 +6,7 @@
         webvim.core.pos
         webvim.core.line
         webvim.core.lang
-        webvim.utils))
+        webvim.core.utils))
 
 (defn auto-indent 
   [r pos]

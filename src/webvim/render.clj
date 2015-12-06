@@ -1,10 +1,5 @@
 (ns webvim.render
-  (:use webvim.core.buffer
-        webvim.core.serve
-        webvim.core.register
-        webvim.core.keys
-        webvim.keymap
-        webvim.keymap.action))
+  (:use webvim.core.line))
 
 (defn- dissoc-empty[buf ks]
   (if (empty? (get-in buf ks))
@@ -17,6 +12,8 @@
   (if (nil? (buf k))
     (dissoc buf k)
     buf))
+
+(def ^:private visual-line 1)
 
 (defn- remove-visual-mode[buf]
   (if (empty? (-> buf :visual :ranges))

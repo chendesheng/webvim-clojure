@@ -1,4 +1,4 @@
-(ns webvim.utils)
+(ns webvim.core.utils)
 
 (def all-braces {\( \) \) \( \[ \] \] \[ \{ \} \} \{})
 (def left-braces #{\( \[ \{})

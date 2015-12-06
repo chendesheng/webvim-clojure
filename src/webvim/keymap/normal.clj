@@ -12,7 +12,7 @@
         webvim.core.pos
         webvim.core.register
         webvim.indent
-        webvim.utils
+        webvim.core.utils
         webvim.jumplist
         webvim.autocompl))
 
@@ -166,9 +166,7 @@
       buf
       ;Remove "." from :root-keymap prevent recursively execute dot-repeat which will cause stackoverflow
       ;Remove :before and :after because there are called in outside already
-      (replay-keys buf
-                   keycodes (-> buf :root-keymap
-                                (dissoc "."))))))
+      (replay-keys buf keycodes))))
 
 ;(def ^:private not-repeat-keys #{".", "u", "<c+r>", "p", "P", ":"})
 (defn- replayable?[keycode]

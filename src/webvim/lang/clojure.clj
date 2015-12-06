@@ -5,7 +5,7 @@
         webvim.core.line
         webvim.core.lang
         webvim.indent
-        webvim.utils))
+        webvim.core.utils))
 
 (println "load clojure language")
 
