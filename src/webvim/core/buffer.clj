@@ -23,9 +23,6 @@
     (reset! buffer-list (assoc @buffer-list id abuf))
     abuf))
 
-(defn save-buffer![buf]
-  (swap! buffer-list assoc (:id buf) buf))
-
 (defn create-buf[bufname filepath txt]
   (let [;make sure last line ends with line break
         r (if (.endsWith txt "\n") 

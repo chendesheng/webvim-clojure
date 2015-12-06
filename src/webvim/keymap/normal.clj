@@ -161,7 +161,6 @@
   (let [keycodes (-> buf
                      (get-register ".")
                      :keys)]
-    (println "keycodes:" keycodes)
     (if (empty? keycodes)
       buf
       ;Remove "." from :root-keymap prevent recursively execute dot-repeat which will cause stackoverflow
@@ -262,7 +261,6 @@
           :enter
           (let [f (if (= (first ks) :else) f (fn[buf keycode] (f buf)))]
             (fn[buf keycode]
-              (println "bufkeycode:" keycode)
               (-> buf
                   (f keycode)
                   setup-range

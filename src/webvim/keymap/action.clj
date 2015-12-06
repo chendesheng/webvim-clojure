@@ -198,30 +198,19 @@
           (buf-insert (inc pos) s)
           (buf-set-pos (+ pos (count s)))))))
 
-(defn- keymap-comp[funcs]
-  (let [funcs (filter (comp not nil?) funcs)]
-                                        ;(pprint funcs)
-    (if (empty? funcs)
-      nil
-      (fn[buf keycode]
-        (reduce
-         (fn[buf f]
-           (f buf keycode)) buf (reverse funcs))))))
 
-(defn nop[buf keycode]
-  buf)
+(defn nop[buf keycode] buf)
 
 (defn apply-keycode[buf keycode keymap]
   (let [allkeycode (conj (buf :keys) keycode)
-                                        ;_ (println (buf :keys))
-                                        ;_ (println allkeycode)
-        func (or (keymap-comp
-                  (or (keymap (clojure.string/join allkeycode))
-                      (keymap (clojure.string/join (conj (buf :keys) ":else")))
-                      (if (-> buf :keys empty? not)
-                        (or
-                         (keymap (clojure.string/join (conj (pop (buf :keys)) ":else" keycode))) ;last :else can be map too
-                         (keymap (clojure.string/join (conj (pop (buf :keys)) ":else:else")))))))
+        ;_ (println (buf :keys))
+        ;_ (println allkeycode)
+        func (or (keymap (clojure.string/join allkeycode))
+                 (keymap (clojure.string/join (conj (buf :keys) ":else")))
+                 (if (-> buf :keys empty? not)
+                   (or
+                     (keymap (clojure.string/join (conj (pop (buf :keys)) ":else" keycode))) ;last :else can be map too
+                     (keymap (clojure.string/join (conj (pop (buf :keys)) ":else:else")))))
                  nop)]
     (func buf keycode)))
 
