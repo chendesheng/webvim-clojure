@@ -14,13 +14,11 @@
     (if-not (fs/exists? path)
       (spit path (slurp "http://libs.baidu.com/jquery/2.0.3/jquery.js")))))
 
-(defn restart![]
+(defn restart[]
   (let [keymap (init-keymap-tree)]
-    (for [buf @buffer-list]
-      (-> buf
-          (assoc :root-keymap keymap)
-          save-buffer!)))
-  "ok")
+    (doseq [abuf (vals @buffer-list)]
+      (send abuf #(assoc %1 :root-keymap %2) keymap))
+  "ok"))
 
 (defonce ^:private main
   (do
