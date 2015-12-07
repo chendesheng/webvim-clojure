@@ -4,6 +4,7 @@
         webvim.core.rope
         webvim.core.buffer
         webvim.core.pos
+        webvim.keymap.action
         webvim.jumplist))
 
 (defn- readonly[buf]
@@ -18,4 +19,6 @@
      "a" readonly
      "s" readonly
      "x" readonly
-     "d" readonly}))
+     "d" readonly
+     "<c+o>" #(move-to-jumplist % jump-prev)
+     "<c+i>" #(move-to-jumplist % jump-next)}))

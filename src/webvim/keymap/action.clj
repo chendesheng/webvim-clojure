@@ -1,3 +1,4 @@
+;common actions
 (ns webvim.keymap.action
   (:use webvim.core.buffer
         webvim.core.rope
@@ -221,5 +222,40 @@
         [(assoc newbuf :changes [])
          (concat changes newchanges)])) [buf nil] keycodes))
 
+(defn bound-scroll-top
+  "Change scroll top make cursor inside viewport"
+  [buf keycode]
+  (let [st (buf :scroll-top)]
+    (assoc buf :scroll-top
+           (let [y (buf :y)
+                 h (-> @window :viewport :h)]
+             (cond
+               (< y st) y
+               (< y (+ st h)) st
+               (neg? (-> y (- h) inc)) 0
+               :else (-> y (- h) inc))))))
 
+(defn move-to-jumplist
+  [buf fndir]
+  (loop [pos (fndir buf)]  ;TODO: filter lazy seq instead of loop
+    (if (nil? pos)
+      buf ;newest or oldest
+      (let [newb @(@buffer-list (pos :id))]
+        (if (nil? newb)
+          ;buffer has been deleted, ignore
+          (recur (fndir buf))
+          ;pos is avaliable
+          (if (< (pos :pos) (count (newb :str)))
+            (let [id (buf :id)
+                  newid (pos :id)
+                  newpos (pos :pos)]
+              (if (= newid id)
+                ;update pos inside current buffer
+                (buf-set-pos buf newpos)
+                (let []
+                  (change-active-buffer id newid)
+                  ;(swap! buffer-list update-in [newid] #(buf-set-pos % newpos))
+                  (assoc buf :nextid newid))))
+            ;buffer has been modifed and cursor is no longer inside, ignore
+            (recur (fndir buf))))))))
 

@@ -15,6 +15,7 @@
         webvim.core.utils
         webvim.fuzzy
         webvim.keymap.external
+        webvim.keymap.compile
         webvim.keymap.action))
 
 (defn- buf-info[buf]
@@ -54,7 +55,7 @@
 
 (defn- new-grep[motion-keymap]
   (-> (open-file grep-buf-name)
-      (assoc :root-keymap (init-external-output-keymap motion-keymap))
+      (assoc :root-keymap (compile-keymap (init-external-output-keymap motion-keymap)))
       buffer-list-save!))
 
 (defn- ex-commands[motion-keymap]
@@ -153,19 +154,26 @@
                   grepbuf @agrepbuf
                   nextid (grepbuf :id)
                   id (buf :id)]
+              (println "pos:" (buf :pos))
               (async/go
-                (let [s ((clojure.java.shell/sh "grep" args "-r" ".") :out)]
+                (let [cmds ["grep" args "-rI" "."]
+                      s ((apply clojure.java.shell/sh cmds) :out)]
                   (println s)
                   (send agrepbuf (fn[buf]
-                                   (let [newbuf (-> buf
+                                   ;(println "grepbufid:" (buf :id))
+                                   (let [row (-> buf :linescnt)
+                                         newbuf (-> buf
                                                     buf-end
-                                                    (buf-insert "\n")
-                                                    (buf-insert "\n")
+                                                    (buf-insert (str (clojure.string/join " " cmds) "\n"))
                                                     buf-end
-                                                    (buf-insert s))]
+                                                    (buf-insert (str s "\n"))
+                                                    (move-to-line (dec row))
+                                                    cursor-center-viewport
+                                                    (bound-scroll-top ""))]
                                      (jetty/send! @ws-out (json/generate-string (webvim.render/render buf newbuf)))
-                                     newbuf)))))
+                                     (assoc newbuf :changes []))))))
               (change-active-buffer id nextid)
+              (println "pos2:" (buf :pos))
               (jump-push buf)
               (assoc buf :nextid nextid)))
    #"^(\d+)$" (fn[buf row _]

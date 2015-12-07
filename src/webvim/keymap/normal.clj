@@ -202,30 +202,6 @@
           ;TODO make brace match async
           (buf-update-highlight-brace-pair (newbuf :pos))))))
 
-(defn- move-to-jumplist
-  [buf fndir]
-  (loop [pos (fndir buf)]  ;TODO: filter lazy seq instead of loop
-    (if (nil? pos)
-      buf ;newest or oldest
-      (let [newb @(@buffer-list (pos :id))]
-        (if (nil? newb)
-          ;buffer has been deleted, ignore
-          (recur (fndir buf))
-          ;pos is avaliable
-          (if (< (pos :pos) (count (newb :str)))
-            (let [id (buf :id)
-                  newid (pos :id)
-                  newpos (pos :pos)]
-              (if (= newid id)
-                ;update pos inside current buffer
-                (buf-set-pos buf newpos)
-                (let []
-                  (change-active-buffer id newid)
-                  ;(swap! buffer-list update-in [newid] #(buf-set-pos % newpos))
-                  (assoc buf :nextid newid))))
-            ;buffer has been modifed and cursor is no longer inside, ignore
-            (recur (fndir buf))))))))
-
 (defn- start-insert-mode[fnmotion insert-mode-keymap]
   (merge
     insert-mode-keymap

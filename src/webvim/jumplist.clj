@@ -48,6 +48,7 @@
       nil?))
 
 (defn- push-current[jl buf]
+  (println "pos3:" (buf :pos))
   (new-future jl (select-keys buf [:id :pos])))
 
 (defn jump-push
@@ -86,6 +87,7 @@
             delta (- (-> c :to count) (c :len))]
         (swap! jump-list 
                rewrite-history (fn[{id :id pos :pos :as p}]
-                                 (if (and (= id bufid) (< pos cpos)) p
-                                   {:id id :pos (+ pos delta)})))
+                                 (if (and (= id bufid) (>= pos cpos))
+                                     {:id id :pos (+ pos delta)} 
+                                     p)))
         buf))))
