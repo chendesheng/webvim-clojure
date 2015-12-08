@@ -18,17 +18,6 @@
         webvim.keymap.compile
         webvim.keymap.action))
 
-(defn- buf-info[buf]
-  (if (and (empty? (buf :str))
-           (not (fs/exists? (buf :filepath))))
-    (assoc buf :message (str "[New File] " (buf :filepath)))
-    (assoc buf :message (str "\"" (:filepath buf) "\""))))
-
-(defn- move-to-line[buf row]
-  (-> buf
-      (lines-row row)
-      line-start))
-
 (defn- find-buffer [buffers f]
   (reduce-kv
     (fn [matches _ abuf]
@@ -39,23 +28,11 @@
           (conj matches buf))))
     [] buffers))
 
-(defn- expand-home[f]
-  (str (fs/expand-home f)))
-
-;TODO: get rid of this, fs/absolute is a IO operation
-(defn- path=[f1 f2]
-  (try
-    (= (str (fs/absolute f1))
-       (str (fs/absolute f2)))
-    (catch Exception ex
-      (println ex)
-      false)))
-
 (defonce ^:private grep-buf-name "*grep*")
 
 (defn- new-grep[motion-keymap]
   (-> (open-file grep-buf-name)
-      (assoc :root-keymap (compile-keymap (init-external-output-keymap motion-keymap)))
+      (assoc :root-keymap @root-keymap)
       buffer-list-save!))
 
 (defn- ex-commands[motion-keymap]
@@ -72,16 +49,7 @@
     "nohlsearch" (fn[buf _ _]
                    (assoc buf :highlights []))
     "edit" (fn[buf excmd file]
-             (if (or (empty? file) (path= file (:filepath buf)))
-               buf
-               (let [buf-exists (some #(if (path= file (-> % second deref :filepath)) file) @buffer-list)
-                     newbuf (if (nil? buf-exists)
-                              (-> file expand-home new-file deref buf-info)
-                              buf-exists)
-                     newid (newbuf :id)]
-                 (change-active-buffer (buf :id) newid)
-                 (jump-push buf)
-                 (assoc buf :nextid newid))))
+             (edit-file buf file true))
     "buffer" (fn [buf execmd file]
                (let [matches (find-buffer @buffer-list file)
                      cnt (count matches)
@@ -156,7 +124,7 @@
                   id (buf :id)]
               (println "pos:" (buf :pos))
               (async/go
-                (let [cmds ["grep" args "-rI" "."]
+                (let [cmds ["grep" "-nrI" args "*"]
                       s ((apply clojure.java.shell/sh cmds) :out)]
                   (println s)
                   (send agrepbuf (fn[buf]
@@ -213,7 +181,7 @@
         (update-in buf [:line-buffer]
                    (fn[linebuf]
                      (merge linebuf {:str (rope news) :pos (count news)})))))
-   buf))
+    buf))
 
 
 (defn- append-<br>[buf]

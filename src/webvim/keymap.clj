@@ -21,8 +21,6 @@
         webvim.autocompl
         webvim.keymap.compile))
 
-(defonce root-keymap (atom {}))
-
 (defn init-keymap-tree
   []
   (let [insert-mode-keymap (init-insert-mode-keymap)

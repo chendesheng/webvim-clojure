@@ -89,3 +89,6 @@
 ;    ctx)
 ;  (fn[ctx path]
 ;    (str ctx (-> path first val))) "" {:a {:aa "haha" :c {:cc "ccc"} } :b "hehe"})
+
+(defn parse-int [s]
+  (Integer. (re-find #"\d+" (or s "0"))))

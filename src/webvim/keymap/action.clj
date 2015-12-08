@@ -1,5 +1,6 @@
 ;common actions
 (ns webvim.keymap.action
+  (:require [me.raynes.fs :as fs])
   (:use webvim.core.buffer
         webvim.core.rope
         webvim.core.line
@@ -7,7 +8,10 @@
         webvim.core.register
         webvim.indent
         webvim.core.utils
+        webvim.jumplist
         webvim.render))
+
+(defonce root-keymap (atom {}))
 
 (def normal-mode 0)
 (def insert-mode 1)
@@ -258,4 +262,42 @@
                   (assoc buf :nextid newid))))
             ;buffer has been modifed and cursor is no longer inside, ignore
             (recur (fndir buf))))))))
+
+(defn buf-info[buf]
+  (if (and (empty? (buf :str))
+           (not (fs/exists? (buf :filepath))))
+    (assoc buf :message (str "[New File] " (buf :filepath)))
+    (assoc buf :message (str "\"" (:filepath buf) "\""))))
+
+(defn- expand-home[f]
+  (str (fs/expand-home f)))
+
+;TODO: get rid of this, fs/absolute is a IO operation
+(defn- path=[f1 f2]
+  (try
+    (= (str (fs/absolute f1))
+       (str (fs/absolute f2)))
+    (catch Exception ex
+      (println ex)
+      false)))
+
+(defn edit-file[buf file new-file?]
+  (if (or (empty? file) (path= file (:filepath buf)))
+    buf
+    (let [buf-exists (some #(if (path= file (-> % second deref :filepath)) (-> % second deref)) @buffer-list)
+          newbuf (if (nil? buf-exists)
+                   (if (or new-file? (-> file expand-home fs/exists?))
+                     (-> file expand-home new-file deref buf-info)
+                     nil)
+                   buf-exists)]
+      (if (nil? newbuf) buf
+        (let [newid (newbuf :id)]
+          (change-active-buffer (buf :id) newid)
+          (jump-push buf)
+          (assoc buf :nextid newid))))))
+
+(defn move-to-line[buf row]
+  (-> buf
+      (lines-row row)
+      line-start))
 

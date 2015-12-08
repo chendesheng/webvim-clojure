@@ -21,9 +21,6 @@
         ring.util.response
         ring.middleware.json))
 
-(defn- parse-int [s]
-  (Integer. (re-find #"\d+" s)))
-
 (defn- homepage
   [request]
   (html5

@@ -248,6 +248,27 @@
                   setup-range
                   (change-range (inclusive? keycode) false))))))) keymap))
 
+(defn goto-file[buf]
+  (let [r (buf :str)
+        pos (buf :pos)
+        filename-black-list "\\s:?%*|\"'<>"
+        re-end (re-pattern (str "(?m)[^" filename-black-list "](:\\d+)?(?=[" filename-black-list "]|$)"))
+        re-start (re-pattern (str "(?m)(?<=[" filename-black-list "]|^)[^" filename-black-list "]"))
+        [_ end] (pos-re+ r pos re-end)
+        [start _] (pos-re- r pos re-start)
+        [[_ uri linenum]] (re-seq #"([^:]+)(:\d+)?" (str (subr r start end)))]
+    (println (str (subr r start end)))
+    (println uri)
+    (let [newbuf (edit-file buf uri false)
+          nextid (newbuf :nextid)]
+      (if (nil? nextid) newbuf
+        (let[anextbuf (@buffer-list nextid)]
+          (send anextbuf (fn[buf row]
+                           (-> buf
+                               (move-to-line (dec row))
+                               (bound-scroll-top ""))) (parse-int linenum))
+          newbuf)))))
+
 (defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap pair-keymap]
   (let [enter-insert (insert-mode-keymap :enter)]
     (deep-merge
@@ -279,7 +300,8 @@
                       (-> buf
                           ((visual-mode-keymap :enter) keycode)
                           (assoc :visual visual)
-                          (buf-set-pos (-> visual :ranges first first)))))) }
+                          (buf-set-pos (-> visual :ranges first first)))))) 
+            "f" goto-file}
        "v" visual-mode-keymap
        "V" visual-line-mode-keymap
        "z" {"z" cursor-center-viewport }
