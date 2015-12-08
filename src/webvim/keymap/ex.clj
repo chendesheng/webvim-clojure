@@ -28,12 +28,42 @@
           (conj matches buf))))
     [] buffers))
 
-(defonce ^:private grep-buf-name "*grep*")
+(defonce ^:private output-buf-name "*output*")
 
-(defn- new-grep[motion-keymap]
-  (-> (open-file grep-buf-name)
-      (assoc :root-keymap @root-keymap)
-      buffer-list-save!))
+(defn- output-buf[]
+  (or (some (fn[[_ abuf]]
+              (if (= (@abuf :name) output-buf-name) abuf nil))
+            @buffer-list)
+      (-> (open-file output-buf-name)
+          (assoc :root-keymap @root-keymap)
+          buffer-list-save!)))
+
+(defn- exec-shell-commands[buf cmds]
+  (let [aoutputbuf (output-buf)
+        nextid (@aoutputbuf :id)]
+    (async/go
+      (let [
+            res (apply clojure.java.shell/sh cmds)
+            s (if (empty? (res :out))
+                (res :err) (res :out))]
+        (println s)
+        (send aoutputbuf 
+              (fn[buf]
+                ;(println "grepbufid:" (buf :id))
+                (let [row (-> buf :linescnt)
+                      newbuf (-> buf
+                                 buf-end
+                                 (buf-insert (str (string/join " " cmds) "\n"))
+                                 buf-end
+                                 (buf-insert (str s "\n"))
+                                 (move-to-line (dec row))
+                                 cursor-center-viewport
+                                 (bound-scroll-top ""))]
+                  (jetty/send! @ws-out (json/generate-string (webvim.render/render buf newbuf)))
+                  (assoc newbuf :changes []))))))
+    (change-active-buffer (buf :id) nextid)
+    (jump-push buf)
+    (assoc buf :nextid nextid)))
 
 (defn- ex-commands[motion-keymap]
   (array-map
@@ -108,47 +138,12 @@
                     (registers-put! registers "#" nil)
                     (registers-put! registers "#" {:id (firstbuf :id) :str (firstbuf :filepath)}))
                   (assoc buf :nextid nextid)))
-   "eval" (fn[buf execmd args]
-            (->> args
-                 read-string
-                 eval
-                 str
-                 (assoc buf :message)))
-   "grep" (fn[buf execmd args]
-            (let [agrepbuf (or (some (fn[[_ abuf]]
-                                      (if (= (@abuf :name) grep-buf-name) abuf nil))
-                                    @buffer-list)
-                              (new-grep motion-keymap))
-                  grepbuf @agrepbuf
-                  nextid (grepbuf :id)
-                  id (buf :id)]
-              (println "pos:" (buf :pos))
-              (async/go
-                (let [cmds ["grep" "-nrI" args "*"]
-                      s ((apply clojure.java.shell/sh cmds) :out)]
-                  (println s)
-                  (send agrepbuf (fn[buf]
-                                   ;(println "grepbufid:" (buf :id))
-                                   (let [row (-> buf :linescnt)
-                                         newbuf (-> buf
-                                                    buf-end
-                                                    (buf-insert (str (clojure.string/join " " cmds) "\n"))
-                                                    buf-end
-                                                    (buf-insert (str s "\n"))
-                                                    (move-to-line (dec row))
-                                                    cursor-center-viewport
-                                                    (bound-scroll-top ""))]
-                                     (jetty/send! @ws-out (json/generate-string (webvim.render/render buf newbuf)))
-                                     (assoc newbuf :changes []))))))
-              (change-active-buffer id nextid)
-              (println "pos2:" (buf :pos))
-              (jump-push buf)
-              (assoc buf :nextid nextid)))
-   #"^(\d+)$" (fn[buf row _]
-                ;(println "row:" row)
-                (jump-push buf)
-                (let [row (bound-range (dec (Integer. row)) 0 (-> buf :linescnt dec))]
-                  (move-to-line buf row)))))
+    "eval" (fn[buf execmd args]
+             (->> args
+                  read-string
+                  eval
+                  str
+                  (assoc buf :message)))
     "reload" (fn[buf execmd args] ;just for webvim itself TODO: move to dev/user.clj
                (let [[[_ nm]] (re-seq #"src/(.+)\.clj" (buf :filepath))
                      code (str "(use '" (string/replace nm "/" ".") " :reload)")
@@ -156,6 +151,15 @@
                  (if (nil? ret)
                    (assoc buf :message (user/restart))
                    (assoc buf :message (str ret)))))
+    "grep" (fn[buf execmd args]
+             (exec-shell-commands buf ["grep" "-rnI" args "."]))
+    "find" (fn[buf execmd args]
+             (exec-shell-commands buf ["find" "." "-name" args]))
+    #"^(\d+)$" (fn[buf row _]
+                 ;(println "row:" row)
+                 (jump-push buf)
+                 (let [row (bound-range (dec (Integer. row)) 0 (-> buf :linescnt dec))]
+                   (move-to-line buf row)))))
 
 (defn- execute [buf cmds]
   (let [[_ excmd args] (re-find #"^\s*([^\s]+)\s*(.*)\s*$"
