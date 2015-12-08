@@ -3,9 +3,9 @@
             [snipsnap.core :as clipboard]
             [clojure.core.async :as async]
             [cheshire.core :as json]
-            [ring.adapter.jetty9 :as jetty])
-  (:use clojure.pprint
-        (clojure [string :only (join blank?)])
+            [ring.adapter.jetty9 :as jetty]
+            [clojure.string :as string])
+  (:use clojure.pprint 
         webvim.core.rope
         webvim.core.line
         webvim.core.buffer
@@ -38,7 +38,7 @@
 (defn- ex-commands[motion-keymap]
   (array-map
     "write" (fn[buf _ file]
-              (if (not (blank? file))
+              (if (not (string/blank? file))
                 (-> buf
                     (assoc :name (fs/base-name file))
                     (assoc :filepath file)
@@ -75,7 +75,7 @@
                      (assoc buf :nextid nextid))
                    (> (count matches) 1)
                    ;display matched buffers at most 5 buffers
-                   (assoc buf :message (str "which one? " (join ", " (map :name (take 5 matches))))))))
+                   (assoc buf :message (str "which one? " (string/join ", " (map :name (take 5 matches))))))))
     "bnext" (fn[buf execmd args]
               (let [id (buf :id)
                     nextid (or
@@ -149,6 +149,13 @@
                 (jump-push buf)
                 (let [row (bound-range (dec (Integer. row)) 0 (-> buf :linescnt dec))]
                   (move-to-line buf row)))))
+    "reload" (fn[buf execmd args] ;just for webvim itself TODO: move to dev/user.clj
+               (let [[[_ nm]] (re-seq #"src/(.+)\.clj" (buf :filepath))
+                     code (str "(use '" (string/replace nm "/" ".") " :reload)")
+                     ret (->> code read-string eval)]
+                 (if (nil? ret)
+                   (assoc buf :message (user/restart))
+                   (assoc buf :message (str ret)))))
 
 (defn- execute [buf cmds]
   (let [[_ excmd args] (re-find #"^\s*([^\s]+)\s*(.*)\s*$"
