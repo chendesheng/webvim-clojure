@@ -257,16 +257,14 @@
         [_ end] (pos-re+ r pos re-end)
         [start _] (pos-re- r pos re-start)
         [[_ uri linenum]] (re-seq #"([^:]+)(:\d+)?" (str (subr r start end)))]
-    (println (str (subr r start end)))
-    (println uri)
     (let [newbuf (edit-file buf uri false)
           nextid (newbuf :nextid)]
       (if (nil? nextid) newbuf
         (let[anextbuf (@buffer-list nextid)]
           (send anextbuf (fn[buf row]
-                           (-> buf
-                               (move-to-line (dec row))
-                               (bound-scroll-top ""))) (parse-int linenum))
+                           (bound-scroll-top 
+                             (if (<= row 0) buf
+                                    (move-to-line (dec row))) "")) (parse-int linenum))
           newbuf)))))
 
 (defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap pair-keymap]
@@ -292,6 +290,7 @@
        "<c+i>" #(move-to-jumplist % jump-next)
        "<c+g>" buf-pos-info
        "<esc>" set-normal-mode
+       "<f1>" #(goto-buf % (output-buf false))
        "g" {"v" (assoc
                   visual-mode-keymap
                   :enter

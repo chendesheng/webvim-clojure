@@ -28,25 +28,13 @@
           (conj matches buf))))
     [] buffers))
 
-(defonce ^:private output-buf-name "*output*")
-
-(defn- output-buf[]
-  (or (some (fn[[_ abuf]]
-              (if (= (@abuf :name) output-buf-name) abuf nil))
-            @buffer-list)
-      (-> (open-file output-buf-name)
-          (assoc :root-keymap @root-keymap)
-          buffer-list-save!)))
-
 (defn- exec-shell-commands[buf cmds]
-  (let [aoutputbuf (output-buf)
-        nextid (@aoutputbuf :id)]
+  (let [aoutputbuf (output-buf true)]
     (async/go
-      (let [
-            res (apply clojure.java.shell/sh cmds)
+      (let [res (apply clojure.java.shell/sh cmds)
             s (if (empty? (res :out))
                 (res :err) (res :out))]
-        (println s)
+        ;(println s)
         (send aoutputbuf 
               (fn[buf]
                 ;(println "grepbufid:" (buf :id))
@@ -61,9 +49,7 @@
                                  (bound-scroll-top ""))]
                   (jetty/send! @ws-out (json/generate-string (webvim.render/render buf newbuf)))
                   (assoc newbuf :changes []))))))
-    (change-active-buffer (buf :id) nextid)
-    (jump-push buf)
-    (assoc buf :nextid nextid)))
+    (goto-buf buf aoutputbuf)))
 
 (defn- ex-commands[motion-keymap]
   (array-map

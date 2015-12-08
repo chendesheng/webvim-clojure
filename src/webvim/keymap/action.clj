@@ -11,6 +11,7 @@
         webvim.jumplist
         webvim.render))
 
+(defonce output-buf-name "*output*")
 (defonce root-keymap (atom {}))
 
 (def normal-mode 0)
@@ -300,4 +301,22 @@
   (-> buf
       (lines-row row)
       line-start))
+
+(defn output-buf[create?]
+  (or (some (fn[[_ abuf]]
+              (if (= (@abuf :name) output-buf-name) abuf nil))
+            @buffer-list)
+      (if create?
+        (-> (open-file output-buf-name)
+            (assoc :root-keymap @root-keymap)
+            buffer-list-save!))))
+
+(defn goto-buf [buf anextbuf]
+  (if (nil? anextbuf) buf
+    (let [nextid (@anextbuf :id)
+          id (buf :id)]
+      (if (= nextid id)  buf
+        (do (change-active-buffer id nextid)
+            (jump-push buf)
+            (assoc buf :nextid nextid))))))
 
