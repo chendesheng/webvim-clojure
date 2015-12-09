@@ -126,11 +126,10 @@
                     (registers-put! registers "#" {:id (firstbuf :id) :str (firstbuf :filepath)}))
                   (assoc buf :nextid nextid)))
     "eval" (fn[buf execmd args]
-             (->> args
-                  read-string
-                  eval
-                  str
-                  (assoc buf :message)))
+             (try (->> args read-string eval str
+                       (assoc buf :message))
+                  (catch Exception e
+                         (assoc buf :message (str e)))))
     "grep" (fn[buf execmd args]
              (exec-shell-commands buf ["grep" "-rnI" args "."]))
     "find" (fn[buf execmd args]
