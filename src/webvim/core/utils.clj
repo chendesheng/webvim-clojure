@@ -64,7 +64,7 @@
 
 ;deep first order
 (defn tree-reduce[visit-branch visit-leaf ctx root]
-  (tree-reduce-recur visit-branch visit-leaf (seq {"" root}) ctx root))
+  (tree-reduce-recur visit-branch visit-leaf (into '() {"" root}) ctx root))
 
 (defn tree-map
   "only map leaf nodes"
