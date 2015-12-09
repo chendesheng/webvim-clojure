@@ -86,10 +86,13 @@
        (let [nextid (newbuf :nextid)]
          (if (nil? nextid) newbuf
              (do
-               (let [nextbuf (@buffer-list nextid)]
+               (let [anextbuf (@buffer-list nextid)]
                  (println "nextid" nextid)
-                 (if-not (nil? nextbuf)
-                   (jetty/send! @ws-out (json/generate-string (render nil @nextbuf)))))
+                 (if-not (nil? anextbuf)
+                   (send-off anextbuf
+                     (fn[buf]
+                       (jetty/send! @ws-out (json/generate-string (render nil buf)))
+                       buf))))
                (dissoc newbuf :nextid)))))
      (catch Exception e
        (println e)

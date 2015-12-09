@@ -262,9 +262,9 @@
       (if (nil? nextid) newbuf
         (let[anextbuf (@buffer-list nextid)]
           (send anextbuf (fn[buf row]
-                           (bound-scroll-top 
+                           (bound-scroll-top
                              (if (<= row 0) buf
-                                    (move-to-line (dec row))) "")) (parse-int linenum))
+                                    (move-to-line buf (dec row))) "")) (parse-int linenum))
           newbuf)))))
 
 (defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap pair-keymap]
