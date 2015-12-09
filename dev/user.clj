@@ -1,10 +1,12 @@
 (ns user
   (:require [me.raynes.fs :as fs]
             [clojure.core.async :as async]
-            [ring.adapter.jetty9 :as jetty])
+            [ring.adapter.jetty9 :as jetty]
+            [clojure.string :as string])
   (:use webvim.core.buffer
         webvim.core.rope
         webvim.core.register
+        webvim.core.event
         webvim.keymap
         webvim.main))
 
@@ -20,9 +22,23 @@
       (send abuf #(assoc %1 :root-keymap %2) keymap))
   "ok"))
 
+(defn add-init-ex-commands-event[]
+  (listen :init-ex-commands
+          (fn[cmds]
+            (assoc cmds
+                   "reload"
+                   (fn[buf execmd args]
+                     (let [[[_ nm]] (re-seq #"src/(.+)\.clj" (buf :filepath))
+                           code (str "(use '" (string/replace nm "/" ".") " :reload)")
+                           ret (->> code read-string eval)]
+                       (if (nil? ret)
+                         (assoc buf :message (restart))
+                         (assoc buf :message (str ret)))))))))
+
 (defonce ^:private main
   (do
     (cache-jquery)
-    (start 
+    (add-init-ex-commands-event)
+    (start
       "testfile.clj"
       {:port 8080 :join? false})))

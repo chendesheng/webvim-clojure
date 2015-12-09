@@ -5,7 +5,7 @@
             [cheshire.core :as json]
             [ring.adapter.jetty9 :as jetty]
             [clojure.string :as string])
-  (:use clojure.pprint 
+  (:use clojure.pprint
         webvim.core.rope
         webvim.core.line
         webvim.core.buffer
@@ -13,6 +13,7 @@
         webvim.core.pos
         webvim.jumplist
         webvim.core.utils
+        webvim.core.event
         webvim.fuzzy
         webvim.keymap.external
         webvim.keymap.compile
@@ -51,8 +52,8 @@
                   (assoc newbuf :changes []))))))
     (goto-buf buf aoutputbuf)))
 
-(defn- ex-commands[motion-keymap]
-  (array-map
+(defn- ex-commands[]
+  (let [cmds (array-map
     "write" (fn[buf _ file]
               (if (not (string/blank? file))
                 (-> buf
@@ -130,13 +131,6 @@
                   eval
                   str
                   (assoc buf :message)))
-    "reload" (fn[buf execmd args] ;just for webvim itself TODO: move to dev/user.clj
-               (let [[[_ nm]] (re-seq #"src/(.+)\.clj" (buf :filepath))
-                     code (str "(use '" (string/replace nm "/" ".") " :reload)")
-                     ret (->> code read-string eval)]
-                 (if (nil? ret)
-                   (assoc buf :message (user/restart))
-                   (assoc buf :message (str ret)))))
     "grep" (fn[buf execmd args]
              (exec-shell-commands buf ["grep" "-rnI" args "."]))
     "find" (fn[buf execmd args]
@@ -145,7 +139,9 @@
                  ;(println "row:" row)
                  (jump-push buf)
                  (let [row (bound-range (dec (Integer. row)) 0 (-> buf :linescnt dec))]
-                   (move-to-line buf row)))))
+                   (move-to-line buf row))))]
+    (pprint cmds)
+    (fire-event cmds :init-ex-commands)))
 
 (defn- execute [buf cmds]
   (let [[_ excmd args] (re-find #"^\s*([^\s]+)\s*(.*)\s*$"
@@ -187,8 +183,8 @@
         news (replacer s len len <br>)]
     (assoc-in buf [:line-buffer :str] news)))
 
-(defn init-ex-mode-keymap[motion-keymap line-editor-keymap]
-  (let [cmds (ex-commands motion-keymap)]
+(defn init-ex-mode-keymap[line-editor-keymap]
+  (let [cmds (ex-commands)]
     (merge line-editor-keymap
            {:enter (fn[buf keycode]
                      (-> buf

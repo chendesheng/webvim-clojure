@@ -48,7 +48,6 @@
       nil?))
 
 (defn- push-current[jl buf]
-  (println "pos3:" (buf :pos))
   (new-future jl (select-keys buf [:id :pos])))
 
 (defn jump-push
