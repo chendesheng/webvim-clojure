@@ -29,6 +29,12 @@
           (conj matches buf))))
     [] buffers))
 
+(defn- buf-append[buf & strs]
+  (buf-insert 
+    buf
+    (-> buf :str count)
+    (apply str strs)))
+
 (defn- exec-shell-commands[buf cmds]
   (let [aoutputbuf (output-buf true)]
     (async/go
@@ -41,17 +47,27 @@
                 ;(println "grepbufid:" (buf :id))
                 (let [row (-> buf :linescnt)
                       newbuf (-> buf
-                                 buf-end
-                                 (buf-insert (str (string/join " " cmds) "\n"))
-                                 buf-end
-                                 (buf-insert (str s "\n"))
-                                 (move-to-line (dec row))
+                                 (buf-append (string/join " " cmds) "\n" s "\n")
+                                 (move-to-line row)
                                  cursor-center-viewport
                                  (bound-scroll-top ""))]
                   (jetty/send! @ws-out (json/generate-string (webvim.render/render buf newbuf)))
                   (assoc newbuf :changes []))))))
     (goto-buf buf aoutputbuf)))
 
+(defn- write-output[buf s goto?]
+  (let [aoutputbuf (output-buf true)]
+    (send aoutputbuf
+          (fn[buf]
+            (let [newbuf (-> buf
+                             (buf-append s "\n" "\n")
+                             buf-end
+                             cursor-center-viewport)]
+              (jetty/send! @ws-out (json/generate-string (webvim.render/render buf newbuf)))
+              (assoc newbuf :changes []))))
+    (if goto? (goto-buf buf aoutputbuf) buf)))
+
+;TODO: replace array-map with vector
 (defn- ex-commands[]
   (let [cmds (array-map
     "write" (fn[buf _ file]
@@ -138,7 +154,16 @@
                  ;(println "row:" row)
                  (jump-push buf)
                  (let [row (bound-range (dec (Integer. row)) 0 (-> buf :linescnt dec))]
-                   (move-to-line buf row))))]
+                   (move-to-line buf row)))
+    "ls" (fn[buf execmd args]
+             (write-output buf
+                           (str ":ls\n"
+                                (string/join 
+                                  "\n" 
+                                  (map (fn[abuf]
+                                         (let [buf @abuf]
+                                           (str (buf :id) ":" " " (or (buf :filepath) (buf :name)))))
+                                       (vals @buffer-list)))) true)))]
     (pprint cmds)
     (fire-event cmds :init-ex-commands)))
 
