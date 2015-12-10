@@ -273,8 +273,18 @@
                                     (move-to-line buf (dec row))) "")) (parse-int linenum))
           newbuf)))))
 
+(defn- dont-cross-line[f]
+  (fn[buf]
+    (let [newbuf (f buf)
+          newpos (min (newbuf :pos) 
+                      (pos-line-end (buf :str) (buf :pos)))]
+      (buf-set-pos newbuf newpos))))
+
 (defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap pair-keymap]
-  (let [enter-insert (insert-mode-keymap :enter)]
+  (let [enter-insert (insert-mode-keymap :enter)
+        motion-keymap-fix-w (-> motion-keymap
+                                (assoc "w" (dont-cross-line (motion-keymap "w")))
+                                (assoc "W" (dont-cross-line (motion-keymap "W"))))]
     (deep-merge
       motion-keymap
       {"i" insert-mode-keymap
@@ -311,21 +321,23 @@
        "V" visual-line-mode-keymap
        "z" {"z" cursor-center-viewport }
        "d" (merge
-             motion-keymap
+             motion-keymap-fix-w
              pair-keymap
              {"d" identity
               :after delete})
        "c" (merge
-             (delete-and-insert motion-keymap insert-mode-keymap)
+             (delete-and-insert (-> motion-keymap-fix-w
+                                    (assoc "w" (motion-keymap "e"))
+                                    (assoc "W" (motion-keymap "E"))) insert-mode-keymap)
              (delete-and-insert pair-keymap insert-mode-keymap)
              {"c" identity})
        "y" (merge
-             motion-keymap
+             motion-keymap-fix-w
              pair-keymap
              {"y" identity
               :after yank})
        "=" (merge
-             motion-keymap
+             motion-keymap-fix-w
              pair-keymap
              {"=" identity
               :after indent})
