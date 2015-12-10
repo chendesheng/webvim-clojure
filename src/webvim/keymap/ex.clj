@@ -11,6 +11,7 @@
         webvim.core.buffer
         webvim.core.register
         webvim.core.pos
+        webvim.core.parallel-universe
         webvim.jumplist
         webvim.core.utils
         webvim.core.event
@@ -18,6 +19,29 @@
         webvim.keymap.external
         webvim.keymap.compile
         webvim.keymap.action))
+
+(defn- set-line-buffer[buf s]
+  (-> buf
+      (assoc-in [:line-buffer :str] (rope s))
+      (assoc-in [:line-buffer :pos] (count s))))
+
+(defonce commands-history (atom (parallel-universe)))
+
+(defn- save-history![buf]
+  (let [s (-> buf :line-buffer :str str .trim)
+        last-cmd (just-now @commands-history)]
+    (if-not (or (empty? s) (= last-cmd s))
+      (swap! commands-history 
+             #(-> %
+                  fast-forward
+                  (new-future s))))
+    buf))
+
+(defn- recover-command-history[buf]
+  (let [s (next-future @commands-history)]
+    (if (nil? s) 
+      buf
+      (set-line-buffer buf s))))
 
 (defn- find-buffer [buffers f]
   (reduce-kv
@@ -173,6 +197,13 @@
 (defn cmd-edit[buf excmd file]
   (edit-file buf file true))
 
+(defn cmd-history[buf _ _]
+  (let [{before :before after :after} @commands-history
+        all (concat (reverse before) after)]
+    (write-output buf
+                  (str ":history\n" (string/join "\n" all)) 
+                  true)))
+
 (defn- ex-commands[]
   (let [cmds 
         [["write" cmd-write]
@@ -185,6 +216,7 @@
          ["eval" cmd-eval]
          ["grep" cmd-grep]
          ["find" cmd-find]
+         ["history" cmd-history]
          [#"^(\d+)$" cmd-move-to-line]
          ["ls" cmd-ls]]]
         (fire-event cmds :init-ex-commands)))
@@ -203,7 +235,9 @@
                                         (if (not (nil? m)) handler nil)))) cmds))]
         (println excmd args)
         (if (>= (count handlers) 1)
-          ((first handlers) buf excmd args)
+          (-> buf
+              ((first handlers) excmd args)
+              save-history!)
           (assoc buf :message "unknown command"))))))
 
 (defn- ex-tab-complete [{{r :str} :line-buffer :as buf} cmds]
@@ -231,9 +265,29 @@
   (let [cmds (ex-commands)]
     (merge line-editor-keymap
            {:enter (fn[buf keycode]
+                     (swap! commands-history #(-> %
+                                                  fast-forward
+                                                  (assoc :current "")))
                      (-> buf
                          ((line-editor-keymap :enter) keycode)
                          (assoc :mode ex-mode)))
+            :after (fn[buf keycode]
+                     (let [after (or (line-editor-keymap :after) nop)
+                           buf (after buf keycode)]
+                           ;cache current typing content if it's latest one
+                       (if (and (not (contains? #{"<c+p>" "<c+n>" "<cr>"} keycode))
+                                (no-future? @commands-history))
+                         (swap! commands-history assoc :current (-> buf :line-buffer :str str)))
+                       buf))
+            "<c+p>" (fn[buf]
+                      (swap! commands-history go-back)
+                      (let [buf (recover-command-history buf)]
+                        buf))
+            "<c+n>" (fn[buf]
+                      (swap! commands-history go-future)
+                      (if (no-future? @commands-history)
+                        (set-line-buffer buf (@commands-history :current))
+                        (recover-command-history buf)))
             "<cr>" (fn[buf]
                      (-> buf
                          ;append a <br> indicates this command is already executed

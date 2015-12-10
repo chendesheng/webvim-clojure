@@ -10,8 +10,7 @@
 
 (defn go-back
   ([h fnreverse]
-  (let [before (h :before)
-        event (peek before)]
+  (let [event (just-now h)]
     (if (nil? event) h
       (-> h
           (update-in [:before] pop)
@@ -21,8 +20,7 @@
 
 (defn go-future
   ([h fnreverse]
-   (let [after (h :after)
-         event (peek after)]
+   (let [event (next-future h)]
      (if (nil? event) h
        (-> h
            (update-in [:after] pop)
@@ -35,10 +33,18 @@
       (update-in [:before] conj event)
       (dissoc :after)))
 
+(defn fast-forward[h]
+  (-> h
+      (assoc :before (into (h :before) (h :after)))
+      (dissoc :after)))
+
 (defn rewrite-history[h f]
   (-> h
       (update-in [:before] #(apply list (map f %)))
       (update-in [:after] #(apply list (map f %)))))
+
+(defn no-future?[h]
+  (-> h :after empty?))
 
 ;(-> (parallel-universe)
 ;    (new-future 1)
