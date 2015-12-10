@@ -22,9 +22,12 @@
       (send abuf #(assoc %1 :root-keymap %2) keymap))
   "ok"))
 
+;FIXME: This is too hacky
 (defn- cmd-reload[buf execmd args]
-  (let [[[_ nm]] (re-seq #"src/(.+)\.clj" (buf :filepath))
-        code (str "(use '" (string/replace nm "/" ".") " :reload)")
+  (let [[[_ _ nm]] (re-seq #"(src|dev)/(.+)\.clj" (buf :filepath)) 
+        code (str "(use '" (-> nm
+                               (string/replace "/" ".")
+                               (string/replace "_" "-")) " :reload)")
         ret (->> code read-string eval)]
     (if (nil? ret)
       (assoc buf :message (restart))
