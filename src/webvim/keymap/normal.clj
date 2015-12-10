@@ -49,11 +49,12 @@
   [buf]
   (let [pos (buf :pos)
         r (buf :str)
-        [a b] (pos-re+ r pos #"\n.+?(?=(\n|\S))")]
+        [a b] (pos-re+ r pos #"\r?\n.*?(?=(\r|\n|\S))")]
     (if (nil? a) buf
       (-> buf
-          (buf-replace a b " ")))))
-
+          (buf-replace a b " ")
+          (buf-set-pos a)))))
+ 
 (defn- buf-pos-info[buf]
   (let [{nm :name
          path :filepath
