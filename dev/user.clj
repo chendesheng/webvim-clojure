@@ -22,18 +22,18 @@
       (send abuf #(assoc %1 :root-keymap %2) keymap))
   "ok"))
 
+(defn- cmd-reload[buf execmd args]
+  (let [[[_ nm]] (re-seq #"src/(.+)\.clj" (buf :filepath))
+        code (str "(use '" (string/replace nm "/" ".") " :reload)")
+        ret (->> code read-string eval)]
+    (if (nil? ret)
+      (assoc buf :message (restart))
+      (assoc buf :message (str ret)))))
+
 (defn add-init-ex-commands-event[]
   (listen :init-ex-commands
           (fn[cmds]
-            (assoc cmds
-                   "reload"
-                   (fn[buf execmd args]
-                     (let [[[_ nm]] (re-seq #"src/(.+)\.clj" (buf :filepath))
-                           code (str "(use '" (string/replace nm "/" ".") " :reload)")
-                           ret (->> code read-string eval)]
-                       (if (nil? ret)
-                         (assoc buf :message (restart))
-                         (assoc buf :message (str ret)))))))))
+            (conj cmds ["reload" cmd-reload]))))
 
 (defonce ^:private main
   (do
