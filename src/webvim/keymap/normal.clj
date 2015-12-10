@@ -135,14 +135,15 @@
         (indent-range true))))
 
 (defn- replace-char-keycode[buf keycode]
-  (let [ch (keycode-to-char buf)]
+  (let [ch (keycode-to-char keycode)]
     (if (= (count ch) 1)
       (let [enter-indent (if (= ch "\n")
                            #(buf-indent-current-line %)
                            identity)
             pos (buf :pos)]
         (-> buf
-            (buf-replace buf pos (inc pos) ch)
+            (buf-replace pos (inc pos) ch)
+            (buf-set-pos pos)
             enter-indent))
       buf)))
 
