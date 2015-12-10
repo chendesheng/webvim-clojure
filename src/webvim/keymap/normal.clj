@@ -224,10 +224,14 @@
       setup-range-line-end
       (delete-range false false)))
 
-(defn- change-to-line-end[buf]
-  (-> buf
-      setup-range-line-end
-      (change-range false false)))
+(defn- change-to-line-end[insert-mode-keymap]
+  (assoc
+    insert-mode-keymap
+    :enter
+    (fn[buf keycode]
+      (-> buf
+          setup-range-line-end
+          (change-range false false)))))
 
 (defn- delete-and-insert[keymap insert-mode-keymap]
   (tree-map
@@ -325,7 +329,7 @@
              {"=" identity
               :after indent})
        "D" delete-to-line-end
-       "C" change-to-line-end
+       "C" (change-to-line-end insert-mode-keymap)
        "Y" #(yank % "y")
        "x" delete-char
        "p" #(put-from-register-append % (-> % :context :register))

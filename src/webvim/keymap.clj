@@ -27,8 +27,8 @@
         line-editor-keymap (init-line-editor-keymap)
         motion-keymap (init-motion-keymap line-editor-keymap)
         ex-mode-keymap (init-ex-mode-keymap line-editor-keymap)
-        visual-mode-keymap (init-visual-mode-keymap motion-keymap pair-keymap visual-normal)
-        visual-line-mode-keymap (init-visual-mode-keymap motion-keymap pair-keymap visual-line)
+        visual-mode-keymap (init-visual-mode-keymap insert-mode-keymap motion-keymap pair-keymap visual-normal)
+        visual-line-mode-keymap (init-visual-mode-keymap insert-mode-keymap motion-keymap pair-keymap visual-line)
         normal-mode-keymap (init-normal-mode-keymap motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap pair-keymap)]
     (reset! root-keymap (compile-keymap normal-mode-keymap))))
 
