@@ -39,6 +39,7 @@
      [:script {:src "syntax/javascript.js" :type "text/javascript"}]
      [:script {:src "highlight.js" :type "text/javascript"}]
      [:script {:src "main.js" :type "text/javascript"}]
+     [:link {:href "http://fonts.useso.com/css?family=Ubuntu+Mono" :rel "stylesheet"}]
      [:link {:href "main.css" :rel "stylesheet"}]
      [:link {:href "monokai.css" :rel "stylesheet"}]]
     [:body]))
