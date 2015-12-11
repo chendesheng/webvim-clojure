@@ -92,6 +92,7 @@
            (let [y (buf :y)
                  h (-> @ui-agent :viewport :h)]
              (cond
+               (zero? h) 0
                (< y st) y
                (< y (+ st h)) st
                (neg? (-> y (- h) inc)) 0
