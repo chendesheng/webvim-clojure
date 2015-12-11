@@ -14,6 +14,7 @@ body,html,.buffer{
 .buffer {
 	bottom:1.5em;
 	overflow:auto;
+	-ms-overflow-style: none;
 }
 
 .content {
