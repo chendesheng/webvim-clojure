@@ -19,7 +19,8 @@
         (hiccup [page :only (html5)])
         ring.middleware.resource
         ring.util.response
-        ring.middleware.json))
+        ring.middleware.json
+        ring.middleware.content-type))
 
 (defn- homepage
   [request]
@@ -59,7 +60,8 @@
 (def ^:private app
   (-> (compojure.handler/api main-routes)
       (wrap-json-response)
-      (wrap-resource "public")))
+      (wrap-resource "public")
+      (wrap-content-type)))
 
 (defn- start-file[f]
   (let [buf @(new-file f)]
