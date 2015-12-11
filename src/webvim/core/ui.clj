@@ -1,4 +1,4 @@
-(ns webvim.render
+(ns webvim.core.ui
   (:use webvim.core.line))
 
 (defn- dissoc-empty[buf ks]
@@ -54,7 +54,7 @@
     (dissoc after k)
     after))
 
-(defn render 
+(defn- render 
   "Write changes to browser."
   [before after]
   (let [txt (after :str)
@@ -81,3 +81,36 @@
                     (dissoc-if-equal before :pos)))]
     buf))
 
+
+(def ui-agent (agent {:viewport {:w 0 :h 0}}))
+
+(defn- bound-scroll-top
+  "Change scroll top make cursor inside viewport"
+  [buf]
+  (let [st (buf :scroll-top)]
+    (assoc buf :scroll-top
+           (let [y (buf :y)
+                 h (-> @ui-agent :viewport :h)]
+             (cond
+               (< y st) y
+               (< y (+ st h)) st
+               (neg? (-> y (- h) inc)) 0
+               :else (-> y (- h) inc))))))
+
+;This MUST be set at start
+;TODO: use var here
+(def render-func! (atom (fn[diff])))
+
+(defn send-buf![newbuf]
+  (let [newbuf (bound-scroll-top newbuf)]
+    (send-off ui-agent 
+              (fn[{buf :buf :as ui}]
+                (let [diff (render buf newbuf)]
+                  (@render-func! diff)
+                  (assoc ui :buf (-> newbuf 
+                                     (dissoc :changes)
+                                     (dissoc :history))))))
+    (assoc newbuf :changes [])))
+
+(defn ui-buf[]
+  (render nil (@ui-agent :buf)))

@@ -14,7 +14,7 @@
         webvim.core.utils
         webvim.keymap
         webvim.keymap.action
-        webvim.render
+        webvim.core.ui
         (compojure handler [core :only (GET POST defroutes)])
         (hiccup [page :only (html5)])
         ring.middleware.resource
@@ -52,11 +52,11 @@
 
 (defroutes main-routes
   (GET "/" [request] (homepage request))
-  (GET "/buf" [] (response [(render nil (or @(active-buffer)
-                                            @(second
-                                               (first @buffer-list))))]))
+  (GET "/buf" [] (response (ui-buf)))
   (GET "/resize/:w/:h" [w h]
-       (swap! window update-in [:viewport] merge {:w (parse-int w) :h (parse-int h)})))
+       (send ui-agent 
+             (fn[ui]
+               (update-in ui [:viewport] merge {:w (parse-int w) :h (parse-int h)})))))
 
 (def ^:private app
   (-> (compojure.handler/api main-routes)
@@ -64,9 +64,12 @@
       (wrap-resource "public")
       (wrap-content-type)))
 
+(defonce ws-out (atom nil))
+
 (defn- start-file[f]
   (let [buf @(new-file f)]
-    (registers-put! registers "%" {:str f :id (buf :id)})))
+    (registers-put! registers "%" {:str f :id (buf :id)})
+    (send-buf! buf)))
 
 (defn- parse-input[body]
   (let [[id keycode]
@@ -80,39 +83,39 @@
 
 (defn- change-buffer![buf keycodes]
   (time
-   (try
-     (let [[newbuf changes] (apply-keycodes buf (buf :root-keymap) keycodes)
-           diff (render buf (assoc newbuf :changes changes))]
-       ;(println diff)
-       (jetty/send! @ws-out (json/generate-string diff))
-       ;(println "nextid1" (newbuf :nextid))
-       (let [nextid (newbuf :nextid)]
-         (if (nil? nextid) newbuf
-             (do
-               (let [anextbuf (@buffer-list nextid)]
-                 (println "nextid" nextid)
-                 (if-not (nil? anextbuf)
-                   (send-off anextbuf
-                     (fn[buf]
-                       (jetty/send! @ws-out (json/generate-string (render nil buf)))
-                       buf))))
-               (dissoc newbuf :nextid)))))
-     (catch Exception e
-       (println e)
-       (.printStackTrace e)
-       (let [newbuf (assoc buf :message (str e))]
-         (jetty/send! @ws-out (json/generate-string (render buf newbuf)))
-         newbuf)))))
+    (try
+      (let [[buf changes] (apply-keycodes buf (buf :root-keymap) keycodes)
+            newbuf (send-buf! (assoc buf :changes changes))]
+        (let [nextid (newbuf :nextid)]
+          (if (nil? nextid) newbuf
+            (do
+              (let [anextbuf (@buffer-list nextid)]
+                ;(println "nextid" nextid)
+                (if-not (nil? anextbuf)
+                  (send anextbuf
+                            (fn[buf]
+                              (send-buf! buf)))))
+              (dissoc newbuf :nextid)))))
+      (catch Exception e
+             (println e)
+             (.printStackTrace e)
+             (send-buf! (assoc buf :message (str e)))))))
 
 (defn- handle-socket[req]
   {:on-connect (fn[ws]
                  (reset! ws-out ws))
    :on-text (fn[ws body]
               (let [[id keycode] (parse-input body)]
-                (send-off (@buffer-list id) change-buffer! (input-keys keycode))))})
+                (send (@buffer-list id) change-buffer! (input-keys keycode))))})
+
+(defn- write-client![diff]
+  (let [ws @ws-out]
+    (if-not (nil? ws)
+      (jetty/send! ws (json/generate-string diff)))))
 
 ;start app with init file and webserver configs
 (defn start[file options]
+  (reset! render-func! write-client!)
   (init-keymap-tree)
   (start-file file)
   (jetty/run-jetty #'app

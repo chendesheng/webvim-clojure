@@ -268,9 +268,8 @@
       (if (nil? nextid) newbuf
         (let[anextbuf (@buffer-list nextid)]
           (send anextbuf (fn[buf row]
-                           (bound-scroll-top
-                             (if (<= row 0) buf
-                                    (move-to-line buf (dec row))) "")) (parse-int linenum))
+                           (if (<= row 0) buf
+                             (move-to-line buf (dec row))) "") (parse-int linenum))
           newbuf)))))
 
 (defn- dont-cross-line[f]

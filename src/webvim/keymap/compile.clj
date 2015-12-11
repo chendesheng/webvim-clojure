@@ -50,7 +50,7 @@
         (assoc ctx1
           (clojure.string/join (map key path))
           (keycode-func-comp
-            `(~bound-scroll-top ~#(update-in %1 [:keys] conj %2) ~enter ~before ~record-keys)))))
+            `(~#(update-in %1 [:keys] conj %2) ~enter ~before ~record-keys)))))
     
     (fn[ctx [[keycode func] & [[_ {before :before after :after continue? :continue}] & _ :as allparents] :as path]]
       (if (contains? #{:enter :leave :before :after :continue} keycode)
@@ -70,8 +70,7 @@
                       (if (empty? allparents) buf
                         (let [buf (update-in buf [:keys] conj keycode)]
                         ;(println "keys:" (buf :keys))
-                          (reduce leave-map buf allparents))))
-                    bound-scroll-top))))))
+                          (reduce leave-map buf allparents))))))))))
     {}
     keymap))
 

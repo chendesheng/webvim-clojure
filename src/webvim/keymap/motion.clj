@@ -6,6 +6,7 @@
         webvim.core.rope
         webvim.core.line
         webvim.core.event
+        webvim.core.ui
         webvim.keymap.line-editor
         webvim.keymap.action
         webvim.keymap.ex
@@ -191,9 +192,9 @@
 (defn- cursor-move-viewport
   "Jump cursor by viewport height, deps to window's :viewport"
   [buf factor]
-  (let [d (round-to-zero (* (:h (:viewport @window)) factor))
+  (let [h (-> @ui-agent :viewport :h)
+        d (round-to-zero (* h factor))
         scroll-top (buf :scroll-top)
-        h (-> @window :viewport :h)
         row (-> buf :y)
         vrow (- row scroll-top)
         newrow (bound-range (+ row d) 0 (buf :linescnt))

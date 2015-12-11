@@ -21,7 +21,7 @@ window.onload = function() { //use window.onload, not sure if stylesheet is load
 	document.body.removeChild(d);
 
 	$.getJSON('buf', function(resp) {
-		render(resp[0]);
+		render(resp);
 
 		setSize(buffers.active.id);
 

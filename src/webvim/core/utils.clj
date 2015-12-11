@@ -1,7 +1,5 @@
 (ns webvim.core.utils)
 
-(defonce ws-out (atom nil))
-
 (def all-braces {\( \) \) \( \[ \] \] \[ \{ \} \} \{})
 (def left-braces #{\( \[ \{})
 (def right-braces #{\) \] \}})

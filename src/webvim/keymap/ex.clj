@@ -12,6 +12,7 @@
         webvim.core.register
         webvim.core.pos
         webvim.core.parallel-universe
+        webvim.core.ui
         webvim.jumplist
         webvim.core.utils
         webvim.core.event
@@ -73,10 +74,8 @@
                       newbuf (-> buf
                                  (buf-append (string/join " " cmds) "\n" s "\n")
                                  (move-to-line row)
-                                 cursor-center-viewport
-                                 (bound-scroll-top ""))]
-                  (jetty/send! @ws-out (json/generate-string (webvim.render/render buf newbuf)))
-                  (assoc newbuf :changes []))))))
+                                 cursor-center-viewport)]
+                  (send-buf! newbuf))))))
     (goto-buf buf aoutputbuf)))
 
 (defn- write-output[buf s goto?]
@@ -87,8 +86,7 @@
                              (buf-append s "\n" "\n")
                              buf-end
                              cursor-center-viewport)]
-              (jetty/send! @ws-out (json/generate-string (webvim.render/render buf newbuf)))
-              (assoc newbuf :changes []))))
+              (send-buf! newbuf))))
     (if goto? (goto-buf buf aoutputbuf) buf)))
 
 (defn cmd-write [buf _ file]

@@ -9,7 +9,7 @@
         webvim.indent
         webvim.core.utils
         webvim.jumplist
-        webvim.render))
+        webvim.core.ui))
 
 (defonce output-buf-name "*output*")
 (defonce root-keymap (atom {}))
@@ -152,12 +152,11 @@
       (update-x buf) buf)))
 
 ;one server only serve one window at one time
-(defonce window (atom{:viewport {:w 0 :h 0}}))
 
 (defn cursor-center-viewport[buf]
   (assoc buf :scroll-top
             (-> buf :y
-                (- (int (/ (-> @window :viewport :h) 2))))))
+                (- (int (/ (-> @ui-agent :viewport :h) 2))))))
 
 (defn delete-range[buf inclusive? linewise?]
   (let [[a b] (range-prefix buf inclusive?)]
@@ -226,19 +225,6 @@
             newchanges (newbuf :changes)]
         [(assoc newbuf :changes [])
          (concat changes newchanges)])) [buf nil] keycodes))
-
-(defn bound-scroll-top
-  "Change scroll top make cursor inside viewport"
-  [buf keycode]
-  (let [st (buf :scroll-top)]
-    (assoc buf :scroll-top
-           (let [y (buf :y)
-                 h (-> @window :viewport :h)]
-             (cond
-               (< y st) y
-               (< y (+ st h)) st
-               (neg? (-> y (- h) inc)) 0
-               :else (-> y (- h) inc))))))
 
 (defn move-to-jumplist
   [buf fndir]
