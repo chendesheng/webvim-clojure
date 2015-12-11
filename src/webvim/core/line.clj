@@ -96,3 +96,5 @@
         [a b] (sort2 a b)]
     [(pos-line-first r a) (pos-line-last r b)]))
 
+(defn first-line[r]
+  (subr r (-> r pos-lines-seq+ first)))

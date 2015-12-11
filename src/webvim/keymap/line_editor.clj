@@ -13,7 +13,7 @@
           :else (assoc linebuf :pos (+ pos d)))))
 
 (defn- linebuf-replace[linebuf a b to]
-  (println a b to)
+  ;(println a b to)
   (if (> a b) linebuf
       (-> linebuf
           (update-in [:str] replacer a b to)
@@ -89,9 +89,9 @@
   (dissoc buf :line-buffer))
 
 (defn- line-editor-put[buf keycode]
-  (let [txt (get-register buf keycode)]
+  (let [txt (-> buf (get-register keycode) :str)]
     (if (string? txt)
-      (linebuf-insert buf txt)
+      (linebuf-insert buf (-> txt rope first-line .trimEnd str))
       buf)))
 
 (defn- line-editor-<c+w>
