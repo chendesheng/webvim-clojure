@@ -17,3 +17,5 @@ pom.xml.asc
 
 *.DS_Store
 resources/public/jquery.js
+
+resources/public/ubuntu-mono.css

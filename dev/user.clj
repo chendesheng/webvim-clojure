@@ -10,11 +10,17 @@
         webvim.keymap
         webvim.main))
 
+(defn- cache-resource[path url]
+  (if-not (fs/exists? path)
+    (spit path (slurp url))))
+
 ;I don't like include js library directly, but also don't want download it again and again.
-(defn- cache-jquery[]
-  (let [path "resources/public/jquery.js"]
-    (if-not (fs/exists? path)
-      (spit path (slurp "http://libs.baidu.com/jquery/2.0.3/jquery.js")))))
+(defn- cache-resources[]
+  (let [resources
+        [["resources/public/jquery.js" "http://libs.baidu.com/jquery/2.0.3/jquery.js"]
+         ["resources/public/ubuntu-mono.css" "http://fonts.useso.com/css?family=Ubuntu+Mono"]]]
+    (doseq [r resources]
+      (apply cache-resource r))))
 
 (defn restart[]
   (let [keymap (init-keymap-tree)]
@@ -40,7 +46,7 @@
 
 (defonce ^:private main
   (do
-    (cache-jquery)
+    (cache-resources)
     (add-init-ex-commands-event)
     (start
       "testfile.clj"
