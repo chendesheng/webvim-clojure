@@ -326,9 +326,7 @@
              {"d" identity
               :after delete})
        "c" (merge
-             (delete-and-insert (-> motion-keymap-fix-w
-                                    (assoc "w" (motion-keymap "e"))
-                                    (assoc "W" (motion-keymap "E"))) insert-mode-keymap)
+             (delete-and-insert motion-keymap-fix-w insert-mode-keymap)
              (delete-and-insert pair-keymap insert-mode-keymap)
              {"c" identity})
        "y" (merge
