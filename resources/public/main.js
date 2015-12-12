@@ -20,13 +20,7 @@ window.onload = function() { //use window.onload, not sure if stylesheet is load
 	lineHeight = d.offsetHeight;
 	document.body.removeChild(d);
 
-	$.getJSON('buf', function(resp) {
-		render(resp);
-
-		setSize(buffers.active.id);
-
-		keyboardInit();
-	});
+	keyboardInit();
 };
 
 

@@ -41,7 +41,8 @@
      [:script {:src "main.js" :type "text/javascript"}]
      [:link {:href "ubuntu-mono.css" :rel "stylesheet"}]
      [:link {:href "main.css" :rel "stylesheet"}]
-     [:link {:href "monokai.css" :rel "stylesheet"}]]
+     [:link {:href "monokai.css" :rel "stylesheet"}]
+     [:script {:type "text/json" :id "init-buf"} (json/generate-string (ui-buf))]]
     [:body]))
 
 (defn- active-buffer[]
@@ -52,7 +53,6 @@
 
 (defroutes main-routes
   (GET "/" [request] (homepage request))
-  (GET "/buf" [] (response (ui-buf)))
   (GET "/resize/:w/:h" [w h]
        (send ui-agent 
              (fn[ui]

@@ -37,6 +37,7 @@ function connect(path) {
 		}
 	}
 
+	render(JSON.parse(document.getElementById('init-buf').textContent));
 	_connect();
 
 	return {
