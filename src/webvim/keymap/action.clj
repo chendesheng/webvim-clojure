@@ -184,9 +184,7 @@
             (buf-insert a s)
             (buf-set-pos a)
             line-start))
-      (-> buf
-          (buf-insert s)
-          char-))))
+      (buf-insert buf s))))
 
 (defn put-from-register-append[buf keycode]
   (let [{s :str linewise? :linewise?} (get-register buf keycode)
@@ -253,17 +251,16 @@
 (defn buf-info[buf]
   (if (and (empty? (buf :str))
            (not (fs/exists? (buf :filepath))))
-    (assoc buf :message (str "[New File] " (buf :filepath)))
-    (assoc buf :message (str "\"" (:filepath buf) "\""))))
+    (assoc buf :message (str "[New File] " (-> buf :filepath shorten-path)))
+    (assoc buf :message (str "\"" (-> buf :filepath shorten-path) "\""))))
 
 (defn- expand-home[f]
   (str (fs/expand-home f)))
 
-;TODO: get rid of this, fs/absolute is a IO operation
-(defn- path=[f1 f2]
+(defn path=[f1 f2]
   (try
-    (= (str (fs/absolute f1))
-       (str (fs/absolute f2)))
+    (= (str (fs/normalized f1))
+       (str (fs/normalized f2)))
     (catch Exception ex
       (println ex)
       false)))
@@ -275,7 +272,7 @@
                            (->> @buffer-list vals (map deref)))
           newbuf (if (nil? buf-exists)
                    (if (or new-file? (-> file expand-home fs/exists?))
-                     (-> file expand-home new-file deref buf-info)
+                     (-> file expand-home new-file deref)
                      nil)
                    buf-exists)]
       (if (nil? newbuf) buf

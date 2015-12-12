@@ -6,6 +6,7 @@
         (clojure [string :only (join split blank? lower-case)])
         webvim.core.rope
         webvim.core.pos
+        webvim.core.utils
         webvim.core.parallel-universe
         webvim.core.event))
 
@@ -85,11 +86,11 @@
 (defn open-file
   "Create buffer from a file by slurp, return emtpy buffer if file not exists"
   [f]
-  (let [nm (if (nil? f) "" (fs/base-name f))]
-    (if (and (not (blank? f))
-             (fs/exists? f))
-      (create-buf nm f (slurp f))
-      (create-buf nm f ""))))
+  (if (nil? f)
+    (create-buf "" "" "")
+    (let [f (-> f .trim fs/normalized)]
+      (create-buf (fs/base-name f) (str f) (if (fs/exists? f) 
+                         (slurp f) "")))))
 
 (defn new-file[f]
   (-> f
@@ -101,6 +102,12 @@
     :change-buffer
     (fn [newt oldt c]
       (assoc newt :dirty true))))
+
+(defn printable-filepath[buf]
+  (let [{nm :name
+         path :filepath} buf]
+    (if (nil? path) nm
+      (shorten-path path))))
 
 ;TODO make write atomic
 (defn write-buffer
@@ -115,7 +122,7 @@
       (spit f r)
       (-> buf
           (assoc :dirty false)
-          (assoc :message (format "\"%s\" %dL, %dC written" f (buf :linescnt) (count r)))))
+          (assoc :message (format "\"%s\" %dL, %dC written" (shorten-path f) (buf :linescnt) (count r)))))
     (catch Exception e 
       ;(println (.getMessage e))
       (.printStackTrace e)

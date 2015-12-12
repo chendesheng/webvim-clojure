@@ -54,15 +54,15 @@
       (-> buf
           (buf-replace a b " ")
           (buf-set-pos a)))))
- 
+
 (defn- buf-pos-info[buf]
-  (let [{nm :name
-         path :filepath
-         y :y
+  (let [{y :y
          x :x
          linescnt :linescnt} buf
         percent (-> y inc (* 100) (/ linescnt) int)]
-    (assoc buf :message (format "\"%s\" line %d of %d --%d%%-- col %d" (or path nm) (inc y) linescnt percent (inc x)))))
+    (assoc buf :message (format "\"%s\" line %d of %d --%d%%-- col %d" 
+                                (printable-filepath buf)
+                                (inc y) linescnt percent (inc x)))))
 
 (def ^:private map-key-inclusive
   {"h" false

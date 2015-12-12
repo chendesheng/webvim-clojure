@@ -7,6 +7,7 @@
         webvim.core.rope
         webvim.core.register
         webvim.core.event
+        webvim.core.utils
         webvim.keymap
         webvim.keymap.action
         webvim.main))
@@ -33,7 +34,7 @@
 
 ;FIXME: This is too hacky
 (defn- cmd-reload[buf execmd args]
-  (let [[[_ _ nm]] (re-seq #"(?i)^(src|dev)/(.+)\.clj" (buf :filepath)) 
+  (let [[[_ _ nm]] (re-seq #"(?i)^(src|dev)/(.+)\.clj" (-> buf :filepath shorten-path)) 
         ret (if (empty? nm)
               "Can't get right namespace"
               (let [code (str "(use '" (-> nm

@@ -1,4 +1,5 @@
-(ns webvim.core.utils)
+(ns webvim.core.utils
+  (:use [me.raynes.fs :as fs]))
 
 (def all-braces {\( \) \) \( \[ \] \] \[ \{ \} \} \{})
 (def left-braces #{\( \[ \{})
@@ -93,3 +94,10 @@
 
 (defn vconj[coll x]
   (conj (or coll []) x))
+
+(defn shorten-path[path]
+  (let [cwd (str fs/*cwd*)]
+    (if (fs/child-of? cwd path)
+      (subs path (-> cwd str count inc))
+      path)))
+

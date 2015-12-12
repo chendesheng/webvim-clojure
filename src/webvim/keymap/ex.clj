@@ -186,7 +186,7 @@
                        "\n" 
                        (map (fn[abuf]
                               (let [buf @abuf]
-                                (str (buf :id) ":" " " (or (buf :filepath) (buf :name)))))
+                                (str (buf :id) ":" " " (printable-filepath buf))))
                             (vals @buffer-list)))) true))
 
 (defn cmd-nohl[buf _ _] 
