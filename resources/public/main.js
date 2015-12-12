@@ -604,7 +604,7 @@ function renderCursor(localbuf) {
 		+'background-color:' + color + ';'
 		+'color:' + background + ';'
 		+'top:' + res.top + 'px;'
-		+'padding-bottom:1px;';
+		+'height:1em;line-height:1em;padding-bottom:1px;';
 }
 
 function renderLineBuffer(buf) {

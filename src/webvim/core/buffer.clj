@@ -83,6 +83,15 @@
         (fire-event :load-language)
         (fire-event :new-buffer))))
 
+;http://stackoverflow.com/questions/13789092/length-of-the-first-line-in-an-utf-8-file-with-bom
+;TODO: use Apache Commons IO: http://commons.apache.org/proper/commons-io/download_io.cgi
+(defn debomify
+  [^String line]
+  (let [bom "\uFEFF"]
+    (if (.startsWith line bom)
+      (.substring line 1)
+      line)))
+
 (defn open-file
   "Create buffer from a file by slurp, return emtpy buffer if file not exists"
   [f]
@@ -90,7 +99,7 @@
     (create-buf "" "" "")
     (let [f (-> f .trim fs/normalized)]
       (create-buf (fs/base-name f) (str f) (if (fs/exists? f) 
-                         (slurp f) "")))))
+                         (debomify (slurp f)) "")))))
 
 (defn new-file[f]
   (-> f

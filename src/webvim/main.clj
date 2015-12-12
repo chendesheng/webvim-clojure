@@ -49,8 +49,8 @@
   (GET "/" [request] (homepage request))
   (GET "/resize/:w/:h" [w h]
        (send ui-agent 
-             (fn[ui]
-               (update-in ui [:viewport] merge {:w (parse-int w) :h (parse-int h)})))))
+             (fn[ui w h]
+               (update-in ui [:viewport] merge {:w w :h h})) (parse-int w) (parse-int h))))
 
 (def ^:private app
   (-> (compojure.handler/api main-routes)
