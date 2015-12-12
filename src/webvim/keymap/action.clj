@@ -184,7 +184,9 @@
             (buf-insert a s)
             (buf-set-pos a)
             line-start))
-      (buf-insert buf s))))
+      (-> buf
+          (buf-insert s)
+          char-))))
 
 (defn put-from-register-append[buf keycode]
   (let [{s :str linewise? :linewise?} (get-register buf keycode)
@@ -199,7 +201,6 @@
       (-> buf
           (buf-insert (inc pos) s)
           (buf-set-pos (+ pos (count s)))))))
-
 
 (defn nop[buf keycode] buf)
 

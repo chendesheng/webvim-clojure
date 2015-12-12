@@ -64,7 +64,10 @@
    "<c+n>" #(autocompl-move % inc)
    "<c+p>" #(autocompl-move % dec)
    "<c+r>" {"<esc>" identity
-            :else put-from-register }
+            :else (fn[buf keycode]
+                    (-> buf
+                        (put-from-register keycode)
+                        char+))}
    :else insert-mode-default 
    :enter set-insert-mode
    :continue #(not (= "<esc>" %2))

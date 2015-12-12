@@ -23,7 +23,7 @@
     (apply cache-resource r)))
 
 (defn restart[]
-  (let [keymap @root-keymap]
+  (let [keymap (init-keymap-tree)]
     (doseq [abuf (vals @buffer-list)]
       (send abuf #(assoc %1 :root-keymap %2) keymap))
     (future
