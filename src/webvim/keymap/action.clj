@@ -305,3 +305,22 @@
             (jump-push buf)
             (assoc buf :nextid nextid))))))
 
+(defn buf-append[buf & strs]
+  (buf-insert 
+    buf
+    (-> buf :str count)
+    (apply str strs)))
+
+(defn write-output[buf s goto?]
+  (let [aoutputbuf (output-buf true)]
+    (send aoutputbuf
+          (fn[buf]
+            (let [row (buf :linescnt)
+                  newbuf (-> buf
+                             (buf-append s "\n")
+                             (move-to-line row)
+                             cursor-center-viewport)]
+              (send-buf! newbuf))))
+    (if goto? (goto-buf buf aoutputbuf) buf)))
+
+

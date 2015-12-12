@@ -72,26 +72,30 @@
     [(Integer. id) keycode]))
 
 ;(parse-input "123!!\n")
-
 (defn- change-buffer![buf keycodes]
   (time
     (try
       (let [[buf changes] (apply-keycodes buf (buf :root-keymap) keycodes)
-            newbuf (send-buf! (assoc buf :changes changes))]
-        (let [nextid (newbuf :nextid)]
-          (if (nil? nextid) newbuf
-            (do
-              (let [anextbuf (@buffer-list nextid)]
-                ;(println "nextid" nextid)
-                (if-not (nil? anextbuf)
-                  (send anextbuf
-                            (fn[buf]
-                              (send-buf! buf)))))
-              (dissoc newbuf :nextid)))))
+            newbuf (send-buf! (assoc buf :changes changes))
+            nextid (newbuf :nextid)]
+        (if (nil? nextid) newbuf
+          (do
+            (let [anextbuf (@buffer-list nextid)]
+            ;(println "nextid" nextid)
+              (if-not (nil? anextbuf)
+                (send anextbuf
+                      (fn[buf]
+                        (send-buf! buf)))))
+            (dissoc newbuf :nextid))))
       (catch Exception e
-             (println e)
-             (.printStackTrace e)
-             (send-buf! (assoc buf :message (str e)))))))
+        (println e)
+        (.printStackTrace e)
+        (let [sw (java.io.StringWriter.)
+              pw (java.io.PrintWriter. sw)]
+          (.printStackTrace e pw)
+          (-> buf
+              (dissoc :nextid)
+              (write-output (str sw) true)))))))
 
 (defn- handle-socket[req]
   {:on-connect (fn[ws]

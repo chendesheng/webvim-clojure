@@ -54,40 +54,17 @@
           (conj matches buf))))
     [] buffers))
 
-(defn- buf-append[buf & strs]
-  (buf-insert 
-    buf
-    (-> buf :str count)
-    (apply str strs)))
-
 (defn- exec-shell-commands[buf cmds]
   (let [aoutputbuf (output-buf true)]
     (async/go
       (let [res (apply clojure.java.shell/sh cmds)
             s (if (empty? (res :out))
                 (res :err) (res :out))]
-        ;(println s)
-        (send aoutputbuf 
-              (fn[buf]
-                ;(println "grepbufid:" (buf :id))
-                (let [row (-> buf :linescnt)
-                      newbuf (-> buf
-                                 (buf-append (string/join " " cmds) "\n" s "\n")
-                                 (move-to-line row)
-                                 cursor-center-viewport)]
-                  (send-buf! newbuf))))))
+        (write-output
+          buf
+          (str (string/join " " cmds) "\n" s)
+          false)))
     (goto-buf buf aoutputbuf)))
-
-(defn- write-output[buf s goto?]
-  (let [aoutputbuf (output-buf true)]
-    (send aoutputbuf
-          (fn[buf]
-            (let [newbuf (-> buf
-                             (buf-append s "\n" "\n")
-                             buf-end
-                             cursor-center-viewport)]
-              (send-buf! newbuf))))
-    (if goto? (goto-buf buf aoutputbuf) buf)))
 
 (defn cmd-write [buf _ file]
   (if (not (string/blank? file))
