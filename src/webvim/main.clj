@@ -109,8 +109,12 @@
 
 (defn- write-client![ui diff]
   (let [ws (ui :ws)]
-    (if-not (nil? ws)
-      (jetty/send! ws (json/generate-string diff)))))
+    (try
+      (jetty/send! ws (-> ui :queue (vconj diff) json/generate-string))
+      (dissoc ui :queue)
+      (catch Exception e
+        (update-in ui [:queue] vconj diff)))))
+
 (defonce ^:private web-server (atom nil))
 
 ;start app with init file and webserver configs
