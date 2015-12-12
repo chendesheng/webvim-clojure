@@ -254,7 +254,7 @@
                   setup-range
                   (change-range (inclusive? keycode) false))))))) keymap))
 
-(defn goto-file[buf]
+(defn- path-under-cursor[buf]
   (let [r (buf :str)
         pos (buf :pos)
         filename-black-list "\\s:?%*|\"'<>"
@@ -263,14 +263,18 @@
         [_ end] (pos-re+ r pos re-end)
         [start _] (pos-re- r pos re-start)
         [[_ uri linenum]] (re-seq #"([^:]+)(:\d+)?" (str (subr r start end)))]
-    (let [newbuf (edit-file buf uri false)
-          nextid (newbuf :nextid)]
-      (if (nil? nextid) newbuf
-        (let[anextbuf (@buffer-list nextid)]
-          (send anextbuf (fn[buf row]
-                           (if (<= row 0) buf
-                             (move-to-line buf (dec row))) "") (parse-int linenum))
-          newbuf)))))
+    [uri linenum]))
+        
+(defn goto-file[buf]
+  (let [[uri linenum] (path-under-cursor buf)
+        newbuf (edit-file buf uri false)
+        nextid (newbuf :nextid)]
+    (if (nil? nextid) newbuf
+      (let[anextbuf (@buffer-list nextid)]
+        (send anextbuf (fn[buf row]
+                         (if (<= row 0) buf
+                           (move-to-line buf (dec row)))) (parse-int linenum))
+        newbuf))))
 
 (defn- dont-cross-line[f]
   (fn[buf]

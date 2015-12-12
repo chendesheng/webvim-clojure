@@ -271,7 +271,8 @@
 (defn edit-file[buf file new-file?]
   (if (or (empty? file) (path= file (:filepath buf)))
     buf
-    (let [buf-exists (some #(if (path= file (-> % second deref :filepath)) (-> % second deref)) @buffer-list)
+    (let [buf-exists (some #(if (path= file (% :filepath)) %)
+                           (->> @buffer-list vals (map deref)))
           newbuf (if (nil? buf-exists)
                    (if (or new-file? (-> file expand-home fs/exists?))
                      (-> file expand-home new-file deref buf-info)
