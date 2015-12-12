@@ -111,15 +111,22 @@
   (let [ws (ui :ws)]
     (if-not (nil? ws)
       (jetty/send! ws (json/generate-string diff)))))
+(defonce ^:private web-server (atom nil))
 
 ;start app with init file and webserver configs
 (defn start[file options]
   (send ui-agent (fn[ui]
                    (assoc ui :render! write-client!)))
   (init-keymap-tree)
-  (start-file file)
-  (jetty/run-jetty #'app
-                   (assoc options :websockets {"/socket" handle-socket})))
+  (if-not (empty? file) (start-file file))
+  (println "start web server:" (options :port))
+  (reset! web-server
+          (jetty/run-jetty #'app
+                   (assoc options :websockets {"/socket" handle-socket}))))
+
+(defn stop[]
+  (println "stop web server")
+  (jetty/stop-server @web-server))
 
 (defn -main[& args]
   (start

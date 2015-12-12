@@ -8,6 +8,7 @@
         webvim.core.register
         webvim.core.event
         webvim.keymap
+        webvim.keymap.action
         webvim.main))
 
 (defn- cache-resource[path url]
@@ -23,10 +24,14 @@
       (apply cache-resource r))))
 
 (defn restart[]
-  (let [keymap (init-keymap-tree)]
+  (let [keymap @root-keymap]
     (doseq [abuf (vals @buffer-list)]
       (send abuf #(assoc %1 :root-keymap %2) keymap))
-  "ok"))
+    (future
+      (Thread/sleep 10) ;wait some time so restart happens after flush states to client
+      (stop)
+      (start nil {:port 8080 :join? false}))
+    "ok"))
 
 ;FIXME: This is too hacky
 (defn- cmd-reload[buf execmd args]
