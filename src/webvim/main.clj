@@ -64,8 +64,6 @@
       (wrap-resource "public")
       (wrap-content-type)))
 
-(defonce ws-out (atom nil))
-
 (defn- start-file[f]
   (let [buf @(new-file f)]
     (registers-put! registers "%" {:str f :id (buf :id)})
@@ -103,19 +101,21 @@
 
 (defn- handle-socket[req]
   {:on-connect (fn[ws]
-                 (reset! ws-out ws))
+                 (send ui-agent (fn[ui ws]
+                                  (assoc ui :ws ws)) ws))
    :on-text (fn[ws body]
               (let [[id keycode] (parse-input body)]
                 (send (@buffer-list id) change-buffer! (input-keys keycode))))})
 
-(defn- write-client![diff]
-  (let [ws @ws-out]
+(defn- write-client![ui diff]
+  (let [ws (ui :ws)]
     (if-not (nil? ws)
       (jetty/send! ws (json/generate-string diff)))))
 
 ;start app with init file and webserver configs
 (defn start[file options]
-  (reset! render-func! write-client!)
+  (send ui-agent (fn[ui]
+                   (assoc ui :render! write-client!)))
   (init-keymap-tree)
   (start-file file)
   (jetty/run-jetty #'app

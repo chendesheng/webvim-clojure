@@ -82,7 +82,8 @@
     buf))
 
 
-(def ui-agent (agent {:viewport {:w 0 :h 0}}))
+(defonce ui-agent (agent {:viewport {:w 0 :h 0}
+                      :render! (fn[a b])}))
 
 (defn- bound-scroll-top
   "Change scroll top make cursor inside viewport"
@@ -98,16 +99,12 @@
                (neg? (-> y (- h) inc)) 0
                :else (-> y (- h) inc))))))
 
-;This MUST be set at start
-;TODO: use var here
-(def render-func! (atom (fn[diff])))
-
 (defn send-buf![newbuf]
   (let [newbuf (bound-scroll-top newbuf)]
     (send-off ui-agent 
               (fn[{buf :buf :as ui}]
                 (let [diff (render buf newbuf)]
-                  (@render-func! diff)
+                  ((ui :render!) ui diff)
                   (assoc ui :buf (-> newbuf 
                                      (dissoc :changes)
                                      (dissoc :history))))))
