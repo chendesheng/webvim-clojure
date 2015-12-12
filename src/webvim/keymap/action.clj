@@ -112,8 +112,8 @@
 (defn change-active-buffer[id nextid]
   (if (not= id nextid)
     (do
-      (registers-put! registers "#" {:str (-> @buffer-list (get id) :filepath) :id id})
-      (registers-put! registers "%" {:str (-> @buffer-list (get nextid) :filepath) :id nextid}))))
+      (registers-put! registers "#" {:str (-> @buffer-list (get id) deref :filepath) :id id})
+      (registers-put! registers "%" {:str (-> @buffer-list (get nextid) deref :filepath) :id nextid}))))
 
 
 ;collect range argument, TODO: add linewise
