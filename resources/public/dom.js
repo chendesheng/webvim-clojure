@@ -13,9 +13,9 @@ function $newBuffer(bufid) {
 			+'<div id="lines-{id}" class="lines"></div>'
 		+'</div>'
 		+'<div id="status-bar-{id}" class="status-bar">'
-			+'<span id="status-bar-buf-{id}" class="ex status-bar-left"></span>'
-			+'<span id="status-bar-cursor-{id}" class="cursor status-bar-left"></span>'
-			+'<span id="status-bar-keys-{id}" class="ongoing-keys status-bar-left"></span>'
+			+'<span id="status-bar-buf-{id}" class="ex"></span>'
+			+'<span id="status-bar-cursor-{id}" class="cursor"></span>'
+			+'<span id="status-bar-keys-{id}" class="ongoing-keys"></span>'
 			+'<span id="status-bar-name-{id}" class="buf-name"></span>'
 		+'</div>';
 	ele.innerHTML = replaceBinding(tmpl, {'id': bufid});

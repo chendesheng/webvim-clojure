@@ -89,14 +89,10 @@ pre {
 	background:#fff;
 	height:1em;
 	width:1ch;
-	position:relative;
+	position:absolute;
 	top:0.25em;
 	margin-left:1px;
 }
-
-.status-bar-left {
-	float:left;
-}	
 
 .status-bar {
 	position:fixed;

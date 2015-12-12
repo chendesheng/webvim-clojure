@@ -618,7 +618,19 @@ function renderLineBuffer(buf) {
 	if (str[str.length-1] == '\n') {
 		$statusCursor(buf.id).style.display= 'none';
 	} else {
-		$statusCursor(buf.id).style.display = 'inline';
+		var range = document.createRange();
+		range.setStart(ex.firstChild, pos);
+		range.setEnd(ex.firstChild, pos);
+		var list = range.getClientRects();
+		var rect = list[0];
+		if (list.length > 1 && list[0].top != list[1].top) {
+			//line break;
+			rect = list[1];
+		}
+
+		var cursor = $statusCursor(buf.id)
+		cursor.style.display = 'block';
+		cursor.style.left = rect.left+'px';
 	}
 }
 
@@ -631,9 +643,9 @@ function renderStatusBar(buf) {
 	} else if (typeof buf['line-buffer'] != 'undefined') {
 		renderLineBuffer(buf);
 	} else {
-		$statusCursor(buf.id).style.cssText = 'display:none';
-
 		if (typeof buf.mode != 'undefined' && buf.mode < MODES.length) {
+			$statusCursor(buf.id).style.display = 'none';
+			
 			var ex = $statusBuf(buf.id);
 			ex.textContent = MODES[buf.mode];
 			keymap = keymaps[buf.mode];
