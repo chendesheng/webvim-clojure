@@ -102,14 +102,14 @@
 (defn send-buf![newbuf]
   (let [newbuf (bound-scroll-top newbuf)]
     (send-off ui-agent 
-              (fn[{buf :buf :as ui}]
+              (fn[{buf :buf :as ui} newbuf]
                 (let [diff (render buf newbuf)
                       render! (ui :render!)]
                   (-> ui
                       (render! diff) ;I/O
                       (assoc :buf (-> newbuf 
                                       (dissoc :changes)
-                                      (dissoc :history)))))))
+                                      (dissoc :history)))))) newbuf)
     (assoc newbuf :changes [])))
 
 (defn ui-buf[]

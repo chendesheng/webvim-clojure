@@ -17,11 +17,9 @@
 
 ;I don't like include js library directly, but also don't want download it again and again.
 (defn- cache-resources[]
-  (let [resources
-        [["resources/public/jquery.js" "http://libs.baidu.com/jquery/2.0.3/jquery.js"]
-         ["resources/public/ubuntu-mono.css" "http://fonts.useso.com/css?family=Ubuntu+Mono"]]]
-    (doseq [r resources]
-      (apply cache-resource r))))
+  (doseq [r [["resources/public/jquery.js" "http://libs.baidu.com/jquery/2.0.3/jquery.js"]
+             ["resources/public/ubuntu-mono.css" "http://fonts.useso.com/css?family=Ubuntu+Mono"]]]
+    (apply cache-resource r)))
 
 (defn restart[]
   (let [keymap @root-keymap]
@@ -35,11 +33,13 @@
 
 ;FIXME: This is too hacky
 (defn- cmd-reload[buf execmd args]
-  (let [[[_ _ nm]] (re-seq #"(src|dev)/(.+)\.clj" (buf :filepath)) 
-        code (str "(use '" (-> nm
-                               (string/replace "/" ".")
-                               (string/replace "_" "-")) " :reload)")
-        ret (->> code read-string eval)]
+  (let [[[_ _ nm]] (re-seq #"(?i)^(src|dev)/(.+)\.clj" (buf :filepath)) 
+        ret (if (empty? nm)
+              "Can't get right namespace"
+              (let [code (str "(use '" (-> nm
+                                           (string/replace "/" ".")
+                                           (string/replace "_" "-")) " :reload)")]
+                (->> code read-string eval)))]
     (if (nil? ret)
       (assoc buf :message (restart))
       (assoc buf :message (str ret)))))

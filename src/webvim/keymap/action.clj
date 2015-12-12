@@ -100,9 +100,9 @@
 (defn set-normal-mode[buf]
   ;(println "set-normal-mode:")
   (merge buf {:mode normal-mode
-            :visual {:type 0 :ranges nil}
-            :autocompl {:suggestions nil
-                        :suggestions-index 0}}))
+              :visual {:type 0 :ranges nil}
+              :autocompl {:suggestions nil
+                          :suggestions-index 0}}))
 
 (defn buf-yank[buf a b linewise?]
   (let [s (buf-subr buf a b)]

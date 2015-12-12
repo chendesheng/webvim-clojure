@@ -45,12 +45,6 @@
      [:script {:type "text/json" :id "init-buf"} (json/generate-string (ui-buf))]]
     [:body]))
 
-(defn- active-buffer[]
-  (let [b (registers-get registers "%")]
-    (if (nil? b)
-      nil
-      (@buffer-list (b :id)))))
-
 (defroutes main-routes
   (GET "/" [request] (homepage request))
   (GET "/resize/:w/:h" [w h]
