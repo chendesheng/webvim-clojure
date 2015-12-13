@@ -4,7 +4,6 @@ String.prototype.eachLine = function(fn) {
 	while(true) {
 		var i = str.indexOf('\n')+1;
 		if (i == 0) {
-			fn(str, num);
 			break;
 		} else {
 			fn(str.substring(0, i), num);
@@ -12,6 +11,7 @@ String.prototype.eachLine = function(fn) {
 		}
 		num++;
 	}
+	return num;
 };
 
 String.prototype.count = function(ch) {

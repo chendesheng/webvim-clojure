@@ -153,19 +153,36 @@ function getScreenXYByPos(buf, pos) {
 
 	var range = document.createRange();
 	range.setStart(res.e, res.offset);
-	range.setEnd(res.e, res.offset);
+	range.setEnd(res.e, res.offset+1);
 
-	var list = range.getClientRects();
-	var rect = list[0];
-	if (list.length > 1 && list[0].top != list[1].top) {
-		//line break;
-		rect = list[1];
+	var rect = range.getBoundingClientRect();
+	left = rect.left;
+	if (rect.width == 0) {
+		if (res.offset > 0) {
+			range = document.createRange();
+			range.setStart(res.e, res.offset-1);
+			range.setEnd(res.e, res.offset);
+			rect = range.getBoundingClientRect();
+			left=rect.left+rect.width;
+		} else {
+			range = document.createRange();
+			range.setStart(res.e, res.offset);
+			range.setEnd(res.e, res.offset);
+
+			var list = range.getClientRects();
+			rect = list[0];
+			if (list.length > 1 && list[0].top != list[1].top) {
+				//line break;
+				rect = list[1];
+			}
+			left = rect.left;
+		}
 	}
-
+	
 	var scrollTop = $buffer(buf.id).scrollTop;
 	var scrollLeft = $lines(buf.id).scrollLeft;
 	var ch = res.e.textContent[res.offset];	
-	return {left: rect.left+scrollLeft, top: rect.top+scrollTop, ch: ch, e: res.e};
+	return {left: left+scrollLeft, top: rect.top+scrollTop, ch: ch, e: res.e};
 }
 
 function refreshIter(index, currentBlock, states, parentNode) {
@@ -201,7 +218,7 @@ function renderLines(buf) {
 
 	hl.states = [];
 	var linenum = 0;
-	buf.str.eachBlock(function(block, i) {
+	buf.str.eachLine(function(block, i) {
 		hl.states.push(null);
 		if (block) {
 			lines.appendChild(renderBlock(hl.parseBlock(block, i)));
@@ -267,7 +284,7 @@ function renderChanges(buf) {
 		var savedstate = deletedstates.pop();
 
 		//insert and keep track hl.states
-		var blocknuminserted = newtxt.eachBlock(function(block, i) {
+		var blocknuminserted = newtxt.eachLine(function(block, i) {
 			var num = i + resa.num;
 			var res = hl.parse(block, hl.states[num]);
 			hl.states.splice(num+1, 0, res[0]);
@@ -619,18 +636,12 @@ function renderLineBuffer(buf) {
 		$statusCursor(buf.id).style.display= 'none';
 	} else {
 		var range = document.createRange();
-		range.setStart(ex.firstChild, pos);
+		range.setStart(ex.firstChild, pos-1);
 		range.setEnd(ex.firstChild, pos);
-		var list = range.getClientRects();
-		var rect = list[0];
-		if (list.length > 1 && list[0].top != list[1].top) {
-			//line break;
-			rect = list[1];
-		}
-
+		var rect = range.getBoundingClientRect();
 		var cursor = $statusCursor(buf.id)
 		cursor.style.display = 'block';
-		cursor.style.left = rect.left+'px';
+		cursor.style.left = (rect.left+rect.width)+'px';
 	}
 }
 
