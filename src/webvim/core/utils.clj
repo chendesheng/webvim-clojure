@@ -101,3 +101,6 @@
       (subs path (-> cwd str count inc))
       path)))
 
+(defn crlf?[txt]
+  (let [[m] (re-seq #"\r?\n" txt)]
+    (= (count m) 2)))

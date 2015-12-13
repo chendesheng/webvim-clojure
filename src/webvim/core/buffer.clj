@@ -25,10 +25,11 @@
     abuf))
 
 (defn create-buf[bufname filepath txt]
-  (let [;make sure last line ends with line break
-        r (if (.endsWith txt "\n") 
-            (rope txt)
-            (.append (rope txt) \newline))
+  (let [txtLF (.replace txt "\r\n" "\n") ;always use LF in editing
+        ;make sure last line ends with line break
+        r (if (.endsWith txtLF "\n")
+            (rope txtLF)
+            (.append (rope txtLF) \newline))
         buf {:name bufname
            ;= nil if it is a special buffer like [New File] or [Quick Fix]
            :filepath filepath 
@@ -75,7 +76,8 @@
            ;:root-keymap is keymap entry of current buffer, different buffer can have different keymaps
            ;For example a directory viewer or a REPL will have it's own keymaps which is much different from the ordinary text buffer.
            ;:root-keymap is NOT an atom
-           :root-keymap nil}]
+           :root-keymap nil
+           :CRLF? (crlf? txt)}]
     ;(pprint (buf :language))
     (-> buf
         ;make sure :new-buffer happens after languages loaded
@@ -122,16 +124,17 @@
 (defn write-buffer
   [buf]
   (try 
-    (let [r (buf :str)
+    (let [tmp (buf :str)
+          s (if (buf :CRLF?) (.replace tmp "\n" "\r\n") tmp)
           f (buf :filepath)]
       (if (not (fs/exists? f))
         (do
           (-> f fs/parent fs/mkdirs)
           (-> f fs/file fs/create)))
-      (spit f r)
+      (spit f s)
       (-> buf
           (assoc :dirty false)
-          (assoc :message (format "\"%s\" %dL, %dC written" (shorten-path f) (buf :linescnt) (count r)))))
+          (assoc :message (format "\"%s\" %dL, %dC written" (shorten-path f) (buf :linescnt) (count s)))))
     (catch Exception e 
       ;(println (.getMessage e))
       (.printStackTrace e)
