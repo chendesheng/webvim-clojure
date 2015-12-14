@@ -105,12 +105,18 @@
   (let [[m] (re-seq #"\r?\n" txt)]
     (= (count m) 2)))
 
-(defn visual-size[^String s tabsize]
-  (let [chars (char-array s)]
-    (areduce chars i ret 0
-             (if (= (aget chars i) \tab)
-               (+ ret (- tabsize (rem ret tabsize)))
-               (inc ret)))))
+
+(defn visual-size[s tabsize]
+  (let [len (count s)]
+    (if (empty? s) 0
+      (loop [i 0 ret 0]
+        (if (>= i len)
+          ret
+          (let [nexti (.indexOf s "\t" i)]
+            (if (neg? nexti)
+              (+ ret (- (count s) i))
+              (recur (inc nexti) 
+                     (+ ret (- tabsize (rem ret tabsize)))))))))))
 
 (defn visualx-to-charx[^String s vx tabsize]
   (let [chars (char-array s)]
