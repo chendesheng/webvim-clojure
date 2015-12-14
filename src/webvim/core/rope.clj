@@ -122,13 +122,45 @@
     ;don't change :cursor
     (update-in pending [:changes] conj c)))
 
+(defn last-line-length[r]
+  (loop[i 0 it (.reverseIterator r)] 
+    (if (.hasNext it)
+      (if (= (.next it) \newline)
+        i
+        (recur (inc i) it))
+      i)))
+
+(defn last-line [r]
+  (let [len (.length r)]
+    (str (subr r (- len (last-line-length r)) len))))
+
+(defn expand-tab[s idx tabsize]
+  (loop [i 0 ret ""]
+    (let [nexti (.indexOf s "\t" i)]
+      ;(println nexti)
+      (if (neg? nexti)
+        (str ret (subs s i))
+        (recur (inc nexti) 
+               (let [ret (str ret (subs s i nexti))]
+                 (apply str ret 
+                        (repeat 
+                          (- tabsize (rem (+ (.length ret) idx) tabsize)) " "))))))))
+
 (defn buf-replace 
   ([buf a b to]
    (if (and (= a b) (empty? to)) buf
      (let [r (buf :str)
+           tabsize (buf :tabsize)
+           strto (str to)
            c {:pos a
               :len (- b a)
-              :to (str to)}
+              :to (if (and (buf :expandtab)
+                           (not= (.indexOf strto "\t") -1))
+                    (expand-tab (str to) 
+                                (let [line (last-line (subr r 0 a))]
+                                  (- (count line) (inc (.lastIndexOf line "\t"))))
+                                tabsize)
+                    strto)}
            [newbuf rc] (buf-apply-change buf c)
            undo (push-pending (newbuf :pending-undo) rc (buf :pos))]
        (-> newbuf

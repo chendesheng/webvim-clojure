@@ -78,7 +78,8 @@
            ;:root-keymap is NOT an atom
            :root-keymap nil
            :CRLF? (crlf? txt)
-           :tabsize 4}]
+           :tabsize 4
+           :expandtab true}]
     ;(pprint (buf :language))
     (-> buf
         ;make sure :new-buffer happens after languages loaded
