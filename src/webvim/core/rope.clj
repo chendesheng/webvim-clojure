@@ -122,17 +122,15 @@
     ;don't change :cursor
     (update-in pending [:changes] conj c)))
 
-(defn last-line-length[r]
+(defn last-tabstop[r]
   (loop[i 0 it (.reverseIterator r)] 
     (if (.hasNext it)
-      (if (= (.next it) \newline)
-        i
-        (recur (inc i) it))
+      (let [ch (.next it)]
+        (cond 
+          (= ch \tab) i
+          (= ch \newline) i
+          :else (recur (inc i) it)))
       i)))
-
-(defn last-line [r]
-  (let [len (.length r)]
-    (str (subr r (- len (last-line-length r)) len))))
 
 (defn expand-tab[s idx tabsize]
   (loop [i 0 ret ""]
@@ -154,11 +152,9 @@
            strto (str to)
            c {:pos a
               :len (- b a)
-              :to (if (and (buf :expandtab)
-                           (not= (.indexOf strto "\t") -1))
-                    (expand-tab (str to) 
-                                (let [line (last-line (subr r 0 a))]
-                                  (- (count line) (inc (.lastIndexOf line "\t"))))
+              :to (if (buf :expandtab)
+                    (expand-tab strto 
+                                (last-tabstop (subr r 0 a))
                                 tabsize)
                     strto)}
            [newbuf rc] (buf-apply-change buf c)
