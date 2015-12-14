@@ -149,14 +149,13 @@
    (if (and (= a b) (empty? to)) buf
      (let [r (buf :str)
            tabsize (buf :tabsize)
-           strto (str to)
            c {:pos a
               :len (- b a)
               :to (if (buf :expandtab)
-                    (expand-tab strto 
+                    (expand-tab (str to)
                                 (last-tabstop (subr r 0 a))
                                 tabsize)
-                    strto)}
+                    (str to))}
            [newbuf rc] (buf-apply-change buf c)
            undo (push-pending (newbuf :pending-undo) rc (buf :pos))]
        (-> newbuf
