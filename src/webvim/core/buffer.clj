@@ -77,7 +77,8 @@
            ;For example a directory viewer or a REPL will have it's own keymaps which is much different from the ordinary text buffer.
            ;:root-keymap is NOT an atom
            :root-keymap nil
-           :CRLF? (crlf? txt)}]
+           :CRLF? (crlf? txt)
+           :tabsize 4}]
     ;(pprint (buf :language))
     (-> buf
         ;make sure :new-buffer happens after languages loaded

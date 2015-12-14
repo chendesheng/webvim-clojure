@@ -140,15 +140,18 @@
         (set-insert-mode "c"))))
 
 (defn update-x[buf]
-  (let [pos (buf :pos)]
-    (assoc buf :x (- pos (pos-line-first (buf :str) pos)))))
+  (let [pos (buf :pos)
+        r (buf :str)]
+    (assoc buf :x (dec (visual-size 
+                         (subr r (pos-line-first r pos) (inc pos)) 
+                         (buf :tabsize))))))
 
 (defn update-x-if-not-jk
   "update :x unless it is up down motion"
   [buf keycode]
   (let [lastbuf (buf :context :lastbuf)]
     (if-not (or (= (:pos lastbuf) (:pos buf))
-                (contains? #{"j" "k"} keycode))
+                (contains? #{"j" "k" "<c+d>" "<c+u>"} keycode))
       (update-x buf) buf)))
 
 ;one server only serve one window at one time

@@ -156,14 +156,17 @@ function getScreenXYByPos(buf, pos) {
 	range.setEnd(res.e, res.offset+1);
 
 	var rect = range.getBoundingClientRect();
-	left = rect.left;
-	if (rect.width == 0) {
-		if (res.offset > 0) {
+	var left = rect.left;
+	var width = rect.width;
+	//When a range contains only \n getBoundingClientRect returns empty rect. 
+	//Perhaps because these chars are invisible. getClientRects still work.
+	if (width == 0) { 
+		if (res.offset > 0) { 
 			range = document.createRange();
 			range.setStart(res.e, res.offset-1);
 			range.setEnd(res.e, res.offset);
 			rect = range.getBoundingClientRect();
-			left=rect.left+rect.width;
+			left = rect.left + rect.width;
 		} else {
 			range = document.createRange();
 			range.setStart(res.e, res.offset);
@@ -182,7 +185,7 @@ function getScreenXYByPos(buf, pos) {
 	var scrollTop = $buffer(buf.id).scrollTop;
 	var scrollLeft = $lines(buf.id).scrollLeft;
 	var ch = res.e.textContent[res.offset];	
-	return {left: left+scrollLeft, top: rect.top+scrollTop, ch: ch, e: res.e};
+	return {left: left+scrollLeft, top: rect.top+scrollTop, width: width, ch: ch, e: res.e};
 }
 
 function refreshIter(index, currentBlock, states, parentNode) {
@@ -398,6 +401,10 @@ function render(buf) {
 		buffers.active = buffers[buf.id];
 		setSize(buffers.active.id);
 	}
+	
+	if (buf.tabsize) {
+		$tabsize(buf.tabsize);
+	}
 
 	if (buf.changes) {
 		renderChanges(buf);
@@ -406,6 +413,9 @@ function render(buf) {
 	//save current cursor for local use
 	if (typeof buf.pos != 'undefined') {
 		buffers[buf.id].cursor = buf.pos;
+	}
+	if (typeof buf.mode != 'undefined') {
+		buffers[buf.id].mode = buf.mode;
 	}
 	renderCursor(buffers[buf.id]);
 
@@ -605,6 +615,7 @@ function renderSelection($p, a, b, buf) {
 function renderCursor(localbuf) {
 	var pos = localbuf.cursor;
 	var res = getScreenXYByPos(localbuf, pos);
+	var alignright = (res.ch=='\t') && (localbuf.mode!=1); //insert mode always align left
 	if (/\r|\n|\t/.test(res.ch)) {
 		res.ch = ' ';
 	}
@@ -616,12 +627,11 @@ function renderCursor(localbuf) {
 	var cursor = $cursor(localbuf.id);
 	cursor.textContent = res.ch;
 	cursor.className = 'cursor';
-	cursor.style.cssText = 'left:'+res.left+'px;'
-		+'margin-left:' + (-gutterWidth(localbuf.id)+'ch') + ';'
+	cursor.style.cssText = 'left:'+(res.left + (alignright ? res.width : 0) +'px;'  //right align
+		+'margin-left:' + (((alignright?-1:0)-gutterWidth(localbuf.id)))+'ch') + ';'
 		+'background-color:' + color + ';'
 		+'color:' + background + ';'
-		+'top:' + res.top + 'px;'
-		+'height:1em;line-height:1em;padding-bottom:1px;';
+		+'top:' + res.top + 'px;';
 }
 
 function renderLineBuffer(buf) {

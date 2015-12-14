@@ -78,6 +78,7 @@
                     (dissoc-if-equal before :dirty)
                     (dissoc-if-equal before :message)
                     (dissoc-if-equal before :highlights)
+                    (dissoc-if-equal before :tabsize)
                     (dissoc-if-equal before :pos)))]
     buf))
 

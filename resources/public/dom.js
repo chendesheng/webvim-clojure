@@ -113,3 +113,11 @@ function _timerScroll(ele, scrollto, i) {
 function $animateScroll(ele, scrollto) {
 	_timerScroll(ele, scrollto, 5);
 }
+
+function $tabsize(tabsize) {
+	if (tabsize) {
+		document.body.style.tabSize = tabsize;
+	} else {
+		return document.body.style.tabSize;
+	}
+}

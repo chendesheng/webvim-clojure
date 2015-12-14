@@ -67,13 +67,15 @@
 ;(pos-lines-seq+ (rope "aa\nbb\ncc\n\n") 0 0)
 
 (defn- lines-move[buf n fndir]
-  (let [x (buf :x)]
+  (let [vx (buf :x)]
     (buf-move buf
               (fn [r pos]
                 (let [rg (nth (fndir r pos) n nil)]
                   (if (nil? rg) pos
-                    (let [[a b] rg]  
-                      (+ a (bound-range x 0 (- b a 1))))))))))
+                    (let [[a b] rg
+                          s (subr r a b)
+                          cx (visualx-to-charx s vx (buf :tabsize))]  
+                      (+ a (bound-range cx 0 (- b a 1))))))))))
 
 (defn lines-n+[buf n]
   (lines-move buf n pos-lines-seq+))

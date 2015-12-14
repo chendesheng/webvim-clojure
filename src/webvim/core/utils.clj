@@ -104,3 +104,26 @@
 (defn crlf?[txt]
   (let [[m] (re-seq #"\r?\n" txt)]
     (= (count m) 2)))
+
+(defn visual-size[^String s tabsize]
+  (let [chars (char-array s)]
+    (areduce chars i ret 0
+             (if (= (aget chars i) \tab)
+               (+ ret (- tabsize (rem ret tabsize)))
+               (inc ret)))))
+
+(defn visualx-to-charx[^String s vx tabsize]
+  (let [chars (char-array s)]
+    (loop[i 0 vxi 0]
+      (let [vxi (if (= (aget chars i) \tab)
+                  (+ vxi (- tabsize (rem vxi tabsize)))
+                  (inc vxi))]
+        (cond
+          (> vxi vx) i
+          (= vxi vx) (inc i)
+          (>= i (-> s count dec)) i
+          :else (recur (inc i) vxi))))))
+
+(comment
+  (webvim.core.utils/visual-size "\t\ta" 5)
+  (webvim.core.utils/visualx-to-charx "\t\t345" 3 4))
