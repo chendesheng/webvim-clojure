@@ -78,6 +78,7 @@ pre {
 	white-space:pre;
 	height:1em;
 	line-height:1em;
+    padding-bottom:1px;
 }
 .cursor.ongoing-key {
 	z-index:100000;

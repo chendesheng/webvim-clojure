@@ -51,6 +51,8 @@ function nmap(key, callback) {
 		callback(':nohl<cr>');
 	} else if (key == '<c+[>') {
 		callback('<esc>');
+	} else if (key == '<f6>') {
+		callback(':reload<cr>');
 	} else {
 		callback(key);
 	}
