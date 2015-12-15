@@ -96,10 +96,11 @@
   (conj (or coll []) x))
 
 (defn shorten-path[path]
-  (let [cwd (str fs/*cwd*)]
-    (if (fs/child-of? cwd path)
-      (subs path (-> cwd str count inc))
-      path)))
+  (if (nil? path) nil
+    (let [cwd (str fs/*cwd*)]
+      (if (fs/child-of? cwd path)
+        (subs path (-> cwd str count inc))
+        path))))
 
 (defn crlf?[txt]
   (let [[m] (re-seq #"\r?\n" txt)]

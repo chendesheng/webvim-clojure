@@ -16,6 +16,8 @@
 ;key: buffer id, value: buffer agent
 (defonce buffer-list (atom {}))
 
+(defonce output-buf-name "*output*")
+
 (defn buffer-list-save!
   "Generate buffer id (increase from 1) and add to buffer-list"
   [buf]
@@ -98,14 +100,16 @@
 
 (defn open-file
   "Create buffer from a file by slurp, return emtpy buffer if file not exists"
-  [f]
-  (if (nil? f)
-    (create-buf "" "" "")
+  [^String f]
+  (if (or (nil? f) (= f output-buf-name))
+    (create-buf (str f) nil "")
     (let [f (-> f .trim fs/normalized)]
-      (create-buf (fs/base-name f) (str f) (if (fs/exists? f) 
-                         (debomify (slurp f)) "")))))
+      (create-buf (fs/base-name f)
+                  (str f)
+                  (if (fs/exists? f)
+                    (debomify (slurp f)) "")))))
 
-(defn new-file[f]
+(defn new-file[^String f]
   (-> f
       open-file
       buffer-list-save!))

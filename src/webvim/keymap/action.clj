@@ -11,7 +11,6 @@
         webvim.jumplist
         webvim.core.ui))
 
-(defonce output-buf-name "*output*")
 (defonce root-keymap (atom {}))
 
 (def normal-mode 0)
@@ -28,6 +27,9 @@
 
 (defn put-register![buf c v]
   (registers-put! (buf :registers) c v))
+
+(defn file-register[buf]
+  {:id (buf :id) :str (or (buf :filepath) (buf :name))})
 
 (defn pos-match-brace
   "return matched brace position, nil if not find"
@@ -110,10 +112,15 @@
     (update-in buf [:context] dissoc :register)))
 
 (defn change-active-buffer[id nextid]
-  (if (not= id nextid)
-    (do
-      (registers-put! registers "#" {:str (-> @buffer-list (get id) deref :filepath) :id id})
-      (registers-put! registers "%" {:str (-> @buffer-list (get nextid) deref :filepath) :id nextid}))))
+  (let [path-name #(or (% :filepath) (% :name))]
+    (if (not= id nextid)
+      (do
+        (registers-put! registers "#" 
+                        (file-register
+                          (-> @buffer-list (get id) deref)))
+        (registers-put! registers "%"
+                        (file-register
+                          (-> @buffer-list (get nextid) deref)))))))
 
 
 ;collect range argument, TODO: add linewise
@@ -276,7 +283,7 @@
                            (->> @buffer-list vals (map deref)))
           newbuf (if (nil? buf-exists)
                    (if (or new-file? (-> file expand-home fs/exists?))
-                     (-> file expand-home new-file deref)
+                     (-> file expand-home str new-file deref)
                      nil)
                    buf-exists)]
       (if (nil? newbuf) buf
@@ -325,5 +332,3 @@
                              cursor-center-viewport)]
               (send-buf! newbuf))))
     (if goto? (goto-buf buf aoutputbuf) buf)))
-
-

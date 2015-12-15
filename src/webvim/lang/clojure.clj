@@ -18,7 +18,7 @@
             (assoc-in [:language :id] ::clojure)
             (assoc-in [:language :name] "Clojure")
             (assoc :tabsize 2)
-            (assoc :expandtab true)
+            (assoc :expandtab true))
         buf))))
 
 (defmethod word-re ::clojure [lang]

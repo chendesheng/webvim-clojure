@@ -127,15 +127,24 @@
         (jump-push buf)))
     (assoc buf :nextid nextid)))
 
+(defn- get-buffer[reg]
+  (if (nil? reg) nil
+    (let [abuf (@buffer-list (reg :id))]
+      (if (nil? abuf) nil
+        @abuf))))
+
 (defn cmd-bdelete[buf execmd args]
   (swap! buffer-list dissoc (buf :id))
-  (let [nextbuf (or (@registers "#") @(new-file nil))
-        firstbuf (-> @buffer-list first val deref)
-        nextid (nextbuf :id)]
-    (registers-put! registers "%" {:id nextid :str (nextbuf :filepath)})
-    (if (or (nil? firstbuf) (= (firstbuf :id) nextid))
+  (let [nextbuf (or (get-buffer (@registers "#")) @(new-file nil))
+        nextid (nextbuf :id)
+        alternatebuf (some (fn[buf]
+                             (if (not= (buf :id) nextid)
+                               buf nil))
+                           (map deref (vals @buffer-list)))]
+    (registers-put! registers "%" (file-register nextbuf))
+    (if (nil? alternatebuf)
       (registers-put! registers "#" nil)
-      (registers-put! registers "#" {:id (firstbuf :id) :str (firstbuf :filepath)}))
+      (registers-put! registers "#" (file-register alternatebuf)))
     (assoc buf :nextid nextid)))
 
 (defn cmd-eval[buf execmd args]
@@ -187,8 +196,8 @@
          (string/join
            "\n" 
            (map (fn[reg]
-                  (str (key reg)
-                       ": "
+                  (str "\"" (key reg)
+                       "  "
                        (-> reg val :str)))
                 @registers)))
     true))
