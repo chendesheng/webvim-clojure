@@ -175,9 +175,23 @@
 (defn cmd-history[buf _ _]
   (let [{before :before after :after} @commands-history
         all (concat (reverse before) after)]
-    (write-output buf
-                  (str ":history\n" (string/join "\n" all)) 
-                  true)))
+    (write-output 
+      buf
+      (str ":history\n" (string/join "\n" all)) 
+      true)))
+
+(defn cmd-register[buf _ _]
+  (write-output 
+    buf
+    (str ":register\n" 
+         (string/join
+           "\n" 
+           (map (fn[reg]
+                  (str (key reg)
+                       ": "
+                       (-> reg val :str)))
+                @registers)))
+    true))
 
 (defn- ex-commands[]
   (let [cmds 
@@ -192,6 +206,7 @@
          ["grep" cmd-grep]
          ["find" cmd-find]
          ["history" cmd-history]
+         ["register" cmd-register]
          [#"^(\d+)$" cmd-move-to-line]
          ["ls" cmd-ls]]]
         (fire-event cmds :init-ex-commands)))
