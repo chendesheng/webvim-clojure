@@ -79,7 +79,7 @@
            :root-keymap nil
            :CRLF? (crlf? txt)
            :tabsize 4
-           :expandtab true}]
+           :expandtab false}]
     ;(pprint (buf :language))
     (-> buf
         ;make sure :new-buffer happens after languages loaded
