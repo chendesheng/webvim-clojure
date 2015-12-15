@@ -332,3 +332,10 @@
                              cursor-center-viewport)]
               (send-buf! newbuf))))
     (if goto? (goto-buf buf aoutputbuf) buf)))
+
+(defn get-buffer-from-reg[reg]
+  (if (nil? reg) nil
+    (let [abuf (@buffer-list (reg :id))]
+      (if (nil? abuf) nil
+        abuf))))
+

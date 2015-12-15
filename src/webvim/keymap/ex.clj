@@ -127,15 +127,9 @@
         (jump-push buf)))
     (assoc buf :nextid nextid)))
 
-(defn- get-buffer[reg]
-  (if (nil? reg) nil
-    (let [abuf (@buffer-list (reg :id))]
-      (if (nil? abuf) nil
-        @abuf))))
-
 (defn cmd-bdelete[buf execmd args]
   (swap! buffer-list dissoc (buf :id))
-  (let [nextbuf (or (get-buffer (@registers "#")) @(new-file nil))
+  (let [nextbuf @(or (get-buffer-from-reg (@registers "#")) (new-file nil))
         nextid (nextbuf :id)
         alternatebuf (some (fn[buf]
                              (if (not= (buf :id) nextid)

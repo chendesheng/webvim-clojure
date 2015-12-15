@@ -354,6 +354,12 @@
        "J" join-line
        "\"" {"<esc>" identity
              :else start-register}
+       "<c+s+6>" (fn[buf]
+                   (println "switch to alternative")
+                   (let [reg (@registers "#")]
+                     (if (nil? reg)
+                       (assoc buf :message "No alternative file")
+                       (goto-buf buf (get-buffer-from-reg reg)))))
        :before (fn [buf keycode]
                  (-> buf
                      (assoc-in [:context :lastbuf] buf)
