@@ -117,10 +117,10 @@
 
 ;start app with init file and webserver configs
 (defn start[file options]
-  (send ui-agent (fn[ui]
-                   (assoc ui :render! write-client!)))
   (init-keymap-tree)
   (if-not (empty? file) (start-file file))
+  (send ui-agent (fn[ui]
+                   (assoc ui :render! write-client!)))
   (println "start web server:" (options :port))
   (reset! web-server
           (jetty/run-jetty #'app
