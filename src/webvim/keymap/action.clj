@@ -359,4 +359,11 @@
         (assoc-in [:macro :keys] (buf :keys)) ;for dot repeat
         fnedit)))
 
+(defn normal-mode-fix-pos
+    "prevent cursor on top of EOL in normal mode"
+    [buf]
+    (let [ch (char-at (buf :str) (buf :pos))]
+      (if (= (or ch \newline) \newline)
+        (char- buf) buf)))
+
 

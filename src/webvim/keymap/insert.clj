@@ -60,13 +60,6 @@
                                       :suggestions-index 0})
               buf3)))))))
 
-(defn- normal-mode-fix-pos
-    "prevent cursor on top of EOL in normal mode"
-    [buf]
-    (let [ch (char-at (buf :str) (buf :pos))]
-      (if (= (or ch \newline) \newline)
-        (char- buf) buf)))
-
 (defn- save-dot-repeat[buf]
   (let [keyvec (-> buf :macro :recording-keys (into (buf :keys)))]
     (put-register! buf "." {:keys keyvec :str (string/join keyvec)})

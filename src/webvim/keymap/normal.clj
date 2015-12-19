@@ -168,19 +168,22 @@
     (assoc-in buf [:context :register] "\""))) ;reset
 
 (defn- normal-mode-after[buf keycode]
-  (let [lastbuf (-> buf :context :lastbuf)
-        save-undo (if (= (buf :mode) insert-mode) identity save-undo)]
+  (let [insert-mode? (= (buf :mode) insert-mode)
+        lastbuf (-> buf :context :lastbuf)
+        save-undo (if insert-mode? identity save-undo)]
     (if-not (nil? (motions-push-jumps (string/join (buf :keys))))
       (jump-push lastbuf))
-    (-> buf
-        (reset-context-register keycode)
-        (update-x-if-not-jk keycode)
-        ;alwasy clear :recording-keys
-        (assoc-in [:macro :recording-keys] [])
-        (update-in [:context] dissoc :range)
-        save-undo
-        ;TODO make brace match async
-        (buf-update-highlight-brace-pair (buf :pos)))))
+    (let [newbuf (if insert-mode? buf
+                   (normal-mode-fix-pos buf))]
+      (-> newbuf
+          (reset-context-register keycode)
+          (update-x-if-not-jk keycode)
+          ;alwasy clear :recording-keys
+          (assoc-in [:macro :recording-keys] [])
+          (update-in [:context] dissoc :range)
+          save-undo
+          ;TODO make brace match async
+          (buf-update-highlight-brace-pair (newbuf :pos))))))
 
 (defn- start-insert-mode-with-keycode [keycode fnmotion fnedit]
   (fn[buf _]
