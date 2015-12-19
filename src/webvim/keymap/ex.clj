@@ -240,7 +240,7 @@
                  (filter
                    (fn[k]
                      (and (string? k)
-                          (.startWith k s)))
+                          (.startsWith k s)))
                    (map first cmds)))]
       (if (nil? news) buf
         (update-in buf [:line-buffer]

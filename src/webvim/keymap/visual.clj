@@ -83,7 +83,7 @@
                              (-> buf :visual :type))
                    (assoc-in [:context :range] nil)))
      :after (fn[buf keycode]
-              (if (contains? #{"u" "<c+r"} keycode)
+              (if (contains? #{"u" "<c+r>"} keycode)
                 (update-x-if-not-jk buf keycode)
                 (-> buf
                     visual-select

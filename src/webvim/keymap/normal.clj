@@ -192,7 +192,9 @@
 (defn- start-ex-mode[buf]
   (-> buf
       (line-editor-enter ":")
-      (assoc :mode ex-mode)))
+      (assoc 
+        :keymap (buf :ex-mode-keymap)
+        :mode ex-mode)))
 
 (defn- delete-to-line-end[buf]
   (-> buf

@@ -93,14 +93,15 @@
             (add-highlight [a (dec b)]))))))
 
 (defn set-insert-mode[buf keycode]
-  ;(println "set-insert-mode")
   (println "set insert mode" (-> buf :visual :ranges))
   (merge buf {:mode insert-mode
+              :keymap (buf :insert-mode-keymap)
               :message nil}))
 
 (defn set-normal-mode[buf]
   ;(println "set-normal-mode:")
   (merge buf {:mode normal-mode
+              :keymap (buf :normal-mode-keymap)
               :visual {:type 0 :ranges nil}
               :autocompl {:suggestions nil
                           :suggestions-index 0}}))
@@ -211,17 +212,9 @@
 
 (defn nop[buf keycode] buf)
 
-(defn get-keymap[mode]
-  (let [{normal-mode-keymap :normal-mode-keymap
-         insert-mode-keymap :insert-mode-keymap
-         ex-mode-keymap :ex-mode-keymap} @ui-agent]
-    (condp = mode
-           normal-mode normal-mode-keymap
-           insert-mode insert-mode-keymap
-           ex-mode ex-mode-keymap)))
-
 (defn apply-keycode[buf keycode]
-  (let [keymap (-> buf :mode get-keymap)
+  (let [keymap (buf :keymap)
+        _ (println "keymap:" (nil? keymap))
         allkeycode (conj (buf :keys) keycode)
         ;_ (println (buf :keys))
         ;_ (println allkeycode)

@@ -22,18 +22,27 @@
         webvim.keymap.compile))
 
 (defn init-keymap-tree []
-  (let [insert-mode-keymap (init-insert-mode-keymap)
-        pair-keymap (init-pair-keymap)
+  (let [pair-keymap (init-pair-keymap)
         line-editor-keymap (init-line-editor-keymap)
         motion-keymap (init-motion-keymap line-editor-keymap)
-        ex-mode-keymap (init-ex-mode-keymap line-editor-keymap)
         visual-mode-keymap (init-visual-mode-keymap motion-keymap pair-keymap visual-range)
         visual-line-mode-keymap (init-visual-mode-keymap motion-keymap pair-keymap visual-line)
-        normal-mode-keymap (init-normal-mode-keymap motion-keymap visual-mode-keymap visual-line-mode-keymap pair-keymap)]
+
+        normal-mode-keymap (compile-keymap (init-normal-mode-keymap motion-keymap visual-mode-keymap visual-line-mode-keymap pair-keymap))
+        insert-mode-keymap (compile-keymap (init-insert-mode-keymap))
+        ex-mode-keymap (compile-keymap (init-ex-mode-keymap line-editor-keymap))]
     (send ui-agent 
           (fn[ui]
             (assoc ui
-              :normal-mode-keymap (compile-keymap normal-mode-keymap)
-              :insert-mode-keymap (compile-keymap insert-mode-keymap)
-              :ex-mode-keymap (compile-keymap ex-mode-keymap))))))
+              :normal-mode-keymap normal-mode-keymap
+              :insert-mode-keymap insert-mode-keymap
+              :ex-mode-keymap ex-mode-keymap)))
+    (await ui-agent)))
 
+(listen :new-buffer
+        (fn[buf]
+          (assoc buf 
+            :keymap (@ui-agent :normal-mode-keymap)
+            :normal-mode-keymap (@ui-agent :normal-mode-keymap)
+            :insert-mode-keymap (@ui-agent :insert-mode-keymap)
+            :ex-mode-keymap (@ui-agent :ex-mode-keymap))))

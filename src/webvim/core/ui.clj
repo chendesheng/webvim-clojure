@@ -41,6 +41,7 @@
 (defn- remove-fields[buf]
   (-> buf 
       (dissoc :expandtab :CRLF? :history :context :last-cursor :language :filepath :x :y :cursor 
+              :keymap :normal-mode-keymap :insert-mode-keymap :ex-mode-keymap
               :pending-undo :registers :linescnt :root-keymap :ext :last-visual :nextid :dot-repeat-keys)
       (dissoc-empty [:changes])
       (dissoc-nil :keys)
@@ -118,5 +119,4 @@
     (assoc newbuf :changes [])))
 
 (defn ui-buf[]
-  (println "ui-buf:" (nil? (@ui-agent :buf)))
   (render nil (@ui-agent :buf)))

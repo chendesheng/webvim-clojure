@@ -48,10 +48,11 @@
           (fn[cmds]
             (conj cmds ["reload" cmd-reload]))))
 
-(defonce ^:private main
-  (do
-    (cache-resources)
-    (add-init-ex-commands-event)
-    (start
-      "testfile.clj"
-      {:port 7070 :join? false})))
+;Not sure why agent await blocking everything. Start a java thread works fine.
+(.start 
+  (Thread. (fn[]
+             (cache-resources)
+             (add-init-ex-commands-event)
+             (start
+               "testfile.clj"
+               {:port 8080 :join? false}))))
