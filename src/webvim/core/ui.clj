@@ -13,16 +13,14 @@
     (dissoc buf k)
     buf))
 
-(def ^:private visual-line 1)
+(def ^:private visual-line 2)
 
-(defn- remove-visual-mode[buf]
-  (if (empty? (-> buf :visual :ranges))
-    (dissoc buf :visual)
-    (if (= (-> buf :visual :type) visual-line)
-      (update-in buf [:visual :ranges] 
-                 (fn[ranges]
-                   (map #(make-linewise-range % buf) ranges)))
-      buf)))
+(defn- correct-visual-mode[buf]
+  (if (= (-> buf :visual :type) visual-line)
+    (update-in buf [:visual :ranges] 
+               (fn[ranges]
+                 (map #(make-linewise-range % buf) ranges)))
+    buf))
 
 (defn- remove-autocompl[buf]
   (if (empty? (-> buf :autocompl :suggestions))
@@ -46,7 +44,6 @@
       (dissoc-empty [:changes])
       (dissoc-nil :keys)
       line-editor
-      remove-visual-mode
       remove-autocompl))
 
 (defn- dissoc-if-equal[after before k]
@@ -65,13 +62,15 @@
                     (assoc :str (str txt))
                     (assoc :lang (-> after :language :name))
                     (dissoc :changes)
-                    remove-fields)
+                    remove-fields
+                    correct-visual-mode)
                 :else
                 (-> after
                     (dissoc-if-equal before :line-buffer)
                     remove-fields
                     (dissoc :str)
                     (dissoc-if-equal before :mode)
+                    (dissoc-if-equal before :visual)
                     (dissoc-if-equal before :braces)
                     (dissoc-if-equal before :keys)
                     (dissoc-if-equal before :name)

@@ -75,6 +75,7 @@ function gutterWidth(bufid, linenum) {
 function outOfRange(ele) {
 	return ele == null || !/\bcode\b/.test(ele.className);
 }
+
 function endCode(ele) {
 	return ele != null && /\bend\-code\b/.test(ele.className);
 }
@@ -443,9 +444,17 @@ function render(buf) {
 	//render visual
 	$selections(buf.id).innerHTML = '';
 	if (buf.visual) {
-		if (buf.visual.type == 0)
+		if (buf.visual.type > 0) {
+			renderMode(buf, VISUAL_MODES[buf.visual.type]);
+		}
+		
+		if (buf.visual.type == 0) {
+			if (buffers[buf.id].mode < MODES.length) {
+				renderMode(buf, MODES[buffers[buf.id].mode]);
+			}
+		} else if (buf.visual.type == 1) {
 			renderSelections($selections(buf.id), buffers[buf.id], buf.visual.ranges);
-		if (buf.visual.type == 1) {
+		} else if (buf.visual.type == 2) {
 			var ranges = buf.visual.ranges;
 			ranges[0][1] = ranges[0][1]-2;
 			renderSelections($selections(buf.id), buffers[buf.id], buf.visual.ranges);
@@ -655,6 +664,13 @@ function renderLineBuffer(buf) {
 	}
 }
 
+function renderMode(buf, text) {
+	$statusCursor(buf.id).style.display = 'none';
+	
+	var ex = $statusBuf(buf.id);
+	ex.textContent = text;
+}
+
 function renderStatusBar(buf) {
 	if (buf.message) {
 		$statusCursor(buf.id).style.cssText = 'display:none';
@@ -665,14 +681,12 @@ function renderStatusBar(buf) {
 		renderLineBuffer(buf);
 	} else {
 		if (typeof buf.mode != 'undefined' && buf.mode < MODES.length) {
-			$statusCursor(buf.id).style.display = 'none';
-			
-			var ex = $statusBuf(buf.id);
-			ex.textContent = MODES[buf.mode];
+			renderMode(buf, MODES[buf.mode]);
 			keymap = keymaps[buf.mode];
 		}
 	}
 }
 
-var MODES = ['-- NORMAL --', '-- INSERT --', '-- VISUAL --'];
+var MODES = ['-- NORMAL --', '-- INSERT --'];
+var VISUAL_MODES = ['', '-- VISUAL --', '-- VISUAL LINE --', '-- VISUAL BLOCK']
 

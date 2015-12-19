@@ -13,12 +13,12 @@
 
 (def normal-mode 0)
 (def insert-mode 1)
-(def visual-mode 2)
-(def ex-mode 3)
+(def ex-mode 2)
 
-(def visual-normal 0)
-(def visual-line 1)
-(def visual-block 2) ;TODO
+;0 means no visual
+(def visual-range 1)
+(def visual-line 2)
+(def visual-block 3) ;TODO
 
 (defn get-register[buf c]
   (registers-get (buf :registers) c))
@@ -123,19 +123,17 @@
 
 ;collect range argument, TODO: add linewise
 (defn range-prefix[buf inclusive?]
-  (cond
-    (-> buf :mode (= visual-mode))
-    (let [tp (-> buf :visual :type)]
-      (cond
-        (= tp visual-normal)
-        (-> buf :visual :ranges (get 0) (make-range inclusive?))
-        (= tp visual-line)
-        (-> buf :visual :ranges (get 0) (make-linewise-range buf))
-        (= tp visual-block)
-        (throw (Exception. "TODO: visual-block"))))
-    (-> buf :context :range nil? not)
-    (-> buf :context :range (make-range inclusive?))
-    :else (throw (Exception. "no range prefix exist"))))
+  (let [tp (-> buf :visual :type)]
+    (cond
+      (= tp visual-range)
+      (-> buf :visual :ranges (get 0) (make-range inclusive?))
+      (= tp visual-line)
+      (-> buf :visual :ranges (get 0) (make-linewise-range buf))
+      (= tp visual-block)
+      (throw (Exception. "TODO: visual-block"))
+      (-> buf :context :range nil? not)
+      (-> buf :context :range (make-range inclusive?))
+      :else (throw (Exception. "no range prefix exist")))))
 
 (defn change-range[buf inclusive? linewise?]
   (let [[a b] (range-prefix buf inclusive?)]
@@ -218,7 +216,6 @@
          ex-mode-keymap :ex-mode-keymap} @ui-agent]
     (condp = mode
            normal-mode normal-mode-keymap
-           visual-mode normal-mode-keymap
            insert-mode insert-mode-keymap
            ex-mode ex-mode-keymap)))
 

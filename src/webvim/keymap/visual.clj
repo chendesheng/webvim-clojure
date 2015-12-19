@@ -15,10 +15,9 @@
         webvim.autocompl))
 
 (defn- set-visual-mode[buf, typ]
-  ;(println "set-visual-mode:")
   (let [pos (buf :pos)]
-    (merge buf {:mode visual-mode
-                :visual {:type typ :ranges [[pos pos]]}})))
+    (println "set-visual-mode:" typ)
+    (merge buf {:visual {:type typ :ranges [[pos pos]]}})))
 
 (defn- clear-visual[buf]
   (-> buf
@@ -44,14 +43,14 @@
 
 ;type/mode    | keycode | next
 ;-------------|---------|-------
-;normal       |  v      | visual-normal
+;normal       |  v      | visual-range
 ;normal       |  V      | visual-line
-;visual-normal|  V      | visual-line
-;visual-normal|  v      | normal
-;visual-line  |  v      | visual-normal
+;visual-range |  V      | visual-line
+;visual-range |  v      | normal
+;visual-line  |  v      | visual-range
 ;visual-line  |  V      | normal
 (defn- keycode2type[keycode]
-  ({"v" visual-normal "V" visual-line} keycode))
+  ({"v" visual-range "V" visual-line} keycode))
 
 (defn- visual-mode-continue?[buf keycode]
   (let [typ (-> buf :context :visual-mode-type)
@@ -69,13 +68,13 @@
 (defn- change-visual[]
   (start-insert-mode "c" identity #(change-range % true (linewise? %))))
 
-(defn init-visual-mode-keymap[insert-mode-keymap motion-keymap pair-keymap current-type]
+(defn init-visual-mode-keymap[insert-mode-keymap motion-keymap pair-keymap init-type]
   (merge 
     motion-keymap 
     pair-keymap
     {"z" {"z" cursor-center-viewport}
      :enter (fn[buf keycode]
-              (set-visual-mode buf current-type))
+              (set-visual-mode buf init-type))
      :leave (fn[buf keycode] (clear-visual buf))
      :continue visual-mode-continue?
      :before (fn[buf keycode] 
