@@ -72,12 +72,6 @@
          (-> buf :line-buffer nil?)
          (contains? #{"<cr>" "<esc>"} keycode))))
 
-(defn- line-editor-enter[buf keycode]
-  (-> buf
-      (dissoc :message)
-      (assoc-in [:context :lastbuf] buf)
-      (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
-
 (defn- line-editor-<bs>
   [{{r :str} :line-buffer :as buf}] 
   (if (empty? r)

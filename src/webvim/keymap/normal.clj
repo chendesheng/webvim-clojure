@@ -109,7 +109,7 @@
     (assoc-in buf [:context :range] [a b])))
 
 (defn- delete[buf keycode]
-  (if (= "d" keycode)
+  (if (contains? #{"d" "j" "k"} keycode)
     (-> buf
         setup-range-line
         (delete-range false true)
@@ -119,7 +119,7 @@
         (delete-range (inclusive? keycode) false))))
 
 (defn- yank[buf keycode]
-  (if (= "y" keycode)
+  (if (contains? #{"y" "j" "k"} keycode)
     (-> buf
         setup-range-line
         (yank-range false true))
@@ -128,7 +128,7 @@
         (yank-range (inclusive? keycode) false))))
 
 (defn- indent[buf keycode]
-  (if (= "=" keycode)
+  (if (contains? #{"=" "j" "k"} keycode)
     (buf-indent-current-line buf)
     (-> buf
         setup-range
@@ -152,24 +152,14 @@
     (assoc-in buf [:context :register] keycode)
     buf))
 
-(defn- normal-mode-fix-pos
-    "prevent cursor on top of EOL in normal mode"
-    [buf]
-    (let [ch (char-at (buf :str) (buf :pos))]
-      (if (= (or ch \newline) \newline)
-        (char- buf) buf)))
-
 (defn- dot-repeat[buf]
   (let [keycodes (-> buf
                      (get-register ".")
                      :keys)]
     (if (empty? keycodes)
       buf
-      ;Remove "." from :root-keymap prevent recursively execute dot-repeat which will cause stackoverflow
-      ;Remove :before and :after because there are called in outside already
       (replay-keys buf keycodes))))
 
-;(def ^:private not-repeat-keys #{".", "u", "<c+r>", "p", "P", ":"})
 (defn- replayable?[keycode]
   (not (contains? #{"." "u" "<c+r>" "p" "P" ":"} keycode)))
 
@@ -178,81 +168,47 @@
     (assoc-in buf [:context :register] "\""))) ;reset
 
 (defn- normal-mode-after[buf keycode]
-  (let [lastbuf (-> buf :context :lastbuf)]
+  (let [lastbuf (-> buf :context :lastbuf)
+        save-undo (if (= (buf :mode) insert-mode) identity save-undo)]
     (if-not (nil? (motions-push-jumps (string/join (buf :keys))))
       (jump-push lastbuf))
-    ;(println "normal-mode-after, recording-keys" (-> buf :macro :recording-keys))
-    ;if nothing changed there is no need to overwrite "." register
-    ;so keys like i<esc> won't affect, this also exclude all motions.
-    (let [keyvec (-> buf :macro :recording-keys)]
-      (if (and (not (= (:str lastbuf) (:str buf)))
-               (replayable? keycode)
-               ;" is just register prefix, the actual keycode is the 3rd one
-               (if (= keycode "\"")
-                 (replayable? (nth keyvec 2))
-                 true))
-        (put-register! buf "." {:keys keyvec :str (string/join keyvec)})))
-    (let [newbuf (normal-mode-fix-pos buf)]
-      (-> newbuf
-          (reset-context-register keycode)
-          set-normal-mode
-          save-undo
-          (update-x-if-not-jk keycode)
-          ;alwasy clear :recording-keys
-          (assoc-in [:macro :recording-keys] [])
-          (update-in [:context] dissoc :range)
-          ;TODO make brace match async
-          (buf-update-highlight-brace-pair (newbuf :pos))))))
+    (-> buf
+        (reset-context-register keycode)
+        (update-x-if-not-jk keycode)
+        ;alwasy clear :recording-keys
+        (assoc-in [:macro :recording-keys] [])
+        (update-in [:context] dissoc :range)
+        save-undo
+        ;TODO make brace match async
+        (buf-update-highlight-brace-pair (buf :pos)))))
 
-(defn- start-insert-mode[fnmotion insert-mode-keymap]
-  (merge
-    insert-mode-keymap
-    {:enter (fn[buf keycode]
-              (-> buf
-                  fnmotion
-                  ((insert-mode-keymap :enter) keycode)))}))
+(defn- start-insert-mode-with-keycode [keycode fnmotion fnedit]
+  (fn[buf _]
+    (-> buf 
+        (fnmotion keycode)
+        (set-insert-mode keycode)
+        (assoc-in [:macro :keys] (buf :keys)) ;for dot repeat
+        (fnedit keycode))))
 
-(defn- start-insert-mode-insert[fnedit insert-mode-keymap]
-  (merge
-    insert-mode-keymap
-    {:enter (fn[buf keycode]
-              (-> buf
-                  ((insert-mode-keymap :enter) keycode)
-                  fnedit))}))
+(defn- start-ex-mode[buf]
+  (-> buf
+      (line-editor-enter ":")
+      (assoc :mode ex-mode)))
 
 (defn- delete-to-line-end[buf]
   (-> buf
       setup-range-line-end
       (delete-range false false)))
 
-(defn- change-to-line-end[insert-mode-keymap]
-  (assoc
-    insert-mode-keymap
-    :enter
-    (fn[buf keycode]
-      (-> buf
-          setup-range-line-end
-          (change-range false false)))))
+(defn- change-to-line-end[buf]
+  (-> buf
+      setup-range-line-end
+      (change-range false false)))
 
-(defn- delete-and-insert[keymap insert-mode-keymap]
-  (tree-map
-    (fn[ks f]
-      (if
-        (let [s (clojure.string/join ks)]
-          (or (and
-                (contains? #{:else :before :after :enter :leave :continue "<esc>"} (first ks))
-                (not (contains? #{":elset" ":elseT" ":elsef" ":elseF"} s)))
-              (contains? #{"<bs>/"} s)))
-        f
-        (assoc
-          insert-mode-keymap
-          :enter
-          (let [f (if (= (first ks) :else) f (fn[buf keycode] (f buf)))]
-            (fn[buf keycode]
-              (-> buf
-                  (f keycode)
-                  setup-range
-                  (change-range (inclusive? keycode) false))))))) keymap))
+(defn- change-by-motion[buf keycode]
+  (-> buf 
+      setup-range
+      (change-range (inclusive? keycode) false)))
 
 (defn- path-under-cursor[buf]
   (let [r (buf :str)
@@ -290,17 +246,15 @@
                                 (assoc "W" (dont-cross-line (motion-keymap "W"))))]
     (deep-merge
       motion-keymap
-      {"i" insert-mode-keymap
-       "a" (start-insert-mode char+ insert-mode-keymap)
-       "A" (start-insert-mode line-end insert-mode-keymap)
-       "I" (start-insert-mode line-start insert-mode-keymap)
-       "s" (start-insert-mode-insert delete-char insert-mode-keymap)
-       "o" (start-insert-mode-insert insert-new-line insert-mode-keymap)
-       "O" (start-insert-mode-insert insert-new-line-before insert-mode-keymap)
+      {"i" (start-insert-mode "i" identity identity)
+       "a" (start-insert-mode "a" char+ identity)
+       "A" (start-insert-mode "A" line-end identity)
+       "I" (start-insert-mode "I" line-start identity)
+       "s" (start-insert-mode "s" identity delete-char)
+       "o" (start-insert-mode "o" identity insert-new-line)
+       "O" (start-insert-mode "O" identity insert-new-line-before)
        "." dot-repeat
-       ":" (merge
-             ex-mode-keymap
-             {:leave (fn[buf keycode] (set-normal-mode buf))})
+       ":" start-ex-mode
        "r" {"<esc>" identity
             :else replace-char-keycode}
        "u" undo
@@ -329,9 +283,10 @@
              {"d" identity
               :after delete})
        "c" (merge
-             (delete-and-insert motion-keymap-fix-w insert-mode-keymap)
-             (delete-and-insert pair-keymap insert-mode-keymap)
-             {"c" identity})
+             motion-keymap-fix-w
+             pair-keymap
+             {:leave (start-insert-mode-with-keycode "c" nop change-by-motion)
+              "c" identity})
        "y" (merge
              motion-keymap-fix-w
              pair-keymap
@@ -343,7 +298,7 @@
              {"=" identity
               :after indent})
        "D" delete-to-line-end
-       "C" (change-to-line-end insert-mode-keymap)
+       "C" (start-insert-mode "C" identity change-to-line-end)
        "Y" #(yank % "y")
        "x" delete-char
        "p" (fn[buf]
@@ -360,6 +315,8 @@
                      (if (nil? reg)
                        (assoc buf :message "No alternative file")
                        (goto-buf buf (get-buffer-from-reg reg)))))
+       :continue (fn[buf keycode]
+                   (= (buf :mode) normal-mode))
        :before (fn [buf keycode]
                  (-> buf
                      (assoc-in [:context :lastbuf] buf)

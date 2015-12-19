@@ -11,8 +11,6 @@
         webvim.jumplist
         webvim.core.ui))
 
-(defonce root-keymap (atom {}))
-
 (def normal-mode 0)
 (def insert-mode 1)
 (def visual-mode 2)
@@ -95,9 +93,9 @@
 
 (defn set-insert-mode[buf keycode]
   ;(println "set-insert-mode")
+  (println "set insert mode" (-> buf :visual :ranges))
   (merge buf {:mode insert-mode
-              :message nil
-              :visual {:type 0 :ranges nil}}))
+              :message nil}))
 
 (defn set-normal-mode[buf]
   ;(println "set-normal-mode:")
@@ -214,8 +212,19 @@
 
 (defn nop[buf keycode] buf)
 
-(defn apply-keycode[buf keycode keymap]
-  (let [allkeycode (conj (buf :keys) keycode)
+(defn get-keymap[mode]
+  (let [{normal-mode-keymap :normal-mode-keymap
+         insert-mode-keymap :insert-mode-keymap
+         ex-mode-keymap :ex-mode-keymap} @ui-agent]
+    (condp = mode
+           normal-mode normal-mode-keymap
+           visual-mode normal-mode-keymap
+           insert-mode insert-mode-keymap
+           ex-mode ex-mode-keymap)))
+
+(defn apply-keycode[buf keycode]
+  (let [keymap (-> buf :mode get-keymap)
+        allkeycode (conj (buf :keys) keycode)
         ;_ (println (buf :keys))
         ;_ (println allkeycode)
         func (or (keymap (clojure.string/join allkeycode))
@@ -227,10 +236,10 @@
                  nop)]
     (func buf keycode)))
 
-(defn apply-keycodes[buf keymap keycodes]
+(defn apply-keycodes[buf keycodes]
   (reduce
     (fn[[buf changes] keycode]
-      (let [newbuf (apply-keycode buf keycode keymap)
+      (let [newbuf (apply-keycode buf keycode)
             newchanges (newbuf :changes)]
         [(assoc newbuf :changes [])
          (concat changes newchanges)])) [buf nil] keycodes))
@@ -303,7 +312,6 @@
             @buffer-list)
       (if create?
         (-> (open-file output-buf-name)
-            (assoc :root-keymap @root-keymap)
             buffer-list-save!))))
 
 (defn goto-buf [buf anextbuf]
@@ -338,4 +346,20 @@
     (let [abuf (@buffer-list (reg :id))]
       (if (nil? abuf) nil
         abuf))))
+
+(defn line-editor-enter[buf keycode]
+  (-> buf
+      (dissoc :message)
+      (assoc-in [:context :lastbuf] buf)
+      (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
+
+(defn start-insert-mode [keycode fnmotion fnedit]
+  (fn[buf]
+    (println "start:" (-> buf :visual :ranges))
+    (-> buf 
+        fnmotion
+        (set-insert-mode keycode)
+        (assoc-in [:macro :keys] (buf :keys)) ;for dot repeat
+        fnedit)))
+
 

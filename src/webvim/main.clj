@@ -59,6 +59,7 @@
       (wrap-content-type)))
 
 (defn- start-file[f]
+  (println "start-file:" f)
   (let [buf @(new-file f)]
     (registers-put! registers "%" {:str f :id (buf :id)})
     (send-buf! buf)))
@@ -75,7 +76,7 @@
 (defn- change-buffer![buf keycodes]
   (time
     (try
-      (let [[buf changes] (apply-keycodes buf (buf :root-keymap) keycodes)
+      (let [[buf changes] (apply-keycodes buf keycodes)
             newbuf (send-buf! (assoc buf :changes changes))
             nextid (newbuf :nextid)]
         (if (nil? nextid) newbuf
@@ -120,6 +121,7 @@
   (init-keymap-tree)
   (if-not (empty? file) (start-file file))
   (send ui-agent (fn[ui]
+                   (println "render" (ui :render!))
                    (assoc ui :render! write-client!)))
   (println "start web server:" (options :port))
   (reset! web-server

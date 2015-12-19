@@ -260,10 +260,7 @@
            {:enter (fn[buf keycode]
                      (swap! commands-history #(-> %
                                                   fast-forward
-                                                  (assoc :current "")))
-                     (-> buf
-                         ((line-editor-keymap :enter) keycode)
-                         (assoc :mode ex-mode)))
+                                                  (assoc :current ""))))
             :after (fn[buf keycode]
                      (let [after (or (line-editor-keymap :after) nop)
                            buf (after buf keycode)]
@@ -272,6 +269,8 @@
                                 (no-future? @commands-history))
                          (swap! commands-history assoc :current (-> buf :line-buffer :str str)))
                        buf))
+            :leave (fn[buf keycode]
+                     (set-normal-mode buf))
             "<c+p>" (fn[buf]
                       (swap! commands-history go-back)
                       (let [buf (recover-command-history buf)]

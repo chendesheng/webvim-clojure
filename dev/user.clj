@@ -16,21 +16,19 @@
   (if-not (fs/exists? path)
     (spit path (slurp url))))
 
-;I don't like include js library directly, but also don't want download it again and again.
+;I don't like include js library directly, but also don't want download it over and over.
 (defn- cache-resources[]
   (doseq [r [["resources/public/jquery.js" "http://libs.baidu.com/jquery/2.0.3/jquery.js"]
              ["resources/public/ubuntu-mono.css" "http://fonts.useso.com/css?family=Ubuntu+Mono"]]]
     (apply cache-resource r)))
 
 (defn restart[]
-  (let [keymap (init-keymap-tree)]
-    (doseq [abuf (vals @buffer-list)]
-      (send abuf #(assoc %1 :root-keymap %2) keymap))
-    (future
-      (Thread/sleep 10) ;wait some time so restart happens after flush states to client
-      (stop)
-      (start nil {:port 8080 :join? false}))
-    "ok"))
+  (init-keymap-tree)
+  (future
+    (Thread/sleep 10) ;wait some time so restart happens after flush states to client
+    (stop)
+    (start nil {:port 7070 :join? false}))
+  "ok")
 
 ;FIXME: This is too hacky
 (defn- cmd-reload[buf execmd args]
@@ -56,4 +54,4 @@
     (add-init-ex-commands-event)
     (start
       "testfile.clj"
-      {:port 8080 :join? false})))
+      {:port 7070 :join? false})))

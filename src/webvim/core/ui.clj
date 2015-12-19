@@ -84,7 +84,10 @@
 
 
 (defonce ui-agent (agent {:viewport {:w 0 :h 0}
-                      :render! (fn[a b])}))
+                          :render! (fn[a b] a)
+                          :normal-keymap nil
+                          :insert-keymap nil
+                          :ex-keymap nil}))
 
 (defn- bound-scroll-top
   "Change scroll top make cursor inside viewport"
@@ -114,4 +117,5 @@
     (assoc newbuf :changes [])))
 
 (defn ui-buf[]
+  (println "ui-buf:" (nil? (@ui-agent :buf)))
   (render nil (@ui-agent :buf)))

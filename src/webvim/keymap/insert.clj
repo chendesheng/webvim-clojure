@@ -1,4 +1,5 @@
 (ns webvim.keymap.insert
+  (:require [clojure.string :as string])
   (:use webvim.keymap.action
         webvim.core.buffer
         webvim.core.rope
@@ -59,6 +60,18 @@
                                       :suggestions-index 0})
               buf3)))))))
 
+(defn- normal-mode-fix-pos
+    "prevent cursor on top of EOL in normal mode"
+    [buf]
+    (let [ch (char-at (buf :str) (buf :pos))]
+      (if (= (or ch \newline) \newline)
+        (char- buf) buf)))
+
+(defn- save-dot-repeat[buf]
+  (let [keyvec (-> buf :macro :recording-keys (into (buf :keys)))]
+    (put-register! buf "." {:keys keyvec :str (string/join keyvec)})
+    (dissoc buf :macro :recording-keys)))
+
 (defn init-insert-mode-keymap[]
   {;"<c+o>" normal-mode-keymap 
    "<c+n>" #(autocompl-move % inc)
@@ -69,11 +82,13 @@
                         (put-from-register keycode)
                         char+))}
    :else insert-mode-default 
-   :enter set-insert-mode
    :continue #(not (= "<esc>" %2))
    :leave (fn[buf keycode]
             (-> buf
                 char-
                 update-x
+                save-undo
+                save-dot-repeat
+                normal-mode-fix-pos
                 set-normal-mode))})
 

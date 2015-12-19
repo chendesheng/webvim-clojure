@@ -5,6 +5,7 @@
         webvim.core.pos
         webvim.core.buffer
         webvim.core.line
+        webvim.core.ui
         webvim.keymap.motion
         webvim.keymap.visual
         webvim.keymap.normal
@@ -20,8 +21,7 @@
         webvim.autocompl
         webvim.keymap.compile))
 
-(defn init-keymap-tree
-  []
+(defn init-keymap-tree []
   (let [insert-mode-keymap (init-insert-mode-keymap)
         pair-keymap (init-pair-keymap)
         line-editor-keymap (init-line-editor-keymap)
@@ -30,27 +30,10 @@
         visual-mode-keymap (init-visual-mode-keymap insert-mode-keymap motion-keymap pair-keymap visual-normal)
         visual-line-mode-keymap (init-visual-mode-keymap insert-mode-keymap motion-keymap pair-keymap visual-line)
         normal-mode-keymap (init-normal-mode-keymap motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap pair-keymap)]
-    (reset! root-keymap (compile-keymap normal-mode-keymap))))
+    (send ui-agent 
+          (fn[ui normal-mode-keymap insert-mode-keymap ex-mode-keymap]
+            (assoc ui
+              :normal-mode-keymap (compile-keymap normal-mode-keymap)
+              :insert-mode-keymap (compile-keymap insert-mode-keymap)
+              :ex-mode-keymap (compile-keymap ex-mode-keymap))) normal-mode-keymap insert-mode-keymap ex-mode-keymap)))
 
-(defonce ^:private listen-new-buffer
-  (listen :new-buffer
-          (fn [buf]
-            (assoc buf :root-keymap @root-keymap))))
-
-
-;(test-keymap)
-;(pprint
-;  ((compile-keymap @root-keymap) ":else:elsetc"))
-
-(comment
-  (defn- print2[buf]
-    (println (buf :keys))
-    buf)
-
-  (defn test-keymap[]
-    (str ((let [buf (assoc (open-file nil) :root-keymap (init-keymap-tree)) ]
-            (-> buf
-                (apply-keycode "/")
-                (apply-keycode "w")
-                (print2)
-                (apply-keycode "a"))) :str))))

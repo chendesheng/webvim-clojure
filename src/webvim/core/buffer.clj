@@ -75,10 +75,6 @@
            ;TODO detect language by file content
            :language {:id ::plain-text
                       :name "Plain Text"}
-           ;:root-keymap is keymap entry of current buffer, different buffer can have different keymaps
-           ;For example a directory viewer or a REPL will have it's own keymaps which is much different from the ordinary text buffer.
-           ;:root-keymap is NOT an atom
-           :root-keymap nil
            :CRLF? (crlf? txt)
            :tabsize 4
            :expandtab false}]

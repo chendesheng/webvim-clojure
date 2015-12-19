@@ -66,13 +66,8 @@
     (if (= typ newtyp) buf
       (assoc-in buf [:visual :type] newtyp))))
 
-(defn- change-visual[insert-mode-keymap]
-  (assoc
-    insert-mode-keymap
-    :enter
-    (fn[buf keycode]
-      (-> buf
-          (change-range true (linewise? buf))))))
+(defn- change-visual[]
+  (start-insert-mode "c" identity #(change-range % true (linewise? %))))
 
 (defn init-visual-mode-keymap[insert-mode-keymap motion-keymap pair-keymap current-type]
   (merge 
@@ -95,7 +90,7 @@
                     visual-select
                     (update-x-if-not-jk keycode))))
      "d" #(delete-range % true (linewise? %))
-     "c" (change-visual insert-mode-keymap)
+     "c" (change-visual)
      "y" #(yank-range % true (linewise? %))
      "=" #(indent-range % true)
      "o" swap-visual-start-end
