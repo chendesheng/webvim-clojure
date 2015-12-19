@@ -19,10 +19,4 @@
 (defonce ^:private listen-new-buffer
   (listen :new-buffer
           (fn[buf]
-            ;Local registers, atom. Set init value to global registers so it can share cross buffers.
-            ;Use different registers in macro replaying to avoid side effect.
-            (-> buf
-                (assoc :macro {:recording-keys nil
-                               ;which register will macro save to
-                               :register ""})
-                (assoc :registers registers)))))
+            (assoc buf :registers registers))))

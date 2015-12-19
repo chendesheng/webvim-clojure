@@ -1,6 +1,7 @@
 ;common actions
 (ns webvim.keymap.action
-  (:require [me.raynes.fs :as fs])
+  (:require [me.raynes.fs :as fs]
+            [clojure.string :as string])
   (:use webvim.core.buffer
         webvim.core.rope
         webvim.core.line
@@ -352,11 +353,10 @@
 
 (defn start-insert-mode [keycode fnmotion fnedit]
   (fn[buf]
-    (println "start:" (-> buf :visual :ranges))
+    (println "start:" (-> buf :keys))
     (-> buf 
         fnmotion
         (set-insert-mode keycode)
-        (assoc-in [:macro :keys] (buf :keys)) ;for dot repeat
         fnedit)))
 
 (defn normal-mode-fix-pos
@@ -365,5 +365,15 @@
     (let [ch (char-at (buf :str) (buf :pos))]
       (if (= (or ch \newline) \newline)
         (char- buf) buf)))
+
+(defn save-dot-repeat[buf]
+  (let [keys (-> buf :dot-repeat-keys reverse)
+        nochange? (-> buf :pending-undo empty?)]
+    (if-not (or nochange? ;only repeat keys make changes
+                (empty? keys)
+                ;don't repeat these keys
+                (contains? #{"." "u" "p" "P" ":" "<c+r>"} (first keys)))
+      (put-register! buf "." {:keys keys :str (string/join keys)}))
+    (dissoc buf :dot-repeat-keys)))
 
 

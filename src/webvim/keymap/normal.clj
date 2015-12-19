@@ -160,9 +160,6 @@
       buf
       (replay-keys buf keycodes))))
 
-(defn- replayable?[keycode]
-  (not (contains? #{"." "u" "<c+r>" "p" "P" ":"} keycode)))
-
 (defn- reset-context-register[buf keycode]
   (if (= keycode "\"") buf
     (assoc-in buf [:context :register] "\""))) ;reset
@@ -170,27 +167,26 @@
 (defn- normal-mode-after[buf keycode]
   (let [insert-mode? (= (buf :mode) insert-mode)
         lastbuf (-> buf :context :lastbuf)
-        save-undo (if insert-mode? identity save-undo)]
+        save-undo (if insert-mode? identity save-undo)
+        save-dot-repeat (if insert-mode? identity save-dot-repeat)]
     (if-not (nil? (motions-push-jumps (string/join (buf :keys))))
       (jump-push lastbuf))
     (let [newbuf (if insert-mode? buf
                    (normal-mode-fix-pos buf))]
       (-> newbuf
+          save-dot-repeat
           (reset-context-register keycode)
           (update-x-if-not-jk keycode)
-          ;alwasy clear :recording-keys
-          (assoc-in [:macro :recording-keys] [])
           (update-in [:context] dissoc :range)
           save-undo
           ;TODO make brace match async
           (buf-update-highlight-brace-pair (newbuf :pos))))))
 
-(defn- start-insert-mode-with-keycode [keycode fnmotion fnedit]
-  (fn[buf _]
+(defn- start-insert-mode-with-keycode [fnmotion fnedit]
+  (fn[buf keycode]
     (-> buf 
         (fnmotion keycode)
         (set-insert-mode keycode)
-        (assoc-in [:macro :keys] (buf :keys)) ;for dot repeat
         (fnedit keycode))))
 
 (defn- start-ex-mode[buf]
@@ -287,7 +283,7 @@
        "c" (merge
              motion-keymap-fix-w
              pair-keymap
-             {:leave (start-insert-mode-with-keycode "c" nop change-by-motion)
+             {:leave (start-insert-mode-with-keycode nop change-by-motion)
               "c" identity})
        "y" (merge
              motion-keymap-fix-w

@@ -2,6 +2,9 @@
   (:use webvim.keymap.action))
 
 (defn replay-keys [buf keycodes]
-  (let [[buf changes] (apply-keycodes buf keycodes)] 
-    (update-in buf [:changes] concat changes))) 
+  (let [keys (buf :keys)
+        [buf changes] (apply-keycodes (dissoc buf :keys) keycodes)] 
+    (-> buf
+        (update-in [:changes] concat changes)
+        (assoc :keys keys))))
 

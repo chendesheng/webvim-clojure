@@ -2,10 +2,11 @@
   (:use webvim.keymap.action
         webvim.core.utils))
 
-(defn record-keys[buf keycode]
-  (if (nil? (#{"c+n" "c+p" "c+a" "c+x"} keycode)) ;Don't record keycode for these commands
-    (update-in buf [:macro :recording-keys] conj keycode)
-    buf))
+(defn- record-macro[buf keycode]
+  (update-in buf [:dot-repeat-keys] conj keycode))
+  
+(defn- save-key[buf keycode]
+  (update-in buf [:keys] conj keycode))
 
 (defn- stop[buf keycode]
   false)
@@ -50,7 +51,7 @@
         (assoc ctx1
           (clojure.string/join (map key path))
           (keycode-func-comp
-            `(~#(update-in %1 [:keys] conj %2) ~enter ~before ~record-keys)))))
+            `(~enter ~before ~record-macro ~save-key)))))
     
     (fn[ctx [[keycode func] & [[_ {before :before after :after continue? :continue}] & _ :as allparents] :as path]]
       (if (contains? #{:enter :leave :before :after :continue} keycode)
@@ -59,7 +60,7 @@
                      func
                      (fn[buf keycode]
                        (func buf)))
-              funcs `(~func ~before ~record-keys)]
+              funcs `(~func ~before ~record-macro ~save-key)]
               ;(println "keycode:" keycode)
           (assoc ctx
             (clojure.string/join (map key path))
@@ -68,9 +69,7 @@
                     (fn[buf keycode]
                     ;(println "keycode:" keycode)
                       (if (empty? allparents) buf
-                        (let [buf (update-in buf [:keys] conj keycode)]
-                        ;(println "keys:" (buf :keys))
-                          (reduce leave-map buf allparents))))))))))
+                        (reduce leave-map buf allparents)))))))))
     {}
     keymap))
 

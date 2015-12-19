@@ -1,5 +1,4 @@
 (ns webvim.keymap.insert
-  (:require [clojure.string :as string])
   (:use webvim.keymap.action
         webvim.core.buffer
         webvim.core.rope
@@ -31,14 +30,10 @@
       b1
       (let [n (mod (+ i cnt) cnt)
             w (-> b1 :autocompl :suggestions (get n))
-            s (-> b1 :autocompl :suggestions (get 0))
-            ;delete back then insert word
-            ks (apply conj (vec (repeat (count s) "<bs>")) (map str (vec w)))]
+            s (-> b1 :autocompl :suggestions (get 0))]
         (if (empty? w) buf
           (-> b1 
               (assoc-in [:autocompl :suggestions-index] n)
-              (update-in [:macro :recording-keys] 
-                         #(apply conj % ks)) 
               (buffer-replace-suggestion w)))))))
 
 (defn- insert-mode-default[buf keycode]
@@ -60,11 +55,6 @@
                                       :suggestions-index 0})
               buf3)))))))
 
-(defn- save-dot-repeat[buf]
-  (let [keyvec (-> buf :macro :recording-keys (into (buf :keys)))]
-    (put-register! buf "." {:keys keyvec :str (string/join keyvec)})
-    (dissoc buf :macro :recording-keys)))
-
 (defn init-insert-mode-keymap[]
   {;"<c+o>" normal-mode-keymap 
    "<c+n>" #(autocompl-move % inc)
@@ -80,8 +70,8 @@
             (-> buf
                 char-
                 update-x
-                save-undo
                 save-dot-repeat
+                save-undo
                 normal-mode-fix-pos
                 set-normal-mode))})
 

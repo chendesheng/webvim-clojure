@@ -40,7 +40,8 @@
 
 (defn- remove-fields[buf]
   (-> buf 
-      (dissoc :expandtab :CRLF? :history :context :last-cursor :language :filepath :x :y :cursor :pending-undo :macro :registers :linescnt :root-keymap :ext :last-visual :nextid)
+      (dissoc :expandtab :CRLF? :history :context :last-cursor :language :filepath :x :y :cursor 
+              :pending-undo :registers :linescnt :root-keymap :ext :last-visual :nextid :dot-repeat-keys)
       (dissoc-empty [:changes])
       (dissoc-nil :keys)
       line-editor
