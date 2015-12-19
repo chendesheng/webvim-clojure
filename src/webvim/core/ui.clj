@@ -68,6 +68,7 @@
                 (-> after
                     (dissoc-if-equal before :line-buffer)
                     remove-fields
+                    correct-visual-mode
                     (dissoc :str)
                     (dissoc-if-equal before :mode)
                     (dissoc-if-equal before :visual)

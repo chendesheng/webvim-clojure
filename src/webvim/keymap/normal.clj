@@ -239,9 +239,8 @@
                       (pos-line-end (buf :str) (buf :pos)))]
       (buf-set-pos newbuf newpos))))
 
-(defn init-normal-mode-keymap[motion-keymap insert-mode-keymap visual-mode-keymap visual-line-mode-keymap ex-mode-keymap pair-keymap]
-  (let [enter-insert (insert-mode-keymap :enter)
-        motion-keymap-fix-w (-> motion-keymap
+(defn init-normal-mode-keymap[motion-keymap visual-mode-keymap visual-line-mode-keymap pair-keymap]
+  (let [motion-keymap-fix-w (-> motion-keymap
                                 (assoc "w" (dont-cross-line (motion-keymap "w")))
                                 (assoc "W" (dont-cross-line (motion-keymap "W"))))]
     (deep-merge

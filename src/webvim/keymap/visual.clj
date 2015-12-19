@@ -68,7 +68,7 @@
 (defn- change-visual[]
   (start-insert-mode "c" identity #(change-range % true (linewise? %))))
 
-(defn init-visual-mode-keymap[insert-mode-keymap motion-keymap pair-keymap init-type]
+(defn init-visual-mode-keymap[motion-keymap pair-keymap init-type]
   (merge 
     motion-keymap 
     pair-keymap
