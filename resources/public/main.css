@@ -128,16 +128,21 @@ pre {
 
 .autocompl {
 	background:#eee;
-	color:#000;
+	color:#888;
 	position:absolute;
 	box-shadow: 0 2px 8px 1px #000;
 	max-height:12em; /*10+0.2*10*/
-	max-width:40ch;
+	max-width:60ch;
 	overflow:auto;
 }
 .autocompl pre {
 	padding: 0.1em 1ch;
 	height:1em;
+}
+
+.autocompl pre .matched {
+	font-weight:bold;
+	color:#000;
 }
 
 .autocompl .highlight {

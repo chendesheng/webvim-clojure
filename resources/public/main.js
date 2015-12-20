@@ -341,6 +341,32 @@ function renderChanges(buf) {
 	});
 }
 
+function autocomplItem(subject, word) {
+	if (subject.length == 0) return word;
+	
+	var j = 0;
+	for (var i = 0; i < subject.length;i++) {
+		var ch = subject[i];
+		j=word.indexOf(ch, j)+1;
+	}
+	
+	var splits=[j-1];
+	for (var i = subject.length-2; i >= 0; i--) {
+		var ch = subject[i];
+		j=word.lastIndexOf(ch, j-1);
+		splits.unshift(j)
+	}
+	splits.unshift(-1);
+	
+	var html = '';
+	for (var i=1; i < splits.length; i++) {
+		html += word.substring(splits[i-1]+1, splits[i])+
+			'<span class="matched">'+word[splits[i]]+'</span>';
+	}
+	html += word.substring(splits[splits.length-1]+1);
+	return html;
+}
+
 function renderAutocompl(buf) {
 	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
 		var autocompl = $autocompl(buf.id);
@@ -353,10 +379,12 @@ function renderAutocompl(buf) {
 		$hide(autocompl);
 		autocompl.innerHTML = '';
 		autocompl.style.left = res.left+$lines(buf.id).scrollLeft-10+'px';
+		
+		var subject = buf.autocompl.suggestions[0];
 		buf.autocompl.suggestions.each(function(word, i) {
 			if (i > 0) {
 				var ele = document.createElement('PRE');
-				ele.textContent = word;
+				ele.innerHTML = autocomplItem(subject, word);
 				autocompl.appendChild(ele);
 				if (i == selectedIndex) {
 					ele.className = 'highlight';
