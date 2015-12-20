@@ -37,6 +37,7 @@
               (buffer-replace-suggestion w)))))))
 
 (defn- insert-mode-default[buf keycode]
+  (println "insert-mode-default: " keycode)
   (let [pos (buf :pos)
         buf1 (if (= "<bs>" keycode)
                (if (zero? pos) buf (buf-delete buf (dec pos) pos))
@@ -64,6 +65,8 @@
                     (-> buf
                         (put-from-register keycode)
                         char+))}
+   :after (fn[buf keycode]
+            (println "insert after:" keycode) buf)
    :else insert-mode-default 
    :continue #(not (= "<esc>" %2))
    :leave (fn[buf keycode]

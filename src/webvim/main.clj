@@ -76,10 +76,9 @@
 (defn- change-buffer![buf keycodes]
   (time
     (try
-      (let [[buf changes] (apply-keycodes buf keycodes)
-            newbuf (send-buf! (assoc buf :changes changes))
-            nextid (newbuf :nextid)]
-        (if (nil? nextid) newbuf
+      (let [buf (-> buf (apply-keycodes keycodes) send-buf!)
+            nextid (buf :nextid)]
+        (if (nil? nextid) buf
           (do
             (let [anextbuf (@buffer-list nextid)]
             ;(println "nextid" nextid)
@@ -87,7 +86,7 @@
                 (send anextbuf
                       (fn[buf]
                         (send-buf! buf)))))
-            (dissoc newbuf :nextid))))
+            (dissoc buf :nextid))))
       (catch Exception e
         (println e)
         (.printStackTrace e)

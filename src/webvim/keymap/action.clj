@@ -10,7 +10,9 @@
         webvim.indent
         webvim.core.utils
         webvim.jumplist
-        webvim.core.ui))
+        webvim.keymap.compile
+        webvim.core.ui
+        clojure.pprint))
 
 (def normal-mode 0)
 (def insert-mode 1)
@@ -213,11 +215,8 @@
 (defn nop[buf keycode] buf)
 
 (defn apply-keycode[buf keycode]
-  (let [keymap (buf :keymap)
-        _ (println "keymap:" (nil? keymap))
+  (let [keymap (compile-keymap (buf :keymap))
         allkeycode (conj (buf :keys) keycode)
-        ;_ (println (buf :keys))
-        ;_ (println allkeycode)
         func (or (keymap (clojure.string/join allkeycode))
                  (keymap (clojure.string/join (conj (buf :keys) ":else")))
                  (if (-> buf :keys empty? not)
@@ -228,12 +227,7 @@
     (func buf keycode)))
 
 (defn apply-keycodes[buf keycodes]
-  (reduce
-    (fn[[buf changes] keycode]
-      (let [newbuf (apply-keycode buf keycode)
-            newchanges (newbuf :changes)]
-        [(assoc newbuf :changes [])
-         (concat changes newchanges)])) [buf nil] keycodes))
+  (reduce apply-keycode buf keycodes))
 
 (defn move-to-jumplist
   [buf fndir]
@@ -368,5 +362,12 @@
                 (contains? #{"." "u" "p" "P" ":" "<c+r>"} (first keys)))
       (put-register! buf "." {:keys keys :str (string/join keys)}))
     (dissoc buf :dot-repeat-keys)))
+
+(defn replay-keys [buf keycodes]
+  (let [keys (buf :keys)] 
+    (-> buf
+        (dissoc :keys)
+        (apply-keycodes keycodes)
+        (assoc :keys keys))))
 
 

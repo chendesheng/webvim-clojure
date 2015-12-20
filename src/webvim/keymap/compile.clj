@@ -1,6 +1,5 @@
 (ns webvim.keymap.compile
-  (:use webvim.keymap.action
-        webvim.core.utils))
+  (:use webvim.core.utils))
 
 (defn- record-macro[buf keycode]
   (update-in buf [:dot-repeat-keys] conj keycode))
@@ -10,6 +9,8 @@
 
 (defn- stop[buf keycode]
   false)
+
+(defn- nop[buf keycode] buf)
 
 (defn- keycode-func-comp[funcs]
   (let [funcs (filter (comp not nil?) funcs)]
@@ -37,8 +38,11 @@
           (update-in [:keys] pop)
           (leave keycode)))))
 
+(def ^:private cache (atom {}))
+
 (defn compile-keymap[keymap]
-  (tree-reduce
+  (if (nil? (@cache keymap))
+  (swap! cache assoc keymap (tree-reduce
     (fn[ctx [[_ {enter :enter leave :leave else :else}] [_ {before :before}] & _ :as path]]
       (let [leave (or leave nop)
             ctx1 (if (nil? else)
@@ -71,6 +75,7 @@
                       (if (empty? allparents) buf
                         (reduce leave-map buf allparents)))))))))
     {}
-    keymap))
+    keymap)))
+  (@cache keymap))
 
 

@@ -28,9 +28,9 @@
         visual-mode-keymap (init-visual-mode-keymap motion-keymap pair-keymap visual-range)
         visual-line-mode-keymap (init-visual-mode-keymap motion-keymap pair-keymap visual-line)
 
-        normal-mode-keymap (compile-keymap (init-normal-mode-keymap motion-keymap visual-mode-keymap visual-line-mode-keymap pair-keymap))
-        insert-mode-keymap (compile-keymap (init-insert-mode-keymap))
-        ex-mode-keymap (compile-keymap (init-ex-mode-keymap line-editor-keymap))]
+        normal-mode-keymap (init-normal-mode-keymap motion-keymap visual-mode-keymap visual-line-mode-keymap pair-keymap)
+        insert-mode-keymap (init-insert-mode-keymap)
+        ex-mode-keymap (init-ex-mode-keymap line-editor-keymap)]
     (send ui-agent 
           (fn[ui]
             (assoc ui
