@@ -16,7 +16,7 @@
 ;key: buffer id, value: buffer agent
 (defonce buffer-list (atom {}))
 
-(defonce output-buf-name "*output*")
+(defonce output-buf-name "[output]")
 
 (defn buffer-list-save!
   "Generate buffer id (increase from 1) and add to buffer-list"
