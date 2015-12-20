@@ -86,7 +86,7 @@
               ;  if it is not nil then continue narrow down suggestions
               ;ctrl+n, ctrl+p will calculate full suggestions if it is nil
               :suggestions nil
-              ;0 means selection nothing (don't highlight any suggestion item)
+              ;0 means select nothing (don't highlight any suggestion item)
               ;> 0 means highlight the nth suggestion item
               :suggestions-index 0}))))
 
@@ -114,12 +114,11 @@
     (if (or (nil? rg) (= (rg 0) (rg 1))) nil
         (str (subr s rg)))))
 
-(defn buffer-replace-suggestion[buf word]
+(defn buffer-replace-suggestion[buf oldword word]
   (let [pos (buf :pos)
         s (buf :str)
-        lang (buf :language)
-        [a b] (pos-uncomplete-word lang s pos)]
-    (buf-replace buf a b word)))
+        lang (buf :language)]
+    (buf-replace buf (- pos (count oldword)) pos word)))
 
 ;(uncomplete-word {:pos 5 :str (rope " b cd")})
 

@@ -21,20 +21,23 @@
             :suggestions-index 0})))
 
 (defn- autocompl-move[buf f]
-  (let [b1 (if (empty? (-> buf :autocompl :suggestions))
+  (let [buf (if (empty? (-> buf :autocompl :suggestions))
              (autocompl-start buf)
              buf)
-        i (f (-> b1 :autocompl :suggestions-index))
-        cnt (-> b1 :autocompl :suggestions count)]
+        i (-> buf :autocompl :suggestions-index)
+        newi (f i)
+        cnt (-> buf :autocompl :suggestions count)]
     (if (zero? cnt)
-      b1
-      (let [n (mod (+ i cnt) cnt)
-            w (-> b1 :autocompl :suggestions (get n))
-            s (-> b1 :autocompl :suggestions (get 0))]
+      buf
+      (let [newi (mod (+ newi cnt) cnt)
+            oldw (-> buf :autocompl :suggestions (get i))
+            _ (println "i:" i)
+            _ (println "oldw" oldw)
+            w (-> buf :autocompl :suggestions (get newi))]
         (if (empty? w) buf
-          (-> b1 
-              (assoc-in [:autocompl :suggestions-index] n)
-              (buffer-replace-suggestion w)))))))
+          (-> buf 
+              (assoc-in [:autocompl :suggestions-index] newi)
+              (buffer-replace-suggestion oldw w)))))))
 
 (defn- insert-mode-default[buf keycode]
   (println "insert-mode-default: " keycode)
