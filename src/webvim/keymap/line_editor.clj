@@ -68,6 +68,7 @@
     (linebuf-insert buf ch)))
 
 (defn- line-editor-continue[buf keycode]
+  (println "continue:" keycode)
   (not (or
          (-> buf :line-buffer nil?)
          (contains? #{"<cr>" "<esc>"} keycode))))

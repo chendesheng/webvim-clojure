@@ -157,7 +157,7 @@
   (exec-shell-commands buf ["grep" "-rnI" args "."]))
 
 (defn cmd-find[buf execmd args]
-  (exec-shell-commands buf ["find" "." "-name" args]))
+  (exec-shell-commands buf ["find" "." "-name" args "-not" "-path" "*/.*"]))
 
 (defn cmd-move-to-line[buf row _]
 ;(println "row:" row)
@@ -240,19 +240,28 @@
           (assoc buf :message "unknown command"))))))
 
 (defn- ex-tab-complete [{{r :str} :line-buffer :as buf} cmds]
-  (if (re-test #"^\s*\S+\s*$" r)
-    (let [s (str r)
-          news (first
-                 (filter
-                   (fn[k]
-                     (and (string? k)
-                          (.startsWith k s)))
-                   (map first cmds)))]
-      (if (nil? news) buf
+  (let [[[_ subject]] (re-seq #"^e\s(.*)" r)]
+    (println "ex-tab-complete:" subject)
+    (if (nil? subject)
+      (if (re-test #"^\s*\S+\s*$" r)
+        (let [s (str r)
+              news (first
+                     (filter
+                       (fn[k]
+                         (and (string? k)
+                              (.startsWith k s)))
+                       (map first cmds)))]
+          (if (nil? news) buf
+            (update-in buf [:line-buffer]
+                       (fn[linebuf]
+                         (merge linebuf {:str (rope news) :pos (count news)})))))
+        buf)
+      (let [news (str "e " (-> buf :autocompl :suggestions second))]
+        (println "news:" news)
         (update-in buf [:line-buffer]
                    (fn[linebuf]
-                     (merge linebuf {:str (rope news) :pos (count news)})))))
-    buf))
+                     (merge linebuf {:str (rope news)
+                                     :pos (count news)})))))))
 
 (defn- append-<br>[buf]
   (let [s (-> buf :line-buffer :str)
@@ -260,21 +269,57 @@
         news (replacer s len len <br>)]
     (assoc-in buf [:line-buffer :str] news)))
 
+(def ^:private all-files (atom nil))
+
+(defn get-files[]
+  (if (nil? @all-files)
+    (let [res (apply clojure.java.shell/sh ["find" "." "-name" "*.*" "-not" "-path" "*/.*"])
+          out (res :out)]
+      (if (empty? out) nil
+        (reset! all-files (string/split-lines out)))))
+  @all-files)
+
+(defn- autocompl-suggest [subject targets]
+  (reduce #(conj %1 (last %2)) []
+          (sort-by (juxt first second str)
+                   (reduce 
+                     (fn [suggestions word ] ;TODO sort by reference count?
+                       (let [indexes (fuzzy-match word subject)]
+                         (if (empty? indexes)
+                           suggestions
+                           (conj suggestions [(- (last indexes) 
+                                                 (first indexes)) 
+                                              (first indexes) word])))) 
+                     [[0 0 subject]] targets))))
+
+(defn- autocompl-path[buf]
+  (let [[[_ subject]] (re-seq #"^e\s(.*)" (-> buf :line-buffer :str str))]
+    (println "str:" (-> buf :line-buffer :str str))
+    (println "subject:" subject)
+    (println "autocompl:" (-> buf :autocompl))
+    (if (empty? subject) buf
+      (assoc-in buf [:autocompl :suggestions]
+                (autocompl-suggest subject (get-files))))))
+
 (defn init-ex-mode-keymap[line-editor-keymap]
   (let [cmds (ex-commands)]
     (merge line-editor-keymap
            {:enter (fn[buf keycode]
+                     (println "ex-mode enter")
                      (swap! commands-history #(-> %
                                                   fast-forward
-                                                  (assoc :current ""))))
+                                                  (assoc :current "")))
+                     (dissoc buf :autocompl))
             :after (fn[buf keycode]
                      (let [after (or (line-editor-keymap :after) nop)
                            buf (after buf keycode)]
-                           ;cache current typing content if it's latest one
+                       ;cache current typing content if it's latest one
                        (if (and (not (contains? #{"<c+p>" "<c+n>" "<cr>"} keycode))
                                 (no-future? @commands-history))
                          (swap! commands-history assoc :current (-> buf :line-buffer :str str)))
-                       buf))
+                       (if (= keycode "<tab>")
+                         buf
+                         (autocompl-path buf))))
             :leave (fn[buf keycode]
                      (set-normal-mode buf))
             "<c+p>" (fn[buf]
@@ -292,4 +337,5 @@
                          append-<br>
                          (execute cmds)))
             "<tab>" (fn[buf]
+                      (println "<tab>")
                       (ex-tab-complete buf cmds))})))

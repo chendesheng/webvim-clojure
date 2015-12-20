@@ -31,8 +31,8 @@
       buf
       (let [newi (mod (+ newi cnt) cnt)
             oldw (-> buf :autocompl :suggestions (get i))
-            _ (println "i:" i)
-            _ (println "oldw" oldw)
+;            _ (println "i:" i)
+;            _ (println "oldw" oldw)
             w (-> buf :autocompl :suggestions (get newi))]
         (if (empty? w) buf
           (-> buf 
