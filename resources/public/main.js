@@ -350,6 +350,7 @@ function renderAutocompl(buf) {
 		var currentWord = buf.autocompl.suggestions[selectedIndex];
 		var h = $cursor(buf.id).offsetHeight+3;
 		var res = getScreenXYByPos(buffers[buf.id], buffers[buf.id].cursor-currentWord.length);
+		$hide(autocompl);
 		autocompl.innerHTML = '';
 		autocompl.style.left = res.left+$lines(buf.id).scrollLeft-10+'px';
 		buf.autocompl.suggestions.each(function(word, i) {
@@ -363,23 +364,27 @@ function renderAutocompl(buf) {
 				}
 			}
 		});
+		$show(autocompl);
+		
+		var itemHeight = autocompl.firstChild.offsetHeight;
+		var popupHeight = autocompl.offsetHeight;
 
 		var $buf = $buffer(buf.id);
-		if (res.top+h < $buf.scrollTop+$buf.offsetHeight-$statusBar(buf.id).offsetHeight) {
+		if (res.top+h+popupHeight < $buf.scrollTop+$buf.offsetHeight-$statusBar(buf.id).offsetHeight) {
 			autocompl.style.top = res.top+h+'px';
 		} else {
-			autocompl.style.top = res.top-autocompl.offsetHeight-3+'px';
+			autocompl.style.top = res.top-popupHeight-3+'px';
 		}
+		
 		autocompl.style.marginLeft = -gutterWidth()+'ch';
 
-		//TODO: use em instead of px
 		var viewportTop = lastScrollTop;
-		var viewportBottom = lastScrollTop+240;
-		var currentPos = (selectedIndex-1) * 24;
-		if (currentPos < viewportTop) {
-			autocompl.scrollTop=currentPos;
-		} else if (currentPos+24 >= viewportBottom) {
-			autocompl.scrollTop=currentPos-216;
+		var viewportBottom = lastScrollTop+popupHeight;
+		var pos = (selectedIndex-1)*itemHeight;
+		if (pos < viewportTop) {
+			autocompl.scrollTop=pos;
+		} else if (pos >= viewportBottom) {
+			autocompl.scrollTop=pos-9*itemHeight;
 		}
 	} else {
 		$autocompl(buf.id).innerHTML = '';

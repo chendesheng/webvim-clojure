@@ -121,3 +121,11 @@ function $tabsize(tabsize) {
 		return document.body.style.tabSize;
 	}
 }
+
+function $hide(ele) {
+	ele.style.display = 'none';
+}
+
+function $show(ele, display) {
+	ele.style.display = display || '';
+}
