@@ -59,6 +59,14 @@
         (-> w count (+ 2))))
     :else 2))
 
+(defn- comment-indent[r pos]
+  (let [lines (ranges-to-texts r (pos-lines-seq+ r pos))
+        line (or (some (fn[line]
+                         (if (clojure-not-blank-or-comment? line) line))
+                       lines) (first lines))]
+    ;(println line)
+    (or (re-subs #"^\s*" line) "")))
+
 ;find outer scope and align by start bracket
 (defn clojure-indent
   "Indent by brace parsing"
@@ -68,7 +76,7 @@
       (zero? a)
       ""
       (clojure-comment? (subr r a b))
-      (auto-indent r pos)
+      (comment-indent r pos)
       :else (let [tmp (reduce 
                         (fn[stack [a _]]
                           (let [ch (char-at r a)]
