@@ -31,18 +31,18 @@
         normal-mode-keymap (init-normal-mode-keymap motion-keymap visual-mode-keymap visual-line-mode-keymap pair-keymap)
         insert-mode-keymap (init-insert-mode-keymap)
         ex-mode-keymap (init-ex-mode-keymap line-editor-keymap)]
-    (send ui-agent 
-          (fn[ui]
-            (assoc ui
-              :normal-mode-keymap normal-mode-keymap
-              :insert-mode-keymap insert-mode-keymap
-              :ex-mode-keymap ex-mode-keymap)))
-    (await ui-agent)))
+    {:normal-mode-keymap normal-mode-keymap
+     :insert-mode-keymap insert-mode-keymap
+     :ex-mode-keymap ex-mode-keymap}))
 
 (listen :new-buffer
         (fn[buf]
-          (assoc buf 
-            :keymap (@ui-agent :normal-mode-keymap)
-            :normal-mode-keymap (@ui-agent :normal-mode-keymap)
-            :insert-mode-keymap (@ui-agent :insert-mode-keymap)
-            :ex-mode-keymap (@ui-agent :ex-mode-keymap))))
+          (let [tmp (@ui-agent :keymaps)
+                keymaps (or tmp (init-keymap-tree))]
+            (if (nil? tmp)
+                  (send ui-agent
+                        (fn[ui]
+                          (assoc ui :keymaps keymaps))))
+            (merge buf 
+                   (assoc keymaps 
+                          :keymap (keymaps :normal-mode-keymap))))))

@@ -4,6 +4,7 @@
             [ring.adapter.jetty9 :as jetty]
             [clojure.string :as string])
   (:use webvim.core.buffer
+        webvim.core.ui
         webvim.core.rope
         webvim.core.register
         webvim.core.event
@@ -23,11 +24,16 @@
     (apply cache-resource r)))
 
 (defn restart[]
-  (init-keymap-tree)
+  (let [tmp (init-keymap-tree)
+        keymaps (assoc tmp :keymap (tmp :normal-mode-keymap))]
+    (send ui-agent (fn[ui] (assoc ui :keymaps tmp)))
+    (doseq [abuf (vals @buffer-list)]
+      (send abuf (fn[buf]
+                   (merge buf keymaps)))))
   (future
     (Thread/sleep 10) ;wait some time so restart happens after flush states to client
     (stop)
-    (start nil {:port 7070 :join? false}))
+    (start nil {:port 8080 :join? false}))
   "ok")
 
 ;FIXME: This is too hacky
@@ -49,10 +55,10 @@
             (conj cmds ["reload" cmd-reload]))))
 
 ;Not sure why agent await blocking everything. Start a java thread works fine.
-(.start 
-  (Thread. (fn[]
-             (cache-resources)
-             (add-init-ex-commands-event)
-             (start
-               "testfile.clj"
-               {:port 8080 :join? false}))))
+(defonce main 
+  (do
+    (cache-resources)
+    (add-init-ex-commands-event)
+    (start
+      "testfile.clj"
+      {:port 8080 :join? false})))

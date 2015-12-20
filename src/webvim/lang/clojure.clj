@@ -37,7 +37,7 @@
           ""
           (range 0 n)))
 
-(def indent-tab-size #{"try" "catch" "ns" "def" "defn-" "defonce" "defn" "if" "if-not" "nil?" "fn" "let" "cond" "loop" "assoc" "doseq" "for"})
+(def indent-tab-size #{"try" "catch" "ns" "def" "defn-" "defonce" "defn" "if" "if-not" "nil?" "fn" "let" "cond" "loop" "doseq" "for"})
 
 (defn clojure-comment? [line]
   (re-test #"^\s*;" line))

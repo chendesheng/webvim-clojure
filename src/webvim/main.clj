@@ -117,7 +117,6 @@
 
 ;start app with init file and webserver configs
 (defn start[file options]
-  (init-keymap-tree)
   (if-not (empty? file) (start-file file))
   (send ui-agent (fn[ui]
                    (println "render" (ui :render!))
