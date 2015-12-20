@@ -3,10 +3,10 @@
 (defn parallel-universe[] {})
 
 (defn just-now[h]
-  (peek (h :before)))
+  (peek (:before h)))
 
 (defn next-future[h]
-  (peek (h :after)))
+  (peek (:after h)))
 
 (defn go-back
   ([h fnreverse]

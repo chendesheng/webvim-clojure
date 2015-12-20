@@ -66,11 +66,17 @@
           false)))
     (goto-buf buf aoutputbuf)))
 
+(defn- expand-path[f]
+  (if (= (first f) \~)
+    (str (fs/expand-home f))
+    (str (fs/normalized f))))
+
 (defn cmd-write [buf _ file]
+  (println (expand-path file))
   (if (not (string/blank? file))
     (-> buf
         (assoc :name (fs/base-name file))
-        (assoc :filepath file)
+        (assoc :filepath (expand-path file))
         write-buffer)
     (if (nil? (buf :filepath))
       (assoc buf :message "No file name")

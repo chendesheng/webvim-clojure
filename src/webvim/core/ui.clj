@@ -1,5 +1,6 @@
 (ns webvim.core.ui
-  (:use webvim.core.line))
+  (:use webvim.core.line
+        webvim.core.buffer))
 
 (defn- dissoc-empty[buf ks]
   (if (empty? (get-in buf ks))
@@ -40,9 +41,11 @@
 
 (defn- remove-fields[buf]
   (-> buf 
-      (dissoc :expandtab :CRLF? :history :context :last-cursor :language :filepath :x :y :cursor 
-              :keymap :normal-mode-keymap :insert-mode-keymap :ex-mode-keymap
-              :pending-undo :registers :linescnt :root-keymap :ext :last-visual :nextid :dot-repeat-keys)
+      (dissoc :expandtab :CRLF? :history :context :last-cursor 
+              :language :filepath :x :y :cursor :keymap 
+              :normal-mode-keymap :insert-mode-keymap :ex-mode-keymap
+              :pending-undo :saved-undo :registers :linescnt 
+              :root-keymap :ext :last-visual :nextid :dot-repeat-keys)
       (dissoc-empty [:changes])
       (dissoc-nil :keys)
       line-editor
@@ -52,6 +55,13 @@
   (if (= (before k) (after k))
     (dissoc after k)
     after))
+
+(defn- diff-dirty[after before]
+  (let [a (dirty? after)
+        b (dirty? before)]
+    ;(println "diff-dirty:" a b)
+    (if (= a b) after
+      (assoc after :dirty a))))
 
 (defn- render 
   "Write changes to browser."
@@ -68,6 +78,7 @@
                     correct-visual-mode)
                 :else
                 (-> after
+                    (diff-dirty before)
                     (dissoc-if-equal before :line-buffer)
                     remove-fields
                     correct-visual-mode
@@ -114,8 +125,7 @@
                   (-> ui
                       (render! diff) ;I/O
                       (assoc :buf (-> newbuf 
-                                      (dissoc :changes)
-                                      (dissoc :history)))))) newbuf)
+                                      (dissoc :changes)))))) newbuf)
     (assoc newbuf :changes [])))
 
 (defn ui-buf[]

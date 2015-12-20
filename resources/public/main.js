@@ -452,11 +452,11 @@ function render(buf) {
 			if (buffers[buf.id].mode < MODES.length) {
 				renderMode(buf, MODES[buffers[buf.id].mode]);
 			}
-		} else if (buf.visual.type == 1) {
-			renderSelections($selections(buf.id), buffers[buf.id], buf.visual.ranges);
 		} else if (buf.visual.type == 2) {
 			var ranges = buf.visual.ranges;
-			ranges[0][1] = ranges[0][1]-2;
+			ranges[0][1] = ranges[0][1]-1;
+			renderSelections($selections(buf.id), buffers[buf.id], buf.visual.ranges);
+		} else {
 			renderSelections($selections(buf.id), buffers[buf.id], buf.visual.ranges);
 		}
 	}
