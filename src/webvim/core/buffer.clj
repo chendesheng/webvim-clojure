@@ -27,7 +27,7 @@
     abuf))
 
 (defn create-buf[bufname filepath txt]
-  (let [txtLF (.replace txt "\r\n" "\n") ;always use LF in editing
+  (let [txtLF (.replace txt "\r\n" "\n") ;always use LF in memory
         ;make sure last line ends with line break
         r (if (.endsWith txtLF "\n")
             (rope txtLF)
@@ -61,10 +61,10 @@
              :last-cursor nil
              ;first one is recent undo item, second is filepath, if one of these changes then the buffer is dirty
              :save-point [nil filepath]
-             ;:type =0 visual =1 visual line =2 visual block
-             ;:ranges is a vector of ranges (unordered): [[0 100] [101 200]]. For each range, both end are inclusive.
+             ;:type =0 visual-normal =1 visual-range =2 visual line =32 visual block
+             ;:ranges is a vector of ranges (unordered): [[0 100] [101 200]]. For each range, both ends are inclusive.
              :visual {:type 0 :ranges nil}
-             ;=0 normal mode =1 insert mode =2 visual mode =3 ex mode
+             ;=0 normal mode =1 insert mode =2 ex mode
              :mode 0
              ;Ongoing command keys. This holds recent keycodes, MUST NOT changed by keymap handler directly.
              :keys nil

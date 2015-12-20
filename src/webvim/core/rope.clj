@@ -349,6 +349,6 @@
 
 (defn ranges-to-texts
   "Return a lazy seq contains texts sub from s. Range's right point is exclusive."
-  [s ranges]
-  (map #(subr s %) ranges))
+  [r ranges]
+  (map #(subr r %) ranges))
 
