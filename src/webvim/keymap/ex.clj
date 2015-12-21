@@ -324,8 +324,7 @@
     (let [dir? #(.isDirectory %)]
       (reset! all-files 
               (map (comp shorten-path str)
-                   (filter #(not (or (dir? %)
-                                     (hidden? %)))
+                   (filter (comp not hidden?)
                            (tree-seq (fn[f]
                                        (and (dir? f)
                                             (not (hidden? f)))) #(.listFiles %) fs/*cwd*)))))
