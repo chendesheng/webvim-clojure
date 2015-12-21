@@ -26,7 +26,11 @@
 (defn- remove-autocompl[buf]
   (if (empty? (-> buf :autocompl :suggestions))
     (dissoc buf :autocompl)
-    buf))
+    (-> buf
+        (update-in [:autocompl] dissoc :words)
+        (update-in [:autocompl] dissoc :uncomplete-word)
+        (update-in [:autocompl] dissoc :replace)
+        (update-in [:autocompl] dissoc :limit-number))))
 
 (defn- line-editor[buf]
   (if (nil? (buf :line-buffer))
