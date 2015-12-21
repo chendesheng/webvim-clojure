@@ -271,26 +271,38 @@
 
 (def ^:private all-files (atom nil))
 
+(defn hidden?[f]
+  ;(pprint (fs/split f))
+  (or (fs/hidden? f)
+      (not (not-any? #(re-test #"^\..+" %) (fs/split f)))))
+
 (defn get-files[]
   (if (nil? @all-files)
-    (let [res (apply clojure.java.shell/sh ["find" "." "-name" "*.*" "-not" "-path" "*/.*"])
-          out (res :out)]
-      (if (empty? out) nil
-        (reset! all-files (string/split-lines out)))))
-  @all-files)
+    ;https://clojuredocs.org/clojure.core/tree-seq
+    (let [dir? #(.isDirectory %)]
+      (reset! all-files 
+              (map (comp shorten-path str)
+                   (filter #(not (or (dir? %)
+                                     (hidden? %)))
+                           (tree-seq (fn[f]
+                                       (and (dir? f)
+                                            (not (hidden? f)))) #(.listFiles %) fs/*cwd*)))))
+    
+    @all-files))
 
 (defn- autocompl-suggest [subject targets]
-  (reduce #(conj %1 (last %2)) []
-          (sort-by (juxt first second str)
-                   (reduce 
-                     (fn [suggestions word ] ;TODO sort by reference count?
-                       (let [indexes (fuzzy-match word subject)]
-                         (if (empty? indexes)
-                           suggestions
-                           (conj suggestions [(- (last indexes) 
-                                                 (first indexes)) 
-                                              (first indexes) word])))) 
-                     [[0 0 subject]] targets))))
+  (take 10 
+        (reduce #(conj %1 (last %2)) []
+                (sort-by (juxt first second str)
+                         (reduce 
+                           (fn [suggestions word ] ;TODO sort by reference count?
+                             (let [indexes (fuzzy-match word subject)]
+                               (if (empty? indexes)
+                                 suggestions
+                                 (conj suggestions [(- (last indexes) 
+                                                       (first indexes)) 
+                                                    (first indexes) word])))) 
+                           [[0 0 subject]] targets)))))
 
 (defn- autocompl-path[buf]
   (let [[[_ subject]] (re-seq #"^e\s(.*)" (-> buf :line-buffer :str str))]
