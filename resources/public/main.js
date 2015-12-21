@@ -367,6 +367,25 @@ function autocomplItem(subject, word) {
 	return html;
 }
 
+function appendAutocomplItems(buf, autocompl, selectedIndex) {
+	$hide(autocompl);
+	autocompl.innerHTML = '';
+	
+	var subject = buf.autocompl.suggestions[0];
+	buf.autocompl.suggestions.each(function(word, i) {
+		if (i > 0) {
+			var ele = document.createElement('PRE');
+			ele.innerHTML = autocomplItem(subject, word);
+			autocompl.appendChild(ele);
+			if (i == selectedIndex) {
+				ele.className = 'highlight';
+				ele.id = 'autocompl-'+buf.id+'-highlight';
+			}
+		}
+	});
+	$show(autocompl);
+}
+
 function renderAutocompl(buf) {
 	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
 		var autocompl = $autocompl(buf.id);
@@ -375,52 +394,31 @@ function renderAutocompl(buf) {
 		var selectedIndex = parseInt(buf.autocompl['suggestions-index']);
 		var currentWord = buf.autocompl.suggestions[selectedIndex];
 		var h = $cursor(buf.id).offsetHeight+3;
-		var top;
 		if (buffers[buf.id].mode == 2) {
-			var linebuf = buf['line-buffer'];
-			var str = linebuf.str;
-			var pos = linebuf.pos;
-			var range = document.createRange();
-			var ex = $statusBuf(buf.id);
-			range.setStart(ex.firstChild, pos-1);
-			range.setEnd(ex.firstChild, pos);
-			var rect = range.getBoundingClientRect();
-			top = rect.top-10+$buffer(buf.id).scrollTop;
+			autocompl.style.position = 'fixed';
 			autocompl.style.left = '45px';
+			autocompl.style.bottom = '2em';
+			appendAutocomplItems(buf, autocompl, selectedIndex);
 		} else {
 			var res = getScreenXYByPos(buffers[buf.id], buffers[buf.id].cursor-currentWord.length);
 			autocompl.style.left = res.left+$lines(buf.id).scrollLeft-10+'px';
-			top = res.top;
-		}
-		
-		$hide(autocompl);
-		autocompl.innerHTML = '';
-		
-		var subject = buf.autocompl.suggestions[0];
-		buf.autocompl.suggestions.each(function(word, i) {
-			if (i > 0) {
-				var ele = document.createElement('PRE');
-				ele.innerHTML = autocomplItem(subject, word);
-				autocompl.appendChild(ele);
-				if (i == selectedIndex) {
-					ele.className = 'highlight';
-					ele.id = 'autocompl-'+buf.id+'-highlight';
-				}
-			}
-		});
-		$show(autocompl);
-		
-		var itemHeight = autocompl.firstChild.offsetHeight;
-		var popupHeight = autocompl.offsetHeight;
+			var top = res.top;
+			
+			autocompl.style.position = 'absolute';
+			appendAutocomplItems(buf, autocompl, selectedIndex);
+			
+			var itemHeight = autocompl.firstChild.offsetHeight;
+			var popupHeight = autocompl.offsetHeight;
 
-		var $buf = $buffer(buf.id);
-		if (top+h+popupHeight < $buf.scrollTop+$buf.offsetHeight-$statusBar(buf.id).offsetHeight) {
-			autocompl.style.top = top+h+'px';
-		} else {
-			autocompl.style.top = top-popupHeight-3+'px';
+			var $buf = $buffer(buf.id);
+			if (top+h+popupHeight < $buf.scrollTop+$buf.offsetHeight-$statusBar(buf.id).offsetHeight) {
+				autocompl.style.top = top+h+'px';
+			} else {
+				autocompl.style.top = top-popupHeight-3+'px';
+			}
+			
+			autocompl.style.marginLeft = -gutterWidth()+'ch';
 		}
-		
-		autocompl.style.marginLeft = -gutterWidth()+'ch';
 
 		var viewportTop = lastScrollTop;
 		var viewportBottom = lastScrollTop+popupHeight;

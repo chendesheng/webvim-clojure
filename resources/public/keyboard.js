@@ -34,6 +34,10 @@ function keyboardInit() {
 					}
 					key = prefix+KEYCODE_DIC[event.keyCode];
 				}
+			} else if (event.shiftKey) {
+				if (event.keyCode == 9) {
+					key = "s+"+KEYCODE_DIC[event.keyCode];
+				}
 			}
 
 			if (key) {
