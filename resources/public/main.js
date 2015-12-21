@@ -351,13 +351,15 @@ function autocomplItem(subject, word) {
 	}
 	
 	var splits=[j-1];
+	j--;
 	for (var i = subject.length-2; i >= 0; i--) {
 		var ch = subject[i];
-		j=word.lastIndexOf(ch, j-1);
+		j=word.substring(0, j).lastIndexOf(ch);
 		splits.unshift(j)
 	}
 	splits.unshift(-1);
-	
+	console.log(splits);
+
 	var html = '';
 	for (var i=1; i < splits.length; i++) {
 		html += word.substring(splits[i-1]+1, splits[i])+
