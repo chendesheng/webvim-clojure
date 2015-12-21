@@ -392,13 +392,18 @@ function renderAutocompl(buf) {
 	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
 		var selectedIndex = parseInt(buf.autocompl['suggestions-index']);
 		var lastScrollTop;
+		var popupHeight;
 		if (buffers[buf.id].mode == 2) {
 			autocompl = $exAutocompl(buf.id);
 			lastScrollTop = autocompl.scrollTop;
+			
 			appendAutocomplItems(buf, autocompl, selectedIndex);
+			itemHeight = autocompl.firstChild.offsetHeight;
+			popupHeight = autocompl.offsetHeight;
 		} else {
 			autocompl = $autocompl(buf.id);
 			lastScrollTop = autocompl.scrollTop;
+			
 			var h = $cursor(buf.id).offsetHeight+3;
 			var currentWord = buf.autocompl.suggestions[selectedIndex];
 			var res = getScreenXYByPos(buffers[buf.id], buffers[buf.id].cursor-currentWord.length);
@@ -406,9 +411,8 @@ function renderAutocompl(buf) {
 			var top = res.top;
 			
 			appendAutocomplItems(buf, autocompl, selectedIndex);
-			
-			var itemHeight = autocompl.firstChild.offsetHeight;
-			var popupHeight = autocompl.offsetHeight;
+			itemHeight = autocompl.firstChild.offsetHeight;
+			popupHeight = autocompl.offsetHeight;
 
 			var $buf = $buffer(buf.id);
 			if (top+h+popupHeight < $buf.scrollTop+$buf.offsetHeight-$statusBar(buf.id).offsetHeight) {
