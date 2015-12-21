@@ -17,7 +17,8 @@ function $newBuffer(bufid) {
 			+'<span id="status-bar-cursor-{id}" class="cursor"></span>'
 			+'<span id="status-bar-keys-{id}" class="ongoing-keys"></span>'
 			+'<span id="status-bar-name-{id}" class="buf-name"></span>'
-		+'</div>';
+		+'</div>'
+		+'<div id="ex-autocompl-{id}" class="autocompl ex-autocompl"></div>';
 	ele.innerHTML = replaceBinding(tmpl, {'id': bufid});
 	document.body.appendChild(ele);
 }
@@ -88,6 +89,14 @@ function $autocompl(bufid) {
 
 function $autocomplHeight(bufid) {
 	return document.getElementById('autocompl-'+bufid+'-highlight');
+}
+
+function $exAutocompl(bufid) {
+	return _$bufid('ex-autocompl-', bufid);
+}
+
+function $exAutocomplHeight(bufid) {
+	return document.getElementById('ex-autocompl-'+bufid+'-highlight');
 }
 
 function $remove(ele) {

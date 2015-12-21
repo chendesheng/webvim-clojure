@@ -358,7 +358,7 @@ function autocomplItem(subject, word) {
 		splits.unshift(j)
 	}
 	splits.unshift(-1);
-	console.log(splits);
+	//console.log(splits);
 
 	var html = '';
 	for (var i=1; i < splits.length; i++) {
@@ -390,23 +390,21 @@ function appendAutocomplItems(buf, autocompl, selectedIndex) {
 
 function renderAutocompl(buf) {
 	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
-		var autocompl = $autocompl(buf.id);
-		var lastScrollTop = autocompl.scrollTop;
-
 		var selectedIndex = parseInt(buf.autocompl['suggestions-index']);
-		var currentWord = buf.autocompl.suggestions[selectedIndex];
-		var h = $cursor(buf.id).offsetHeight+3;
+		var lastScrollTop;
 		if (buffers[buf.id].mode == 2) {
-			autocompl.style.position = 'fixed';
-			autocompl.style.left = '45px';
-			autocompl.style.bottom = '2em';
+			autocompl = $exAutocompl(buf.id);
+			lastScrollTop = autocompl.scrollTop;
 			appendAutocomplItems(buf, autocompl, selectedIndex);
 		} else {
+			autocompl = $autocompl(buf.id);
+			lastScrollTop = autocompl.scrollTop;
+			var h = $cursor(buf.id).offsetHeight+3;
+			var currentWord = buf.autocompl.suggestions[selectedIndex];
 			var res = getScreenXYByPos(buffers[buf.id], buffers[buf.id].cursor-currentWord.length);
 			autocompl.style.left = res.left+$lines(buf.id).scrollLeft-10+'px';
 			var top = res.top;
 			
-			autocompl.style.position = 'absolute';
 			appendAutocomplItems(buf, autocompl, selectedIndex);
 			
 			var itemHeight = autocompl.firstChild.offsetHeight;
@@ -431,7 +429,8 @@ function renderAutocompl(buf) {
 			autocompl.scrollTop=pos-9*itemHeight;
 		}
 	} else {
-		$autocompl(buf.id).innerHTML = '';
+		$hide($autocompl(buf.id));
+		$hide($exAutocompl(buf.id));
 	}
 }
 
