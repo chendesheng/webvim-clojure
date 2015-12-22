@@ -5,8 +5,12 @@ function imap(key, callback) {
 	}
 
 	if (key == '<c+[>') {
-		callback('<esc>');
-		return;
+		key = '<esc>';
+	} else if (key == '<c+j>') {
+		//can't capture ctrl-n and ctrl-p on Windows's Chrome
+		key = '<c+n>';
+	} else if (key == '<c+k>') {
+		key = '<c+p>';
 	}
 
 	if (key == 'j') {
