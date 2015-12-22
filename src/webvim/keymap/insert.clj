@@ -11,33 +11,16 @@
         webvim.jumplist
         webvim.autocompl))
 
-(defn- autocompl-start[buf]
-  (let [pos (buf :pos)
-        word (uncomplete-word buf)
-        suggestions (autocompl-suggest word)]
-    ;(println "autocompl:" suggestions)
-    (assoc buf :autocompl 
-           {:suggestions suggestions 
-            :suggestions-index 0})))
-
-(defn- autocompl-move[buf f]
-  (let [buf (if (empty? (-> buf :autocompl :suggestions))
-             (autocompl-start buf)
-             buf)
-        i (-> buf :autocompl :suggestions-index)
-        newi (f i)
-        cnt (-> buf :autocompl :suggestions count)]
-    (if (zero? cnt)
-      buf
-      (let [newi (mod (+ newi cnt) cnt)
-            oldw (-> buf :autocompl :suggestions (get i))
-;            _ (println "i:" i)
-;            _ (println "oldw" oldw)
-            w (-> buf :autocompl :suggestions (get newi))]
-        (if (empty? w) buf
-          (-> buf 
-              (assoc-in [:autocompl :suggestions-index] newi)
-              (buffer-replace-suggestion oldw w)))))))
+(defn- new-autocompl[buf]
+  (if (-> buf :autocompl :suggestions nil?) 
+    (assoc buf :autocompl
+           {:words (keys @autocompl-words)
+            :suggestions nil
+            :suggestions-index 0
+            :uncomplete-word uncomplete-word
+            :replace buffer-replace-suggestion
+            :limit-number 0})
+    buf))
 
 (defn- insert-mode-default[buf keycode]
   (println "insert-mode-default: " keycode)
@@ -52,17 +35,17 @@
     (if (empty? (-> buf3 :autocompl :suggestions))
       buf3
       (-> buf3
-          autocompl-start
+          autocompl-suggest
           ((fn[buf3]
             (if (-> buf3 :autocompl :suggestions count (= 1))
-              (assoc buf3 :autocompl {:suggestions []
-                                      :suggestions-index 0})
+              (update-in buf3 [:autocompl] merge {:suggestions []
+                                                  :suggestions-index 0})
               buf3)))))))
 
 (defn init-insert-mode-keymap[]
   {;"<c+o>" normal-mode-keymap 
-   "<c+n>" #(autocompl-move % inc)
-   "<c+p>" #(autocompl-move % dec)
+   "<c+n>" #(autocompl-move (new-autocompl %) inc)
+   "<c+p>" #(autocompl-move (new-autocompl %) dec)
    "<c+r>" {"<esc>" identity
             :else (fn[buf keycode]
                     (-> buf
@@ -74,6 +57,7 @@
    :continue #(not (= "<esc>" %2))
    :leave (fn[buf keycode]
             (-> buf
+                (dissoc buf :autocompl)
                 char-
                 update-x
                 save-dot-repeat

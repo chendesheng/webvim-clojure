@@ -8,6 +8,7 @@
         webvim.core.pos
         webvim.core.register
         webvim.indent
+        webvim.fuzzy
         webvim.core.utils
         webvim.jumplist
         webvim.keymap.compile
@@ -370,4 +371,55 @@
         (apply-keycodes keycodes)
         (assoc :keys keys))))
 
+(defn- fuzzy-suggest [w words]
+  (let [suggestions 
+        (reduce #(conj %1 (last %2)) []
+                (sort-by (juxt first second str)
+                         (reduce 
+                           (fn [suggestions word]
+                             (let [indexes (fuzzy-match word w)]
+                               (if (empty? indexes)
+                                 suggestions
+                                 (conj suggestions [(- (last indexes) 
+                                                       (first indexes)) 
+                                                    (first indexes) word])))) 
+                           [[0 0 w]] words)))]
+    suggestions))
+
+(defn autocompl-suggest[{{words :words
+                         limit-number :limit-number
+                         uncomplete-word :uncomplete-word :as autocompl} :autocompl :as buf}]
+;  (println "buf:" (buf :name))
+;  (println "uncomplete-word:" uncomplete-word)
+;  (println "autocompl" autocompl)
+  (let [suggestions (fuzzy-suggest 
+                      (uncomplete-word buf) words)]
+;    (println "str:" (-> buf :line-buffer :str str))
+;    (println "subject:" subject)
+;    (println "autocompl:" (-> buf :autocompl))
+    (if (empty? suggestions) buf
+      (assoc-in buf [:autocompl :suggestions]
+                (if (pos? limit-number)
+                  (vec (take limit-number suggestions))
+                  (vec suggestions))))))
+
+(defn autocompl-move[{{suggestions :suggestions
+                        i :suggestions-index
+                        replace :replace} :autocompl :as buf} f]
+  (let [buf (if (empty? suggestions)
+              (autocompl-suggest buf) buf)
+        suggestions (-> buf :autocompl :suggestions)
+        newi (f i)
+        ;_ (println "newi" newi)
+        cnt (count suggestions)]
+    (if (zero? cnt)
+      buf
+      (let [w (suggestions i)
+            newi (mod (+ newi cnt) cnt)
+            ;_ (println "newi2" newi)
+            neww (suggestions newi)]
+        (if (empty? w) buf
+          (-> buf 
+              (assoc-in [:autocompl :suggestions-index] newi)
+              (replace neww w)))))))
 

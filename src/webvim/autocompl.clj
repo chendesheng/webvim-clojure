@@ -59,18 +59,18 @@
          remove-words 
          (autocompl-parse lang txt)))
 
-(defn autocompl-suggest [subject]
-  (reduce #(conj %1 (last %2)) []
-          (sort-by (juxt first second str)
-                   (reduce-kv 
-                     (fn [suggestions word _] ;TODO sort by reference count?
-                       (let [indexes (fuzzy-match word subject)]
-                         (if (empty? indexes)
-                           suggestions
-                           (conj suggestions [(- (last indexes) 
-                                                 (first indexes)) 
-                                              (first indexes) word])))) 
-                     [[0 0 subject]] (dissoc @autocompl-words subject)))))
+;(defn autocompl-suggest [subject]
+;  (reduce #(conj %1 (last %2)) []
+;          (sort-by (juxt first second str)
+;                   (reduce-kv 
+;                     (fn [suggestions word _] ;TODO sort by reference count?
+;                       (let [indexes (fuzzy-match word subject)]
+;                         (if (empty? indexes)
+;                           suggestions
+;                           (conj suggestions [(- (last indexes) 
+;                                                 (first indexes)) 
+;                                              (first indexes) word])))) 
+;                     [[0 0 subject]] (dissoc @autocompl-words subject)))))
 
 (defonce ^:private listen-new-buffer
   (listen
@@ -114,7 +114,7 @@
     (if (or (nil? rg) (= (rg 0) (rg 1))) nil
         (str (subr s rg)))))
 
-(defn buffer-replace-suggestion[buf oldword word]
+(defn buffer-replace-suggestion[buf word oldword]
   (let [pos (buf :pos)
         s (buf :str)
         lang (buf :language)]

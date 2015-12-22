@@ -239,63 +239,6 @@
               save-history!)
           (assoc buf :message "unknown command"))))))
 
-(defn- autocompl-suggest [w words]
-  (let [suggestions 
-        (reduce #(conj %1 (last %2)) []
-                (sort-by (juxt first second str)
-                         (reduce 
-                           (fn [suggestions word]
-                             (let [indexes (fuzzy-match word w)]
-                               (if (empty? indexes)
-                                 suggestions
-                                 (conj suggestions [(- (last indexes) 
-                                                       (first indexes)) 
-                                                    (first indexes) word])))) 
-                           [[0 0 w]] words)))]
-    suggestions))
-
-(defn- autocompl-start[{{words :words
-                         limit-number :limit-number
-                         uncomplete-word :uncomplete-word :as autocompl} :autocompl :as buf}]
-;  (println "buf:" (buf :name))
-;  (println "uncomplete-word:" uncomplete-word)
-;  (println "autocompl" autocompl)
-  (let [suggestions (autocompl-suggest 
-                      (uncomplete-word buf) words)]
-;    (println "str:" (-> buf :line-buffer :str str))
-;    (println "subject:" subject)
-;    (println "autocompl:" (-> buf :autocompl))
-    (if (empty? suggestions) buf
-      (assoc-in buf [:autocompl :suggestions]
-                (if (pos? limit-number)
-                  (vec (take limit-number suggestions))
-                  (vec suggestions))))))
-
-(defn- autocompl-move[{{suggestions :suggestions
-                        i :suggestions-index
-                        replace :replace} :autocompl :as buf} f]
-  (let [buf (if (empty? suggestions)
-              (autocompl-start buf) buf)
-        suggestions (-> buf :autocompl :suggestions)
-        newi (f i)
-        ;_ (println "newi" newi)
-        cnt (count suggestions)]
-    (if (zero? cnt)
-      buf
-      (let [w (suggestions i)
-            newi (mod (+ newi cnt) cnt)
-            ;_ (println "newi2" newi)
-            neww (suggestions newi)]
-        (if (empty? w) buf
-          (-> buf 
-              (assoc-in [:autocompl :suggestions-index] newi)
-              (replace neww w)))))))
-
-;{:replace (fn[buf oldw neww] buf)
-; :uncomplete-word (fn[buf] w)
-; :limit-number 20
-; :words lazy-coll}
-
 ;cache
 ;TODO: monitor disk file change
 (def ^:private all-files (atom nil))
@@ -328,6 +271,17 @@
 (defn- uncomplete-word[{{r :str} :line-buffer :as buf}]
   (let [[[_ w]] (re-seq #"^e\s(.*)" (-> buf :line-buffer :str str))] w))
 
+(defn- new-autocompl[buf]
+  (if (-> buf :autocompl :suggestions nil?) 
+    (assoc buf :autocompl
+           {:words (get-files)
+            :suggestions nil
+            :suggestions-index 0
+            :uncomplete-word uncomplete-word
+            :replace replace-suggestion
+            :limit-number 20})
+    buf))
+
 (defn- ex-tab-complete [{{r :str} :line-buffer :as buf} cmds]
   (let [w (uncomplete-word buf)]
     (println "ex-tab-complete:" w)
@@ -346,14 +300,7 @@
                          (merge linebuf {:str (rope news) :pos (count news)})))))
         buf)
       (autocompl-move 
-        (if (-> buf :autocompl :suggestions nil?) 
-          (assoc buf :autocompl
-                 {:words (get-files)
-                  :suggestions nil
-                  :suggestions-index 0
-                  :uncomplete-word uncomplete-word
-                  :replace replace-suggestion
-                  :limit-number 20}) buf) inc))))
+        (new-autocompl buf) inc))))
 
 (defn- append-<br>[buf]
   (let [s (-> buf :line-buffer :str)
@@ -381,7 +328,7 @@
                                (= keycode "<s+tab>")
                                (-> buf :autocompl :suggestions empty?))
                          buf
-                         (autocompl-start buf))))
+                         (autocompl-suggest buf))))
             :leave (fn[buf keycode]
                      (-> buf
                          (dissoc :autocompl)
