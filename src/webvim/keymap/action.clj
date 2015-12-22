@@ -372,54 +372,52 @@
         (assoc :keys keys))))
 
 (defn- fuzzy-suggest [w words]
-  (let [suggestions 
-        (reduce #(conj %1 (last %2)) []
-                (sort-by (juxt first second str)
-                         (reduce 
-                           (fn [suggestions word]
-                             (let [indexes (fuzzy-match word w)]
-                               (if (empty? indexes)
-                                 suggestions
-                                 (conj suggestions [(- (last indexes) 
-                                                       (first indexes)) 
-                                                    (first indexes) word])))) 
-                           [[0 0 w]] words)))]
-    suggestions))
+  (reduce #(conj %1 (last %2)) []
+          (sort-by (juxt first second str)
+                   (reduce 
+                     (fn [suggestions word]
+                       (let [indexes (fuzzy-match word w)]
+                         (if (empty? indexes)
+                           suggestions
+                           (conj suggestions [(- (last indexes) 
+                                                 (first indexes)) 
+                                              (first indexes) word])))) 
+                     [[0 0 w]] words))))
 
 (defn autocompl-suggest[{{words :words
-                         limit-number :limit-number
-                         uncomplete-word :uncomplete-word :as autocompl} :autocompl :as buf}]
+                          limit-number :limit-number
+                          uncomplete-word :uncomplete-word :as autocompl} :autocompl :as buf}]
 ;  (println "buf:" (buf :name))
 ;  (println "uncomplete-word:" uncomplete-word)
 ;  (println "autocompl" autocompl)
-  (let [suggestions (fuzzy-suggest 
-                      (uncomplete-word buf) words)]
+  (let [w (uncomplete-word buf)
+        suggestions (fuzzy-suggest w words)]
 ;    (println "str:" (-> buf :line-buffer :str str))
 ;    (println "subject:" subject)
 ;    (println "autocompl:" (-> buf :autocompl))
+    ;(println "suggestions" suggestions)
     (if (empty? suggestions) buf
-      (assoc-in buf [:autocompl :suggestions]
-                (if (pos? limit-number)
-                  (vec (take limit-number suggestions))
-                  (vec suggestions))))))
+      (-> buf 
+          (assoc-in [:autocompl :suggestions-index] 0)
+          (assoc-in [:autocompl :suggestions]
+                    (if (pos? limit-number)
+                      (vec (take limit-number suggestions))
+                      (vec suggestions)))))))
 
-(defn autocompl-move[{{suggestions :suggestions
-                        i :suggestions-index
-                        replace :replace} :autocompl :as buf} f]
-  (let [buf (if (empty? suggestions)
+(defn autocompl-move[buf f]
+  (let [buf (if (empty? (-> buf :autocompl :suggestions))
               (autocompl-suggest buf) buf)
-        suggestions (-> buf :autocompl :suggestions)
-        newi (f i)
-        ;_ (println "newi" newi)
+        {suggestions :suggestions
+         i :suggestions-index
+         replace :replace} (buf :autocompl)
+        w (suggestions i)
+        ;_ (println "word:" w)
         cnt (count suggestions)]
-    (if (zero? cnt)
+    (if (or (zero? cnt) (empty? w))
       buf
-      (let [w (suggestions i)
-            newi (mod (+ newi cnt) cnt)
-            ;_ (println "newi2" newi)
+      (let [newi (mod (+ (f i) cnt) cnt)
             neww (suggestions newi)]
-        (if (empty? w) buf
-          (-> buf 
-              (assoc-in [:autocompl :suggestions-index] newi)
-              (replace neww w)))))))
+        (-> buf 
+            (assoc-in [:autocompl :suggestions-index] newi)
+            (replace neww w))))))
 

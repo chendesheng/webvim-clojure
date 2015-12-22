@@ -13,13 +13,17 @@
 
 (defn- new-autocompl[buf]
   (if (-> buf :autocompl :suggestions nil?) 
-    (assoc buf :autocompl
-           {:words (keys @autocompl-words)
-            :suggestions nil
-            :suggestions-index 0
-            :uncomplete-word uncomplete-word
-            :replace buffer-replace-suggestion
-            :limit-number 0})
+    (do
+      ;remove current word
+      (autocompl-words-remove (buf :lang) (uncomplete-word buf))
+      (assoc buf :autocompl
+             {:words (keys @autocompl-words) ;words is fixed during auto complete
+              :word nil
+              :suggestions nil
+              :suggestions-index 0
+              :uncomplete-word uncomplete-word
+              :replace buffer-replace-suggestion
+              :limit-number 0}))
     buf))
 
 (defn- insert-mode-default[buf keycode]
