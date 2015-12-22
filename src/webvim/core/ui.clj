@@ -16,6 +16,12 @@
 
 (def ^:private visual-line 2)
 
+(defn- dissoc-if-equal[after before k]
+  (if (and (not (nil? before))
+           (= (before k) (after k)))
+    (dissoc after k)
+    after))
+
 (defn- correct-visual-mode[buf]
   (if (= (-> buf :visual :type) visual-line)
     (update-in buf [:visual :ranges] 
@@ -23,14 +29,16 @@
                  (map #(make-linewise-range % buf) ranges)))
     buf))
 
-(defn- remove-autocompl[buf]
-  (if (empty? (-> buf :autocompl :suggestions))
-    (dissoc buf :autocompl)
-    (-> buf
-        (update-in [:autocompl] dissoc :words)
-        (update-in [:autocompl] dissoc :uncomplete-word)
-        (update-in [:autocompl] dissoc :replace)
-        (update-in [:autocompl] dissoc :limit-number))))
+(defn- remove-autocompl[{autocompl :autocompl :as after} before]
+  (if (or (nil? autocompl) (-> autocompl :suggestions count (<= 1)))
+    (dissoc after :autocompl)
+    (assoc after :autocompl
+           (-> autocompl
+               (dissoc-if-equal (:autocompl before) :suggestions)
+               (dissoc :words)
+               (dissoc :uncomplete-word)
+               (dissoc :replace)
+               (dissoc :limit-number)))))
 
 (defn- line-editor[buf]
   (if (nil? (buf :line-buffer))
@@ -52,13 +60,7 @@
               :save-point :ext :last-visual :nextid :dot-repeat-keys)
       (dissoc-empty [:changes])
       (dissoc-nil :keys)
-      line-editor
-      remove-autocompl))
-
-(defn- dissoc-if-equal[after before k]
-  (if (= (before k) (after k))
-    (dissoc after k)
-    after))
+      line-editor))
 
 (defn- diff-dirty[after before]
   (let [a (dirty? after)
@@ -78,12 +80,14 @@
                     (assoc :str (str txt))
                     (assoc :lang (-> after :language :name))
                     (dissoc :changes)
+                    (remove-autocompl before)
                     remove-fields
                     correct-visual-mode)
                 :else
                 (-> after
                     (diff-dirty before)
                     (dissoc-if-equal before :line-buffer)
+                    (remove-autocompl before)
                     remove-fields
                     correct-visual-mode
                     (dissoc :str)

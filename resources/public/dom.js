@@ -132,9 +132,9 @@ function $tabsize(tabsize) {
 }
 
 function $hide(ele) {
-	ele.style.display = 'none';
+	if (ele) ele.style.display = 'none';
 }
 
 function $show(ele, display) {
-	ele.style.display = display || '';
+	if (ele) ele.style.display = display || '';
 }

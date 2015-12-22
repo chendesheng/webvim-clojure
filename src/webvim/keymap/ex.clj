@@ -272,11 +272,11 @@
   (let [[[_ w]] (re-seq #"^e\s(.*)" (-> buf :line-buffer :str str))] w))
 
 (defn- new-autocompl[buf]
-  (if (-> buf :autocompl :suggestions nil?) 
+  (if (-> buf :autocompl nil?) 
     (assoc buf :autocompl
            {:words (get-files)
             :suggestions nil
-            :suggestions-index 0
+            :index 0
             :uncomplete-word uncomplete-word
             :replace replace-suggestion
             :limit-number 20})
@@ -326,7 +326,7 @@
                          (swap! commands-history assoc :current (-> buf :line-buffer :str str)))
                        (if (or (= keycode "<tab>")
                                (= keycode "<s+tab>")
-                               (-> buf :autocompl :suggestions empty?))
+                               (-> buf :autocompl nil?))
                          buf
                          (autocompl-suggest buf))))
             :leave (fn[buf keycode]

@@ -369,72 +369,99 @@ function autocomplItem(subject, word) {
 	return html;
 }
 
-function appendAutocomplItems(buf, autocompl, selectedIndex) {
-	$hide(autocompl);
-	autocompl.innerHTML = '';
+function appendAutocomplItems(bufid, suggestions, $a, selectedIndex) {
+	$hide($a);
+	$a.innerHTML = '';
 	
-	var subject = buf.autocompl.suggestions[0];
-	buf.autocompl.suggestions.each(function(word, i) {
+	var subject = suggestions[0];
+	suggestions.each(function(word, i) {
 		if (i > 0) {
 			var ele = document.createElement('PRE');
 			ele.innerHTML = autocomplItem(subject, word);
-			autocompl.appendChild(ele);
+			$a.appendChild(ele);
 			if (i == selectedIndex) {
 				ele.className = 'highlight';
-				ele.id = 'autocompl-'+buf.id+'-highlight';
+				ele.id = 'autocompl-'+bufid+'-highlight';
 			}
 		}
 	});
-	$show(autocompl);
+	$show($a);
+}
+
+function $hideAutocompl(bufid) {
+	buffers[bufid].suggestions = null;
+	$hide($autocompl(bufid));
+	$hide($exAutocompl(bufid));
 }
 
 function renderAutocompl(buf) {
-	if (buf.autocompl && buf.autocompl.suggestions && buf.autocompl.suggestions.length > 1) {
-		var selectedIndex = parseInt(buf.autocompl['suggestions-index']);
-		var lastScrollTop;
-		var popupHeight;
-		if (buffers[buf.id].mode == 2) {
-			autocompl = $exAutocompl(buf.id);
-			lastScrollTop = autocompl.scrollTop;
-			
-			appendAutocomplItems(buf, autocompl, selectedIndex);
-			itemHeight = autocompl.firstChild.offsetHeight;
-			popupHeight = autocompl.offsetHeight;
-		} else {
-			autocompl = $autocompl(buf.id);
-			lastScrollTop = autocompl.scrollTop;
-			
-			var h = $cursor(buf.id).offsetHeight+3;
-			var currentWord = buf.autocompl.suggestions[selectedIndex];
-			var res = getScreenXYByPos(buffers[buf.id], buffers[buf.id].cursor-currentWord.length);
-			autocompl.style.left = res.left+$lines(buf.id).scrollLeft-10+'px';
-			var top = res.top;
-			
-			appendAutocomplItems(buf, autocompl, selectedIndex);
-			itemHeight = autocompl.firstChild.offsetHeight;
-			popupHeight = autocompl.offsetHeight;
-
-			var $buf = $buffer(buf.id);
-			if (top+h+popupHeight < $buf.scrollTop+$buf.offsetHeight-$statusBar(buf.id).offsetHeight) {
-				autocompl.style.top = top+h+'px';
-			} else {
-				autocompl.style.top = top-popupHeight-3+'px';
-			}
-			
-			autocompl.style.marginLeft = -gutterWidth()+'ch';
-		}
-
-		var viewportTop = lastScrollTop;
-		var viewportBottom = lastScrollTop+popupHeight;
-		var pos = (selectedIndex-1)*itemHeight;
-		if (pos < viewportTop) {
-			autocompl.scrollTop=pos;
-		} else if (pos >= viewportBottom) {
-			autocompl.scrollTop=pos-9*itemHeight;
-		}
+	var autocompl = buf.autocompl;
+	var suggestions;
+	if (!autocompl) {
+		$hideAutocompl(buf.id);
+		return;
+	} else if (!autocompl.suggestions) {
+		//use local cache
+		suggestions = buffers[buf.id].suggestions;
 	} else {
-		$hide($autocompl(buf.id));
-		$hide($exAutocompl(buf.id));
+		//update local cache
+		suggestions = autocompl.suggestions;
+		buffers[buf.id].suggestions = suggestions;
+	}
+
+	if (suggestions == null || suggestions.length < 1) {
+		//This should not happen, server problem
+		$hideAutocompl(buf.id);
+		return;
+	}
+
+	if (suggestions.length <= 2) {
+		$hideAutocompl(buf.id);
+		return;
+	}
+
+
+	var selectedIndex = autocompl.index;
+	var lastScrollTop;
+	var popupHeight;
+	if (buffers[buf.id].mode == 2) {
+		$a = $exAutocompl(buf.id);
+		lastScrollTop = $a.scrollTop;
+
+		appendAutocomplItems(buf.id, suggestions, $a, selectedIndex);
+		itemHeight = $a.firstChild.offsetHeight;
+		popupHeight = $a.offsetHeight;
+	} else {
+		$a = $autocompl(buf.id);
+		lastScrollTop = $a.scrollTop;
+
+		var h = $cursor(buf.id).offsetHeight+3;
+		var currentWord = suggestions[selectedIndex];
+		var res = getScreenXYByPos(buffers[buf.id], buffers[buf.id].cursor-currentWord.length);
+		$a.style.left = res.left+$lines(buf.id).scrollLeft-10+'px';
+		var top = res.top;
+
+		appendAutocomplItems(buf.id, suggestions, $a, selectedIndex);
+		itemHeight = $a.firstChild.offsetHeight;
+		popupHeight = $a.offsetHeight;
+
+		var $buf = $buffer(buf.id);
+		if (top+h+popupHeight < $buf.scrollTop+$buf.offsetHeight-$statusBar(buf.id).offsetHeight) {
+			$a.style.top = top+h+'px';
+		} else {
+			$a.style.top = top-popupHeight-3+'px';
+		}
+
+		$a.style.marginLeft = -gutterWidth()+'ch';
+	}
+
+	var viewportTop = lastScrollTop;
+	var viewportBottom = lastScrollTop+popupHeight;
+	var pos = (selectedIndex-1)*itemHeight;
+	if (pos < viewportTop) {
+		$a.scrollTop=pos;
+	} else if (pos >= viewportBottom) {
+		$a.scrollTop=pos-9*itemHeight;
 	}
 }
 

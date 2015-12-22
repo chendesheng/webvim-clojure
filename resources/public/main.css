@@ -155,6 +155,7 @@ pre {
 	position:fixed;
 	left: 3ch;
 	bottom:1.8em;
+	max-width:1000px;
 }
 
 .line-selected {

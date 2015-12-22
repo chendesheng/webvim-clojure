@@ -12,18 +12,18 @@
         webvim.autocompl))
 
 (defn- new-autocompl[buf]
-  (if (-> buf :autocompl :suggestions nil?) 
-    (do
-      ;remove current word
-      (autocompl-words-remove (buf :lang) (uncomplete-word buf))
-      (assoc buf :autocompl
-             {:words (keys @autocompl-words) ;words is fixed during auto complete
-              :word nil
-              :suggestions nil
-              :suggestions-index 0
-              :uncomplete-word uncomplete-word
-              :replace buffer-replace-suggestion
-              :limit-number 0}))
+  (if (-> buf :autocompl nil?) 
+    (let [w (uncomplete-word buf)]
+      (if (nil? w) buf
+        (assoc buf :autocompl
+               ;remove current word
+               ;words is fixed during auto complete
+               {:words (keys (autocompl-remove-word @autocompl-words w))
+                :suggestions nil
+                :index 0
+                :uncomplete-word uncomplete-word
+                :replace buffer-replace-suggestion
+                :limit-number 0})))
     buf))
 
 (defn- insert-mode-default[buf keycode]
@@ -36,15 +36,10 @@
         buf3 (if (or (indent-trigger? (buf :language) keycode) (= keycode "<cr>"))
                (buf-indent-current-line buf2)
                buf2)]
-    (if (empty? (-> buf3 :autocompl :suggestions))
+    ;continue checking until there is no suggestions
+    (if (-> buf3 :autocompl nil?)
       buf3
-      (-> buf3
-          autocompl-suggest
-          ((fn[buf3]
-            (if (-> buf3 :autocompl :suggestions count (= 1))
-              (update-in buf3 [:autocompl] merge {:suggestions []
-                                                  :suggestions-index 0})
-              buf3)))))))
+      (autocompl-suggest buf3))))
 
 (defn init-insert-mode-keymap[]
   {;"<c+o>" normal-mode-keymap 
@@ -55,13 +50,14 @@
                     (-> buf
                         (put-from-register keycode)
                         char+))}
+   "<esc>" identity
    :after (fn[buf keycode]
             (println "insert after:" keycode) buf)
    :else insert-mode-default 
    :continue #(not (= "<esc>" %2))
    :leave (fn[buf keycode]
             (-> buf
-                (dissoc buf :autocompl)
+                (dissoc :autocompl)
                 char-
                 update-x
                 save-dot-repeat

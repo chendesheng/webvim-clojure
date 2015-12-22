@@ -49,7 +49,7 @@
 
 ;(remove-words {"aa" 2 "bb" 1} {"aa" 3 "bb" 1 "cc" 2})
 
-(defn autocompl-words-parse
+(defn autocompl-words-parse!
   "add to autocompl-words"
   [lang txt]
   (swap! autocompl-words merge-words (autocompl-parse lang txt)))
@@ -58,6 +58,9 @@
   (swap! autocompl-words 
          remove-words 
          (autocompl-parse lang txt)))
+
+(defn autocompl-remove-word[words w]
+  (remove-words words {w 1}))
 
 ;(defn autocompl-suggest [subject]
 ;  (reduce #(conj %1 (last %2)) []
@@ -77,18 +80,8 @@
     :new-buffer
     (fn [buf]
       (println "autocompl new-buffer")
-      (autocompl-words-parse (buf :language) (buf :str))
-      (assoc buf 
-             :autocompl 
-             {:words nil
-              ;empty suggestions means don't display it
-              ;every input handled in insertion mode should check if :suggestion is nil.
-              ;  if it is not nil then continue narrow down suggestions
-              ;ctrl+n, ctrl+p will calculate full suggestions if it is nil
-              :suggestions nil
-              ;0 means select nothing (don't highlight any suggestion item)
-              ;> 0 means highlight the nth suggestion item
-              :suggestions-index 0}))))
+      (autocompl-words-parse! (buf :language) (buf :str))
+      buf)))
 
 (defn expand-ends-word [lang s a b]
   (let [re-left (re-pattern (str "(?<=[" (not-word-chars lang) "])"))
@@ -115,10 +108,11 @@
         (str (subr s rg)))))
 
 (defn buffer-replace-suggestion[buf word oldword]
-  (let [pos (buf :pos)
-        s (buf :str)
-        lang (buf :language)]
-    (buf-replace buf (- pos (count oldword)) pos word)))
+  (if (= word oldword) buf
+    (let [pos (buf :pos)
+          s (buf :str)
+          lang (buf :language)]
+      (buf-replace buf (- pos (count oldword)) pos word))))
 
 ;(uncomplete-word {:pos 5 :str (rope " b cd")})
 
@@ -134,7 +128,7 @@
       lang
       (subr
         olds (expand-ends-word lang olds a oldb)))
-    (autocompl-words-parse 
+    (autocompl-words-parse!
       lang
       (subr
         news (expand-ends-word lang news a newb)))))
