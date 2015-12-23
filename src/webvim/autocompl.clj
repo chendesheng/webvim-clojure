@@ -12,19 +12,19 @@
 (println "load autocompl language")
 
 ;Keep reference count of each word: {"w1" 1 "w2" 3}
-(defonce autocompl-words (atom {}))
+(defonce autocompl-words (agent {}))
 
 (defn- not-word-chars[lang]
   (-> lang word-re :not-word-chars))
 
-(defn split-words 
+(defn- split-words 
   "split text to word vector"
    [lang txt]
   (split txt (re-pattern (str "[" (not-word-chars lang) "]")) -1))
 
 ;(split-words (rope "(ns [me.ray])"))
 
-(defn autocompl-parse
+(defn- autocompl-parse
   "Split to word with length longer than 2."
   [lang txt]
   (reduce (fn[m w]
@@ -49,38 +49,18 @@
 
 ;(remove-words {"aa" 2 "bb" 1} {"aa" 3 "bb" 1 "cc" 2})
 
-(defn autocompl-words-parse!
-  "add to autocompl-words"
-  [lang txt]
-  (swap! autocompl-words merge-words (autocompl-parse lang txt)))
-
-(defn autocompl-words-remove[lang txt]
-  (swap! autocompl-words 
-         remove-words 
-         (autocompl-parse lang txt)))
-
 (defn autocompl-remove-word[words w]
   (remove-words words {w 1}))
-
-;(defn autocompl-suggest [subject]
-;  (reduce #(conj %1 (last %2)) []
-;          (sort-by (juxt first second str)
-;                   (reduce-kv 
-;                     (fn [suggestions word _] ;TODO sort by reference count?
-;                       (let [indexes (fuzzy-match word subject)]
-;                         (if (empty? indexes)
-;                           suggestions
-;                           (conj suggestions [(- (last indexes) 
-;                                                 (first indexes)) 
-;                                              (first indexes) word])))) 
-;                     [[0 0 subject]] (dissoc @autocompl-words subject)))))
 
 (defonce ^:private listen-new-buffer
   (listen
     :new-buffer
     (fn [buf]
       (println "autocompl new-buffer")
-      (autocompl-words-parse! (buf :language) (buf :str))
+      (send autocompl-words
+            (fn[words]
+              (merge-words words
+                (autocompl-parse (buf :language) (buf :str)))))
       buf)))
 
 (defn expand-ends-word [lang s a b]
@@ -121,24 +101,29 @@
 
 (defn- autocompl-update
   [lang news olds c]
-  (let [a (c :pos)
-        oldb (-> c :len (+ a))
-        newb (-> c :to count (+ a))]
-    (autocompl-words-remove 
-      lang
-      (subr
-        olds (expand-ends-word lang olds a oldb)))
-    (autocompl-words-parse!
-      lang
-      (subr
-        news (expand-ends-word lang news a newb)))))
+  (send autocompl-words
+        (fn[words]
+          (let [a (c :pos)
+                oldb (-> c :len (+ a))
+                newb (-> c :to count (+ a))]
+            (-> words
+                (remove-words 
+                  (autocompl-parse 
+                    lang (subr olds (expand-ends-word lang olds a oldb))))
+                (merge-words
+                  (autocompl-parse
+                    lang (subr
+                           news (expand-ends-word lang news a newb)))))))))
 
 (defonce ^:private listen-change-buffer 
   (listen
     :change-buffer
-    (fn [buf oldbuf c]
-      (let [news (buf :str)
-            olds (oldbuf :str)]
-        (when-not (= news olds)
-          (autocompl-update (buf :language) news olds c))
-        buf))))
+    (fn [{lang :language
+          news :str
+          :as buf}
+         {olds :str
+          :as oldbuf} c]
+      (when-not (= news olds)
+                (autocompl-update
+                  lang news olds c))
+      buf)))
