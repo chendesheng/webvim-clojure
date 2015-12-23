@@ -95,7 +95,7 @@
           (.printStackTrace e pw)
           (-> buf
               (dissoc :nextid)
-              (write-output (str sw) true)))))))
+              (append-output-panel (str sw) true)))))))
 
 (defn- handle-socket[req]
   {:on-connect (fn[ws]
