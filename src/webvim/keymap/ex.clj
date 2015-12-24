@@ -17,6 +17,7 @@
         webvim.core.utils
         webvim.core.event
         webvim.fuzzy
+        webvim.exec
         webvim.keymap.external
         webvim.keymap.compile
         webvim.keymap.action))
@@ -54,17 +55,10 @@
           (conj matches buf))))
     [] buffers))
 
-(defn- exec-shell-commands[buf cmds]
-  (let [aoutputbuf (output-buf true)]
-    (async/go
-      (let [res (apply clojure.java.shell/sh cmds)
-            s (if (empty? (res :out))
-                (res :err) (res :out))]
-        (write-output
-          buf
-          (str (string/join " " cmds) "\n" s)
-          false)))
-    (goto-buf buf aoutputbuf)))
+(defn- exec-shell-commands[buf panel cmds]
+  (exec-async cmds (fn[line]
+                     (append-panel buf panel line false)))
+  (append-panel buf panel (str (string/join " " cmds) "\n") true))
 
 (defn- expand-path[f]
   (if (= (first f) \~)
@@ -154,10 +148,10 @@
               (assoc buf :message (str e)))))
 
 (defn cmd-grep[buf execmd args]
-  (exec-shell-commands buf ["grep" "-rnI" args "."]))
+  (exec-shell-commands buf (grep-panel) ["grep" "-rnI" args "."]))
 
 (defn cmd-find[buf execmd args]
-  (exec-shell-commands buf ["find" "." "-name" args "-not" "-path" "*/.*"]))
+  (exec-shell-commands buf (find-panel) ["find" "." "-name" args "-not" "-path" "*/.*"]))
 
 (defn cmd-move-to-line[buf row _]
 ;(println "row:" row)
@@ -166,7 +160,7 @@
     (move-to-line buf row)))
 
 (defn cmd-ls[buf execmd args]
-  (write-output buf
+  (append-output-panel buf
                 (str ":ls\n"
                      (string/join 
                        "\n" 
@@ -184,13 +178,13 @@
 (defn cmd-history[buf _ _]
   (let [{before :before after :after} @commands-history
         all (concat (reverse before) after)]
-    (write-output 
+    (append-output-panel 
       buf
       (str ":history\n" (string/join "\n" all)) 
       true)))
 
 (defn cmd-register[buf _ _]
-  (write-output 
+  (append-output-panel 
     buf
     (str ":register\n" 
          (string/join

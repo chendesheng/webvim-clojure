@@ -263,7 +263,7 @@
        "<c+i>" #(move-to-jumplist % jump-next)
        "<c+g>" buf-pos-info
        "<esc>" set-normal-mode
-       "<f1>" #(goto-buf % (output-buf false))
+       "<f1>" #(goto-buf % (output-panel false))
        "g" {"v" (assoc
                   visual-mode-keymap
                   :enter

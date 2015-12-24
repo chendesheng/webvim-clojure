@@ -16,7 +16,12 @@
 ;key: buffer id, value: buffer agent
 (defonce buffer-list (atom {}))
 
-(defonce output-buf-name "[output]")
+(defonce output-panel-name "[Output]")
+(defonce grep-panel-name "[Grep]")
+(defonce find-panel-name "[Find]")
+
+;A panel is just a speical buffer
+(defonce panels #{output-panel-name grep-panel-name find-panel-name})
 
 (defn buffer-list-save!
   "Generate buffer id (increase from 1) and add to buffer-list"
@@ -97,7 +102,7 @@
 (defn open-file
   "Create buffer from a file by slurp, return emtpy buffer if file not exists"
   [^String f]
-  (if (or (nil? f) (= f output-buf-name))
+  (if (or (nil? f) (contains? panels f)) ;TODO: handle disk files with same name. ???use negative id for these buffers???
     (create-buf (str f) nil "")
     (let [f (-> f .trim fs/normalized)]
       (create-buf (fs/base-name f)

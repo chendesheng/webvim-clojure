@@ -290,13 +290,31 @@
       (lines-row row)
       line-start))
 
-(defn output-buf[create?]
+(defn get-panel[create? name]
   (or (some (fn[[_ abuf]]
-              (if (= (@abuf :name) output-buf-name) abuf nil))
+              (if (= (@abuf :name) name) abuf nil))
             @buffer-list)
       (if create?
-        (-> (open-file output-buf-name)
+        (-> (open-file name)
             buffer-list-save!))))
+
+(defn output-panel
+  ([create?]
+    (get-panel create? output-panel-name))
+  ([]
+    (output-panel true)))
+
+(defn grep-panel
+  ([create?]
+    (get-panel create? grep-panel-name))
+  ([]
+    (grep-panel true)))
+
+(defn find-panel
+  ([create?]
+    (get-panel create? find-panel-name))
+  ([]
+    (find-panel true)))
 
 (defn goto-buf [buf anextbuf]
   (if (nil? anextbuf) buf
@@ -313,17 +331,19 @@
     (-> buf :str count)
     (apply str strs)))
 
-(defn write-output[buf s goto?]
-  (let [aoutputbuf (output-buf true)]
-    (send aoutputbuf
-          (fn[buf]
-            (let [row (buf :linescnt)
-                  newbuf (-> buf
-                             (buf-append s "\n")
-                             (move-to-line row)
-                             cursor-center-viewport)]
-              (send-buf! newbuf))))
-    (if goto? (goto-buf buf aoutputbuf) buf)))
+(defn append-panel[buf apanel s goto?]
+  (send apanel
+        (fn[buf]
+          (let [row (buf :linescnt)
+                newbuf (-> buf
+                           (buf-append s "\n")
+                           (move-to-line row)
+                           cursor-center-viewport)]
+            (send-buf! newbuf))))
+  (if goto? (goto-buf buf apanel) buf))
+
+(defn append-output-panel[buf s goto?]
+  (append-panel buf (output-panel) s goto?))
 
 (defn get-buffer-from-reg[reg]
   (if (nil? reg) nil
