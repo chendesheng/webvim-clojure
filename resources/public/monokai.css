@@ -20,8 +20,12 @@ body {
 
 .lines .number,
 .lines .escape,
-.lines .buildin {
+.lines .literal {
 	color:#AE81FF;
+}
+
+.lines .build_in {
+	color:#e6db74;
 }
 
 .lines .title {

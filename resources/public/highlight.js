@@ -1,25 +1,31 @@
+function testRe(re, lexeme) {
+	var match = re && re.exec(lexeme);
+	return match && match.index == 0;
+}
+
+function inherit(parent, obj) {
+	var result = {}, key;
+	for (key in parent)
+		result[key] = parent[key];
+	if (obj)
+		for (key in obj)
+			result[key] = obj[key];
+	return result;
+}
+
 var highlights = (function() {
-	function inherit(parent, obj) {
-		var result = {}, key;
-		for (key in parent)
-			result[key] = parent[key];
-		if (obj)
-			for (key in obj)
-				result[key] = obj[key];
-		return result;
-	}
 
 	var hljs = {};
-	hljs.toSet = function(str) { return str.split(/\s+/).toSet(); }
 	hljs.inherit = inherit;
+	
 	// Common regexps
 	hljs.IDENT_RE = '[a-zA-Z]\\w*';
 	hljs.UNDERSCORE_IDENT_RE = '[a-zA-Z_]\\w*';
 	hljs.NUMBER_RE = '\\b\\d+(\\.\\d+)?';
-	hljs.C_NUMBER_RE = '(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)'; // 0x..., 0..., decimal, float
+	hljs.C_NUMBER_RE = '(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)'; // 0x..., 0..., decimal, float
 	hljs.BINARY_NUMBER_RE = '\\b(0b[01]+)'; // 0b...
 	hljs.RE_STARTERS_RE = '!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|-|-=|/=|/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~';
-
+	
 	// Common modes
 	hljs.BACKSLASH_ESCAPE = {
 		className: 'escape',
@@ -38,28 +44,28 @@ var highlights = (function() {
 		contains: [hljs.BACKSLASH_ESCAPE]
 	};
 	hljs.PHRASAL_WORDS_MODE = {
-		begin: /\b(a|an|the|are|I|I'm|isn't|don't|doesn't|won't|but|just|should|pretty|simply|enough|gonna|going|wtf|so|such)\b/
+		begin: /\b(a|an|the|are|I|I'm|isn't|don't|doesn't|won't|but|just|should|pretty|simply|enough|gonna|going|wtf|so|such|will|you|your|like)\b/
 	};
 	hljs.COMMENT = function (begin, end, inherits) {
 		var mode = hljs.inherit(
-			{
-				className: 'comment',
-				begin: begin, end: end,
-				contains: []
-			},
-			inherits || {}
+		{
+			className: 'comment',
+			begin: begin, end: end,
+			contains: []
+		},
+		inherits || {}
 		);
 		mode.contains.push(hljs.PHRASAL_WORDS_MODE);
 		mode.contains.push({
-		className: 'doctag',
-		begin: "(?:TODO|FIXME|NOTE|BUG|XXX):",
+			className: 'doctag',
+			begin: "(?:TODO|FIXME|NOTE|BUG|XXX):",
 			relevance: 0
 		});
 		return mode;
 	};
-	hljs.C_LINE_COMMENT_MODE = hljs.COMMENT('//', '\n');
+	hljs.C_LINE_COMMENT_MODE = hljs.COMMENT('//', '$');
 	hljs.C_BLOCK_COMMENT_MODE = hljs.COMMENT('/\\*', '\\*/');
-	hljs.HASH_COMMENT_MODE = hljs.COMMENT('#', '\n');
+	hljs.HASH_COMMENT_MODE = hljs.COMMENT('#', '$');
 	hljs.NUMBER_MODE = {
 		className: 'number',
 		begin: hljs.NUMBER_RE,
@@ -70,13 +76,11 @@ var highlights = (function() {
 		begin: hljs.C_NUMBER_RE,
 		relevance: 0
 	};
-
 	hljs.BINARY_NUMBER_MODE = {
 		className: 'number',
 		begin: hljs.BINARY_NUMBER_RE,
 		relevance: 0
 	};
-
 	hljs.CSS_NUMBER_MODE = {
 		className: 'number',
 		begin: hljs.NUMBER_RE + '(' +
@@ -90,33 +94,29 @@ var highlights = (function() {
 		')?',
 		relevance: 0
 	};
-
 	hljs.REGEXP_MODE = {
 		className: 'regexp',
 		begin: /\//, end: /\/[gimuy]*/,
 		illegal: /\n/,
 		contains: [
-			hljs.BACKSLASH_ESCAPE,
-			{
-				begin: /\[/, end: /\]/,
-				relevance: 0,
-				contains: [hljs.BACKSLASH_ESCAPE]
-			}
+		hljs.BACKSLASH_ESCAPE,
+		{
+			begin: /\[/, end: /\]/,
+			relevance: 0,
+			contains: [hljs.BACKSLASH_ESCAPE]
+		}
 		]
 	};
-
 	hljs.TITLE_MODE = {
 		className: 'title',
 		begin: hljs.IDENT_RE,
 		relevance: 0
 	};
-
 	hljs.UNDERSCORE_TITLE_MODE = {
 		className: 'title',
 		begin: hljs.UNDERSCORE_IDENT_RE,
 		relevance: 0
 	};
-
 
 	return {
 		'Clojure': hlclojure(hljs),
@@ -130,8 +130,8 @@ function newHighlight(lang) {
 	return hlcompile(highlights[lang]);
 }
 
-function hlcompile(ROOT) {
-	if (!ROOT) {
+function hlcompile(language) {
+	if (!language) {
 		var hl = {
 			parse: function(block, state) {
 				return [[], [[null, block]]];
@@ -152,6 +152,13 @@ function hlcompile(ROOT) {
 		return (re && re.source) || re;
 	}
 
+	function langRe(value, global) {
+      return new RegExp(
+        reStr(value),
+        'm' + (language.case_insensitive ? 'i' : '') + (global ? 'g' : '')
+      );
+    }
+
 	function compileError(msg) {
 		return 'Compile Error: ' + msg;
 	}
@@ -166,20 +173,80 @@ function hlcompile(ROOT) {
 	}
 
 	//generate some regexps first.
-	function compile(mode) {
+	function compile(mode, parent) {
 		//prevent circle reference
 		if (mode.compiled) return mode;
 		mode.compiled = true;
+
+		mode.keywords = mode.keywords || mode.beginKeywords;
+		
+		if (mode.keywords) {
+			var compiled_keywords = {};
+
+			var flatten = function(className, str) {
+				if (language.case_insensitive) {
+					str = str.toLowerCase();
+				}
+				str.split(' ').forEach(function(kw) {
+					var pair = kw.split('|');
+					compiled_keywords[pair[0]] = [className, pair[1] ? Number(pair[1]) : 1];
+				});
+			};
+
+			if (typeof mode.keywords == 'string') { // string
+				flatten('keyword', mode.keywords);
+			} else {
+				Object.keys(mode.keywords).forEach(function (className) {
+					flatten(className, mode.keywords[className]);
+				});
+			}
+			mode.keywords = compiled_keywords;
+		}
+		
+		mode.lexemesRe = langRe(mode.lexemes || /\b\w+\b/, true);
+		
+		if (parent) {
+			if (mode.beginKeywords) {
+				mode.begin = '\\b(' + mode.beginKeywords.split(' ').join('|') + ')\\b';
+			}
+			if (!mode.begin)
+				mode.begin = /\B|\b/;
+			mode.beginRe = langRe(mode.begin);
+			if (!mode.end && !mode.endsWithParent)
+				mode.end = /\B|\b/;
+			if (mode.end)
+				mode.endRe = langRe(mode.end);
+			mode.terminator_end = reStr(mode.end) || '';
+			if (mode.endsWithParent && parent.terminator_end)
+				mode.terminator_end += (mode.end ? '|' : '') + parent.terminator_end;
+      	}
+      	
+      	if (mode.illegal)
+      		mode.illegalRe = langRe(mode.illegal);
+      	if (mode.relevance === undefined)
+   			mode.relevance = 1;
+		if (!mode.contains)
+			mode.contains = [];
+		
+		var expanded_contains = [];
+		mode.contains.forEach(function(c) {
+			if (c.variants) {
+				c.variants.forEach(function(v) {expanded_contains.push(inherit(c, v));});
+			} else {
+				expanded_contains.push(c == 'self' ? mode : c);
+			}
+		});
+		mode.contains = expanded_contains;
+
 		if (mode.contains) {
 			mode.contains.each(function(c) {
-				compile(c);
+				compile(c, mode);
 			});
 		} else if (mode.subLanguage) {
 			var lang = highlights[mode.subLanguage];
 			if (!lang) {
 				throw compileError('Refer an unexsits language "'+mode.subLanguage+'".');
 			}
-			lang.root = true;
 			var submode = compile(lang);
 			mode.contains = submode.contains;
 
@@ -187,64 +254,50 @@ function hlcompile(ROOT) {
 			if (submode.illegal) {
 				mode.illegal = concatArray(mode.illegal, submode.illegal);
 			}
-		} else {
-			mode.contains = [];
-		}
-
-		if (mode.begin) {
-			mode.rebegin = new RegExp('^'+reStr(mode.begin));
 		}
 
 		if (mode.starts) {
-			mode.starts = compile(mode.starts);
+			mode.starts = compile(mode.starts, parent);
 		}
 
 		//merge illegal and end into contains set terminator=true
-		if (mode.illegal) {
-			if (!(mode.illegal instanceof Array)) {
-				mode.illegal = [mode.illegal];
-			}
-			var begin = mode.illegal.map(reStr).join('|');
-			mode.contains.unshift(compile({
-				className: mode.className,
-				begin: begin,
-				beginCapture: mode.illegalCapture,
-				terminator: true
-			}));
-		}
+//		if (mode.illegal) {
+//			if (!(mode.illegal instanceof Array)) {
+//				mode.illegal = [mode.illegal];
+//			}
+//			var begin = mode.illegal.map(reStr).join('|');
+//			mode.contains.unshift(compile({
+//				className: mode.className,
+//				begin: begin,
+//				beginCapture: mode.illegalCapture,
+//				terminator: true
+//			}));
+//		}
 
-		if (mode.end) {
-			var endmode = compile({
-				className: mode.className,
-				begin: mode.end,
-				beginCapture: mode.endCapture,
-				terminator: true
-			});
+//		if (mode.end) {
+//			var endmode = compile({
+//				className: mode.className,
+//				begin: mode.end,
+//				beginCapture: mode.endCapture,
+//				terminator: true
+//			});
+//
+//			mode.contains.push(endmode)
+//		}
 
-			mode.contains.push(endmode)
-		}
-
-		if (mode.contains.length > 0) {
-			//recontains is stateful and will be reused in next parsing over and over
-			//so it MUST reset lastIndex before use it.
-			var str = mode.contains
-				.filter(function(c) {return c.begin})
-				.map(function(c) { return reStr(c.begin)})
-				.join('|');
-			mode.recontains = new RegExp(str, 'g');
-
-			//language root doesn't have begin but submodes must have one
-			if (!mode.root && !mode.begin) {
-				mode.begin = str;
-				mode.rebegin = new RegExp('^'+str);
-			}
-		}
-
+		var terminators =
+		mode.contains.map(function(c) {
+			return c.beginKeywords ? '\\.?(' + c.begin + ')\\.?' : c.begin;
+		})
+		.concat([mode.terminator_end, mode.illegal])
+		.map(reStr)
+		.filter(Boolean);
+		mode.terminators = terminators.length ? langRe(terminators.join('|'), true) : {exec: function(/*s*/) {return null;}};
+		
 		return mode;
 	}
 
-	ROOT.root = true;
-	var rootCompiled = compile(ROOT);
+	var rootCompiled = compile(language);
 
 	function writeOutput(ctx, className, text) {
 		if (!text) {
@@ -282,65 +335,110 @@ function hlcompile(ROOT) {
 	//		set EOF
 	//	}
 	//}
-	function modeReContains(mode, index) {
+	
+	function keywordMatch(mode, match) {
+		var match_str = false ? match[0].toLowerCase() : match[0];
+		return mode.keywords.hasOwnProperty(match_str) && mode.keywords[match_str];
+	}
+	
+	function processKeywords(ctx, mode, mode_buffer) {
+		if (!mode.keywords) {
+			writeOutput(ctx, mode.className, mode_buffer);
+			return;
+		}
+		var result = '';
+		var last_index = 0;
+		mode.lexemesRe.lastIndex = 0;
+		var match = mode.lexemesRe.exec(mode_buffer);
+		while (match) {
+			result += escape();
+			writeOutput(ctx, mode.className, mode_buffer.substr(last_index, match.index - last_index));
+			var keyword_match = keywordMatch(mode, match);
+			if (keyword_match) {
+				//relevance += keyword_match[1];
+				writeOutput(ctx, keyword_match[0], match[0]);
+			} else {
+				writeOutput(ctx, mode.className, match[0]);
+			}
+			last_index = mode.lexemesRe.lastIndex;
+			match = mode.lexemesRe.exec(mode_buffer);
+		}
+		
+		writeOutput(ctx, mode.className, mode_buffer.substr(last_index));
+		//return result + escape(mode_buffer.substr(last_index));
+		return;
+	}
+	
+	function modeTerminators(mode, index) {
 		if (!mode) return null;
 
-		var recontains = mode.recontains;
-		if (!recontains) return null;
+		var terminators = mode.terminators;
+		if (!terminators) return null;
 
-		recontains.lastIndex = index;
-		return recontains;
+		terminators.lastIndex = index;
+		return terminators;
 	}
 	function parse(ctx) {
 		var block = ctx.block;
 		while(ctx.index < block.length) {
 			var mode = ctx.modes.peek();
+			debugger;
 //			console.log(mode.begin);
 //			console.log(mode.block);
-//			console.log(mode.rebegin);
-//			console.log(mode.recontains);
+//			console.log(mode.beginRe);
+//			console.log(mode.terminators);
 
-			var recontains = modeReContains(mode, ctx.index);
+			var terminators = modeTerminators(mode, ctx.index);
 
-			if(recontains && (result = recontains.exec(block)) != null) {
+			if(terminators && (result = terminators.exec(block)) != null) {
 				var captured = result[0];
 				var matched = false;
+				
+				processKeywords(ctx, mode, block.substring(ctx.index, terminators.lastIndex-captured.length));
+				ctx.index = terminators.lastIndex;
+				
 				for (var i = 0; i < mode.contains.length; i++) {
 					var c = mode.contains[i];
-					if (c.rebegin.test(captured)) {
+					
+					if (testRe(c.beginRe, captured)) {
 						matched = true;
-						writeOutput(ctx, mode.className, block.substring(ctx.index, recontains.lastIndex-captured.length));
-						ctx.index = recontains.lastIndex;
-						if (c.beginCapture) {
-						      writeOutput(ctx, c.beginCapture(ctx, captured), captured);
-						} else {
-						      writeOutput(ctx, c.className, captured);
-						}
-
-						if (c.terminator) {
-							ctx.modes.pop();
-							if (mode.starts) {
-								ctx.modes.push(mode.starts);
-							}
-						} else if (c.recontains) { 
-							ctx.modes.push(c);
-						} else {
-							if (c.starts) {
-								ctx.modes.push(c.starts);
-							}
-						}
+						processKeywords(ctx, c, captured);
+						
+						ctx.modes.push(c);
 						break;
+					}
+					//TODO: handle excludeBegin & returnBegin
+				}
+				
+				if (!matched) {
+					//TODO: handle endsParent & endsWithParent
+					if (testRe(mode.endRe, captured)) {
+						matched = true;
+						processKeywords(ctx, mode, captured);
+						
+						ctx.modes.pop();
+						
+						if (mode.starts) {
+							ctx.modes.push(mode.starts);
+						}
+					}
+					//TODO: handle: returnEnd, excludeEnd
+				}
+				
+				if (!matched) {
+					if (testRe(mode.illegalRe, captured)) {
+						matched = true;
+						writeOutput(ctx, "illegal", captured);
 					}
 				}
 
-				//match recontains MUST match one of contains[i].rebegin too
 				if (!matched) {
 					throw 'Something wrong with syntax descriptor, should never reach here';
 				}
 
 			} else {
 				if (ctx.index < block.length) {
-					writeOutput(ctx, (mode||{}).className, block.substring(ctx.index));
+					processKeywords(ctx, (mode||{}), block.substring(ctx.index));
 					ctx.index = block.length;
 				}
 			}
