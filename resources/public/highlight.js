@@ -341,9 +341,9 @@ function hlcompile(language) {
 		return mode.keywords.hasOwnProperty(match_str) && mode.keywords[match_str];
 	}
 	
-	function processKeywords(ctx, mode, mode_buffer) {
+	function processKeywords(ctx, mode, className, mode_buffer) {
 		if (!mode.keywords) {
-			writeOutput(ctx, mode.className, mode_buffer);
+			writeOutput(ctx, className, mode_buffer);
 			return;
 		}
 		var result = '';
@@ -352,19 +352,19 @@ function hlcompile(language) {
 		var match = mode.lexemesRe.exec(mode_buffer);
 		while (match) {
 			result += escape();
-			writeOutput(ctx, mode.className, mode_buffer.substr(last_index, match.index - last_index));
+			writeOutput(ctx, className, mode_buffer.substr(last_index, match.index - last_index));
 			var keyword_match = keywordMatch(mode, match);
 			if (keyword_match) {
 				//relevance += keyword_match[1];
 				writeOutput(ctx, keyword_match[0], match[0]);
 			} else {
-				writeOutput(ctx, mode.className, match[0]);
+				writeOutput(ctx, className, match[0]);
 			}
 			last_index = mode.lexemesRe.lastIndex;
 			match = mode.lexemesRe.exec(mode_buffer);
 		}
 		
-		writeOutput(ctx, mode.className, mode_buffer.substr(last_index));
+		writeOutput(ctx, className, mode_buffer.substr(last_index));
 		//return result + escape(mode_buffer.substr(last_index));
 		return;
 	}
@@ -380,9 +380,9 @@ function hlcompile(language) {
 	}
 	function parse(ctx) {
 		var block = ctx.block;
+		debugger;
 		while(ctx.index < block.length) {
 			var mode = ctx.modes.peek();
-			debugger;
 //			console.log(mode.begin);
 //			console.log(mode.block);
 //			console.log(mode.beginRe);
@@ -392,9 +392,10 @@ function hlcompile(language) {
 
 			if(terminators && (result = terminators.exec(block)) != null) {
 				var captured = result[0];
+				var startIndex = result.index;
 				var matched = false;
 				
-				processKeywords(ctx, mode, block.substring(ctx.index, terminators.lastIndex-captured.length));
+				processKeywords(ctx, mode, mode.className, block.substring(ctx.index, startIndex));
 				ctx.index = terminators.lastIndex;
 				
 				for (var i = 0; i < mode.contains.length; i++) {
@@ -402,27 +403,45 @@ function hlcompile(language) {
 					
 					if (testRe(c.beginRe, captured)) {
 						matched = true;
-						processKeywords(ctx, c, captured);
 						
 						ctx.modes.push(c);
+						if (c.returnBegin) {
+							ctx.index = startIndex;
+						} else {
+							processKeywords(ctx, c, 
+								(c.excludeBegin?mode.className:c.className), captured);
+						}
 						break;
 					}
-					//TODO: handle excludeBegin & returnBegin
 				}
 				
 				if (!matched) {
-					//TODO: handle endsParent & endsWithParent
-					if (testRe(mode.endRe, captured)) {
-						matched = true;
-						processKeywords(ctx, mode, captured);
-						
-						ctx.modes.pop();
-						
-						if (mode.starts) {
-							ctx.modes.push(mode.starts);
+					//TODO: handle endsParent
+					var endmode;
+					while (true) {
+						endmode = ctx.modes.peek();
+						if (testRe(endmode.endRe, captured)) {
+							ctx.modes.pop();
+							var parent = ctx.modes.peek();
+							processKeywords(ctx, endmode,
+								(endmode.excludeEnd?(parent||{}).className:endmode.className), 
+								captured);
+							matched = true;
+							break;
+						}
+
+						if (!endmode.endsWithParent) {
+							break;
+						} else {
+							ctx.modes.pop();
 						}
 					}
-					//TODO: handle: returnEnd, excludeEnd
+
+					if (endmode) {
+						if (endmode.starts) {
+							ctx.modes.push(endmode.starts);
+						}
+					}
 				}
 				
 				if (!matched) {
@@ -438,7 +457,8 @@ function hlcompile(language) {
 
 			} else {
 				if (ctx.index < block.length) {
-					processKeywords(ctx, (mode||{}), block.substring(ctx.index));
+					mode = (mode||{});
+					processKeywords(ctx, mode, mode.className, block.substring(ctx.index));
 					ctx.index = block.length;
 				}
 			}

@@ -5,7 +5,20 @@ body {
 	color:#E92672;
 }
 
-.lines .colon-keyword {
+/*red*/
+.lines .meta,
+.lines .selector-tag {
+	color:#E30054;
+}
+
+.lines .name,
+.lines .selector-id,
+.lines .selector-class,
+.lines .selector-persudo {
+	color:#A6E22E;
+}
+
+.lines .symbol {
 	color:#F92672;
 }
 
@@ -24,12 +37,18 @@ body {
 	color:#AE81FF;
 }
 
-.lines .build_in {
+.lines .build_in,
+.lines .built_in {
 	color:#e6db74;
 }
 
 .lines .title {
 	color:#A6E22E;
+}
+
+.lines .builtin-name,
+.lines .attribute {
+	color:#66D9EF;
 }
 /*.highlight-brace-pair .line-selected, .cursor {
 	background:#F8F8F0;
