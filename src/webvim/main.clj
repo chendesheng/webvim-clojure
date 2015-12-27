@@ -42,10 +42,13 @@
      [:link {:href "ubuntu-mono.css" :rel "stylesheet"}]
      [:link {:href "main.css" :rel "stylesheet"}]
      [:link {:href "monokai.css" :rel "stylesheet"}]
-     [:script {:type "text/json" :id "init-buf"} (json/generate-string (ui-buf))]]
+     ;TODO: use base64 endocde
+     ;[:script {:type "text/json" :id "init-buf"} (json/generate-string (ui-buf))]]
+     ]
     [:body]))
 
 (defroutes main-routes
+  (GET "/buf" [request] (json/generate-string (ui-buf)))
   (GET "/" [request] (homepage request))
   (GET "/resize/:w/:h" [w h]
        (send ui-agent 

@@ -1,6 +1,6 @@
 function testRe(re, lexeme) {
 	var match = re && re.exec(lexeme);
-	return match && match.index == 0;
+	return match && match.index == 0 && match[0] == lexeme;
 }
 
 function inherit(parent, obj) {
@@ -238,52 +238,32 @@ function hlcompile(language) {
 		});
 		mode.contains = expanded_contains;
 
-		if (mode.contains) {
+		if (mode.contains.length > 0) {
 			mode.contains.each(function(c) {
 				compile(c, mode);
 			});
 		} else if (mode.subLanguage) {
-			var lang = highlights[mode.subLanguage];
-			if (!lang) {
-				throw compileError('Refer an unexsits language "'+mode.subLanguage+'".');
+			var subLanguage = highlights[mode.subLanguage];
+			if (subLanguage) {
+				delete mode.contains;
+				delete mode.keywords;
+				mode = inherit(compile(subLanguage), mode)
 			}
-			var submode = compile(lang);
-			mode.contains = submode.contains;
-
-			//merge sub language illegal into current mode
-			if (submode.illegal) {
-				mode.illegal = concatArray(mode.illegal, submode.illegal);
-			}
+			var terminators =
+			[mode.terminator_end].concat(
+				mode.contains.map(function(c) {
+					return c.beginKeywords ? '\\.?(' + c.begin + ')\\.?' : c.begin;
+				})
+			)
+			.map(reStr)
+			.filter(Boolean);
+			mode.terminators = terminators.length ? langRe(terminators.join('|'), true) : {exec: function(/*s*/) {return null;}};
+			return mode;
 		}
 
 		if (mode.starts) {
 			mode.starts = compile(mode.starts, parent);
 		}
-
-		//merge illegal and end into contains set terminator=true
-//		if (mode.illegal) {
-//			if (!(mode.illegal instanceof Array)) {
-//				mode.illegal = [mode.illegal];
-//			}
-//			var begin = mode.illegal.map(reStr).join('|');
-//			mode.contains.unshift(compile({
-//				className: mode.className,
-//				begin: begin,
-//				beginCapture: mode.illegalCapture,
-//				terminator: true
-//			}));
-//		}
-
-//		if (mode.end) {
-//			var endmode = compile({
-//				className: mode.className,
-//				begin: mode.end,
-//				beginCapture: mode.endCapture,
-//				terminator: true
-//			});
-//
-//			mode.contains.push(endmode)
-//		}
 
 		var terminators =
 		mode.contains.map(function(c) {
@@ -313,34 +293,24 @@ function hlcompile(language) {
 		}
 	}
 
-	//Pesudo code:
-	//fun parse(ctx) {
-	//while(not EOF) {
-	//	mode = ctx.peek()
-	//	if (captured=ctx.matchcontains_end()) {
-	//		for submode in ctx.submodes {
-	//			if (submode.matchbegin(captured) {
-	//				if (termintor) {
-	//					ctx.pop()
-	//					if (mode.starts) ctx.push(mode.starts)
-	//					break
-	//				}
-	//				writeOutput
-	//				ctx.push(submode)
-	//				break
-	//			}
-	//		}
-	//	} else {
-	//		writeOutput
-	//		set EOF
-	//	}
-	//}
-	
 	function keywordMatch(mode, match) {
 		var match_str = false ? match[0].toLowerCase() : match[0];
 		return mode.keywords.hasOwnProperty(match_str) && mode.keywords[match_str];
 	}
-	
+
+	function processBuffer(ctx, mode, className, mode_buffer) {
+		if (mode.subLanguage) 
+			processSubLanguage(ctx, mode, className, mode_buffer)
+		else
+			processKeywords(ctx, mode, className, mode_buffer)
+	}
+
+	function processSubLanguage(ctx, mode, className, mode_buffer) {
+		var subLanguage = mode.subLanguage;
+		var hl = newHighlight(subLanguage);
+		hl.parse(ctx)
+	}
+
 	function processKeywords(ctx, mode, className, mode_buffer) {
 		if (!mode.keywords) {
 			writeOutput(ctx, className, mode_buffer);
@@ -383,11 +353,6 @@ function hlcompile(language) {
 		debugger;
 		while(ctx.index < block.length) {
 			var mode = ctx.modes.peek();
-//			console.log(mode.begin);
-//			console.log(mode.block);
-//			console.log(mode.beginRe);
-//			console.log(mode.terminators);
-
 			var terminators = modeTerminators(mode, ctx.index);
 
 			if(terminators && (result = terminators.exec(block)) != null) {
@@ -402,6 +367,7 @@ function hlcompile(language) {
 					var c = mode.contains[i];
 					
 					if (testRe(c.beginRe, captured)) {
+					//if (testRe(new RegExp("^"+reStr(c.beginRe)+"$"), captured)) {
 						matched = true;
 						
 						ctx.modes.push(c);
@@ -416,16 +382,22 @@ function hlcompile(language) {
 				}
 				
 				if (!matched) {
-					//TODO: handle endsParent
 					var endmode;
 					while (true) {
 						endmode = ctx.modes.peek();
 						if (testRe(endmode.endRe, captured)) {
+							while (endmode.endsParent && ctx.modes.length > 0) {
+								ctx.modes.pop();
+								endmode = ctx.modes.peek();
+							}
 							ctx.modes.pop();
 							var parent = ctx.modes.peek();
-							processKeywords(ctx, endmode,
-								(endmode.excludeEnd?(parent||{}).className:endmode.className), 
-								captured);
+
+							if (endmode.returnEnd) {
+								ctx.index = startIndex;
+							} else {
+								processKeywords(ctx, endmode, (endmode.excludeEnd?(parent||{}).className:endmode.className), captured);
+							}
 							matched = true;
 							break;
 						}

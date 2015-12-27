@@ -46,6 +46,7 @@ body {
 	color:#A6E22E;
 }
 
+.lines .attr,
 .lines .builtin-name,
 .lines .attribute {
 	color:#66D9EF;

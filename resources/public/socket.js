@@ -37,7 +37,10 @@ function connect(path) {
 		}
 	}
 
-	render(JSON.parse(document.getElementById('init-buf').textContent));
+	$.get('/buf', function(resp) {
+		render(JSON.parse(resp));
+	});
+	
 	_connect();
 
 	return {
