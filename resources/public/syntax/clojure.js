@@ -63,7 +63,8 @@ function hlclojure(hljs) {
     begin: /\b(true|false|nil)\b/
   };
   var COLLECTION = {
-    begin: '[\\[\\{]', end: '[\\]\\}]'
+    begin: '[\\[\\{]', end: '[\\]\\}]',
+    className: hljs.rainbowColor
   };
   var HINT = {
     className: 'comment',
@@ -75,7 +76,8 @@ function hlclojure(hljs) {
     begin: '[:]' + SYMBOL_RE
   };
   var LIST = {
-    begin: '\\(', end: '\\)'
+    begin: '\\(', end: '\\)',
+    className: hljs.rainbowColor
   };
   var BODY = {
     endsWithParent: true,

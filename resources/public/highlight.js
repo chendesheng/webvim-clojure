@@ -118,6 +118,21 @@ var highlights = (function() {
 		relevance: 0
 	};
 
+	function rainbowColor(text, ctx) {
+		var pred = function(mode) {
+			return mode.className === rainbowColor;
+		};
+
+		if ('([{'.indexOf(text) != -1) {
+			return 'brace-'+(ctx.modes.count(pred)-1)%7;
+		} else if (')]}'.indexOf(text) != -1) {
+			return 'brace-'+ctx.modes.count(pred)%7;
+		} else {
+			return '';
+		}
+	}
+
+	hljs.rainbowColor = rainbowColor;
 	return {
 		'Clojure': hlclojure(hljs),
 		'JavaScript': hljavascript(hljs),
@@ -282,6 +297,9 @@ function hlcompile(language) {
 	function writeOutput(ctx, className, text) {
 		if (!text) {
 			return;
+		}
+		if (typeof className == 'function') {
+			className = className(text, ctx);
 		}
 
 		var prev = ctx.output.peek();

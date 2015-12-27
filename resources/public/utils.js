@@ -108,6 +108,30 @@ Array.prototype.filter = function(fn) {
 	return cp;
 };
 
+Array.prototype.reduce = function(fn, val) {
+	if (this.length == 0) return val;
+	var i = 0;
+	if (val == null || val == 'undefined') {
+		val = this[0];
+		i++;
+	}
+	for (; i < this.length; i++) {
+		val = fn(val, this[i])
+	}
+
+	return val;
+}
+
+Array.prototype.count = function(pred) {
+	var n = 0;
+	for (var i = this.length - 1; i >= 0; i--) {
+		if (pred(this[i])) {
+			n++;
+		}
+	}
+	return n;
+}
+
 Array.prototype.toSet = function () {
 	var set = {};
 	this.each(function(s) {
