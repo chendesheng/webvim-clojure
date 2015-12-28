@@ -89,7 +89,11 @@ function hlclojure(hljs) {
     className: 'name', begin: SYMBOL_RE,
     starts: BODY
   };
-  var DEFAULT_CONTAINS = [LIST, STRING, HINT, HINT_COL, COMMENT, KEY, COLLECTION, NUMBER, LITERAL, SYMBOL];
+  var LITERAL_CHAR = {
+  	begin: /\\[^\\\s]/,
+  	className: 'literal'
+  };
+  var DEFAULT_CONTAINS = [LITERAL_CHAR, LIST, STRING, HINT, HINT_COL, COMMENT, KEY, COLLECTION, NUMBER, LITERAL, SYMBOL];
 
   LIST.contains = [hljs.COMMENT('comment', ''), NAME, BODY];
   BODY.contains = DEFAULT_CONTAINS;
