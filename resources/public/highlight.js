@@ -368,7 +368,7 @@ function hlcompile(language) {
 	}
 	function parse(ctx) {
 		var block = ctx.block;
-		debugger;
+		//debugger;
 		while(ctx.index < block.length) {
 			var mode = ctx.modes.peek();
 			var terminators = modeTerminators(mode, ctx.index);

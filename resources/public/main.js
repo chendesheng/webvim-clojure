@@ -189,6 +189,63 @@ function getScreenXYByPos(buf, pos) {
 	return {left: left+scrollLeft, top: rect.top+scrollTop, width: width, ch: ch, e: res.e};
 }
 
+function createDOMItem(className, text) {
+	var node;
+	if (className) {
+		node = document.createElement('SPAN');
+		node.className = className;
+		node.textContent = text;
+	} else {
+		node = document.createTextNode(text);
+	}
+	return node;
+}
+
+function renderBlock(items) {
+	var block = document.createElement('SPAN');
+	block.className = 'code';
+
+	items.each(function(item){
+		var className = item[0];
+		var text = item[1];
+		block.appendChild(createDOMItem(className, text));
+	});
+
+	return block;
+}
+
+function refreshBlock(items, ele) {
+	function nodetype(className) {
+		if (className) return Node.ELEMENT_NODE;
+		else return Node.TEXT_NODE;
+	}
+	
+	if (ele.childNodes.length == items.length) {
+		for (var i = 0; i < items.length; i++) {
+			var item = items[i];
+			var className = item[0];
+			var text = item[1];
+			
+			var oldele = ele.childNodes[i];
+			if (text != oldele.textContent) {
+				ele.replaceChild(createDOMItem(className, text), oldele);
+			} else {
+				var nodeType = nodetype(className);
+				if (nodeType == oldele.nodeType) {
+					if (nodeType == Node.ELEMENT_NODE && className != oldele.className) {
+						oldele.className = className;
+					}
+				} else {
+					ele.replaceChild(createDOMItem(className, text), oldele);
+				}
+			}
+		}
+		return true;
+	} else {
+		return false;
+	}
+}
+
 function refreshIter(index, currentBlock, states, parentNode) {
 	var i = index;
 	var ele = currentBlock;
@@ -200,9 +257,11 @@ function refreshIter(index, currentBlock, states, parentNode) {
 			return i;
 		},
 		render: function(items) {
-			var newele = renderBlock(items);
-			parentNode.replaceChild(newele, ele);
-			ele = newele;
+			if (!refreshBlock(items, ele)) {
+				var newele = renderBlock(items);
+				parentNode.replaceChild(newele, ele);
+				ele = newele;
+			}
 		},
 		next: function() {
 			ele = ele.nextSibling;
@@ -562,7 +621,9 @@ function render(buf) {
 		}
 	}
 
-	scrollToCursor(buf.id, buf['scroll-top'] || 0, buf.str);
+	if (buf['scroll-top']!=null) {
+		scrollToCursor(buf.id, buf['scroll-top'] || 0, buf.str);
+	}
 
 	renderAutocompl(buf);
 
@@ -571,27 +632,6 @@ function render(buf) {
 		document.title = buf.name;
 		$statusName(buf.id).textContent = buf.name;
 	}
-}
-
-function renderBlock(items) {
-	var block = document.createElement('SPAN');
-	block.className = 'code';
-
-	items.each(function(item){
-		var className = item[0];
-		var text = item[1];
-		var node;
-		if (className) {
-			node = document.createElement('SPAN');
-			node.className = className;
-			node.textContent = text;
-		} else {
-			node = document.createTextNode(text);
-		}
-		block.appendChild(node);
-	});
-
-	return block;
 }
 
 var aligntop = true;
@@ -713,8 +753,9 @@ function renderCursor(localbuf) {
 	//console.log(color);
 	//console.log(background);
 	var cursor = $cursor(localbuf.id);
-	cursor.textContent = res.ch;
-	cursor.className = 'cursor';
+	if (cursor.textContent != res.ch) {
+		cursor.textContent = res.ch;
+	}
 	cursor.style.cssText = 'left:'+(res.left + (alignright ? res.width : 0) +'px;'  //right align
 		+'margin-left:' + (((alignright?-1:0)-gutterWidth(localbuf.id)))+'ch') + ';'
 		+'background-color:' + color + ';'

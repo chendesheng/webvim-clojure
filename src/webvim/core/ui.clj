@@ -91,6 +91,7 @@
                     remove-fields
                     correct-visual-mode
                     (dissoc :str)
+                    (dissoc-if-equal before :scroll-top)
                     (dissoc-if-equal before :mode)
                     (dissoc-if-equal before :visual)
                     (dissoc-if-equal before :braces)
