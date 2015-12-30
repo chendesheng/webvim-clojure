@@ -22,6 +22,28 @@
         webvim.keymap.compile
         webvim.keymap.action))
 
+;cache
+;TODO: monitor disk file change
+(def ^:private all-files (atom nil))
+
+(defn hidden?[f]
+  ;(pprint (fs/split f))
+  (or (fs/hidden? f)
+      (not (not-any? #(re-test #"^\..+" %) (fs/split f)))))
+
+(defn get-files[]
+  (if (nil? @all-files)
+    ;https://clojuredocs.org/clojure.core/tree-seq
+    (let [dir? #(.isDirectory %)]
+      (reset! all-files 
+              (map (comp shorten-path str)
+                   (filter (comp not hidden?)
+                           (tree-seq (fn[f]
+                                       (and (dir? f)
+                                            (not (hidden? f)))) #(.listFiles %) fs/*cwd*)))))
+    
+    @all-files))
+
 (defn- set-line-buffer[buf s]
   (-> buf
       (assoc-in [:line-buffer :str] (rope s))
@@ -159,6 +181,18 @@
   (let [row (bound-range (dec (Integer. row)) 0 (-> buf :linescnt dec))]
     (move-to-line buf row)))
 
+(defn cmd-cd[buf execmd args]
+  (if (string/blank? args) (assoc buf :message (str fs/*cwd*))
+    (let [dir (fs/expand-home args)]
+      (println "dir:" fs/*cwd*)
+      (println "dir:2" dir)
+      (if (fs/directory? dir)
+        (do
+          (reset! all-files nil)
+          (alter-var-root (var fs/*cwd*) (constantly dir))
+          (assoc buf :message (str "Set working directory to: " fs/*cwd*)))
+        (assoc buf :message "Path is not a directory or not exists.")))))
+
 (defn cmd-ls[buf execmd args]
   (append-output-panel buf
                 (str ":ls\n"
@@ -210,6 +244,7 @@
          ["find" cmd-find]
          ["history" cmd-history]
          ["register" cmd-register]
+         ["cd" cmd-cd]
          [#"^(\d+)$" cmd-move-to-line]
          ["ls" cmd-ls]]]
         (fire-event cmds :init-ex-commands)))
@@ -232,28 +267,6 @@
               ((first handlers) excmd args)
               save-history!)
           (assoc buf :message "unknown command"))))))
-
-;cache
-;TODO: monitor disk file change
-(def ^:private all-files (atom nil))
-
-(defn hidden?[f]
-  ;(pprint (fs/split f))
-  (or (fs/hidden? f)
-      (not (not-any? #(re-test #"^\..+" %) (fs/split f)))))
-
-(defn get-files[]
-  (if (nil? @all-files)
-    ;https://clojuredocs.org/clojure.core/tree-seq
-    (let [dir? #(.isDirectory %)]
-      (reset! all-files 
-              (map (comp shorten-path str)
-                   (filter (comp not hidden?)
-                           (tree-seq (fn[f]
-                                       (and (dir? f)
-                                            (not (hidden? f)))) #(.listFiles %) fs/*cwd*)))))
-    
-    @all-files))
 
 (defn- replace-suggestion[buf w _]
   (let [news (str "e " w)]
