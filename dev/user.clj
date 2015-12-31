@@ -4,6 +4,7 @@
             [ring.adapter.jetty9 :as jetty]
             [clojure.string :as string])
   (:use clojure.pprint
+        clojure.repl
         webvim.core.buffer
         webvim.core.ui
         webvim.core.rope
@@ -59,10 +60,28 @@
       (assoc buf :message (restart))
       (assoc buf :message (str ret)))))
 
+(defn- print-eval[buf code]
+  (append-output-panel 
+    buf
+    (with-out-str
+      (->> code read-string eval str))
+    true))
+
+(defn- cmd-doc[buf execmd args]
+  (let [code (str "(clojure.repl/doc " args ")")]
+    (print-eval buf code)))
+
+(defn- cmd-print[buf execmd args]
+  (let [code (str "(user/print-buf " args ")")]
+    (print-eval buf code)))
+
 (defn add-init-ex-commands-event[]
   (listen :init-ex-commands
           (fn[cmds]
-            (conj cmds ["reload" cmd-reload]))))
+            (conj cmds 
+                  ["reload" cmd-reload]
+                  ["print" cmd-print]
+                  ["doc" cmd-doc]))))
 
 ;Not sure why agent await blocking everything. Start a java thread works fine.
 (defonce main 

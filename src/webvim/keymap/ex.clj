@@ -164,10 +164,20 @@
     (assoc buf :nextid nextid)))
 
 (defn cmd-eval[buf execmd args]
-  (try (->> args read-string eval str
-            (assoc buf :message))
-       (catch Exception e
-              (assoc buf :message (str e)))))
+  (try 
+    (let [result (atom nil)
+          output (with-out-str 
+                   (->> args read-string eval str
+                        (reset! result)))]
+      (append-output-panel
+        buf
+        (str 
+          args \newline
+          output \newline
+          @result)
+        true))
+    (catch Exception e
+      (assoc buf :message (str e)))))
 
 (defn cmd-grep[buf execmd args]
   (exec-shell-commands buf (grep-panel) ["grep" "-rnI" args "."]))
