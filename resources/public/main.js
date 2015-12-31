@@ -768,12 +768,15 @@ function renderLineBuffer(buf) {
 	var str = linebuf.str;
 	var pos = linebuf.pos;
 	var ex = $statusBuf(buf.id);
-	ex.textContent = str;
 
 	//cursor
 	if (str[str.length-1] == '\n') {
+		ex.textContent = str.substring(0, str.length-1);
+
 		$statusCursor(buf.id).style.display= 'none';
 	} else {
+		ex.textContent = str;
+
 		var range = document.createRange();
 		range.setStart(ex.firstChild, pos-1);
 		range.setEnd(ex.firstChild, pos);
