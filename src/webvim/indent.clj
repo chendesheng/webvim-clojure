@@ -19,11 +19,11 @@
 
 (defn- buf-indent-line[buf pos]
   (let [r (buf :str)
-        _ (println (buf :language))
+        ;_ (println (buf :language))
         indent (indent-pos (buf :language) r pos) 
         a (pos-line-first r pos)
         b (pos-line-start r pos)]
-    (println a b (count indent))
+    ;(println a b (count indent))
     (buf-replace buf a b indent)))
 
 (defn buf-indent-lines 
@@ -47,9 +47,20 @@
                [buf 0]
                lines)))))
 
+(defn- line-str[r pos]
+  (subr r (pos-line r pos)))
+
 (defn buf-indent-current-line
   [buf]
-  (buf-indent-line buf (buf :pos)))
+  (println "buf-indent-current-line")
+  (let [{r :str pos :pos} buf
+        before (line-str r pos)
+        buf (buf-indent-line buf pos)
+        after (line-str (buf :str) pos)]
+    ;press 'o' 'O' then '<esc>' cancel auto indent of cursor line.
+    (if (and (= (count before) 1) (> (count after) 1) (rblank? after))
+      (update-in buf [:last-indents] conj (pos-line (buf :str) pos))
+      buf)))
 
 (defmethod indent-pos :default
   [lang r pos]

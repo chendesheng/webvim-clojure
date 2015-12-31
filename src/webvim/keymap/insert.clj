@@ -26,12 +26,19 @@
                 :limit-number 0})))
     buf))
 
+(defn- filter-not-in-range[indents pos]
+  (drop-while (fn[[a b]]
+                (>= b pos)) indents))
+
+(defn- insert-keycode[{pos :pos :as buf} keycode]
+  (if (= "<bs>" keycode)
+    (if (zero? pos) buf (buf-delete buf (dec pos) pos))
+    (buf-insert buf (keycode-to-char keycode))))
+
 (defn- insert-mode-default[buf keycode]
   (println "insert-mode-default: " keycode)
   (let [pos (buf :pos)
-        buf1 (if (= "<bs>" keycode)
-               (if (zero? pos) buf (buf-delete buf (dec pos) pos))
-               (buf-insert buf (keycode-to-char keycode)))
+        buf1 (insert-keycode buf keycode)
         buf2 (buf-update-highlight-brace-pair buf1 (-> buf1 :pos dec))
         buf3 (if (or (indent-trigger? (buf :language) keycode) (= keycode "<cr>"))
                (buf-indent-current-line buf2)
@@ -40,6 +47,15 @@
     (if (-> buf3 :autocompl nil?)
       buf3
       (autocompl-suggest buf3))))
+
+(defn- cancel-last-indents[buf]
+  (dissoc (if (-> buf :last-indents empty?)
+            buf
+            (reduce
+              (fn[buf [a b]]
+                ;(println "cancel-last-indent:" a b)
+                (if (= (char-at (buf :str) (dec b)) \newline)
+                  (buf-delete buf a (dec b)) buf)) buf (buf :last-indents))) :last-indents))
 
 (defn init-insert-mode-keymap[]
   {;"<c+o>" normal-mode-keymap 
@@ -58,6 +74,7 @@
    :leave (fn[buf keycode]
             (-> buf
                 (dissoc :autocompl)
+                cancel-last-indents
                 char-
                 update-x
                 save-dot-repeat

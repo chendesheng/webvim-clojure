@@ -57,7 +57,7 @@
               :language :filepath :x :y :cursor :keymap 
               :normal-mode-keymap :insert-mode-keymap :ex-mode-keymap
               :pending-undo :saved-undo :registers :linescnt 
-              :save-point :ext :last-visual :nextid :dot-repeat-keys)
+              :save-point :ext :last-visual :nextid :dot-repeat-keys :last-indents)
       (dissoc-empty [:changes])
       (dissoc-nil :keys)
       line-editor))

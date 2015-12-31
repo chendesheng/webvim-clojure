@@ -38,7 +38,7 @@
 (defn rblank? 
   ([s]
    (or (nil? s)
-       (let [m (.matcher s #"^\s$")]
+       (let [m (.matcher s #"^\s*$")]
          (.find m 0))))
   ([s rg]
    (rblank? (subr s rg))))

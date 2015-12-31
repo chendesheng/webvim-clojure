@@ -3,7 +3,8 @@
             [clojure.core.async :as async]
             [ring.adapter.jetty9 :as jetty]
             [clojure.string :as string])
-  (:use webvim.core.buffer
+  (:use clojure.pprint
+        webvim.core.buffer
         webvim.core.ui
         webvim.core.rope
         webvim.core.register
@@ -12,6 +13,15 @@
         webvim.keymap
         webvim.keymap.action
         webvim.main))
+
+(defn print-buf
+  ([]
+    (let [buf (-> @ui-agent :buf 
+                  (dissoc :str :history :keymap :normal-mode-keymap 
+                          :insert-mode-keymap :ex-mode-keymap :context))]
+      (pprint buf)))
+  ([& ks]
+     (pprint (-> @ui-agent :buf (get-in ks)))))
 
 (defn- cache-resource[path url]
   (if-not (fs/exists? path)
