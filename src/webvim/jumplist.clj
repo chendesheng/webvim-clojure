@@ -25,8 +25,9 @@
 (defonce jump-list (atom (parallel-universe)))
 
 ;jump-push before these motions
+;ONLY work for single keycode
 (def motions-push-jumps
-  #{"/" "?" "*" "#" "n" "N" "%" "G" "<c+d>" "<c+u>" "{" "}" "gg" "gd"})
+  #{"/" "?" "*" "#" "n" "N" "%" "G" "<c+d>" "<c+u>" "{" "}"})
 
 (defn- no-next?[jl]
   (-> jl
@@ -48,12 +49,13 @@
       nil?))
 
 (defn- push-current[jl buf]
-  (new-future jl (select-keys buf [:id :pos])))
+  (new-future jl (select-keys buf [:id :pos :y :name])))
 
 (defn jump-push
   "Add :pos to jump list"
   [buf]
-  (swap! jump-list push-current buf))
+  (swap! jump-list push-current buf)
+  buf)
 
 ;TODO: handle not exist buffer
 (defn jump-next

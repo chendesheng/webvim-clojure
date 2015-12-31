@@ -297,8 +297,8 @@
    "l" char+
    "k" #(lines-n- % 1)
    "j" #(lines-n+ % 1)
-   "g" {"g" buf-start
-        "d" same-word-first}
+   "g" {"g" (comp buf-start jump-push)
+        "d" (comp same-word-first jump-push)}
    "G" buf-end
    "w" word+
    "W" WORD+
