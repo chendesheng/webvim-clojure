@@ -26,10 +26,6 @@
                 :limit-number 0})))
     buf))
 
-(defn- filter-not-in-range[indents pos]
-  (drop-while (fn[[a b]]
-                (>= b pos)) indents))
-
 (defn- insert-keycode[{pos :pos :as buf} keycode]
   (if (= "<bs>" keycode)
     (if (zero? pos) buf (buf-delete buf (dec pos) pos))
@@ -54,8 +50,13 @@
             (reduce
               (fn[buf [a b]]
                 ;(println "cancel-last-indent:" a b)
-                (if (= (char-at (buf :str) (dec b)) \newline)
-                  (buf-delete buf a (dec b)) buf)) buf (buf :last-indents))) :last-indents))
+                (let [r (buf :str)
+                      [a1 b1] (pos-line r a)
+                      s (subr r a1 b1)]
+                  (if (and (= a1 a)
+                           (<= b1 b)
+                           (rblank? s))
+                    (buf-delete buf a1 (dec b1)) buf))) buf (buf :last-indents))) :last-indents))
 
 (defn init-insert-mode-keymap[]
   {;"<c+o>" normal-mode-keymap 
