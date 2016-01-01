@@ -4,7 +4,7 @@ function $newBuffer(bufid) {
 	ele.className = 'buffer';
 	var tmpl = '<div id="gutter-{id}" class="gutter">'
 		+'</div>'
-		+'<div class="content">'
+		+'<div id="content-{id}" class="content">'
 			+'<div id="cursor-{id}" class="cursor"></div>'
 			+'<div id="selections-{id}" class="selections"></div>'
 			+'<div id="highlights-{id}" class="highlights"></div>'
@@ -41,6 +41,10 @@ function _$bufid(prefix, bufid) {
 
 function $lines(bufid) {
 	return _$bufid('lines-', bufid);
+}
+
+function $content(bufid) {
+	return _$bufid('content-', bufid);
 }
 
 function $gutter(bufid) {
@@ -138,3 +142,37 @@ function $hide(ele) {
 function $show(ele, display) {
 	if (ele) ele.style.display = display || '';
 }
+
+function insertAfter(p, newElement, targetElement) {
+	if (!targetElement) {
+		p.insertBefore(newElement, p.firstChild);
+		return;
+	}
+
+	if (p.lastChild == targetElement) {
+		p.appendChild(newElement);
+	}
+	else {
+		p.insertBefore(newElement,targetElement.nextSibling);
+	}
+}
+
+function addClass(ele, cls) {
+	if (ele.className.indexOf(cls) < 0) {
+		ele.className += ' '+cls;
+	}
+}
+
+function removeClass(ele, cls) {
+	if (ele.className.indexOf(cls) >= 0) {
+		ele.className = ele.className.replace(cls, '');
+	}
+}
+
+
+function $empty(ele) {
+	while(ele.firstChild) {
+		ele.firstChild.remove();
+	}
+}
+

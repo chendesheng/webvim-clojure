@@ -43,20 +43,27 @@ body,html,.buffer{
 
 .gutter {
 	float:left;
-	width:5ch; /*ch means width of the zero (0) character*/
+	width:5ch;/*ch means width of the zero (0) character*/
 	padding-left:1ch;
 	padding-right:1ch;
 	overflow:hidden;
 	color:#595959;
+	position:relative;
 	-webkit-user-select:none;
 	-ms-user-select:none;
 	-moz-user-select:none;
 	-o-user-select:none;
+	z-index:100;
 }
 
 .line-num {
 	text-align:right;
 	line-height:1.2em;
+	position:absolute;
+}
+
+.line-num.highlight {
+	color:#aaa;
 }
 
 
@@ -77,8 +84,8 @@ pre {
 	z-index:99;
 	white-space:pre;
 	height:1em;
-	line-height:1em;
-    padding-bottom:1px;
+	line-height:1.2em;
+	padding-bottom:2px;
 }
 .cursor.ongoing-key {
 	z-index:1000;
@@ -174,6 +181,10 @@ pre {
 	opacity:0.3;
 	width:9.57px;
 	z-index:1000;
+}
+
+.lines {
+	position:absolute;
 }
 
 /*next 7 colors came from OSX's Reminders App*/

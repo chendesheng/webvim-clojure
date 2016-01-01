@@ -1,3 +1,6 @@
+String.prototype.contains = function(str) {
+	return this.indexOf(str) >= 0;
+}
 String.prototype.eachLine = function(fn) {
 	var str = this;
 	var num = 0;
