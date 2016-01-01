@@ -958,7 +958,8 @@ function renderCursor(localbuf) {
 	Array.prototype.forEach.call($g.childNodes, function(e) {
 		if (parseInt(e.textContent) == currentLine) {
 			addClass(e, 'highlight');
-			return false;
+		} else {
+			removeClass(e, 'highlight');
 		}
 	});
 
