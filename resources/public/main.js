@@ -876,6 +876,7 @@ function renderSelection($p, a, b, buf, time) {
 				['top', y+'px'],
 				['marginLeft', (-gutterWidth(buf.id)+'ch')],
 				['width', w],
+				['paddingBottom', '0px'],
 				['height', h]];
 
 		styles.each(function(item) {
