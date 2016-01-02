@@ -22,13 +22,6 @@
     (dissoc after k)
     after))
 
-(defn- correct-visual-mode[buf]
-  (if (= (-> buf :visual :type) visual-line)
-    (update-in buf [:visual :ranges] 
-               (fn[ranges]
-                 (map #(make-linewise-range % buf) ranges)))
-    buf))
-
 (defn- remove-autocompl[{autocompl :autocompl :as after} before]
   (if (or (nil? autocompl) (-> autocompl :suggestions count (<= 1)))
     (dissoc after :autocompl)
@@ -59,6 +52,7 @@
               :pending-undo :saved-undo :registers :linescnt 
               :save-point :ext :last-visual :nextid :dot-repeat-keys :last-indents)
       (dissoc-empty [:changes])
+      (update-in [:visual] dissoc :range)
       (dissoc-nil :keys)
       line-editor))
 
@@ -81,15 +75,13 @@
                     (assoc :lang (-> after :language :name))
                     (dissoc :changes)
                     (remove-autocompl before)
-                    remove-fields
-                    correct-visual-mode)
+                    remove-fields)
                 :else
                 (-> after
                     (diff-dirty before)
                     (dissoc-if-equal before :line-buffer)
                     (remove-autocompl before)
                     remove-fields
-                    correct-visual-mode
                     (dissoc :str)
                     (dissoc-if-equal before :scroll-top)
                     (dissoc-if-equal before :mode)
@@ -103,7 +95,6 @@
                     (dissoc-if-equal before :tabsize)
                     (dissoc-if-equal before :pos)))]
     buf))
-
 
 (defonce ui-agent (agent {:viewport {:w 0 :h 0}
                           :render! (fn[a b] a)}))

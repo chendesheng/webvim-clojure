@@ -109,10 +109,10 @@
                 (map (fn[[a b]]
                        [a (- b 2)]) (pos-lines-seq+ r a b)))]
     (println lines)
-    (vec (map (fn[[a b]]
-                [(+ a (max ca 0))
-                 (+ a (min cb (- b a)))])
-              lines))))
+    (into '() (map (fn[[a b]]
+                     [(+ a (max ca 0))
+                      (+ a (min cb (- b a)))])
+                   lines))))
 
 (defn test-expand[]
   (expand-block-ranges

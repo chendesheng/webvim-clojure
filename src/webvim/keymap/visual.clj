@@ -14,28 +14,42 @@
         webvim.jumplist
         webvim.autocompl))
 
+(defn- set-visual-ranges[{{tp :type [a b :as rg] :range} :visual :as buf}]
+  (println "set-visual-ranges:" tp rg)
+  (assoc-in buf [:visual :ranges]
+            (condp = tp
+              visual-range (list (sort2 a b))
+              visual-line (list (make-linewise-range rg buf))
+              visual-block (expand-block-ranges (buf :str) a b)
+              nil)))
+
 (defn- set-visual-mode[buf, typ]
   (let [pos (buf :pos)]
     (println "set-visual-mode:" typ)
-    (merge buf {:visual {:type typ :ranges [[pos pos]]}})))
+    (-> buf
+        (merge {:visual {:type typ :range [pos pos]}})
+        set-visual-ranges)))
 
 (defn- clear-visual[buf]
   (-> buf
       (assoc :last-visual (buf :visual)) ;keep last visual
-      (assoc :visual {:type 0 :ranges []})))
+      (assoc :visual {:type 0 :range [0 0]})))
+
+;(:visual (set-visual-ranges (@webvim.core.ui/ui-agent :buf)))
+;(make-linewise-range [82 82] (@webvim.core.ui/ui-agent :buf))
 
 (defn- visual-select[buf]
   (let [[a b :as rg] (-> buf :context :range)]
     (if (nil? rg)
-      (assoc-in buf [:visual :ranges 0 0] (buf :pos))
+      (assoc-in buf [:visual :range 0] (buf :pos))
       (-> buf
-          (assoc-in [:visual :ranges 0] [b a])
+          (assoc-in [:visual :range] [b a])
           (buf-set-pos b)))))
 
 (defn- swap-visual-start-end[buf]
-  (let [[a b] (-> buf :visual :ranges first)]
+  (let [[a b] (-> buf :visual :range)]
     (-> buf
-        (assoc-in [:visual :ranges 0] [b a])
+        (assoc-in [:visual :range] [b a])
         (buf-set-pos b))))
 
 (defn- linewise? [buf]
@@ -63,7 +77,9 @@
   (let [typ (-> buf :context :visual-mode-type)
         newtyp (keycode2type keycode)]
     (if (= typ newtyp) buf
-      (assoc-in buf [:visual :type] newtyp))))
+      (-> buf
+        (assoc-in [:visual :type] newtyp)
+        set-visual-ranges))))
 
 (defn- change-visual[]
   (start-insert-mode "c" identity #(change-range % true (linewise? %))))
@@ -143,6 +159,7 @@
                 (update-x-if-not-jk buf keycode)
                 (-> buf
                     visual-select
+                    set-visual-ranges
                     (update-x-if-not-jk keycode))))
      "d" #(delete-range % true (linewise? %))
      "c" (change-visual)

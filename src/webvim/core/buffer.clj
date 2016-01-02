@@ -66,9 +66,10 @@
              :last-cursor nil
              ;first one is recent undo item, second is filepath, if one of these changes then the buffer is dirty
              :save-point [nil filepath]
-             ;:type =0 visual-normal =1 visual-range =2 visual line =32 visual block
+             ;:type =0 no-visual, =1 visual-range, =2 visual-line, =3 visual-block
              ;:ranges is a vector of ranges (unordered): [[0 100] [101 200]]. For each range, both ends are inclusive.
-             :visual {:type 0 :ranges nil}
+             ;:a and :b two ends
+             :visual {:type 0 :range [0 0] :ranges nil}
              ;=0 normal mode =1 insert mode =2 ex mode
              :mode 0
              ;Ongoing command keys. This holds recent keycodes, MUST NOT changed by keymap handler directly.

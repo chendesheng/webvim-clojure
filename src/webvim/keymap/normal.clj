@@ -272,7 +272,7 @@
                       (-> buf
                           ((visual-mode-keymap :enter) keycode)
                           (assoc :visual visual)
-                          (buf-set-pos (-> visual :ranges first first)))))) 
+                          (buf-set-pos (-> visual :range first))))))
             "f" goto-file}
        "v" visual-mode-keymap
        "V" visual-line-mode-keymap

@@ -20,6 +20,7 @@
 (def ex-mode 2)
 
 ;0 means no visual
+(def no-visual 0)
 (def visual-range 1)
 (def visual-line 2)
 (def visual-block 3) ;TODO
@@ -96,7 +97,6 @@
             (add-highlight [a (dec b)]))))))
 
 (defn set-insert-mode[buf keycode]
-  (println "set insert mode" (-> buf :visual :ranges))
   (merge buf {:mode insert-mode
               :keymap (buf :insert-mode-keymap)
               :message nil}))
@@ -105,7 +105,7 @@
   ;(println "set-normal-mode:")
   (merge buf {:mode normal-mode
               :keymap (buf :normal-mode-keymap)
-              :visual {:type 0 :ranges nil}}))
+              :visual {:type no-visual}}))
 
 (defn buf-yank[buf a b linewise?]
   (let [s (buf-subr buf a b)]
@@ -123,20 +123,18 @@
                         (file-register
                           (-> @buffer-list (get nextid) deref)))))))
 
-
 ;collect range argument, TODO: add linewise
-(defn range-prefix[buf inclusive?]
-  (let [tp (-> buf :visual :type)]
-    (cond
-      (= tp visual-range)
-      (-> buf :visual :ranges (get 0) (make-range inclusive?))
-      (= tp visual-line)
-      (-> buf :visual :ranges (get 0) (make-linewise-range buf))
-      (= tp visual-block)
-      (throw (Exception. "TODO: visual-block"))
-      (-> buf :context :range nil? not)
-      (-> buf :context :range (make-range inclusive?))
-      :else (throw (Exception. "no range prefix exist")))))
+(defn range-prefix[{{tp :type rg :range} :visual :as buf} inclusive?]
+  (cond
+    (= tp visual-range)
+    (make-range rg inclusive?)
+    (= tp visual-line)
+    (make-linewise-range rg buf)
+    (= tp visual-block)
+    (throw (Exception. "TODO: visual-block"))
+    (-> buf :context :range nil? not)
+    (-> buf :context :range (make-range inclusive?))
+    :else (throw (Exception. "no range prefix exist"))))
 
 (defn change-range[buf inclusive? linewise?]
   (let [[a b] (range-prefix buf inclusive?)]
