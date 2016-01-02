@@ -59,7 +59,6 @@ body,html,.buffer{
 .line-num {
 	text-align:right;
 	line-height:1.2em;
-	position:absolute;
 }
 
 .line-num.highlight {

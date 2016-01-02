@@ -21,7 +21,7 @@ window.onload = function() { //use window.onload, not sure if stylesheet is load
 	d.remove();
 
 	keyboardInit();
-	viewport.height = (window.innerHeight-30)/lineHeight;
+	viewport.height = Math.floor((window.innerHeight-lineHeight*1.5)/lineHeight);
 };
 
 
@@ -55,9 +55,7 @@ function setSize(bufid) {
 	return {width: w, height: h}
 }
 
-var gutterLineTemplate = '<div id="line-num-{row}" class="line-num">{incrow}</div>';
-
-var _gutterWidth;
+var __gutterWidth;
 function gutterWidth(bufid, linenum) {
 	if (linenum) {
 		var w = 0;
@@ -66,10 +64,10 @@ function gutterWidth(bufid, linenum) {
 			w++;
 		}
 
-		_gutterWidth = w;
-		$gutter(bufid).style.width = _gutterWidth+'ch';
+		__gutterWidth = w;
+		$gutter(bufid).style.width = __gutterWidth+'ch';
 	} else {
-		return _gutterWidth+2;//left padding 1ch, right padding 1ch
+		return __gutterWidth+2;//left padding 1ch, right padding 1ch
 	}
 }
 
@@ -312,12 +310,9 @@ function refreshIter(index, currentBlock, states, parentNode) {
 }
 
 function renderLines(buf) {
-	//render lines
 	var hl = newHighlight(buf.lang);
 	var offscreenLines = document.createElement('DIV');
-	buffers[buf.id] = { hl: hl, id: buf.id, offscreenLines: offscreenLines};
-
-	var gutter = $gutter(buf.id);
+	var localbuf = { hl: hl, id: buf.id, offscreenLines: offscreenLines};
 
 	hl.states = [];
 	var linecnt = 0;
@@ -336,11 +331,15 @@ function renderLines(buf) {
 	pivot.className = 'code end-code';
 	offscreenLines.appendChild(pivot);
 
-	buffers[buf.id].currentBlock = offscreenLines.firstChild;
-	buffers[buf.id].currentBlockNumber = 0;
-	buffers[buf.id].currentLineNumber = 0;
-	buffers[buf.id].pos = 0;
-	buffers[buf.id].linecnt = linecnt;
+	localbuf.currentBlock = offscreenLines.firstChild;
+	localbuf.currentBlockNumber = 0;
+	localbuf.currentLineNumber = 0;
+	localbuf.pos = 0;
+	//track linecnt change
+	localbuf.linecnt = linecnt;
+	localbuf.lastlinecnt = -1;
+	buffers[buf.id] = localbuf;
+
 	hl.states.push(null);
 }
 
@@ -405,7 +404,7 @@ function renderChanges(buf) {
 			localbuf.currentBlock = saved.nextSibling;
 		}
 
-		localbuf.linecnt += linenumdiff
+		localbuf.linecnt += linenumdiff;
 	});
 }
 
@@ -602,8 +601,8 @@ function renderToScreen(paddinglines){
 	lines.dataset.from = from;
 	$content(bufid).style.height = offscreenLines.childNodes.length*lineHeight+'px';
 
-	renderGutter(localbuf, offscreenLines.childNodes.length*lineHeight, from, h)
-	renderCursor(localbuf);
+	renderGutter(localbuf, from, h)
+	renderCursor(localbuf, from, h);
 
 	var $sel = $selections(bufid);
 	if (localbuf.selections && localbuf.selections.length>0) {
@@ -627,23 +626,57 @@ function renderToScreen(paddinglines){
 	}
 }
 
-function renderGutter(localbuf, height, from, visibleLines) {
+function renderGutter(localbuf, from, visibleLines) {
 	var bufid = localbuf.id;
 	var $g = $gutter(bufid);
-	$g.style.height = height+'px';
+	$g.style.top = from*lineHeight+'px';
 
-	var e = $g.firstChild;
-	for (var i = 0; i < visibleLines; i++) {
-		if (!e) {
-			e = document.createElement('div');
+	if (visibleLines == $g.childNodes.length 
+		&& visibleLines>0 
+		&& from == parseInt($g.firstChild.textContent)-1
+		//linenum does not change or out of screen
+		&& (localbuf.lastlinecnt == localbuf.linecnt ||
+			(from+visibleLines < localbuf.lastlinecnt && from+visibleLines < localbuf.linecnt))) {
+		return;
+	}
+
+	var times = visibleLines - $g.childNodes.length;
+	if (times > 0) {
+		for (var i = 0; i < times; i++) {
+			var e = document.createElement('div');
+			e.className = 'line-num';
 			$g.appendChild(e);
 		}
-		e.className = 'line-num';
-		e.textContent = from+i+1;
-		e.style.top = (from+i)*lineHeight+'px';
-		e = e.nextSibling;
+	} else {
+		for (var i = 0; i < -times; i++) {
+			if ($g.firstChild) {
+				$g.firstChild.remove();
+			}
+		}
 	}
-	gutterWidth(bufid, localbuf.linecnt);
+
+	//console.log("equal? ", visibleLines == $g.childNodes.length, visibleLines, $g.childNodes.length);
+
+	Array.prototype.forEach.call($g.childNodes, function(e, i) {
+		var linenum = i+from+1;
+		//console.log(linenum);
+		if (linenum > localbuf.linecnt) {
+			$hide(e);
+		} else {
+			e.textContent = linenum;
+			if (linenum == localbuf.cursorLine) {
+				addClass(e, 'highlight');
+			} else {
+				removeClass(e, 'highlight');
+			}
+			$show(e);
+		}
+	});
+
+	if (localbuf.lastlinecnt != localbuf.linecnt) {
+		localbuf.lastlinecnt = localbuf.linecnt;
+		gutterWidth(localbuf.id, localbuf.linecnt);
+	}
 }
 function startRenderToScreen(instant) {
 	setTimeout(function(){
@@ -949,20 +982,25 @@ function renderSelection($p, a, b, buf, time) {
 	lastline.style.paddingBottom = '2px';
 }
 
-function renderCursor(localbuf) {
+function renderCursor(localbuf, from, visibleLines) {
 	var res = getScreenXYByPos(localbuf, localbuf.cursor);
+	//out of screen
 	if (res.e == null) return;
 
 	//highlight current line number
 	var currentLine = localbuf.currentLineNumber+1;
 	var $g = $gutter(localbuf.id);
-	Array.prototype.forEach.call($g.childNodes, function(e) {
-		if (parseInt(e.textContent) == currentLine) {
-			addClass(e, 'highlight');
-		} else {
-			removeClass(e, 'highlight');
-		}
-	});
+	if (localbuf.cursorLine != currentLine) {
+		localbuf.cursorLine = currentLine;
+
+		Array.prototype.forEach.call($g.childNodes, function(e) {
+			if (parseInt(e.textContent) == currentLine) {
+				addClass(e, 'highlight');
+			} else {
+				removeClass(e, 'highlight');
+			}
+		});
+	}
 
 	var alignright = (res.ch=='\t') && (localbuf.mode!=1); //insert mode always align left
 	if (/\r|\n|\t/.test(res.ch)) {
