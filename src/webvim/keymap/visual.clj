@@ -52,9 +52,6 @@
         (assoc-in [:visual :range] [b a])
         (buf-set-pos b))))
 
-(defn- linewise? [buf]
-  (= (-> buf :visual :type) visual-line))
-
 ;type/mode    | keycode | next
 ;-------------|---------|-------
 ;normal       |  v      | visual-range
@@ -64,7 +61,7 @@
 ;visual-line  |  v      | visual-range
 ;visual-line  |  V      | normal
 (defn- keycode2type[keycode]
-  ({"v" visual-range "V" visual-line} keycode))
+  ({"v" visual-range "V" visual-line "<c+v>" visual-block} keycode))
 
 (defn- visual-mode-continue?[buf keycode]
   (let [typ (-> buf :context :visual-mode-type)
@@ -81,8 +78,8 @@
         (assoc-in [:visual :type] newtyp)
         set-visual-ranges))))
 
-(defn- change-visual[]
-  (start-insert-mode "c" identity #(change-range % true (linewise? %))))
+(defn- change-visual[linewise?]
+  (start-insert-mode "c" identity #(change-range % true linewise?)))
 
 (defn- visual-line-repeat[buf first? fnmotion]
   (let [keys (-> buf :context :keys pop reverse)
@@ -140,13 +137,11 @@
             (println "keymap:" (buf :keymap))
             buf) buf)))))
 
-(defn init-visual-mode-keymap[motion-keymap pair-keymap init-type]
+(defn- visual-mode-keymap[motion-keymap pair-keymap]
   (merge 
     motion-keymap 
     pair-keymap
     {"z" {"z" cursor-center-viewport}
-     :enter (fn[buf keycode]
-              (set-visual-mode buf init-type))
      :leave (fn[buf keycode] (clear-visual buf))
      :continue visual-mode-continue?
      :before (fn[buf keycode] 
@@ -161,17 +156,39 @@
                     visual-select
                     set-visual-ranges
                     (update-x-if-not-jk keycode))))
-     "d" #(delete-range % true (linewise? %))
-     "c" (change-visual)
-     "y" #(yank-range % true (linewise? %))
      "=" #(indent-range % true)
      "o" swap-visual-start-end
-     "I" (visual-line-repeat-change true)
-     "A" (visual-line-repeat-change false)
      "u" undo
      "<c+r>" redo
      "V" #(change-visual-mode-type % "V")
-     "v" #(change-visual-mode-type % "v")}))
+     "v" #(change-visual-mode-type % "v")
+     "<c+v>" #(change-visual-mode-type % "<c+v>")}))
+
+(defn init-visual-range-keymap[motion-keymap pair-keymap]
+  (merge
+    (visual-mode-keymap motion-keymap pair-keymap)
+    {:enter (fn[buf keycode]
+              (set-visual-mode buf visual-range))
+     "d" #(delete-range % true false)
+     "c" (change-visual false)
+     "y" #(yank-range % true false)}))
+
+(defn init-visual-line-keymap[motion-keymap pair-keymap]
+  (merge
+    (visual-mode-keymap motion-keymap pair-keymap)
+    {:enter (fn[buf keycode]
+              (set-visual-mode buf visual-line))
+     "I" (visual-line-repeat-change true)
+     "A" (visual-line-repeat-change false)
+     "d" #(delete-range % true true)
+     "c" (change-visual true)
+     "y" #(yank-range % true true)}))
+
+(defn init-visual-block-keymap[motion-keymap pair-keymap]
+  (merge
+    (visual-mode-keymap motion-keymap pair-keymap)
+    {:enter (fn[buf keycode]
+              (set-visual-mode buf visual-block))}))
 
 ;keep track visual ranges when buffer changed
 (defonce ^:private listen-change-buffer 

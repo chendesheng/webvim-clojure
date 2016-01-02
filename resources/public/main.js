@@ -911,9 +911,9 @@ function renderSelection($p, a, b, buf, time) {
 		var styles = [['left', x+'px'],
 				['top', y+'px'],
 				['marginLeft', (-gutterWidth(buf.id)+'ch')],
-				['width', w],
+				['width', w+'px'],
 				['paddingBottom', '0px'],
-				['height', h]];
+				['height', h+'px']];
 
 		styles.each(function(item) {
 			var k = item[0];
@@ -970,19 +970,17 @@ function renderSelection($p, a, b, buf, time) {
 		};
 	}
 
-	var lastline;
 	if (resa.top != resb.top) {
 		var w = $buffer(buf.id).offsetWidth;
-		append(resa.left, resa.top, (w-resa.left)+'px', lineHeight+'px');
+		append(resa.left, resa.top, (w-resa.left), lineHeight);
 		var mh = resb.top-resa.top-lineHeight;
 		if (mh > 0) {
-			append(0, resa.top+lineHeight, w+'px', mh+'px');
+			append(0, resa.top+lineHeight, w, mh);
 		}
-		lastline = append(0, resb.top, resb.left+'px', '1em');
+		append(0, resb.top, resb.left, lineHeight);
 	} else {
-		lastline = append(resa.left, resa.top, Math.abs(resa.left-resb.left)+'px', '1em');
+		append(resa.left, resa.top, Math.abs(resa.left-resb.left), lineHeight);
 	}
-	lastline.style.paddingBottom = '2px';
 }
 
 function renderCursor(localbuf, from, visibleLines) {

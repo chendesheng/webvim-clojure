@@ -240,7 +240,8 @@
                       (pos-line-end (buf :str) (buf :pos)))]
       (buf-set-pos newbuf newpos))))
 
-(defn init-normal-mode-keymap[motion-keymap visual-mode-keymap visual-line-mode-keymap pair-keymap]
+(defn init-normal-mode-keymap[motion-keymap visual-range-keymap visual-line-keymap 
+                              visual-block-keymap pair-keymap]
   (let [motion-keymap-fix-w (-> motion-keymap
                                 (assoc "w" (dont-cross-line (motion-keymap "w")))
                                 (assoc "W" (dont-cross-line (motion-keymap "W"))))]
@@ -265,17 +266,18 @@
        "<esc>" set-normal-mode
        "<f1>" #(goto-buf % (output-panel false))
        "g" {"v" (assoc
-                  visual-mode-keymap
+                  visual-range-keymap
                   :enter
                   (fn[buf keycode]
                     (let [visual (buf :last-visual)]
                       (-> buf
-                          ((visual-mode-keymap :enter) keycode)
+                          ((visual-range-keymap :enter) keycode)
                           (assoc :visual visual)
                           (buf-set-pos (-> visual :range first))))))
             "f" goto-file}
-       "v" visual-mode-keymap
-       "V" visual-line-mode-keymap
+       "v" visual-range-keymap
+       "V" visual-line-keymap
+       "<c+v>" visual-block-keymap
        "z" {"z" cursor-center-viewport }
        "d" (merge
              motion-keymap-fix-w
