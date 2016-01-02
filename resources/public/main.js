@@ -312,7 +312,6 @@ function refreshIter(index, currentBlock, states, parentNode) {
 function renderLines(buf) {
 	var hl = newHighlight(buf.lang);
 	var offscreenLines = document.createElement('DIV');
-	var localbuf = { hl: hl, id: buf.id, offscreenLines: offscreenLines};
 
 	hl.states = [];
 	var linecnt = 0;
@@ -331,14 +330,18 @@ function renderLines(buf) {
 	pivot.className = 'code end-code';
 	offscreenLines.appendChild(pivot);
 
-	localbuf.currentBlock = offscreenLines.firstChild;
-	localbuf.currentBlockNumber = 0;
-	localbuf.currentLineNumber = 0;
-	localbuf.pos = 0;
-	//track linecnt change
-	localbuf.linecnt = linecnt;
-	localbuf.lastlinecnt = -1;
-	buffers[buf.id] = localbuf;
+	buffers[buf.id] = { 
+		hl: hl,
+		id: buf.id,
+		offscreenLines: offscreenLines,
+		currentBlock: offscreenLines.firstChild,
+		currentBlockNumber: 0,
+		currentLineNumber: 0,
+		pos: 0,
+		//track linecnt change
+		linecnt: linecnt,
+		lastlinecnt: -1
+	};
 
 	hl.states.push(null);
 }

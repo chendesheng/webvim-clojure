@@ -94,9 +94,29 @@
 
 (defn make-linewise-range [[a b] buf]
   (println "make-linewise-range:" a b)
-  (let [{r :str pos :pos} buf
+  (let [r (buf :str)
         [a b] (sort2 a b)]
     [(pos-line-first r a) (pos-line-last r b)]))
+
+;FIXME: handle /tab
+(defn expand-block-ranges[r a b]
+  (println "expand-block-ranges" a b)
+  (let [[a b] (sort2 a b)
+        [ca cb] (sort2 (- a (pos-line-first r a)) ;column a, b
+                       (- b (pos-line-first r b)))
+        lines (filter
+                (fn[[a b]] (> (- b a) ca))
+                (map (fn[[a b]]
+                       [a (- b 2)]) (pos-lines-seq+ r a b)))]
+    (println lines)
+    (vec (map (fn[[a b]]
+                [(+ a (max ca 0))
+                 (+ a (min cb (- b a)))])
+              lines))))
+
+(defn test-expand[]
+  (expand-block-ranges
+    (rope "hello\na\nhello") 0 9))
 
 (defn first-line[r]
   (subr r (-> r pos-lines-seq+ first)))
