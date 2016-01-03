@@ -116,15 +116,13 @@
                                    (expand-block-ranges r rg tabsize)))
     :else '()))
 
-(defn- repeat-changes[buf ranges s left-side?]
-  (reduce (fn[buf [a b]]
-            (let [pos (+ (if left-side? a b) (count s))] ;every position shift forward
-              (-> buf
-                  (buf-insert pos s)))) buf ranges))
+(defn- repeat-changes[buf poses s]
+  (reduce (fn[buf pos]
+            (buf-insert buf pos s)) buf poses))
 
 ;1) set cursor pos 2) collect ranges 3) start change 4) check if it can be repeated 5) repeat changes
 ;repeat across ranges
-(defn- start-insert-and-repeat[buf ranges left-side?]
+(defn- start-insert-and-repeat[buf poses]
   (let [pos (buf :pos)]
     (-> buf
         set-insert-mode
@@ -140,7 +138,7 @@
                                    buf ;only insert is allowed and it must not cross line
                                    (-> buf
                                        (buf-set-pos (apply min (-> buf :visual :range)))
-                                       (repeat-changes ranges s left-side?)
+                                       (repeat-changes poses s)
                                        (leave keycode))))))))))
 
 (defn- visual-line-repeat-change[line-first?]
@@ -179,7 +177,11 @@
 (defn- visual-block-delete[buf]
   (visual-block-reduce 
     buf (fn[buf [a b]]
-          (buf-delete buf a (inc b)))))
+          (if (neg? a) buf
+            (let [b (if (neg? b)
+                      (dec (pos-line-last (buf :str) a))
+                      (inc b))]
+              (buf-delete buf a b))))))
 
 (defn- visual-mode-keymap[motion-keymap pair-keymap]
   (merge 
@@ -236,15 +238,11 @@
      "d" visual-block-delete
      "c" (fn[buf]
            (-> buf
-               (visual-block-reduce 
-                 (fn[buf [a b]]
-                   (buf-delete buf a (inc b))))
+               visual-block-delete
                (start-insert-and-repeat
-                 (drop-last
-                   (map
-                     (fn[[a b]] [(dec a) (dec a)])
-                     (-> buf :visual :ranges)))
-                 true)))}))
+                 (vertical-line-pos (buf :str)
+                                    (-> buf :visual :range last)
+                                    -2 (buf :tabsize)))))}))
 
 ;keep track visual ranges when buffer changed
 (defonce ^:private listen-change-buffer 
