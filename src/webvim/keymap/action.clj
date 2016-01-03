@@ -96,7 +96,7 @@
             (buf-set-pos a)
             (add-highlight [a (dec b)]))))))
 
-(defn set-insert-mode[buf keycode]
+(defn set-insert-mode [buf]
   (merge buf {:mode insert-mode
               :keymap (buf :insert-mode-keymap)
               :message nil}))
@@ -141,7 +141,7 @@
     (-> buf
         (buf-yank a b linewise?)
         (buf-delete a b)
-        (set-insert-mode "c"))))
+        set-insert-mode)))
 
 (defn update-x[buf]
   (let [pos (buf :pos)
@@ -360,7 +360,7 @@
     (println "start:" (-> buf :keys))
     (-> buf 
         fnmotion
-        (set-insert-mode keycode)
+        set-insert-mode
         fnedit)))
 
 (defn normal-mode-fix-pos

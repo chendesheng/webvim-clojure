@@ -32,7 +32,7 @@
            :len (count to)
            :to (str (subr r pos (+ pos len)))}]))
 
-(defn- indexr[r s]
+(defn indexr[r s]
   (if (empty? r) -1 (.indexOf r s)))
 
 (defn rblank? 

@@ -186,7 +186,7 @@
   (fn[buf keycode]
     (-> buf 
         (fnmotion keycode)
-        (set-insert-mode keycode)
+        set-insert-mode
         (fnedit keycode))))
 
 (defn- start-ex-mode[buf]

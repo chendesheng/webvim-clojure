@@ -14,13 +14,13 @@
         webvim.jumplist
         webvim.autocompl))
 
-(defn- set-visual-ranges[{{tp :type [a b :as rg] :range} :visual :as buf}]
+(defn- set-visual-ranges[{{tp :type rg :range} :visual :as buf}]
   (println "set-visual-ranges:" tp rg)
   (assoc-in buf [:visual :ranges]
             (condp = tp
-              visual-range (list (sort2 a b))
+              visual-range (list (sort2 rg))
               visual-line (list (make-linewise-range rg buf))
-              visual-block (expand-block-ranges (buf :str) a b)
+              visual-block (into '() (expand-block-ranges (buf :str) rg))
               nil)))
 
 (defn- set-visual-mode[buf, typ]
@@ -108,6 +108,41 @@
         buf1 (buf-set-pos buf b)]
     {:y (buf :y) :dy (- (buf1 :y) (buf :y))}))
 
+(defn- repeat-ranges[{{tp :type rg :range} :visual r :str :as buf}]
+  (cond
+    (= tp visual-line) (rest (map (fn[[a b]] [a (dec b)])
+                                  (pos-lines-seq+ r (sort2 rg))))
+    (= tp visual-block) (rest (map (fn[[a b]] [a (inc b)])
+                                   (expand-block-ranges r rg)))
+    :else '()))
+
+(defn- repeat-changes[buf ranges s left-side?]
+  (reduce (fn[buf [a b]]
+            (let [pos (+ (if left-side? a b) (count s))] ;every position shift forward
+              (-> buf
+                  (buf-insert pos s)))) buf ranges))
+
+;1) set cursor pos 2) collect ranges 3) start change 4) check if it can be repeated 5) repeat changes
+;repeat across ranges
+(defn- start-insert-and-repeat[buf ranges left-side?]
+  (let [pos (buf :pos)]
+    (-> buf
+        set-insert-mode
+        (assoc :keymap 
+               (assoc (buf :insert-mode-keymap)
+                      :leave (fn[buf keycode]
+                               (let [leave (or (-> buf :insert-mode-keymap :leave) nop)
+                                     newpos (buf :pos)
+                                     s (if (> newpos pos)
+                                         (subr (buf :str) pos newpos)
+                                         nil)]
+                                 (if (or (nil? s) (>= (indexr s <br>) 0))
+                                   buf ;only insert is allowed and it must not cross line
+                                   (-> buf
+                                       (buf-set-pos (apply min (-> buf :visual :range)))
+                                       (repeat-changes ranges s left-side?)
+                                       (leave keycode))))))))))
+
 (defn- visual-line-repeat-change[line-first?]
   (let [fnmotion (if line-first? line-first line-end)]
     (fn[buf]
@@ -128,14 +163,11 @@
                                     (update-in [:context] dissoc :repeat-lines)
                                     (leave keycode)))))]
                                     ;(println keymap)
-        (if (= (-> buf :visual :type) visual-line)
-          (let [buf (-> buf
-                        fnmotion
-                        (assoc-in [:context :repeat-lines] (visual-line-repeat-info buf))
-                        (set-insert-mode "I") ;any keycode is ok
-                        (assoc :keymap keymap))]
-            (println "keymap:" (buf :keymap))
-            buf) buf)))))
+        (-> buf
+            fnmotion
+            (assoc-in [:context :repeat-lines] (visual-line-repeat-info buf))
+            set-insert-mode
+            (assoc :keymap keymap))))))
 
 (defn- visual-block-reduce[buf fn]
   (let [buf (-> buf
@@ -202,7 +234,15 @@
     {:enter (fn[buf keycode]
               (set-visual-mode buf visual-block))
      "d" visual-block-delete
-     "c" (start-insert-mode "c" identity visual-block-delete)}))
+     "c" (fn[buf]
+           (-> buf
+               visual-block-delete
+               (start-insert-and-repeat
+                 (drop-last
+                   (map
+                     (fn[[a b]] [(dec a) (dec a)])
+                     (-> buf :visual :ranges)))
+                 true)))}))
 
 ;keep track visual ranges when buffer changed
 (defonce ^:private listen-change-buffer 
@@ -211,7 +251,8 @@
     (fn [buf _ c]
       (let [cpos (c :pos)
             delta (- (-> c :to count) (c :len))]
-        (update-in buf [:last-visual :range]
-                   (fn[[a b :as rg]]
-                     [(if (< a cpos) a (+ a delta))
-                      (if (< b cpos) b (+ b delta))]))))))
+        (if (nil? (buf :last-visual)) buf
+          (update-in buf [:last-visual :range]
+                     (fn[[a b :as rg]]
+                       [(if (< a cpos) a (+ a delta))
+                        (if (< b cpos) b (+ b delta))])))))))
