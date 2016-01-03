@@ -32,7 +32,7 @@
 
 (defn- clear-visual[buf]
   (-> buf
-      (assoc :last-visual (buf :visual)) ;keep last visual
+      (assoc :last-visual (-> buf :visual (dissoc :ranges))) ;keep last visual
       (assoc :visual {:type 0 :range [0 0]})))
 
 ;(:visual (set-visual-ranges (@webvim.core.ui/ui-agent :buf)))
@@ -104,7 +104,7 @@
               (assoc buf :keymap (buf :insert-mode-keymap)) lines))))
 
 (defn- visual-line-repeat-info[buf]
-  (let [[_ b] (-> buf :visual :ranges first)
+  (let [[_ b] (-> buf :visual :range)
         buf1 (buf-set-pos buf b)]
     {:y (buf :y) :dy (- (buf1 :y) (buf :y))}))
 
@@ -136,6 +136,18 @@
                         (assoc :keymap keymap))]
             (println "keymap:" (buf :keymap))
             buf) buf)))))
+
+(defn- visual-block-reduce[buf fn]
+  (let [buf (-> buf
+                (buf-set-pos (apply min (-> buf :visual :range)))
+                set-visual-ranges)]
+    (reduce fn buf (-> buf :visual :ranges))))
+
+;TODO: yank
+(defn- visual-block-delete[buf]
+  (visual-block-reduce 
+    buf (fn[buf [a b]]
+          (buf-delete buf a (inc b)))))
 
 (defn- visual-mode-keymap[motion-keymap pair-keymap]
   (merge 
@@ -188,19 +200,18 @@
   (merge
     (visual-mode-keymap motion-keymap pair-keymap)
     {:enter (fn[buf keycode]
-              (set-visual-mode buf visual-block))}))
+              (set-visual-mode buf visual-block))
+     "d" visual-block-delete
+     "c" (start-insert-mode "c" identity visual-block-delete)}))
 
 ;keep track visual ranges when buffer changed
 (defonce ^:private listen-change-buffer 
   (listen
     :change-buffer
-    (fn [buf oldbuf c]
-      (let [bufid (buf :id)
-            cpos (c :pos)
+    (fn [buf _ c]
+      (let [cpos (c :pos)
             delta (- (-> c :to count) (c :len))]
-        (update-in buf [:last-visual :ranges]
-                   (fn [ranges]
-                     (map (fn[[a b :as rg]]
-                            [(if (< a cpos) a (+ a delta))
-                             (if (< b cpos) b (+ b delta))])
-                          ranges)))))))
+        (update-in buf [:last-visual :range]
+                   (fn[[a b :as rg]]
+                     [(if (< a cpos) a (+ a delta))
+                      (if (< b cpos) b (+ b delta))]))))))
