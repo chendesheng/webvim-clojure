@@ -98,28 +98,58 @@
         [a b] (sort2 a b)]
     [(pos-line-first r a) (pos-line-last r b)]))
 
-;FIXME: handle /tab
+;get vertical line start at pos up/down h lines
+(defn vertical-line-pos[r pos h tabsize]
+  (let [lines (if (pos? h)
+                (take h (pos-lines-seq+ r pos))
+                (take (- h) (pos-lines-seq- r pos)))
+        a (pos-line-first r pos)
+        vx (visual-size (str (subr r a pos)) tabsize)]
+    (println pos a vx)
+    (map (fn[[a b]]
+           (let [s (str (subr r a b))
+                 vx (visualx-to-charx s vx tabsize)]
+             (if (>= vx (- b a))
+               -1  ;invalid position
+               (+ vx a)))) lines)))
+
+;(defn test-vertical-line-pos[]
+;(vec (vertical-line-pos (rope "aaaaa\n\tbb\nx\ty") 12 -3 4)))
+;aaaaa
+;    bb
+;x   y
+
+(defn- sort-column [a b]
+  (cond
+    (and (= a -1) (>= b 0)) ;invalid position always on right side or both sides are invalid
+    [b a]
+    (and (= b -1) (>= a 0))
+    [a b]
+    (and (= a -1) (= b -1))
+    [a b]
+    :else (sort2 a b)))
+
 (defn expand-block-ranges
-  ([r a b]
+  ([r a b tabsize]
      (println "expand-block-ranges" a b)
-     (let [[a b] (sort2 a b)
-           [ca cb] (sort2 (- a (pos-line-first r a)) ;column a, b
-                          (- b (pos-line-first r b)))
-           lines (filter
-                   (fn[[a b]] (> (- b a) ca))
-                   (map (fn[[a b]]
-                          [a (- b 2)]) (pos-lines-seq+ r a b)))]
-       (println lines)
-       (map (fn[[a b]]
-              [(+ a (max ca 0))
-               (+ a (min cb (- b a)))])
-            lines)))
-  ([r [a b]]
-     (expand-block-ranges r a b)))
+     (let [h (inc (-> r (subr (sort2 a b)) count-lines))]
+       ;(println h a b)
+       (if (< a b)
+         (map sort-column  ;zip
+              (vertical-line-pos r a h tabsize)
+              (reverse (vertical-line-pos r b (- h) tabsize)))
+         (map sort-column
+              (vertical-line-pos r b h tabsize)
+              (reverse (vertical-line-pos r a (- h) tabsize))))))
+  ([r [a b] tabsize]
+     (expand-block-ranges r a b tabsize)))
 
 (defn test-expand[]
-  (expand-block-ranges
-    (rope "hello\na\nhello") 0 9))
+  (vec (expand-block-ranges
+         (rope "he\tllo") 3 4 4)))
+;he  llo
+;a
+;hello
 
 (defn first-line[r]
   (subr r (-> r pos-lines-seq+ first)))

@@ -20,7 +20,7 @@
             (condp = tp
               visual-range (list (sort2 rg))
               visual-line (list (make-linewise-range rg buf))
-              visual-block (into '() (expand-block-ranges (buf :str) rg))
+              visual-block (into '() (expand-block-ranges (buf :str) rg (buf :tabsize)))
               nil)))
 
 (defn- set-visual-mode[buf, typ]
@@ -108,12 +108,12 @@
         buf1 (buf-set-pos buf b)]
     {:y (buf :y) :dy (- (buf1 :y) (buf :y))}))
 
-(defn- repeat-ranges[{{tp :type rg :range} :visual r :str :as buf}]
+(defn- repeat-ranges[{{tp :type rg :range} :visual r :str tabsize :tabsize :as buf}]
   (cond
     (= tp visual-line) (rest (map (fn[[a b]] [a (dec b)])
                                   (pos-lines-seq+ r (sort2 rg))))
     (= tp visual-block) (rest (map (fn[[a b]] [a (inc b)])
-                                   (expand-block-ranges r rg)))
+                                   (expand-block-ranges r rg tabsize)))
     :else '()))
 
 (defn- repeat-changes[buf ranges s left-side?]
@@ -236,7 +236,9 @@
      "d" visual-block-delete
      "c" (fn[buf]
            (-> buf
-               visual-block-delete
+               (visual-block-reduce 
+                 (fn[buf [a b]]
+                   (buf-delete buf a (inc b))))
                (start-insert-and-repeat
                  (drop-last
                    (map

@@ -167,8 +167,43 @@ function getLine(bufid, linenum) {
 	return line;
 }
 
+function getNextLineBreakElement(localbuf, pos) {
+	var res = getCodeBlockByPos(localbuf, pos);
+	if (res == null) return null;
+	if (endCode(res.e)) return {e: res.e, offset: 0};
+
+	var ele = res.e.firstChild;
+	var i = 0;
+	var offset;
+	while (true) {
+		var l = ele.textContent.length;
+		offset = ele.textContent.indexOf('\n');
+		if (offset >= 0) {
+			break;
+		}
+
+		ele = ele.nextSibling;
+		i++;
+	}
+
+	if (ele.nodeType != 3) {
+		ele = ele.firstChild;
+	}
+
+	return {e: ele, offset: offset, index: i};
+}
+
 function getScreenXYByPos(localbuf, pos) {
 	var res = getElementByPos(localbuf, pos);
+	return getScreenXYInner(localbuf, res);
+}
+
+function getNextLineBreakScreenXY(localbuf) {
+	var res = getNextLineBreakElement(localbuf, localbuf.pos);
+	return getScreenXYInner(localbuf, res);
+}
+
+function getScreenXYInner(localbuf, res) {
 	var linenum = localbuf.currentLineNumber;
 	var ch = res.e.textContent[res.offset];	
 
@@ -891,6 +926,8 @@ function substring(buf, a, b) {
 }
 
 function renderSelection($p, a, b, buf, time) {
+	if (a < 0) return;
+
 	var __e = $p.firstChild;
 	function getOrCreate() {
 		while(__e) {
@@ -930,15 +967,19 @@ function renderSelection($p, a, b, buf, time) {
 		return sp;
 	}
 	//sort
-	if (a > b) {
-		var t = a;
-		a = b;
-		b = t;
+	if (b >= 0) {
+		if (a > b) {
+			var t = a;
+			a = b;
+			b = t;
+		}
+		b++;
 	}
-	b++;
 
 	var resa = getScreenXYByPos(buf, a);
-	var resb = getScreenXYByPos(buf, b);
+	var resb = b>=0 ? 
+				getScreenXYByPos(buf, b) :
+				getNextLineBreakScreenXY(buf);
 
 	if (resa.e == null && resb.e == null) {
 		//render nothing if resa and resb on "same side"

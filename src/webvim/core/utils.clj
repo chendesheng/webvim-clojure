@@ -128,7 +128,7 @@
         (cond
           (> vxi vx) i
           (= vxi vx) (inc i)
-          (>= i (-> s count dec)) i
+          (>= i (-> s count dec)) (inc i)
           :else (recur (inc i) vxi))))))
 
 (comment
