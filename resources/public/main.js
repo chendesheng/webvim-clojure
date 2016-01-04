@@ -927,7 +927,7 @@ function substring(buf, a, b) {
 }
 
 function renderSelection($p, a, b, buf, usedIds) {
-	if (a < 0) return;
+	if (b < a) return;
 
 	var __e = $p.firstChild;
 	function getOrCreate() {
@@ -969,19 +969,16 @@ function renderSelection($p, a, b, buf, usedIds) {
 		return sp;
 	}
 	//sort
-	if (b >= 0) {
-		if (a > b) {
-			var t = a;
-			a = b;
-			b = t;
-		}
-		b++;
+	if (a > b) {
+		var t = a;
+		a = b;
+		b = t;
 	}
+	b++;
 
 	var resa = getScreenXYByPos(buf, a);
-	var resb = b>=0 ? 
-				getScreenXYByPos(buf, b) :
-				getNextLineBreakScreenXY(buf);
+	var resb = getScreenXYByPos(buf, b);
+				
 
 	if (resa.e == null && resb.e == null) {
 		//render nothing if resa and resb on "same side"

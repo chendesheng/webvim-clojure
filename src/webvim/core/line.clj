@@ -109,9 +109,7 @@
     (map (fn[[a b]]
            (let [s (str (subr r a b))
                  vx (visualx-to-charx s vx tabsize)]
-             (if (>= vx (- b a))
-               -1  ;invalid position
-               (+ vx a)))) lines)))
+             (+ vx a))) lines)))
 
 ;(defn test-vertical-line-pos[]
 ;(vec (vertical-line-pos (rope "aaaaa\n\tbb\nx\ty") 12 -3 4)))
@@ -119,15 +117,11 @@
 ;    bb
 ;x   y
 
-(defn- sort-column [a b]
-  (cond
-    (and (= a -1) (>= b 0)) ;invalid position always on right side or both sides are invalid
-    [b a]
-    (and (= b -1) (>= a 0))
-    [a b]
-    (and (= a -1) (= b -1))
-    [a b]
-    :else (sort2 a b)))
+(defn- sort-column [a b eol]
+  (let [[a b] (sort2 a b)]
+    [(if (= a eol) (dec a) a) 
+     (if (= b eol)
+         (- b 2) b)])) ;if b < a select empty; both sides inclusive; length=b-a+1
 
 (defn expand-block-ranges
   ([r a b tabsize]
@@ -137,10 +131,12 @@
        (if (< a b)
          (map sort-column  ;zip
               (vertical-line-pos r a h tabsize)
-              (reverse (vertical-line-pos r b (- h) tabsize)))
+              (reverse (vertical-line-pos r b (- h) tabsize))
+              (take h (map second (pos-lines-seq+ r a))))
          (map sort-column
               (vertical-line-pos r b h tabsize)
-              (reverse (vertical-line-pos r a (- h) tabsize))))))
+              (reverse (vertical-line-pos r a (- h) tabsize))
+              (take h (map second (pos-lines-seq+ r b)))))))
   ([r [a b] tabsize]
      (expand-block-ranges r a b tabsize)))
 
