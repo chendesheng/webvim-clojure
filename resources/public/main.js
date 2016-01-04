@@ -579,12 +579,12 @@ function getScrollTop(bufid, forceLayout) {
 	return localbuf.cacheScrollTop;
 }
 
-function removeUntouched($p, time) {
+function removeUnused($p, usedIds) {
 	var i = $p.firstChild;
 	while(i) {
 		var prev = i;
 		i = i.nextSibling;
-		if (prev.dataset.touch != time) {
+		if (!usedIds[prev.id]) {
 			prev.remove();
 		}
 	}
@@ -602,28 +602,28 @@ function renderToScreen(paddinglines){
 	var h = viewport.height+1+paddinglines*2;
 	var lines = $lines(bufid);
 
-	var time = (new Date).getTime();
 
 	var offscreen = offscreenLines.childNodes[from];
 	var lastline;
 	var cnt = 0;
+	var usedIds = {};
 	while(offscreen && !offscreen.className.contains('end-code') && cnt < h) {
 		var line = document.getElementById(offscreen.id);
 		var linenum = from+cnt;
 		if (line) {
 			if (offscreen.dataset.time == line.dataset.time) {
-				line.dataset.touch = time;
+				usedIds[offscreen.id] = true;
 				lastline = line;
 			} else {
 				var newline = offscreen.cloneNode(true);
-				newline.dataset.touch = time;
+				usedIds[newline.id] = true;
 				lines.replaceChild(newline, line);
 
 				lastline = newline;
 			}
 		} else {
 			newline = offscreen.cloneNode(true);
-			newline.dataset.touch = time;
+			usedIds[newline.id] = true;
 			insertAfter(lines, newline, lastline);
 
 			lastline = newline;
@@ -633,7 +633,7 @@ function renderToScreen(paddinglines){
 		cnt++;
 	}
 
-	removeUntouched(lines, time);
+	removeUnused(lines, usedIds);
 
 	lines.style.top = from*lineHeight+'px';
 	lines.dataset.from = from;
@@ -644,21 +644,21 @@ function renderToScreen(paddinglines){
 
 	var $sel = $selections(bufid);
 	if (localbuf.selections && localbuf.selections.length>0) {
-		renderSelections($selections(bufid), localbuf, localbuf.selections, time);
+		renderSelections($selections(bufid), localbuf, localbuf.selections);
 	} else {
 		$empty($sel);
 	}
 
 	var $high = $highlights(bufid);
 	if (localbuf.highlights && localbuf.highlights.length>0) {
-		renderSelections($highlights(bufid), localbuf, localbuf.highlights, time);
+		renderSelections($highlights(bufid), localbuf, localbuf.highlights);
 	} else {
 		$empty($high);
 	}
 
 	var $braces = $cursorBrace(bufid);
 	if (localbuf.braces && localbuf.braces.length>0) {
-		renderSelections($braces, localbuf, localbuf.braces, time);
+		renderSelections($braces, localbuf, localbuf.braces);
 	} else {
 		$empty($braces);
 	}
@@ -881,11 +881,12 @@ function scrollToCursor(localbuf, instant) {
 	}
 }
 
-function renderSelections($p, buf, ranges, time) {
+function renderSelections($p, buf, ranges) {
+	var usedIds = {};
 	for (var i = 0; i < ranges.length; i++) {
-		renderSelection($p, ranges[i][0], ranges[i][1], buf, time);
+		renderSelection($p, ranges[i][0], ranges[i][1], buf, usedIds);
 	}
-	removeUntouched($p, time);
+	removeUnused($p, usedIds);
 }
 
 function newsubstring(buf, a, b) { 
@@ -925,25 +926,26 @@ function substring(buf, a, b) {
 	return txt;
 }
 
-function renderSelection($p, a, b, buf, time) {
+function renderSelection($p, a, b, buf, usedIds) {
 	if (a < 0) return;
 
 	var __e = $p.firstChild;
 	function getOrCreate() {
 		while(__e) {
-			if (__e.dataset.touch != time) {
+			if (!usedIds[__e.id]) {
 				return __e;
 			}
 			__e = __e.nextSibling;
 		}
 		__e = document.createElement('SPAN');
 		__e.className = 'line-selected';
+		__e.id = uniqueId();
 		return __e;
 	}
 
 	function append(x, y, w, h) {
 		var sp = getOrCreate();
-		sp.dataset.touch = time;
+		usedIds[sp.id] = true;
 
 		var styles = [['left', x+'px'],
 				['top', y+'px'],
