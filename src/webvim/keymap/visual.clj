@@ -123,14 +123,19 @@
 
 ;1) set cursor pos 2) collect ranges 3) start change 4) check if it can be repeated 5) repeat changes
 ;repeat across ranges
-(defn- start-insert-and-repeat[buf left?]
-  (let [ranges (filter (fn[[a b]] (<= a b)) (-> buf :visual :ranges))
-        poses (if left?
-                (map first ranges)
-                (map (comp inc second) ranges))
-        buf (buf-set-pos buf (if left?
-                               (-> ranges last first)
-                               (-> ranges last second inc)))
+(defn- start-insert-and-repeat[{{ranges :ranges} :visual :as buf} append?]
+  (let [firstline (last ranges) ;ranges in reverse order
+        ranges (drop-last ranges)
+        poses (if append?
+                (map (comp inc second) 
+                     (filter (fn[[a b]]
+                               (< a (inc b) (dec (pos-line-last (buf :str) a)))) ranges))
+                (map first
+                     (filter (fn[[a b]]
+                               (< a (inc b))) ranges)))
+        buf (buf-set-pos buf (if append?
+                               (-> firstline second inc)
+                               (first firstline)))
         pos (buf :pos)]
     (-> buf
         set-insert-mode
@@ -144,10 +149,11 @@
                                          nil)]
                                  (if (or (nil? s) (>= (indexr s <br>) 0))
                                    (leave buf keycode) ;only insert is allowed and it must not cross line
-                                   (-> buf
-                                       (buf-delete pos newpos)
-                                       (repeat-insert poses s)
-                                       (leave keycode))))))))))
+                                   (let [cnt (count s)
+                                         poses (map #(+ % cnt) poses)]
+                                     (-> buf
+                                         (repeat-insert poses s)
+                                         (leave keycode)))))))))))
 
 (defn- visual-line-repeat-change[line-first?]
   (let [fnmotion (if line-first? line-first line-end)]
@@ -197,19 +203,14 @@
          (shift-delete b1 a b)])
       ranges) ranges))
 
-(defn- print-buf[buf]
-  (println "after-shift:" (-> buf :visual :ranges))
-  buf)
-
 ;TODO: yank
 (defn- visual-block-delete[buf]
   (visual-block-reduce 
     buf (fn[buf [a b]]
-          (let [b (inc b)]
-            (println "buf-delete:" a b)
+          (let [eol (dec (pos-line-last (buf :str) a))
+                b (min eol (inc b))]
             (-> buf
                 (update-in [:visual :ranges] shift-ranges-delete a b)
-                print-buf
                 (buf-delete a b))))))
 
 (defn- visual-mode-keymap[motion-keymap pair-keymap]
@@ -268,11 +269,11 @@
      "c" (fn[buf]
            (-> buf
                visual-block-delete
-               (start-insert-and-repeat true)))
+               (start-insert-and-repeat false)))
      "I" (fn[buf]
-           (start-insert-and-repeat buf true))
+           (start-insert-and-repeat buf false))
      "A" (fn[buf]
-           (start-insert-and-repeat buf false))}))
+           (start-insert-and-repeat buf true))}))
 
 ;keep track visual ranges when buffer changed
 (defonce ^:private listen-change-buffer 
