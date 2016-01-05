@@ -968,13 +968,6 @@ function renderSelection($p, a, b, buf, usedIds) {
 
 		return sp;
 	}
-	//sort
-	if (a > b) {
-		var t = a;
-		a = b;
-		b = t;
-	}
-	b++;
 
 	var resa = getScreenXYByPos(buf, a);
 	var resb = getScreenXYByPos(buf, b);
@@ -997,7 +990,8 @@ function renderSelection($p, a, b, buf, usedIds) {
 		var from = parseInt($lines(buf.id).dataset.from);
 		resa = {
 			top:from*lineHeight,
-			left:0
+			left:0,
+			width:0
 		};
 	}
 
@@ -1006,7 +1000,8 @@ function renderSelection($p, a, b, buf, usedIds) {
 		var to = from+$lines(buf.id).childNodes.length;
 		resb = {
 			top:(to-1)*lineHeight,
-			left:0
+			left:0,
+			width:0
 		};
 	}
 
@@ -1017,9 +1012,9 @@ function renderSelection($p, a, b, buf, usedIds) {
 		if (mh > 0) {
 			append(0, resa.top+lineHeight, w, mh);
 		}
-		append(0, resb.top, resb.left, lineHeight);
+		append(0, resb.top, resb.left+resb.width, lineHeight);
 	} else {
-		append(resa.left, resa.top, Math.abs(resa.left-resb.left), lineHeight);
+		append(resa.left, resa.top, resb.left+resb.width-resa.left, lineHeight);
 	}
 }
 
