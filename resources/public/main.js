@@ -1055,7 +1055,6 @@ function renderCursor(localbuf, from, visibleLines) {
 		+'margin-left:' + (((alignright?-1:0)-gutterWidth(localbuf.id)))+'ch') + ';'
 		+'background-color:' + color + ';'
 		+'color:' + background + ';'
-		+'padding-bottom:2px;'
 		+'top:' + res.top + 'px;';
 }
 

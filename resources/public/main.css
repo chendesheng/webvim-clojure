@@ -82,9 +82,8 @@ pre {
 	color:white;
 	z-index:99;
 	white-space:pre;
-	height:1em;
+	height: 1.2em;
 	line-height:1.2em;
-	padding-bottom:2px;
 }
 .cursor.ongoing-key {
 	z-index:1000;
