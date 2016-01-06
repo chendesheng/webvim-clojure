@@ -1,4 +1,5 @@
 (ns webvim.keymap.visual
+  (:require [clojure.string :as string])
   (:use webvim.keymap.action
         webvim.keymap.motion
         webvim.keymap.insert
@@ -214,13 +215,16 @@
 
 ;TODO: yank
 (defn- visual-block-delete[buf]
-  (visual-block-reduce 
-    buf (fn[buf [a b]]
-          (let [eol (dec (pos-line-last (buf :str) a))
-                b (min eol (inc b))]
-            (-> buf
-                (update-in [:visual :ranges] shift-ranges-delete a b)
-                (buf-delete a b))))))
+  (let [buf (visual-block-reduce 
+              buf (fn[buf [a b]]
+                    (let [eol (dec (pos-line-last (buf :str) a))
+                          b (min eol (inc b))]
+                      (-> buf
+                          (update-in [:visual :ranges] shift-ranges-delete a b)
+                          (update-in [:context :tmp] conj (-> buf :str (subr a b)))
+                          (buf-delete a b)))))]
+    (put-register! buf "\"" {:str (string/join <br> (-> buf :context :tmp )) :blockwise? true})
+    (update-in buf [:context] dissoc :tmp)))
 
 (defn- visual-mode-keymap[motion-keymap pair-keymap]
   (merge 

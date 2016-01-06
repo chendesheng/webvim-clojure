@@ -29,6 +29,7 @@
   (registers-get (buf :registers) c))
 
 (defn put-register![buf c v]
+  (println "put-register!" v)
   (registers-put! (buf :registers) c v))
 
 (defn file-register[buf]
@@ -183,28 +184,62 @@
         (buf-indent-lines [a b]))))
 
 (defn put-from-register[buf keycode]
-  (let [{s :str linewise? :linewise?} (get-register buf keycode)]
-    (if linewise?
+  (let [{s :str linewise? :linewise? blockwise? :blockwise?} (get-register buf keycode)]
+    (println "put-from-register: blockwise?" blockwise?)
+    (cond
+      linewise?
       (let [{r :str pos :pos} buf
             a (pos-line-first r pos)]
         (-> buf
             (buf-insert a s)
             (buf-set-pos a)
             line-start))
+      blockwise?
+      (let [{r :str pos :pos tabsize :tabsize} buf
+            lines (string/split-lines s)
+            h (count lines)]
+        (println "lines:" lines)
+        (println "vertical-line-pos:" (reverse (vertical-line-pos r pos h tabsize)))
+        (reduce (fn[buf [pos r]]
+                  (buf-insert buf pos r))
+                buf
+                (map
+                  (fn[pos s]
+                    [pos s])
+                  (reverse (vertical-line-pos r pos h tabsize))
+                  (reverse lines))))
+      :else
       (-> buf
           (buf-insert s)
           char-))))
 
 (defn put-from-register-append[buf keycode]
-  (let [{s :str linewise? :linewise?} (get-register buf keycode)
+  (let [{s :str linewise? :linewise? blockwise? :blockwise?} (get-register buf keycode)
         pos (buf :pos)]
-    (if linewise?
+    (cond
+      linewise?
       (let [r (buf :str)
             b (pos-line-last r pos)]
         (-> buf
             (buf-insert b s)
             (buf-set-pos b)
             line-start))
+      blockwise?
+      (let [{r :str tabsize :tabsize} buf
+            pos (inc pos)
+            lines (string/split-lines s)
+            h (count lines)]
+        (println "lines:" lines)
+        (println "vertical-line-pos:" (reverse (vertical-line-pos r pos h tabsize)))
+        (reduce (fn[buf [pos r]]
+                  (buf-insert buf pos r))
+                buf
+                (map
+                  (fn[pos s]
+                    [pos s])
+                  (reverse (vertical-line-pos r pos h tabsize))
+                  (reverse lines))))
+      :else
       (-> buf
           (buf-insert (inc pos) s)
           (buf-set-pos (+ pos (count s)))))))
