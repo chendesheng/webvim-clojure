@@ -81,27 +81,25 @@
 (defn- change-visual[linewise?]
   (start-insert-mode "c" identity #(change-range % true linewise?)))
 
-(defn- visual-line-repeat[buf first? fnmotion]
+(defn- absolute[d]
+  (if (neg? d) (- d) d))
+
+(defn- visual-line-repeat[buf append?]
   (let [keys (-> buf :context :keys pop reverse)
-        {y :y dy :dy} (-> buf :context :repeat-lines)
-        {newy :y pos :pos} buf
-        lines (if (= y newy) ;repeat contents must not cross line
-                (cond 
-                  (zero? dy) nil
-                  ;repeat on each line except current line
-                  (pos? dy) (reverse 
-                              (rest
-                                (take (inc dy) (pos-lines-seq+ (buf :str) pos))))
-                  :else (rest
-                          (take (- (dec dy)) (pos-lines-seq- (buf :str) pos))))
+        dy (-> buf :context :repeat-lines :dy)
+        {{lasty :lasty} :context newy :y pos :pos} buf
+        lines (if (= newy lasty) ;repeat contents must not cross line
+                (reverse 
+                  (rest
+                    (take (-> dy absolute inc) (pos-lines-seq+ (buf :str) pos))))
                 '())]
-    (fnmotion
-      (reduce (fn[buf [a b]]
-                (let [pos (if first? a (dec b))]
-                  (-> buf
-                      (buf-set-pos pos)
-                      (replay-keys keys)))) 
-              (assoc buf :keymap (buf :insert-mode-keymap)) lines))))
+    ;(println "lines:" lines)
+    (reduce (fn[buf [a b]]
+              (let [pos (if append? (dec b) a)]
+                (-> buf
+                    (buf-set-pos pos)
+                    (replay-keys keys)))) 
+            (assoc buf :keymap (buf :insert-mode-keymap)) lines)))
 
 (defn- visual-line-repeat-info[buf]
   (let [[_ b] (-> buf :visual :range)
@@ -155,31 +153,42 @@
                                          (repeat-insert poses s)
                                          (leave keycode)))))))))))
 
-(defn- visual-line-repeat-change[line-first?]
-  (let [fnmotion (if line-first? line-first line-end)]
-    (fn[buf]
-      (let [keymap (assoc (buf :insert-mode-keymap)
-                     :after (fn[buf keycode]
-                              (println "I after:" keycode)
-                              (println "repeat-lines:" (-> buf :context :repeat-lines))
-                              (let [after (or (-> buf :insert-mode-keymap :after) nop)]
-                                (-> buf
-                                    (after keycode)
-                                    (update-in [:context :keys] conj keycode))))
-                     :leave (fn[buf keycode]
-                              (println "repeat-lines:2" (-> buf :context :repeat-lines))
-                              (let [leave (or (-> buf :insert-mode-keymap :leave) nop)]
-                                (-> buf
-                                    (visual-line-repeat line-first? fnmotion)
-                                    (update-in [:context] dissoc :keys)
-                                    (update-in [:context] dissoc :repeat-lines)
-                                    (leave keycode)))))]
-                                    ;(println keymap)
-        (-> buf
-            fnmotion
-            (assoc-in [:context :repeat-lines] (visual-line-repeat-info buf))
-            set-insert-mode
-            (assoc :keymap keymap))))))
+(defn- visual-line-repeat-set-pos[{r :str :as buf} pos append?]
+  (let [[[a b]] (pos-lines-seq+ r pos)
+        newpos (if append? (dec b) a)]
+    (buf-set-pos buf newpos)))
+
+(defn- save-last-pos[{pos :pos y :y :as buf}]
+  (-> buf
+      (assoc-in [:context :lastpos] pos)
+      (assoc-in [:context :lasty] y)))
+
+(defn- visual-line-repeat-change[append?]
+  (fn[buf]
+    (let [keymap (assoc (buf :insert-mode-keymap)
+                        :after (fn[buf keycode]
+                                 (println "I after:" keycode)
+                                 (println "repeat-lines:" (-> buf :context :repeat-lines))
+                                 (let [after (or (-> buf :insert-mode-keymap :after) nop)]
+                                   (-> buf
+                                       (after keycode)
+                                       (update-in [:context :keys] conj keycode))))
+                        :leave (fn[buf keycode]
+                                 (println "repeat-lines:2" (-> buf :context :repeat-lines))
+                                 (let [leave (or (-> buf :insert-mode-keymap :leave) nop)]
+                                   (-> buf
+                                       (visual-line-repeat append?)
+                                       (visual-line-repeat-set-pos (-> buf :context :lastpos) append?)
+                                       (update-in [:context] dissoc :keys :repeat-lines :lastpos)
+                                       (leave keycode)))))
+          [a b] (-> buf :visual :range)]
+      (-> buf
+          (assoc-in [:context :repeat-lines] (visual-line-repeat-info buf))
+          (visual-line-repeat-set-pos (if (< a b) a b) append?)
+          save-last-pos
+            ;(assoc-in [:context :lastpos] (buf :pos))
+          set-insert-mode
+          (assoc :keymap keymap)))))
 
 (defn- visual-block-reduce[buf fn]
   (let [buf (-> buf
@@ -254,8 +263,8 @@
     (visual-mode-keymap motion-keymap pair-keymap)
     {:enter (fn[buf keycode]
               (set-visual-mode buf visual-line))
-     "I" (visual-line-repeat-change true)
-     "A" (visual-line-repeat-change false)
+     "I" (visual-line-repeat-change false)
+     "A" (visual-line-repeat-change true)
      "d" #(delete-range % true true)
      "c" (change-visual true)
      "y" #(yank-range % true true)}))
