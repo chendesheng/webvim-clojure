@@ -99,7 +99,7 @@
     [(pos-line-first r a) (pos-line-last r b)]))
 
 ;get vertical line start at pos up/down h lines
-(defn vertical-line-pos[r pos h tabsize]
+(defn vertical-line-pos[r pos h tabsize skip-hole?]
   (let [lines (if (pos? h)
                 (take h (pos-lines-seq+ r pos))
                 (take (- h) (pos-lines-seq- r pos)))
@@ -108,8 +108,10 @@
     (println pos a vx)
     (map (fn[[a b]]
            (let [s (str (subr r a b))
-                 vx (visualx-to-charx s vx tabsize)]
-             (+ vx a))) lines)))
+                 x (+ (visualx-to-charx s vx tabsize) a)]
+             (if skip-hole? 
+               (if (>= x b) -1 x) ;use -1 fill "hole"
+               x))) lines)))
 
 ;(defn test-vertical-line-pos[]
 ;(vec (vertical-line-pos (rope "aaaaa\n\tbb\nx\ty") 12 -3 4)))
@@ -130,12 +132,12 @@
        ;(println h a b)
        (if (< a b)
          (map sort-column  ;zip
-              (vertical-line-pos r a h tabsize)
-              (reverse (vertical-line-pos r b (- h) tabsize))
+              (vertical-line-pos r a h tabsize false)
+              (reverse (vertical-line-pos r b (- h) tabsize false))
               (take h (map second (pos-lines-seq+ r a))))
          (map sort-column
-              (vertical-line-pos r b h tabsize)
-              (reverse (vertical-line-pos r a (- h) tabsize))
+              (vertical-line-pos r b h tabsize false)
+              (reverse (vertical-line-pos r a (- h) tabsize false))
               (take h (map second (pos-lines-seq+ r b)))))))
   ([r [a b] tabsize]
      (expand-block-ranges r a b tabsize)))

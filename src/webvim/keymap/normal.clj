@@ -304,10 +304,9 @@
        "Y" #(yank % "y")
        "x" delete-char
        "p" (fn[buf]
-             (if (= (char-at (buf :str) (buf :pos)) \newline)
-               (put-from-register buf (-> buf :context :register))
-               (put-from-register-append buf (-> buf :context :register))))
-       "P" #(put-from-register % (-> % :context :register))
+             (let [append? (not= (char-at (buf :str) (buf :pos)) \newline)]
+               (put-from-register buf (-> buf :context :register) append?)))
+       "P" #(put-from-register % (-> % :context :register) false)
        "J" join-line
        "\"" {"<esc>" identity
              :else start-register}

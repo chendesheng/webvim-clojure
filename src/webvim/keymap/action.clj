@@ -183,66 +183,45 @@
     (-> buf
         (buf-indent-lines [a b]))))
 
-(defn put-from-register[buf keycode]
-  (let [{s :str linewise? :linewise? blockwise? :blockwise?} (get-register buf keycode)]
+(defn- put-blockwise[buf s append?]
+  (let [{r :str pos :pos tabsize :tabsize} buf
+        lines (string/split-lines s)
+        h (count lines)
+        newpos (if append? (-> lines first count (+ pos)) pos )
+        buf (reduce (fn[buf [pos r]]
+                      (if (neg? pos) buf
+                        (buf-insert buf pos r)))
+                    buf
+                    (reverse (map
+                               vector
+                               (vertical-line-pos r (if append? (inc pos) pos) h tabsize true)
+                               lines)))]
+    (buf-set-pos buf newpos)))
+
+(defn- put-linewise[buf s append?]
+  (let [{r :str pos :pos} buf
+        newpos (if append?
+            (pos-line-last r pos)
+            (pos-line-first r pos))]
+    (-> buf
+        (buf-insert newpos s)
+        (buf-set-pos newpos)
+        line-start)))
+
+(defn put-from-register[buf reg append?]
+  (let [{s :str linewise? :linewise? blockwise? :blockwise?} (get-register buf reg)]
     (println "put-from-register: blockwise?" blockwise?)
     (cond
       linewise?
-      (let [{r :str pos :pos} buf
-            a (pos-line-first r pos)]
-        (-> buf
-            (buf-insert a s)
-            (buf-set-pos a)
-            line-start))
+      (put-linewise buf s append?)
       blockwise?
-      (let [{r :str pos :pos tabsize :tabsize} buf
-            lines (string/split-lines s)
-            h (count lines)]
-        (println "lines:" lines)
-        (println "vertical-line-pos:" (reverse (vertical-line-pos r pos h tabsize)))
-        (reduce (fn[buf [pos r]]
-                  (buf-insert buf pos r))
-                buf
-                (map
-                  (fn[pos s]
-                    [pos s])
-                  (reverse (vertical-line-pos r pos h tabsize))
-                  (reverse lines))))
+      (put-blockwise buf s append?)
       :else
-      (-> buf
-          (buf-insert s)
-          char-))))
-
-(defn put-from-register-append[buf keycode]
-  (let [{s :str linewise? :linewise? blockwise? :blockwise?} (get-register buf keycode)
-        pos (buf :pos)]
-    (cond
-      linewise?
-      (let [r (buf :str)
-            b (pos-line-last r pos)]
+      (let [pos (if append? (inc (buf :pos)) (buf :pos))
+            newpos (-> pos (+ (count s)) dec)]
         (-> buf
-            (buf-insert b s)
-            (buf-set-pos b)
-            line-start))
-      blockwise?
-      (let [{r :str tabsize :tabsize} buf
-            pos (inc pos)
-            lines (string/split-lines s)
-            h (count lines)]
-        (println "lines:" lines)
-        (println "vertical-line-pos:" (reverse (vertical-line-pos r pos h tabsize)))
-        (reduce (fn[buf [pos r]]
-                  (buf-insert buf pos r))
-                buf
-                (map
-                  (fn[pos s]
-                    [pos s])
-                  (reverse (vertical-line-pos r pos h tabsize))
-                  (reverse lines))))
-      :else
-      (-> buf
-          (buf-insert (inc pos) s)
-          (buf-set-pos (+ pos (count s)))))))
+            (buf-insert pos s)
+            (buf-set-pos newpos))))))
 
 (defn nop[buf keycode] buf)
 
