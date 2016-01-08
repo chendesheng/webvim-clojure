@@ -191,12 +191,13 @@
           set-insert-mode
           (assoc :keymap keymap)))))
 
-(defn- visual-block-reduce[buf fn]
+(defn- visual-block-lines[buf]
   (let [buf (-> buf
-                (buf-set-pos (apply min (-> buf :visual :range)))
                 set-visual-ranges)]
-    (println "ranges:" (-> buf :visual :ranges))
-    (reduce fn buf (-> buf :visual :ranges))))
+    (reduce (fn[items [a b]]
+              (let [eol (dec (pos-line-last (buf :str) a))
+                    b (min eol (inc b))]
+                (conj items [(-> buf :str (subr a b)) a b]))) [] (-> buf :visual :ranges))))
 
 ;delete [a b) shift pos
 (defn- shift-delete[pos a b]
@@ -213,18 +214,23 @@
          (shift-delete b1 a b)])
       ranges) ranges))
 
-;TODO: yank
+(defn- yank-blockwise[buf items]
+  (put-register! buf "\"" {:str (string/join <br> (map first items)) :blockwise? true}))
+
+(defn- visual-block-yank[buf]
+  (let [items (visual-block-lines buf)
+        buf (buf-set-pos buf (-> items last (get 1)))]
+    (yank-blockwise buf (rseq items))
+    buf))
+
 (defn- visual-block-delete[buf]
-  (let [buf (visual-block-reduce 
-              buf (fn[buf [a b]]
-                    (let [eol (dec (pos-line-last (buf :str) a))
-                          b (min eol (inc b))]
-                      (-> buf
-                          (update-in [:visual :ranges] shift-ranges-delete a b)
-                          (update-in [:context :tmp] conj (-> buf :str (subr a b)))
-                          (buf-delete a b)))))]
-    (put-register! buf "\"" {:str (string/join <br> (-> buf :context :tmp )) :blockwise? true})
-    (update-in buf [:context] dissoc :tmp)))
+  (let [items (visual-block-lines buf)
+        buf (buf-set-pos buf (-> items last (get 1)))]
+    (yank-blockwise buf (rseq items))
+    (reduce (fn[buf [_ a b]]
+              (-> buf
+                  (update-in [:visual :ranges] shift-ranges-delete a b)
+                  (buf-delete a b))) buf items)))
 
 (defn- visual-mode-keymap[motion-keymap pair-keymap]
   (merge 
@@ -283,6 +289,7 @@
            (-> buf
                visual-block-delete
                (start-insert-and-repeat false)))
+     "y" visual-block-yank
      "I" (fn[buf]
            (start-insert-and-repeat buf false))
      "A" (fn[buf]
