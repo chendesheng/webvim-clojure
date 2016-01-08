@@ -65,7 +65,7 @@
    "<c+r>" {"<esc>" identity
             :else (fn[buf keycode]
                     (-> buf
-                        (put-from-register keycode)
+                        (put-from-register keycode false)
                         char+))}
    "<esc>" identity
    :after (fn[buf keycode]
