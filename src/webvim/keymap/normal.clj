@@ -244,7 +244,11 @@
                               visual-block-keymap pair-keymap]
   (let [motion-keymap-fix-w (-> motion-keymap
                                 (assoc "w" (dont-cross-line (motion-keymap "w")))
-                                (assoc "W" (dont-cross-line (motion-keymap "W"))))]
+                                (assoc "W" (dont-cross-line (motion-keymap "W"))))
+        motion-keymap-fix-cw (-> motion-keymap
+                                ;vim's "cw" is identical to "ce", but "dw"/"yw" is not equal to "de"/"ye"
+                                (assoc "w" (dont-cross-line (comp char+ (motion-keymap "e"))))
+                                (assoc "W" (dont-cross-line (comp char+ (motion-keymap "E")))))]
     (deep-merge
       motion-keymap
       {"i" (start-insert-mode "i" identity identity)
@@ -285,7 +289,7 @@
              {"d" identity
               :after delete})
        "c" (merge
-             motion-keymap-fix-w
+             motion-keymap-fix-cw
              pair-keymap
              {:leave (start-insert-mode-with-keycode nop change-by-motion)
               "c" identity})
