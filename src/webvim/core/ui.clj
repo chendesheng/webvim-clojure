@@ -14,8 +14,6 @@
     (dissoc buf k)
     buf))
 
-(def ^:private visual-line 2)
-
 (defn- dissoc-if-equal[after before k]
   (if (and (not (nil? before))
            (= (before k) (after k)))
@@ -44,6 +42,10 @@
           (update-in [:line-buffer] assoc :str (str prefix s))
           (update-in [:line-buffer] assoc :pos (+ pos (count prefix)))))))
 
+(defn- remove-visual[buf]
+  (if (-> :visual buf nil? not)
+    (update-in buf [:visual] dissoc :range) buf))
+
 (defn- remove-fields[buf]
   (-> buf 
       (dissoc :expandtab :CRLF? :history :context :last-cursor 
@@ -52,7 +54,7 @@
               :pending-undo :saved-undo :registers :linescnt 
               :save-point :ext :last-visual :nextid :dot-repeat-keys :last-indents)
       (dissoc-empty [:changes])
-      (update-in [:visual] dissoc :range)
+      remove-visual
       (dissoc-nil :keys)
       line-editor))
 
@@ -81,11 +83,9 @@
                     (diff-dirty before)
                     (dissoc-if-equal before :line-buffer)
                     (remove-autocompl before)
-                    remove-fields
-                    (dissoc :str)
+                    (dissoc-if-equal before :visual)
                     (dissoc-if-equal before :scroll-top)
                     (dissoc-if-equal before :mode)
-                    (dissoc-if-equal before :visual)
                     (dissoc-if-equal before :braces)
                     (dissoc-if-equal before :keys)
                     (dissoc-if-equal before :name)
@@ -93,7 +93,9 @@
                     (dissoc-if-equal before :message)
                     (dissoc-if-equal before :highlights)
                     (dissoc-if-equal before :tabsize)
-                    (dissoc-if-equal before :pos)))]
+                    (dissoc-if-equal before :pos)
+                    (dissoc :str)
+                    remove-fields))]
     buf))
 
 (defonce ui-agent (agent {:viewport {:w 0 :h 0}
