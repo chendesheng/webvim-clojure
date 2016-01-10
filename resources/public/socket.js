@@ -10,6 +10,7 @@ function connect(path) {
 	function _connect() {
 		_conn = new WebSocket(window.location.href.replace(/^http(s?:\/\/[^/]*)(\/.*)?/i, "ws$1")+path);
 		_conn.onmessage = function(message) {
+			console.log(message.data);
 			JSON.parse(message.data).each(render);
 		};
 		_conn.onopen = function() {
@@ -28,6 +29,7 @@ function connect(path) {
 			updateViewportSize(function() {
 				if (_conn.readyState == 1) { //OPEN https://developer.mozilla.org/en-US/docs/Web/API/WebSocket#Ready_state_constants
 					_conn.send(wrapActiveId(_inputBuffer));
+					console.log(_inputBuffer);
 					_inputBuffer = '';
 				} else if (_conn.readyState != 0) { //not CONNECTING
 					//reconnect
