@@ -151,6 +151,7 @@
       (str re-start (quote-pattern word) re-end))))
 
 (defn- highlight-all-matches[buf re]
+  (println "highlight-all-matches:" (buf :message))
   (let [r (buf :str)]
     (assoc buf :highlights 
            (map (fn[[a b]]
@@ -231,36 +232,59 @@
     (catch Exception e 
       (re-pattern "(?m)(?!x)x"))))
 
+(defn- increment-search-enter[line-editor-keymap]
+  (fn[buf keycode]
+    (let [enter (or (line-editor-keymap :enter) nop)]
+      (-> buf
+          (assoc-in [:context :lastpos] (buf :pos))
+          (enter keycode)))))
+
+(defn- increment-search-leave[line-editor-keymap]
+  (fn[buf keycode]
+    (let [leave (or (line-editor-keymap :leave) nop)]
+      (-> buf
+          (leave keycode)
+          (update-in [:context] dissoc :lastpos)))))
+
+(defn increment-search-<esc>[buf]
+  (-> buf
+      (assoc :message "")
+      (assoc :highlights [])
+      (buf-set-pos (-> buf :context :lastpos))))
+
 (defn- increment-search-<cr>[buf]
+  ;(println "increment-search-<cr>" (buf :message))
   (let [s (-> buf :line-buffer :str str)
         prefix (-> buf :line-buffer :prefix)]
     (put-register! buf "/" {:str s :forward? (= prefix "/")})
     (-> buf
-        (highlight-all-matches (search-pattern s))
-        (dissoc :line-buffer))))
+        (assoc :message (str prefix s))
+        (highlight-all-matches (search-pattern s)))))
 
-(defn- increment-search[buf forward?]
-  (let [linebuf (buf :line-buffer)]
-    (if (nil? linebuf) buf
-      (let [s (-> linebuf :str str)
-            re (search-pattern s)
-            newbuf (-> buf :context :lastbuf (assoc :keys (buf :keys)))
-            f (if forward?
-                re-forward-highlight 
-                re-backward-highlight)]
-        ;(println (-> buf :context :lastbuf))
-        ;(println "newbuf pos:"  (newbuf :pos))
-        (-> newbuf
-            (assoc-in [:context :lastbuf] newbuf) ;keep lastbuf for next round
-            (assoc :line-buffer linebuf)
-            (dissoc :highlights)
-            (f re))))))
+(defn- increment-search-after[forward?]
+  (fn[buf keycode]
+    (if (contains? #{"<cr>" "<esc>"} keycode)
+      buf
+      ;(println "increment-search" (buf :message))
+      (let [linebuf (buf :line-buffer)]
+        (if (nil? linebuf) buf
+          (let [re (-> linebuf :str str search-pattern)
+                f (if forward?
+                    re-forward-highlight 
+                    re-backward-highlight)]
+            ;(println "lastpos" (-> buf :context :lastpos))
+            (-> buf
+                (buf-set-pos (-> buf :context :lastpos))
+                (assoc :highlights [])
+                (f re))))))))
 
-(defn- increment-search+ [buf _]
-  (increment-search buf true))
-
-(defn- increment-search- [buf _]
-  (increment-search buf false))
+(defn- increment-search-keymap[line-editor-keymap forward?]
+  (merge line-editor-keymap
+         {:enter (increment-search-enter line-editor-keymap)
+          :leave (increment-search-leave line-editor-keymap)
+          "<esc>" increment-search-<esc> 
+          "<cr>" increment-search-<cr>
+          :after (increment-search-after forward?)}))
 
 (defn- repeat-search[buf same-dir?]
   (let[{s :str forward? :forward?} (or (get-register buf "/") 
@@ -315,12 +339,8 @@
    "T" {:else move-before-char-}
    ";" repeat-move-by-char+
    "," repeat-move-by-char-
-   "/" (merge line-editor-keymap
-              {"<cr>" increment-search-<cr>
-               :after increment-search+})
-   "?" (merge line-editor-keymap
-              {"<cr>" increment-search-<cr>
-               :after increment-search-})
+   "/" (increment-search-keymap line-editor-keymap true)
+   "?" (increment-search-keymap line-editor-keymap false)
    "*" same-word+
    "#" same-word-
    "n" repeat-search+

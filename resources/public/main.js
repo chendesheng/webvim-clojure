@@ -1079,6 +1079,10 @@ function renderLineBuffer(buf) {
 		$statusCursor(buf.id).style.display= 'none';
 	} else {
 		ex.textContent = str;
+		if (pos > str.length || pos == 0) {
+			$statusCursor(buf.id).style.display= 'none';
+			return;
+		}
 
 		var range = document.createRange();
 		range.setStart(ex.firstChild, pos-1);
@@ -1098,11 +1102,15 @@ function renderMode(buf, text) {
 }
 
 function renderStatusBar(buf) {
-	if (buf.message) {
+	if (typeof buf.message != 'undefined') {
 		$statusCursor(buf.id).style.cssText = 'display:none';
 
 		var ex = $statusBuf(buf.id);
 		ex.textContent = buf.message;
+
+		if (buf.message == "") {
+			renderMode(buf, MODES[buffers[buf.id].mode]);
+		}
 	} else if (typeof buf['line-buffer'] != 'undefined') {
 		renderLineBuffer(buf);
 	} else {

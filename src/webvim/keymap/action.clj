@@ -99,8 +99,7 @@
 
 (defn set-insert-mode [buf]
   (merge buf {:mode insert-mode
-              :keymap (buf :insert-mode-keymap)
-              :message nil}))
+              :keymap (buf :insert-mode-keymap)}))
 
 (defn set-normal-mode[buf]
   ;(println "set-normal-mode:")
@@ -366,7 +365,6 @@
 (defn line-editor-enter[buf keycode]
   (-> buf
       (dissoc :message)
-      (assoc-in [:context :lastbuf] buf)
       (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
 
 (defn start-insert-mode [keycode fnmotion fnedit]

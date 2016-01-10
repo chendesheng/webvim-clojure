@@ -75,7 +75,6 @@
             rest)]
     [(Integer. id) keycode]))
 
-;(parse-input "123!!\n")
 (defn- change-buffer![buf keycodes]
   (time
     (try

@@ -68,20 +68,20 @@
     (linebuf-insert buf ch)))
 
 (defn- line-editor-continue[buf keycode]
-  (println "continue:" keycode)
   (not (or
          (-> buf :line-buffer nil?)
          (contains? #{"<cr>" "<esc>"} keycode))))
 
+(defn- line-editor-leave [buf keycode] 
+  (dissoc buf :line-buffer))
+
 (defn- line-editor-<bs>
   [{{r :str} :line-buffer :as buf}] 
   (if (empty? r)
-    (dissoc buf :line-buffer)
+    (-> buf
+        (dissoc :line-buffer)
+        (assoc :message ""))
     (linebuf-delete buf -1)))
-
-(defn- line-editor-leave 
-  [buf keycode] 
-  (dissoc buf :line-buffer))
 
 (defn- line-editor-put[buf keycode]
   (let [txt (-> buf (get-register keycode) :str)]
@@ -102,7 +102,6 @@
    "<bs>" line-editor-<bs>
    "<c+h>" line-editor-<bs>
    "<c+d>" #(linebuf-delete % 1)
-   "<esc>" #(-> % :context :lastbuf (assoc :keys (% :keys)))
    "<c+r>" {"<esc>" identity
             :else line-editor-put}
    "<c+w>" line-editor-<c+w>

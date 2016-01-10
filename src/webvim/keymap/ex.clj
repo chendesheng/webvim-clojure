@@ -128,7 +128,7 @@
 (defn cmd-bnext[buf execmd args]
   (let [id (buf :id)
         nextid (or
-        ;get next id larger than current
+                 ;get next id larger than current
                  (->> @buffer-list (map #(-> % val deref :id)) (filter #(> % id)) sort first)
                  (-> @buffer-list first val deref :id))]
                  ;(println "nextid:" nextid)
@@ -319,11 +319,10 @@
       (autocompl-move 
         (new-autocompl buf) inc))))
 
-(defn- append-<br>[buf]
-  (let [s (-> buf :line-buffer :str)
-        len (count s)
-        news (replacer s len len <br>)]
-    (assoc-in buf [:line-buffer :str] news)))
+;Make sure each cmd have a not-nil response message
+(defn- fix-message[buf]
+  (if (-> buf :message nil?)
+    (assoc buf :message "") buf))
 
 (defn init-ex-mode-keymap[line-editor-keymap]
   (let [cmds (ex-commands)]
@@ -348,7 +347,9 @@
                          (autocompl-suggest buf))))
             :leave (fn[buf keycode]
                      (-> buf
+                         (dissoc :line-buffer)
                          (dissoc :autocompl)
+                         fix-message
                          set-normal-mode))
             "<c+p>" (fn[buf]
                       (swap! commands-history go-back)
@@ -360,10 +361,7 @@
                         (set-line-buffer buf (@commands-history :current))
                         (recover-command-history buf)))
             "<cr>" (fn[buf]
-                     (-> buf
-                         ;append a <br> indicates this command is already executed
-                         append-<br>
-                         (execute cmds)))
+                     (execute buf cmds))
             "<s+tab>" (fn[buf]
                         (autocompl-move buf dec))
             "<tab>" (fn[buf]
