@@ -446,3 +446,17 @@
             (assoc-in [:autocompl :index] newi)
             (replace neww w))))))
 
+(defn set-visual-ranges[{{tp :type rg :range} :visual :as buf}]
+  (println "set-visual-ranges:" tp rg)
+  (assoc-in buf [:visual :ranges]
+            (condp = tp
+              visual-range (list (sort2 rg))
+              visual-line (list (make-linewise-range rg buf))
+              visual-block (into '() (expand-block-ranges (buf :str) rg (buf :tabsize)))
+              nil)))
+
+(defn set-visual-mode[buf visual]
+  (-> buf
+      (assoc :visual visual)
+      set-visual-ranges))
+

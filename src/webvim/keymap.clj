@@ -25,13 +25,8 @@
   (let [pair-keymap (init-pair-keymap)
         line-editor-keymap (init-line-editor-keymap)
         motion-keymap (init-motion-keymap line-editor-keymap)
-        visual-mode-keymap (init-visual-range-keymap motion-keymap pair-keymap)
-        visual-line-mode-keymap (init-visual-line-keymap motion-keymap pair-keymap)
-        visual-block-mode-keymap (init-visual-block-keymap motion-keymap pair-keymap)
-
-        normal-mode-keymap (init-normal-mode-keymap motion-keymap visual-mode-keymap 
-                                                    visual-line-mode-keymap visual-block-mode-keymap 
-                                                    pair-keymap)
+        visual-mode-keymap (init-visual-mode-keymap motion-keymap pair-keymap)
+        normal-mode-keymap (init-normal-mode-keymap motion-keymap visual-mode-keymap pair-keymap)
         insert-mode-keymap (init-insert-mode-keymap)
         ex-mode-keymap (init-ex-mode-keymap line-editor-keymap)]
     {:normal-mode-keymap normal-mode-keymap
