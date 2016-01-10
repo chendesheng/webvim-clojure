@@ -142,6 +142,7 @@ function getElementByPos(buf, pos) {
 		ele = ele.nextSibling;
 		j++;
 	}
+
 	if (ele.nodeType != 3) {
 		ele = ele.firstChild;
 	}
@@ -465,13 +466,16 @@ function autocomplItem(subject, word) {
 	splits.unshift(-1);
 	//console.log(splits);
 
-	var html = '';
+	var ele = document.createElement('PRE');
 	for (var i=1; i < splits.length; i++) {
-		html += word.substring(splits[i-1]+1, splits[i])+
-			'<span class="matched">'+word[splits[i]]+'</span>';
+		ele.appendChild(document.createTextNode(word.substring(splits[i-1]+1, splits[i])));
+		var matched = document.createElement('SPAN');
+		matched.className = 'matched';
+		matched.textContent = word[splits[i]];
+		ele.appendChild(matched);
 	}
-	html += word.substring(splits[splits.length-1]+1);
-	return html;
+	ele.appendChild(document.createTextNode(word.substring(splits[splits.length-1]+1)));
+	return ele;
 }
 
 function appendAutocomplItems(bufid, suggestions, $a, selectedIndex) {
@@ -481,8 +485,7 @@ function appendAutocomplItems(bufid, suggestions, $a, selectedIndex) {
 	var subject = suggestions[0];
 	suggestions.each(function(word, i) {
 		if (i > 0) {
-			var ele = document.createElement('PRE');
-			ele.innerHTML = autocomplItem(subject, word);
+			var ele = autocomplItem(subject, word);
 			$a.appendChild(ele);
 			if (i == selectedIndex) {
 				ele.className = 'highlight';
@@ -499,29 +502,30 @@ function $hideAutocompl(bufid) {
 	$hide($exAutocompl(bufid));
 }
 
-function renderAutocompl(buf) {
-	var autocompl = buf.autocompl;
+function renderAutocompl(localbuf) {
+	var bufid = localbuf.id;
+	var autocompl = localbuf.autocompl;
 	var suggestions;
 	if (!autocompl) {
-		$hideAutocompl(buf.id);
+		$hideAutocompl(bufid);
 		return;
 	} else if (!autocompl.suggestions) {
 		//use local cache
-		suggestions = buffers[buf.id].suggestions;
+		suggestions = localbuf.suggestions;
 	} else {
 		//update local cache
 		suggestions = autocompl.suggestions;
-		buffers[buf.id].suggestions = suggestions;
+		localbuf.suggestions = suggestions;
 	}
 
 	if (suggestions == null || suggestions.length < 1) {
 		//This should not happen, server problem
-		$hideAutocompl(buf.id);
+		$hideAutocompl(bufid);
 		return;
 	}
 
 	if (suggestions.length <= 2) {
-		$hideAutocompl(buf.id);
+		$hideAutocompl(bufid);
 		return;
 	}
 
@@ -529,31 +533,31 @@ function renderAutocompl(buf) {
 	var selectedIndex = autocompl.index;
 	var lastScrollTop;
 	var popupHeight;
-	if (buffers[buf.id].mode == 2) {
-		$a = $exAutocompl(buf.id);
+	if (localbuf.mode == 2) {
+		$a = $exAutocompl(bufid);
 		lastScrollTop = $a.scrollTop;
 
-		appendAutocomplItems(buf.id, suggestions, $a, selectedIndex);
+		appendAutocomplItems(bufid, suggestions, $a, selectedIndex);
 		itemHeight = $a.firstChild.offsetHeight;
 		popupHeight = $a.offsetHeight;
 	} else {
-		$a = $autocompl(buf.id);
+		$a = $autocompl(bufid);
 		lastScrollTop = $a.scrollTop;
 
-		var h = $cursor(buf.id).offsetHeight+3;
+		var h = $cursor(bufid).offsetHeight+3;
 		var currentWord = suggestions[selectedIndex];
-		var res = getScreenXYByPos(buffers[buf.id], buffers[buf.id].cursor-currentWord.length);
+		var res = getScreenXYByPos(localbuf, localbuf.cursor-currentWord.length);
 		if (!res.e) return;
 
-		$a.style.left = res.left+$content(buf.id).scrollLeft-10+'px';
+		$a.style.left = res.left+$content(bufid).scrollLeft-10+'px';
 		var top = res.top;
 
-		appendAutocomplItems(buf.id, suggestions, $a, selectedIndex);
+		appendAutocomplItems(bufid, suggestions, $a, selectedIndex);
 		itemHeight = $a.firstChild.offsetHeight;
 		popupHeight = $a.offsetHeight;
 
-		var $buf = $buffer(buf.id);
-		if (top+h+popupHeight < $buf.scrollTop+$buf.offsetHeight-$statusBar(buf.id).offsetHeight) {
+		var $buf = $buffer(bufid);
+		if (top+h+popupHeight < $buf.scrollTop+$buf.offsetHeight-$statusBar(bufid).offsetHeight) {
 			$a.style.top = top+h+'px';
 		} else {
 			$a.style.top = top-popupHeight-3+'px';
@@ -591,7 +595,7 @@ function removeUnused($p, usedIds) {
 }
 
 
-function renderToScreen(paddinglines){
+function renderToScreen(paddinglines, scrolling){
 	paddinglines = paddinglines || 5;
 
 	var localbuf = buffers.active;
@@ -662,6 +666,10 @@ function renderToScreen(paddinglines){
 	} else {
 		$empty($braces);
 	}
+
+	if (!scrolling) {
+		renderAutocompl(localbuf);
+	}
 }
 
 function renderGutter(localbuf, from, visibleLines) {
@@ -729,10 +737,10 @@ function onscrollRender() {
 
 	if (buffers.active.linecnt > 3000) {
 		__renderTimer = setTimeout(function(){
-			renderToScreen(15);
+			renderToScreen(15, true);
 		}, 10);
 	} else {
-		renderToScreen(10);
+		renderToScreen(10, true);
 	}
 }
 
@@ -845,7 +853,7 @@ function render(buf) {
 		localbuf.scrollTopRow = buf['scroll-top'] || 0;
 	}
 
-	renderAutocompl(buf);
+	localbuf.autocompl = buf.autocompl;
 
 	//title
 	if (typeof buf.name != 'undefined') {
