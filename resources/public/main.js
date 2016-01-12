@@ -280,7 +280,8 @@ function renderBlock(items) {
 	return block;
 }
 
-function refreshBlock(items, ele) {
+//return true means already updated
+function refreshBlock(items, ele, dirtyLines) {
 	function nodetype(className) {
 		if (className) return Node.ELEMENT_NODE;
 		else return Node.TEXT_NODE;
@@ -310,9 +311,9 @@ function refreshBlock(items, ele) {
 				}
 			}
 
-			if (changed) {
-				ele.dataset.time = (new Date).getTime();
-			}
+		}
+		if (changed) {
+			dirtyLines[ele.id] = true;
 		}
 		return true;
 	} else {
@@ -320,9 +321,9 @@ function refreshBlock(items, ele) {
 	}
 }
 
-function refreshIter(index, currentBlock, states, parentNode) {
+function refreshIter(index, localbuf, states, parentNode) {
 	var i = index;
-	var ele = currentBlock;
+	var ele = localbuf.currentBlock;
 	return {
 		text: function() {
 			return ele.textContent;
@@ -331,7 +332,8 @@ function refreshIter(index, currentBlock, states, parentNode) {
 			return i;
 		},
 		render: function(items) {
-			if (!refreshBlock(items, ele)) {
+			if (!refreshBlock(items, ele, localbuf.dirtyLines)) {
+				delete localbuf.dirtyLines[ele.id]
 				var newele = renderBlock(items);
 				parentNode.replaceChild(newele, ele);
 				ele = newele;
@@ -376,7 +378,8 @@ function renderLines(buf) {
 		pos: 0,
 		//track linecnt change
 		linecnt: linecnt,
-		lastlinecnt: -1
+		lastlinecnt: -1,
+		dirtyLines:{}
 	};
 
 	hl.states.push(null);
@@ -439,7 +442,7 @@ function renderChanges(buf) {
 		if (!endCode(ele) && !savedstate.equal(hl.states[resa.num+blocknuminserted])) {
 			//currentBlock will change
 			var saved = localbuf.currentBlock.previousSibling;
-			hl.refresh(refreshIter(resa.num+blocknuminserted, localbuf.currentBlock, hl.states, offscreenLines));
+			hl.refresh(refreshIter(resa.num+blocknuminserted, localbuf, hl.states, offscreenLines));
 			localbuf.currentBlock = saved.nextSibling;
 		}
 
@@ -594,7 +597,6 @@ function removeUnused($p, usedIds) {
 	}
 }
 
-
 function renderToScreen(paddinglines, scrolling){
 	paddinglines = paddinglines || 5;
 
@@ -615,15 +617,16 @@ function renderToScreen(paddinglines, scrolling){
 		var line = document.getElementById(offscreen.id);
 		var linenum = from+cnt;
 		if (line) {
-			if (offscreen.dataset.time == line.dataset.time) {
-				usedIds[offscreen.id] = true;
-				lastline = line;
-			} else {
+			if (localbuf.dirtyLines[line.id]) {
 				var newline = offscreen.cloneNode(true);
 				usedIds[newline.id] = true;
 				lines.replaceChild(newline, line);
 
 				lastline = newline;
+				delete localbuf.dirtyLines[line.id]
+			} else {
+				usedIds[offscreen.id] = true;
+				lastline = line;
 			}
 		} else {
 			newline = offscreen.cloneNode(true);
