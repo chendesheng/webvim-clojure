@@ -160,14 +160,13 @@
                                  (-> buf
                                      (visual-line-repeat append?)
                                      (visual-line-repeat-set-pos (-> buf :context :lastpos) append?)
-                                     (update-in [:context] dissoc :keys :repeat-lines :lastpos)
+                                     (update-in [:context] dissoc :keys :repeat-lines :lastpos :lasty)
                                      (leave keycode)))))
         [a b] (-> buf :visual :range)]
     (-> buf
         (assoc-in [:context :repeat-lines] (visual-line-repeat-info buf))
         (visual-line-repeat-set-pos (if (< a b) a b) append?)
         save-last-pos
-          ;(assoc-in [:context :lastpos] (buf :pos))
         set-insert-mode
         (assoc :keymap keymap))))
 
