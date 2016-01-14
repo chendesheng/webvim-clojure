@@ -27,7 +27,7 @@
         motion-keymap (init-motion-keymap line-editor-keymap)
         visual-mode-keymap (init-visual-mode-keymap motion-keymap pair-keymap)
         normal-mode-keymap (init-normal-mode-keymap motion-keymap visual-mode-keymap pair-keymap)
-        insert-mode-keymap (init-insert-mode-keymap)
+        insert-mode-keymap (init-insert-mode-keymap normal-mode-keymap)
         ex-mode-keymap (init-ex-mode-keymap line-editor-keymap)]
     {:normal-mode-keymap normal-mode-keymap
      :insert-mode-keymap insert-mode-keymap

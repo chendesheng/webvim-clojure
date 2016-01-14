@@ -58,7 +58,7 @@
                            (rblank? s))
                     (buf-delete buf a1 (dec b1)) buf))) buf (buf :last-indents))) :last-indents))
 
-(defn init-insert-mode-keymap[]
+(defn init-insert-mode-keymap[normal-mode-keymap]
   {;"<c+o>" normal-mode-keymap 
    "<c+n>" #(autocompl-move (new-autocompl %) inc)
    "<c+p>" #(autocompl-move (new-autocompl %) dec)
@@ -68,8 +68,21 @@
                         (put-from-register keycode false)
                         char+))}
    "<esc>" identity
-   :after (fn[buf keycode]
-            (println "insert after:" keycode) buf)
+   "<c+o>" (-> normal-mode-keymap
+               (dissoc "u" "<c+r>") ;can't make undo/redo in the middle of change
+               (assoc :continue (fn[buf keycode] false)
+                      ;FIXME: Vim's <c+o> breaks history and dot repeat.
+                      ;I think keep them seems a better chioce.
+                      :enter (fn[buf keycode]
+                               (-> buf
+                                   (dissoc :autocompl)
+                                   cancel-last-indents
+                                   char-
+                                   update-x
+                                   normal-mode-fix-pos
+                                   (assoc :mode normal-mode)))
+                      :leave (fn[buf keycode]
+                               (assoc buf :mode insert-mode))))
    :else insert-mode-default 
    :continue #(not (= "<esc>" %2))
    :leave (fn[buf keycode]
