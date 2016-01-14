@@ -131,6 +131,8 @@
           (>= i (-> s count dec)) (inc i)
           :else (recur (inc i) vxi))))))
 
+(defn nop[buf keycode] buf)
+
 (comment
   (webvim.core.utils/visual-size "\t\ta" 5)
   (webvim.core.utils/visualx-to-charx "\t\t345" 3 4))

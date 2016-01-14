@@ -222,8 +222,6 @@
             (buf-insert pos s)
             (buf-set-pos newpos))))))
 
-(defn nop[buf keycode] buf)
-
 (defn apply-keycode[buf keycode]
   (let [keymap (compile-keymap (buf :keymap))
         allkeycode (conj (buf :keys) keycode)

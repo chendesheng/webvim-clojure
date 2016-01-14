@@ -10,10 +10,9 @@
 (defn- stop[buf keycode]
   false)
 
-(defn- nop[buf keycode] buf)
 
 (defn- keycode-func-comp[funcs]
-  (let [funcs (filter (comp not nil?) funcs)]
+  (let [funcs (filter #(and (not (nil? %)) (not (= % nop))) funcs)]
     ;(pprint funcs)
     (if (empty? funcs)
       nil
@@ -55,7 +54,7 @@
         (assoc ctx1
           (clojure.string/join (map key path))
           (keycode-func-comp
-            `(~enter ~before ~record-macro ~save-key)))))
+            (list enter before record-macro save-key)))))
     
     (fn[ctx [[keycode func] & [[_ {before :before after :after continue? :continue}] & _ :as allparents] :as path]]
       (if (contains? #{:enter :leave :before :after :continue} keycode)
@@ -64,14 +63,14 @@
                      func
                      (fn[buf keycode]
                        (func buf)))
-              funcs `(~func ~before ~record-macro ~save-key)]
-              ;(println "keycode:" keycode)
+              funcs (list func before record-macro save-key)]
+          ;(println "keycode:" keycode)
           (assoc ctx
             (clojure.string/join (map key path))
             (keycode-func-comp 
               (conj funcs
                     (fn[buf keycode]
-                    ;(println "keycode:" keycode)
+                      ;(println "keycode:" keycode)
                       (if (empty? allparents) buf
                         (reduce leave-map buf allparents)))))))))
     {}
