@@ -289,7 +289,11 @@
        "c" (merge
              motion-keymap-fix-cw
              pair-keymap
-             {:leave (start-insert-mode-with-keycode nop change-by-motion)
+             {:leave (fn[buf keycode]
+                       (let [f (start-insert-mode-with-keycode nop change-by-motion)]
+                         (if (= (-> buf :context :lastbuf :pos) (buf :pos))
+                           buf
+                           (f buf keycode))))
               "c" identity})
        "y" (merge
              motion-keymap-fix-w
