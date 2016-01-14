@@ -135,17 +135,19 @@
         (indent-range true))))
 
 (defn- replace-char-keycode[buf keycode]
-  (let [ch (keycode-to-char keycode)]
-    (if (= (count ch) 1)
-      (let [enter-indent (if (= ch "\n")
-                           #(buf-indent-current-line %)
-                           identity)
-            pos (buf :pos)]
-        (-> buf
-            (buf-replace pos (inc pos) ch)
-            (buf-set-pos pos)
-            enter-indent))
-      buf)))
+  (let [ch (keycode-to-char keycode)
+        pos (buf :pos)]
+    (cond
+      (= ch "\n")
+      (-> buf
+          (buf-replace pos (inc pos) ch)
+          (buf-set-pos (inc pos))
+          buf-indent-current-line)
+      (= (count ch) 1)
+      (-> buf
+          (buf-replace pos (inc pos) ch)
+          (buf-set-pos pos))
+      :else buf)))
 
 (defn- start-register[buf keycode]
   (if (re-test #"[0-9a-zA-Z/*#%.:+=\-]" keycode)
