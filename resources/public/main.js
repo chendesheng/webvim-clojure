@@ -51,7 +51,7 @@ function setSize(bufid) {
 	var sw = pageh*zoom;
 	var w = Math.floor($content(bufid).offsetWidth*zoom/10);
 	var h = Math.floor((window.innerHeight-$statusBar(bufid).offsetHeight)/lineHeight);
-	$content(bufid).style.paddingBottom = (pageh-lineHeight) + 'px'; //scroll beyond last line, leave at least one line
+	$content(bufid).style.paddingBottom = (pageh-lineHeight*2.1) + 'px'; //scroll beyond last line, leave at least one line. 1 line + 1.1 line status bar.
 	return {width: w, height: h}
 }
 
