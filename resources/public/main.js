@@ -1125,5 +1125,5 @@ function renderStatusBar(buf) {
 }
 
 var MODES = ['-- NORMAL --', '-- INSERT --'];
-var VISUAL_MODES = ['', '-- VISUAL --', '-- VISUAL LINE --', '-- VISUAL BLOCK']
+var VISUAL_MODES = ['', '-- VISUAL --', '-- VISUAL LINE --', '-- VISUAL BLOCK --']
 
