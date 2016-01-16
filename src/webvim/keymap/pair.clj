@@ -15,19 +15,49 @@
         webvim.jumplist
         webvim.autocompl))
 
-(defn- pair-range[left right around?]
+(defn- quote-patterns[& args]
+  (clojure.string/join "|" (map quote-pattern args)))
+
+(defn- unmatched-brace+[r pos re rch]
+  (let [[a _] (pos-re+ r pos re)]
+    (if (or (nil? a)
+            (= (char-at r a) rch))
+      a
+      (recur r (inc (pos-match-brace r a)) re rch))))
+
+(defn- unmatched-brace-[r pos re lch]
+  (let [[a _] (pos-re- r pos re)]
+    (if (or (nil? a)
+            (= (char-at r a) lch))
+      a
+      (recur r (dec (pos-match-brace r a)) re lch))))
+
+;(defn test-right-brace[]
+;  (unmatched-brace- (rope "(aaa(()()))bbb") 10 (re-pattern (quote-patterns \( \))) \())
+
+(defn- pair-range[lch rch around?]
   (fn[buf]
-    (println left right around?)
+    (println lch rch around?)
     (let [{r :str pos :pos} buf
-          re (re-pattern (quote-pattern right))
-          b (first (pos-re+ r pos re))]
-      (println b)
-      (if (nil? b)
-        buf
-        (let [a (pos-match-brace r b)]
-          (if (nil? a) buf
-              (let [rg (if around? [a b] [(inc a) (dec b)])]
-                (assoc-in buf [:context :range] rg))))))))
+          re (re-pattern (quote-patterns lch rch))
+          ch (char-at r pos)
+          [a b :as rg] (cond 
+                         (= ch lch)
+                         [pos (pos-match-brace r pos)]
+                         (= ch rch)
+                         [(pos-match-brace r pos) pos]
+                         :else
+                         ;FIXME: This is ugly.
+                         (let [b (unmatched-brace+ r pos re rch)]
+                           (if (nil? b) nil
+                             (let [a (unmatched-brace- r pos re lch)]
+                               (if (nil? a) nil
+                                 [a b])))))]
+      (if (nil? rg) buf
+        (let [[_ b :as rg] (if around? rg [(inc a) (dec b)])]
+          (-> buf
+              (buf-set-pos b)
+              (assoc-in [:context :range] rg)))))))
 
 (defn- pair-quotes-range[ch around?]
   (fn[buf]
@@ -59,15 +89,12 @@
 
 (defn- pair-keymap[around?]
   (merge (reduce-kv
-           (fn[keymap left right]
+           (fn[keymap lch rch]
              (-> keymap
-                 (assoc left (pair-range left right around?))
-                 (assoc right (pair-range left right around?))))
+                 (assoc (str lch) (pair-range lch rch around?))
+                 (assoc (str rch) (pair-range lch rch around?))))
            {}
-           {"(" ")"
-            "[" "]"
-            "{" "}"
-            "<" ">"})
+           braces)
          (reduce
            (fn[keymap ch]
              (-> keymap

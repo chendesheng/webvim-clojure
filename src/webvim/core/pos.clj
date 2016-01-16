@@ -29,7 +29,7 @@
       (find-first m pos))))
 
 (defn pos-re-
-  "return backward range matches. return nil if not found"
+  "return backward range matches. Include current position. return nil if not found"
   [r pos re]
   (if-not (neg? pos) 
     (let [m (.matcher r (re-pattern (str "(?=" re ")")))
