@@ -1,10 +1,6 @@
 (ns webvim.core.utils
   (:use [me.raynes.fs :as fs]))
 
-(def all-braces {\( \) \) \( \[ \] \] \[ \{ \} \} \{})
-(def left-braces #{\( \[ \{})
-(def right-braces #{\) \] \}})
-
 (defn quote-pattern[ch]
   (java.util.regex.Pattern/quote (str ch)))
 

@@ -1,5 +1,6 @@
 (ns webvim.core.pos
-  (:use webvim.core.rope))
+  (:use webvim.core.rope
+        webvim.core.utils))
 
 (defn- find-first
   ([m pos]
@@ -94,4 +95,37 @@
   (-> buf
       (assoc :y (-> buf :linescnt dec))
       (assoc :pos (-> buf :str count dec))))
+
+
+(def braces {\( \) \[ \] \{ \} \< \>})
+(def all-braces (into braces (clojure.set/map-invert braces)))
+(def left-braces (into #{} (keys braces)))
+(def right-braces (into #{} (vals braces)))
+(def re-braces (re-pattern (str "\\" (clojure.string/join "|\\" (keys all-braces)))))
+
+(defn pos-match-brace
+  "return matched brace position, nil if not find"
+  [r pos]
+  (let [brace (char-at r pos)
+        m (all-braces brace)
+        left? (contains? left-braces brace)
+        re (re-pattern (str  (quote-pattern brace) "|" (quote-pattern m)))]
+    (if (nil? m) nil
+      (let [inc-cnt? (if left?
+                       #(contains? left-braces %)
+                       #(contains? right-braces %))
+            braces (if left?
+                     (pos-re-seq+ r pos re)
+                     (pos-re-seq- r pos re))
+            mpos (reduce
+                   (fn[cnt [a _]]
+                     (let [ch (char-at r a)
+                           newcnt (if (inc-cnt? ch)
+                                    (inc cnt)
+                                    (dec cnt))]
+                       (if (zero? newcnt)
+                         (reduced [a])
+                         newcnt))) 0 braces)]
+        (if (vector? mpos) (first mpos) nil)))))
+
 

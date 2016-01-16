@@ -136,9 +136,9 @@
 (defn- move-to-matched-braces[buf]
   (buf-move buf
             (fn [r pos]
-              (pos-match-brace 
-                r
-                (first (pos-re+ r pos #"\(|\)|\[|\]|\{|\}"))))))
+              (let [[a _] (pos-re+ r pos re-braces)]
+                (if (nil? a) pos
+                  (pos-match-brace r a))))))
 
 (defn- re-current-word
   "create regexp from word under cursor"

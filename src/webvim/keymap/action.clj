@@ -35,37 +35,10 @@
 (defn file-register[buf]
   {:id (buf :id) :str (or (buf :filepath) (buf :name))})
 
-(defn pos-match-brace
-  "return matched brace position, nil if not find"
-  [r pos]
-  (let [brace (char-at r pos)
-        m (all-braces brace)
-        left? (contains? left-braces brace)
-        re (re-pattern (str  (quote-pattern brace) "|" (quote-pattern m)))]
-    (if (nil? m) nil
-      (let [inc-cnt? (if left?
-                       #(contains? left-braces %)
-                       #(contains? right-braces %))
-            braces (if left?
-                     (pos-re-seq+ r pos re)
-                     (pos-re-seq- r pos re))
-            mpos (reduce
-                   (fn[cnt [a _]]
-                     (let [ch (char-at r a)
-                           newcnt (if (inc-cnt? ch)
-                                    (inc cnt)
-                                    (dec cnt))]
-                       (if (zero? newcnt)
-                         (reduced [a])
-                         newcnt))) 0 braces)]
-        (if (vector? mpos) (first mpos) nil)))))
-
 (defn buf-update-highlight-brace-pair[buf pos]
   (let [mpos (pos-match-brace (buf :str) pos)]
-    ;(println pos mpos)
-    (if (nil? mpos)
-      (assoc buf :braces [])
-      (assoc buf :braces [pos mpos]))))
+      (assoc buf :braces 
+             (if (nil? mpos) [] [pos mpos]))))
 
 (defn- add-highlight[buf rg]
   (let [highlights (buf :highlights)]
