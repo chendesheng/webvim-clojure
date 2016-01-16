@@ -148,14 +148,14 @@
 (defn- visual-line-repeat-change[buf append?]
   (let [keymap (assoc (buf :insert-mode-keymap)
                       :after (fn[buf keycode]
-                               (println "I after:" keycode)
-                               (println "repeat-lines:" (-> buf :context :repeat-lines))
+                               ;(println "I after:" keycode)
+                               ;(println "repeat-lines:" (-> buf :context :repeat-lines))
                                (let [after (or (-> buf :insert-mode-keymap :after) nop)]
                                  (-> buf
                                      (after keycode)
                                      (update-in [:context :keys] conj keycode))))
                       :leave (fn[buf keycode]
-                               (println "repeat-lines:2" (-> buf :context :repeat-lines))
+                               ;(println "repeat-lines:2" (-> buf :context :repeat-lines))
                                (let [leave (or (-> buf :insert-mode-keymap :leave) nop)]
                                  (-> buf
                                      (visual-line-repeat append?)

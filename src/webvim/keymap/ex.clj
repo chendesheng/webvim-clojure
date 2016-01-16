@@ -88,7 +88,7 @@
     (str (fs/normalized f))))
 
 (defn cmd-write [buf _ file]
-  (println (expand-path file))
+  ;(println (expand-path file))
   (if (not (string/blank? file))
     (-> buf
         (assoc :name (fs/base-name file))
@@ -194,8 +194,8 @@
 (defn cmd-cd[buf execmd args]
   (if (string/blank? args) (assoc buf :message (str fs/*cwd*))
     (let [dir (fs/expand-home args)]
-      (println "dir:" fs/*cwd*)
-      (println "dir:2" dir)
+      ;(println "dir:" fs/*cwd*)
+      ;(println "dir:2" dir)
       (if (fs/directory? dir)
         (do
           (reset! all-files nil)
@@ -283,7 +283,7 @@
                                       (if (zero? (.indexOf cmd excmd)) handler nil)
                                       (let [m (re-find cmd excmd)]
                                         (if (not (nil? m)) handler nil)))) cmds))]
-        (println excmd args)
+        ;(println excmd args)
         (if (>= (count handlers) 1)
           (-> buf
               ((first handlers) excmd args)
@@ -313,7 +313,7 @@
 
 (defn- ex-tab-complete [{{r :str} :line-buffer :as buf} cmds]
   (let [w (uncomplete-word buf)]
-    (println "ex-tab-complete:" w)
+    ;(println "ex-tab-complete:" w)
     (if (nil? w)
       (if (re-test #"^\s*\S+\s*$" r)
         (let [s (str r)
@@ -340,7 +340,7 @@
   (let [cmds (ex-commands)]
     (merge line-editor-keymap
            {:enter (fn[buf keycode]
-                     (println "ex-mode enter")
+                     ;(println "ex-mode enter")
                      (swap! commands-history #(-> %
                                                   fast-forward
                                                   (assoc :current "")))

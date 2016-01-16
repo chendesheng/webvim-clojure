@@ -29,7 +29,6 @@
   (registers-get (buf :registers) c))
 
 (defn put-register![buf c v]
-  (println "put-register!" v)
   (registers-put! (buf :registers) c v))
 
 (defn file-register[buf]
@@ -140,7 +139,7 @@
 
 (defn delete-range[buf inclusive? linewise?]
   (let [[a b] (range-prefix buf inclusive?)]
-    (println "delete-range:" a b)
+    ;(println "delete-range:" a b)
     (-> buf
         (buf-yank a b linewise?)
         (buf-delete a b)
@@ -340,7 +339,6 @@
 
 (defn start-insert-mode [keycode fnmotion fnedit]
   (fn[buf]
-    (println "start:" (-> buf :keys))
     (-> buf 
         fnmotion
         set-insert-mode
@@ -371,7 +369,9 @@
         (assoc :keys keys))))
 
 (defn- fuzzy-suggest [w words]
-  (println "fuzzy-suggest:" w)
+  ;(println "fuzzy-suggest:" w)
+  ;(println "make-linewise-range:" a b)
+  ;(println "make-linewise-range:" a b)
   (if (empty? w) nil
     (reduce #(conj %1 (last %2)) []
             (sort-by (juxt first second str)
@@ -392,7 +392,7 @@
     (if (nil? w)
       (dissoc buf :autocompl) ;stop if no uncomplete word
       (let [suggestions (fuzzy-suggest w words)]
-        (println "suggestions" suggestions)
+        ;(println "suggestions" suggestions)
         (-> buf 
             (assoc-in [:autocompl :index] 0)
             (assoc-in [:autocompl :suggestions]
@@ -418,7 +418,7 @@
             (replace neww w))))))
 
 (defn set-visual-ranges[{{tp :type rg :range} :visual :as buf}]
-  (println "set-visual-ranges:" tp rg)
+  ;(println "set-visual-ranges:" tp rg)
   (assoc-in buf [:visual :ranges]
             (condp = tp
               visual-range (list (sort2 rg))

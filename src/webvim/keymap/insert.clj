@@ -32,7 +32,6 @@
     (buf-insert buf (keycode-to-char keycode))))
 
 (defn- insert-mode-default[buf keycode]
-  (println "insert-mode-default: " keycode)
   (let [pos (buf :pos)
         buf1 (insert-keycode buf keycode)
         buf2 (buf-update-highlight-brace-pair buf1 (-> buf1 :pos dec))

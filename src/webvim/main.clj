@@ -121,7 +121,7 @@
 (defn start[file options]
   (if-not (empty? file) (start-file file))
   (send ui-agent (fn[ui]
-                   (println "render" (ui :render!))
+                   ;(println "render" (ui :render!))
                    (assoc ui :render! write-client!)))
   (println "start web server:" (options :port))
   (reset! web-server

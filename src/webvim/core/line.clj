@@ -93,7 +93,7 @@
       (lines-n- buf (- dy)))))
 
 (defn make-linewise-range [[a b] buf]
-  (println "make-linewise-range:" a b)
+  ;(println "make-linewise-range:" a b)
   (let [r (buf :str)
         [a b] (sort2 a b)]
     [(pos-line-first r a) (pos-line-last r b)]))
@@ -105,7 +105,7 @@
                 (take (- h) (pos-lines-seq- r pos)))
         a (pos-line-first r pos)
         vx (visual-size (str (subr r a pos)) tabsize)]
-    (println pos a vx)
+    ;(println pos a vx)
     (map (fn[[a b]]
            (let [s (str (subr r a b))
                  x (+ (visualx-to-charx s vx tabsize) a)]
@@ -127,7 +127,7 @@
 
 (defn expand-block-ranges
   ([r a b tabsize]
-     (println "expand-block-ranges" a b)
+     ;(println "expand-block-ranges" a b)
      (let [h (inc (-> r (subr (sort2 a b)) count-<br>))]
        ;(println h a b)
        (if (< a b)

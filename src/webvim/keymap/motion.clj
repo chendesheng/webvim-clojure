@@ -92,7 +92,7 @@
                   quote-pattern
                   (format (if forward? ".(?=%s)" "(?=%s)."))
                   re-pattern))
-        _ (println re)
+        ;_ (println re)
         f (if forward? pos-re+ pos-re-)
         fpos (if inclusive?  first 
                (if forward? first last))
@@ -151,7 +151,7 @@
       (str re-start (quote-pattern word) re-end))))
 
 (defn- highlight-all-matches[buf re]
-  (println "highlight-all-matches:" (buf :message))
+  ;(println "highlight-all-matches:" (buf :message))
   (let [r (buf :str)]
     (assoc buf :highlights 
            (map (fn[[a b]]

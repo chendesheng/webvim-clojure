@@ -52,7 +52,6 @@
 
 (defn buf-indent-current-line
   [buf]
-  (println "buf-indent-current-line")
   (let [{r :str pos :pos} buf
         before (line-str r pos)
         buf (buf-indent-line buf pos)
