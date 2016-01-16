@@ -158,11 +158,7 @@
          {"t" #(xml-tag-range % around?)
           "w" (pair-current-word around?)
           "W" (pair-current-WORD around?)}))
-     ;"<" ">"}))
 
 (defn init-pair-keymap[]
   {"a" (pair-keymap true)
    "i" (pair-keymap false)})
-;     {"\"" "\""
-;     "'" "'"
-;     "`" "`"}))

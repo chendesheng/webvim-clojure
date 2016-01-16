@@ -240,6 +240,17 @@
                 @registers)))
     true))
 
+(defn cmd-jumps[buf _ _]
+  (append-output-panel 
+    buf
+    (str ":jumps\n" 
+         (string/join
+           "\n" 
+           (map (fn[item]
+                  (format "%s:%s" (or (item :filepath) (item :name)) (item :y)))
+                (@jump-list :before))))
+    true))
+
 (defn- ex-commands[]
   (let [cmds 
         [["write" cmd-write]
@@ -254,6 +265,7 @@
          ["find" cmd-find]
          ["history" cmd-history]
          ["register" cmd-register]
+         ["jumps" cmd-jumps]
          ["cd" cmd-cd]
          [#"^(\d+)$" cmd-move-to-line]
          ["ls" cmd-ls]]]
@@ -366,3 +378,5 @@
                         (autocompl-move buf dec))
             "<tab>" (fn[buf]
                       (ex-tab-complete buf cmds))})))
+
+
