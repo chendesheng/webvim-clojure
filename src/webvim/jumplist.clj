@@ -28,7 +28,7 @@
 ;jump-push before these motions
 ;ONLY work for single keycode
 (def motions-push-jumps
-  #{"/" "?" "*" "#" "n" "N" "%" "G" "<c+d>" "<c+u>" "{" "}"})
+  #{"/" "?" "*" "#" "n" "N" "%" "G" "{" "}"})
 
 (defn- no-next?[jl]
   (-> jl
