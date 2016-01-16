@@ -1,5 +1,5 @@
 (ns webvim.core.utils
-  (:use [me.raynes.fs :as fs]))
+  (:use [me.raynes.fs :as fs :only (child-of? *cwd*)]))
 
 (defn quote-pattern[ch]
   (java.util.regex.Pattern/quote (str ch)))
