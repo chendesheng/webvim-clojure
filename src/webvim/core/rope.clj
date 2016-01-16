@@ -43,7 +43,7 @@
   ([s rg]
    (rblank? (subr s rg))))
 
-(defn count-lines[r]
+(defn count-<br>[r]
   (let [cnt (count <br>)]
     (loop[r r n 0]
       (let [i (indexr r <br>)]
@@ -54,7 +54,7 @@
   "How many chars and lines rope contains"
   [r]
   {:dpos (.length r)
-   :dy (count-lines r)})
+   :dy (count-<br> r)})
 
 (defn- rope-op-size
   [r op {dpos :dpos dy :dy}]

@@ -128,7 +128,7 @@
 (defn expand-block-ranges
   ([r a b tabsize]
      (println "expand-block-ranges" a b)
-     (let [h (inc (-> r (subr (sort2 a b)) count-lines))]
+     (let [h (inc (-> r (subr (sort2 a b)) count-<br>))]
        ;(println h a b)
        (if (< a b)
          (map sort-column  ;zip

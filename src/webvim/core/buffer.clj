@@ -43,7 +43,7 @@
              :ext (lower-case 
                     (or (re-find #"\.\w+$" (or bufname "")) ""))
              :str r
-             :linescnt (count-lines r)
+             :linescnt (count-<br> r)
              :pos 0  ;offset from first char
              :x 0    ;saved x for up down motion
              :y 0    ;num of line breaks from first char
