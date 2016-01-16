@@ -86,7 +86,8 @@ function hlclojure(hljs) {
   var NAME = {
     keywords: keywords,
     lexemes: SYMBOL_RE,
-    className: 'name', begin: SYMBOL_RE,
+    //className: 'name',
+    begin: SYMBOL_RE,
     starts: BODY
   };
   var LITERAL_CHAR = {
