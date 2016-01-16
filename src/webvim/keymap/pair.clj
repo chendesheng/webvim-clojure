@@ -10,6 +10,7 @@
         webvim.core.pos
         webvim.core.register
         webvim.core.event
+        webvim.core.lang
         webvim.indent
         webvim.core.utils
         webvim.jumplist
@@ -87,6 +88,59 @@
                      [(-> rga last) (-> rgb first dec)])]
             (assoc-in buf [:context :range] rg)))))))
 
+(defn- expand-around[buf a b]
+  (let [{pos :pos
+         r :str
+         lang :language} buf
+         not-space-chars ((word-re lang) :not-space-chars)
+        re (re-pattern (str "[" not-space-chars "]|\\R"))] ;Java 8 new '\R' matches all line breaks
+    [(inc (or (first (pos-re- r (dec a) re)) -1))
+     (dec (or (first (pos-re+ r (inc b) re)) (count r)))]))
+
+(defn current-word-range[buf around?]
+  "return range of word under cursor, both side is inclusive"
+  (let [{pos :pos
+         r :str
+         lang :language} buf
+        {word-chars :word-chars
+         not-word-chars :not-word-chars} (word-re lang)
+        re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
+        re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
+        b (or (first (pos-re+ r pos re-end)) (count r))
+        a (or (last (pos-re- r b re-start)) 0)]
+    (if around?
+      (expand-around buf a b)
+      [a b])))
+
+(defn- pair-current-word[around?]
+  (fn[buf]
+    (let [[_ b :as rg] (current-word-range buf around?)]
+      (-> buf
+          (buf-set-pos b)
+          (assoc-in [:context :range] rg)))))
+
+(defn- current-WORD-range[buf around?]
+  "return range of WORD under cursor, both side is inclusive"
+  (let [{pos :pos
+         r :str
+         lang :language} buf
+        {space-chars :space-chars
+         not-space-chars :not-space-chars} (word-re lang)
+        re-start (re-pattern (str "([" space-chars "](?=[" not-space-chars "]))|((?<=[" space-chars "])$)"))
+        re-end (re-pattern (str "[" not-space-chars "](?=[" space-chars "])"))
+        b (or (first (pos-re+ r pos re-end)) (count r))
+        a (or (last (pos-re- r b re-start)) 0)]
+    (if around?
+      (expand-around buf a b)
+      [a b])))
+
+(defn- pair-current-WORD[around?]
+  (fn[buf]
+    (let [[_ b :as rg] (current-WORD-range buf around?)]
+      (-> buf
+          (buf-set-pos b)
+          (assoc-in [:context :range] rg)))))
+
 (defn- pair-keymap[around?]
   (merge (reduce-kv
            (fn[keymap lch rch]
@@ -101,7 +155,9 @@
                  (assoc ch (pair-quotes-range ch around?))))
            {}
            ["\"" "'" "`"])
-         {"t" #(xml-tag-range % around?)}))
+         {"t" #(xml-tag-range % around?)
+          "w" (pair-current-word around?)
+          "W" (pair-current-WORD around?)}))
      ;"<" ">"}))
 
 (defn init-pair-keymap[]
