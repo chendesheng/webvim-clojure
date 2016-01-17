@@ -181,8 +181,8 @@
           (update-x-if-not-jk keycode)
           (update-in [:context] dissoc :range)
           save-undo
-          ;TODO make brace match async
-          (buf-update-highlight-brace-pair (newbuf :pos))))))
+          ;TODO make bracket match async
+          (buf-update-highlight-bracket-pair (newbuf :pos))))))
 
 (defn- start-insert-mode-with-keycode [fnmotion fnedit]
   (fn[buf keycode]

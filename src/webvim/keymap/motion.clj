@@ -133,12 +133,12 @@
 (defn- repeat-move-by-char-[buf]
   (repeat-move-by-char buf false))
 
-(defn- move-to-matched-braces[buf]
+(defn- move-to-matched-brackets[buf]
   (buf-move buf
             (fn [r pos]
-              (let [[a _] (pos-re+ r pos re-braces)]
+              (let [[a _] (pos-re+ r pos re-brackets)]
                 (if (nil? a) pos
-                  (pos-match-brace r a))))))
+                  (pos-match-bracket r a))))))
 
 (defn- re-current-word
   "create regexp from word under cursor"
@@ -347,7 +347,7 @@
    "N" repeat-search-
    "}" paragraph+
    "{" paragraph-
-   "%" move-to-matched-braces
+   "%" move-to-matched-brackets
    "<c+u>" #(cursor-move-viewport %1 -0.5) 
    "<c+d>" #(cursor-move-viewport %1 0.5)})
 

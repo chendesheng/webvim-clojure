@@ -174,7 +174,7 @@ pre {
 	color:#000;
 }
 
-.cursor-brace .line-selected {
+.cursor-bracket .line-selected {
 	background:#007acc;
 	opacity:0.3;
 	width:9.57px;
@@ -186,37 +186,37 @@ pre {
 }
 
 /*next 7 colors came from OSX's Reminders App*/
-.lines .brace-0 {
+.lines .bracket-0 {
 	/*red*/
 	color:#E30054;
 }
 
-.lines .brace-1 {
+.lines .bracket-1 {
 	/*orange*/
 	color:#E37519;
 }
 
-.lines .brace-2 {
+.lines .bracket-2 {
 	/*yellow*/
 	color:#DEA724;
 }
 
-.lines .brace-3 {
+.lines .bracket-3 {
 	/*green*/
 	color:#00A725;
 }
 
-.lines .brace-4 {
+.lines .bracket-4 {
 	/*blue*/
 	color:#0091D1;
 }
 
-.lines .brace-5 {
+.lines .bracket-5 {
 	/*purple*/
 	color:#B654BC;
 }
 
-.lines .brace-6 {
+.lines .bracket-6 {
 	/*brown*/
 	color:#8F6C4D;
 }

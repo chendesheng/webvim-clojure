@@ -124,9 +124,9 @@ var highlights = (function() {
 		};
 
 		if ('([{'.indexOf(text) != -1) {
-			return 'brace-'+(ctx.modes.count(pred)-1)%7;
+			return 'bracket-'+(ctx.modes.count(pred)-1)%7;
 		} else if (')]}'.indexOf(text) != -1) {
-			return 'brace-'+ctx.modes.count(pred)%7;
+			return 'bracket-'+ctx.modes.count(pred)%7;
 		} else {
 			return '';
 		}

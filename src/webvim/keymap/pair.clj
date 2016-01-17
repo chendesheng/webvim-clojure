@@ -16,22 +16,22 @@
         webvim.jumplist
         webvim.autocompl))
 
-(defn- unmatched-brace+[r pos re rch]
+(defn- unmatched-bracket+[r pos re rch]
   (let [[a _] (pos-re+ r pos re)]
     (if (or (nil? a)
             (= (char-at r a) rch))
       a
-      (recur r (inc (pos-match-brace r a)) re rch))))
+      (recur r (inc (pos-match-bracket r a)) re rch))))
 
-(defn- unmatched-brace-[r pos re lch]
+(defn- unmatched-bracket-[r pos re lch]
   (let [[a _] (pos-re- r pos re)]
     (if (or (nil? a)
             (= (char-at r a) lch))
       a
-      (recur r (dec (pos-match-brace r a)) re lch))))
+      (recur r (dec (pos-match-bracket r a)) re lch))))
 
-;(defn test-right-brace[]
-;  (unmatched-brace- (rope "(aaa(()()))bbb") 10 (re-pattern (quote-patterns \( \))) \())
+;(defn test-right-bracket[]
+;  (unmatched-bracket- (rope "(aaa(()()))bbb") 10 (re-pattern (quote-patterns \( \))) \())
 
 (defn- pair-range[lch rch around?]
   (fn[buf]
@@ -41,14 +41,14 @@
           ch (char-at r pos)
           [a b :as rg] (cond 
                          (= ch lch)
-                         [pos (pos-match-brace r pos)]
+                         [pos (pos-match-bracket r pos)]
                          (= ch rch)
-                         [(pos-match-brace r pos) pos]
+                         [(pos-match-bracket r pos) pos]
                          :else
                          ;FIXME: This is ugly.
-                         (let [b (unmatched-brace+ r pos re rch)]
+                         (let [b (unmatched-bracket+ r pos re rch)]
                            (if (nil? b) nil
-                             (let [a (unmatched-brace- r pos re lch)]
+                             (let [a (unmatched-bracket- r pos re lch)]
                                (if (nil? a) nil
                                  [a b])))))]
       (if (nil? rg) buf
@@ -145,7 +145,7 @@
                  (assoc (str lch) (pair-range lch rch around?))
                  (assoc (str rch) (pair-range lch rch around?))))
            {}
-           braces)
+           brackets)
          (reduce
            (fn[keymap ch]
              (-> keymap

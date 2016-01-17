@@ -27,17 +27,17 @@
 (defn clang-not-blank-or-comment? [line]
   (not (or (rblank? line) (clang-comment? line))))
 
-;1. indent -1: line contains brace but pline not
+;1. indent -1: line contains bracket but pline not
 ;   if {
 ;       aaaa    <- pline
 ;   }           <- line 
 ;
-;2. indent +1: pline contains brace but line not
+;2. indent +1: pline contains bracket but line not
 ;   if {        <- pline
 ;       aaaa    <- line
 ;   }
 ;
-;3. keep indent: both contains braces or both not
+;3. keep indent: both contains brackets or both not
 ;   if {        <- pline
 ;   }           <- line
 ;   if {
@@ -67,17 +67,17 @@
         pline (or (first lines) "")
         _ (println (str "[" pline "]"))
         pindent (str (re-subs #"^\s*" pline))
-        pbrace? (re-test #"[\{]\s*$" pline)
-        brace? (re-test #"^\s*\}" line)]
+        pbracket? (re-test #"[\{]\s*$" pline)
+        bracket? (re-test #"^\s*\}" line)]
     (cond (clang-comment? line)
           (auto-indent r pos)
           (empty? pline)
           ""
-          (and (not pbrace?) brace?)
+          (and (not pbracket?) bracket?)
           (if (empty? pindent) "" (subs pindent 1))
-          (and pbrace? (not brace?))
+          (and pbracket? (not bracket?))
           (str pindent "\t")
-          (and pbrace? brace?)
+          (and pbracket? bracket?)
           pindent
           (re-test re-js-statements pline)
           (str pindent "\t")

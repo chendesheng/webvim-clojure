@@ -98,11 +98,11 @@
       (assoc :pos (-> buf :str count dec))))
 
 
-(def braces {\( \) \[ \] \{ \} \< \>})
-(def all-braces (into braces (clojure.set/map-invert braces)))
-(def left-braces (into #{} (keys braces)))
-(def right-braces (into #{} (vals braces)))
-(def re-braces (re-pattern (str "\\" (clojure.string/join "|\\" (keys all-braces)))))
+(def brackets {\( \) \[ \] \{ \} \< \>})
+(def all-brackets (into brackets (clojure.set/map-invert brackets)))
+(def left-brackets (into #{} (keys brackets)))
+(def right-brackets (into #{} (vals brackets)))
+(def re-brackets (re-pattern (str "\\" (clojure.string/join "|\\" (keys all-brackets)))))
 
 ;copy from clojure.core/memoize
 (defn- memoize-buf [f]
@@ -119,22 +119,22 @@
           (swap! mem assoc args ret)
           ret)))))
 
-(def pos-match-brace
-  "return matched brace position, nil if not find"
+(def pos-match-bracket
+  "return matched bracket position, nil if not find"
   (memoize-buf
     (fn[r pos]
-      (let [brace (char-at r pos)
-            m (all-braces brace)]
+      (let [bracket (char-at r pos)
+            m (all-brackets bracket)]
         (if (nil? m) nil
-          (let [left? (contains? left-braces brace)
-                inc-braces (if left? left-braces right-braces)
-                re (re-pattern (quote-patterns brace m))]
-            (loop [[[a _] & braces] (if left?
+          (let [left? (contains? left-brackets bracket)
+                inc-brackets (if left? left-brackets right-brackets)
+                re (re-pattern (quote-patterns bracket m))]
+            (loop [[[a _] & brackets] (if left?
                                       (pos-re-seq+ r pos re)
                                       (pos-re-seq- r pos re))
                    cnt 0]
               (if (nil? a) a
-                (let [newcnt (if (contains? inc-braces (char-at r a))
+                (let [newcnt (if (contains? inc-brackets (char-at r a))
                                (inc cnt) (dec cnt))]
-                  (if (zero? newcnt) a (recur braces newcnt)))))))))))
+                  (if (zero? newcnt) a (recur brackets newcnt)))))))))))
 

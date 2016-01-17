@@ -59,9 +59,9 @@
              :pending-undo nil 
              ;one undo contains {:changes [] :cursor}
              :history (parallel-universe)
-             ;For client display matched braces: [{:row :col} {:row :col}]
+             ;For client display matched brackets: [{:row :col} {:row :col}]
              ;TODO set initial value
-             :braces nil
+             :brackets nil
              ;saved cursor when insert begins, for undo/redo function only
              :last-cursor nil
              ;first one is recent undo item, second is filepath, if one of these changes then the buffer is dirty

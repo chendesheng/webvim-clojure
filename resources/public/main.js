@@ -663,11 +663,11 @@ function renderToScreen(paddinglines, scrolling){
 		$empty($high);
 	}
 
-	var $braces = $cursorBrace(bufid);
-	if (localbuf.braces && localbuf.braces.length>0) {
-		renderSelections($braces, localbuf, localbuf.braces);
+	var $brackets = $cursorBrace(bufid);
+	if (localbuf.brackets && localbuf.brackets.length>0) {
+		renderSelections($brackets, localbuf, localbuf.brackets);
 	} else {
-		$empty($braces);
+		$empty($brackets);
 	}
 
 	if (!scrolling) {
@@ -833,13 +833,13 @@ function render(buf) {
 		}
 	}
 
-	//render matched brace pair
-	if (typeof buf.braces != 'undefined') {
+	//render matched bracket pair
+	if (typeof buf.brackets != 'undefined') {
 		$cursorBrace(buf.id).innerHTML = '';
 		var $p = $cursorBrace(buf.id);
 
-		if (buf.braces) {
-			localbuf.braces = [];//buf.braces;
+		if (buf.brackets) {
+			localbuf.brackets = [];//buf.brackets;
 
 			for (var i = 0; i < buf.braces.length; i++) {
 				var pt = buf.braces[i];

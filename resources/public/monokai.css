@@ -51,7 +51,7 @@ body {
 .lines .attribute {
 	color:#66D9EF;
 }
-/*.highlight-brace-pair .line-selected, .cursor {
+/*.highlight-bracket-pair .line-selected, .cursor {
 	background:#F8F8F0;
 }
 .cursor {

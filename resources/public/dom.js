@@ -9,7 +9,7 @@ function $newBuffer(bufid) {
 			+'<div id="selections-{id}" class="selections"></div>'
 			+'<div id="highlights-{id}" class="highlights"></div>'
 			+'<div id="autocompl-{id}" class="autocompl"></div>'
-			+'<div id="cursor-brace-{id}" class="cursor-brace"></div>'
+			+'<div id="cursor-bracket-{id}" class="cursor-bracket"></div>'
 			+'<div id="lines-{id}" class="lines"></div>'
 		+'</div>'
 		+'<div id="status-bar-{id}" class="status-bar">'
@@ -64,7 +64,7 @@ function $highlights(bufid) {
 }
 
 function $cursorBrace(bufid) {
-	return _$bufid('cursor-brace-', bufid);
+	return _$bufid('cursor-bracket-', bufid);
 }
 
 function $cursor(bufid) {

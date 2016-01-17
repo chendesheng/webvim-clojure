@@ -69,7 +69,7 @@
 
 ;find outer scope and align by start bracket
 (defn clojure-indent
-  "Indent by brace parsing"
+  "Indent by bracket parsing"
   [r pos]
   (let [[a b] (pos-line r pos)]
     (cond 
@@ -80,9 +80,9 @@
       :else (let [tmp (reduce 
                         (fn[stack [a _]]
                           (let [ch (char-at r a)]
-                            (if (and (contains? left-braces ch) (empty? stack))
+                            (if (and (contains? left-brackets ch) (empty? stack))
                               (reduced a)
-                              (if (= (peek stack) (all-braces ch))
+                              (if (= (peek stack) (all-brackets ch))
                                 (pop stack)
                                 (conj stack ch))))) nil 
                         (pos-re-seq- r (dec a) #"(?<!\\)(\(|\[|\{|\}|\]|\))"))
