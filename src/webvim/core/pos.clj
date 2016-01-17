@@ -1,5 +1,6 @@
 (ns webvim.core.pos
   (:use webvim.core.rope
+        webvim.core.event
         webvim.core.utils))
 
 (defn- find-first
@@ -103,29 +104,37 @@
 (def right-braces (into #{} (vals braces)))
 (def re-braces (re-pattern (str "\\" (clojure.string/join "|\\" (keys all-braces)))))
 
-(defn pos-match-brace
-  "return matched brace position, nil if not find"
-  [r pos]
-  (let [brace (char-at r pos)
-        m (all-braces brace)
-        left? (contains? left-braces brace)
-        re (re-pattern (str  (quote-pattern brace) "|" (quote-pattern m)))]
-    (if (nil? m) nil
-      (let [inc-cnt? (if left?
-                       #(contains? left-braces %)
-                       #(contains? right-braces %))
-            braces (if left?
-                     (pos-re-seq+ r pos re)
-                     (pos-re-seq- r pos re))
-            mpos (reduce
-                   (fn[cnt [a _]]
-                     (let [ch (char-at r a)
-                           newcnt (if (inc-cnt? ch)
-                                    (inc cnt)
-                                    (dec cnt))]
-                       (if (zero? newcnt)
-                         (reduced [a])
-                         newcnt))) 0 braces)]
-        (if (vector? mpos) (first mpos) nil)))))
+;copy from clojure.core/memoize
+(defn- memoize-buf [f]
+  (let [mem (atom {})]
+    (listen
+      :change-buffer
+      (fn [buf oldbuf c]
+        (reset! mem {})
+        buf))
+    (fn [& args]
+      (if-let [e (find @mem args)]
+        (val e)
+        (let [ret (apply f args)]
+          (swap! mem assoc args ret)
+          ret)))))
 
+(def pos-match-brace
+  "return matched brace position, nil if not find"
+  (memoize-buf
+    (fn[r pos]
+      (let [brace (char-at r pos)
+            m (all-braces brace)]
+        (if (nil? m) nil
+          (let [left? (contains? left-braces brace)
+                inc-braces (if left? left-braces right-braces)
+                re (re-pattern (quote-patterns brace m))]
+            (loop [[[a _] & braces] (if left?
+                                      (pos-re-seq+ r pos re)
+                                      (pos-re-seq- r pos re))
+                   cnt 0]
+              (if (nil? a) a
+                (let [newcnt (if (contains? inc-braces (char-at r a))
+                               (inc cnt) (dec cnt))]
+                  (if (zero? newcnt) a (recur braces newcnt)))))))))))
 

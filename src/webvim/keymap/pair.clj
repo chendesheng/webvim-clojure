@@ -16,9 +16,6 @@
         webvim.jumplist
         webvim.autocompl))
 
-(defn- quote-patterns[& args]
-  (clojure.string/join "|" (map quote-pattern args)))
-
 (defn- unmatched-brace+[r pos re rch]
   (let [[a _] (pos-re+ r pos re)]
     (if (or (nil? a)

@@ -128,6 +128,9 @@
           :else (recur (inc i) vxi))))))
 
 (defn nop[buf keycode] buf)
+ 
+(defn quote-patterns[& args]
+  (clojure.string/join "|" (map quote-pattern args)))
 
 (comment
   (webvim.core.utils/visual-size "\t\ta" 5)
