@@ -359,6 +359,22 @@
       (dissoc :message)
       (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
 
+(defn- read-eval-insert[buf code]
+  (try
+    (->> code read-string eval str (buf-insert buf))
+    (catch Exception e
+      (assoc buf :message (str e)))))
+
+(defn expression-keymap[line-editor-keymap]
+  (assoc line-editor-keymap
+         :enter (fn[buf keycode]
+                  (-> buf
+                      (dissoc :message)
+                      (assoc :line-buffer {:prefix keycode :str (rope "()") :pos 1})))
+         "<cr>" (fn[buf] 
+                  (let [code (-> buf :line-buffer :str str)]
+                    (read-eval-insert buf code)))))
+
 (defn start-insert-mode [keycode fnmotion fnedit]
   (fn[buf]
     (-> buf 

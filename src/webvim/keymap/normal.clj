@@ -192,11 +192,12 @@
         (fnedit keycode))))
 
 (defn- start-ex-mode[buf]
-  (-> buf
-      (line-editor-enter ":")
-      (assoc 
-        :keymap (buf :ex-mode-keymap)
-        :mode ex-mode)))
+  (let [enter (or (-> buf :ex-mode-keymap :enter) nop)]
+    (-> buf
+        (enter ":")
+        (assoc 
+          :keymap (buf :ex-mode-keymap)
+          :mode ex-mode))))
 
 (defn- delete-to-line-end[buf]
   (-> buf
@@ -244,7 +245,7 @@
                       (pos-line-end (buf :str) (buf :pos)))]
       (buf-set-pos newbuf newpos))))
 
-(defn init-normal-mode-keymap[motion-keymap visual-mode-keymap pair-keymap]
+(defn init-normal-mode-keymap[motion-keymap visual-mode-keymap pair-keymap line-editor-keymap]
   (let [motion-keymap-fix-w (-> motion-keymap
                                 (assoc "w" (dont-cross-line (motion-keymap "w")))
                                 (assoc "W" (dont-cross-line (motion-keymap "W"))))
@@ -321,6 +322,7 @@
        "P" #(put-from-register % (-> % :context :register) false)
        "J" join-line
        "\"" {"<esc>" identity
+             "=" (expression-keymap line-editor-keymap)
              :else start-register}
        "<c+s+6>" (fn[buf]
                    (let [reg (@registers "#")]

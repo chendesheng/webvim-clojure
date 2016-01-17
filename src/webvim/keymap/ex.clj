@@ -337,14 +337,16 @@
     (assoc buf :message "") buf))
 
 (defn init-ex-mode-keymap[line-editor-keymap]
-  (let [cmds (ex-commands)]
+  (let [cmds (ex-commands)
+        enter (or (line-editor-keymap :enter) nop)]
     (merge line-editor-keymap
            {:enter (fn[buf keycode]
-                     ;(println "ex-mode enter")
                      (swap! commands-history #(-> %
                                                   fast-forward
                                                   (assoc :current "")))
-                     (dissoc buf :autocompl))
+                     (-> buf
+                         (enter keycode)
+                         (dissoc :autocompl)))
             :after (fn[buf keycode]
                      (let [after (or (line-editor-keymap :after) nop)
                            buf (after buf keycode)]

@@ -73,14 +73,14 @@
          (contains? #{"<cr>" "<esc>"} keycode))))
 
 (defn- line-editor-leave [buf keycode] 
-  (dissoc buf :line-buffer))
+  (-> buf
+      (dissoc :line-buffer)
+      (assoc :message (or (buf :message) "")))) ;Make sure got :message filled
 
 (defn- line-editor-<bs>
   [{{r :str} :line-buffer :as buf}] 
   (if (empty? r)
-    (-> buf
-        (dissoc :line-buffer)
-        (assoc :message ""))
+    (dissoc buf :line-buffer)
     (linebuf-delete buf -1)))
 
 (defn- line-editor-put[buf keycode]

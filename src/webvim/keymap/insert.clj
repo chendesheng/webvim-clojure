@@ -57,10 +57,11 @@
                            (rblank? s))
                     (buf-delete buf a1 (dec b1)) buf))) buf (buf :last-indents))) :last-indents))
 
-(defn init-insert-mode-keymap[normal-mode-keymap]
+(defn init-insert-mode-keymap[normal-mode-keymap line-editor-keymap]
   {"<c+n>" #(autocompl-move (new-autocompl %) inc)
    "<c+p>" #(autocompl-move (new-autocompl %) dec)
    "<c+r>" {"<esc>" identity
+            "=" (expression-keymap line-editor-keymap)
             :else (fn[buf keycode]
                     (-> buf
                         (put-from-register keycode false)
