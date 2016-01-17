@@ -293,7 +293,9 @@
              pair-keymap
              {:leave (fn[buf keycode]
                        (let [f (start-insert-mode-with-keycode nop change-by-motion)]
-                         (if (= (-> buf :context :lastbuf :pos) (buf :pos))
+                         (if (and
+                               (= (-> buf :context :lastbuf :pos) (buf :pos))
+                               (-> buf :context :range empty?))
                            buf
                            (f buf keycode))))
               "c" identity})
