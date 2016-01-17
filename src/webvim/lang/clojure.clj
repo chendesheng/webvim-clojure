@@ -31,12 +31,6 @@
      :punctuation-chars (str "^" word-chars space-chars)
      :not-punctuation-chars (str word-chars space-chars) }))
 
-(defn repeat-space[n]
-  (reduce (fn[s _]
-            (str s " ")) 
-          ""
-          (range 0 n)))
-
 (def indent-tab-size #{"try" "catch" "ns" "def" "defn-" "defonce" "defn" "if" "if-not" "nil?" "fn" "let" "cond" "loop" "doseq" "for" "defmethod" "defmulti" "condp"})
 
 (defn clojure-comment? [line]

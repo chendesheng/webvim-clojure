@@ -70,12 +70,6 @@
     (if-not (nil? rg)
       (cons rg (lazy-seq (pos-re-seq- r (-> rg first dec) re))))))
 
-;(pos-re-seq+ -1 (rope "(((") #"\(")
-;(pos-re-seq- -1 (rope "(((") #"\(")
-;(pos-re+ (rope "   ()") 0 #"\(|\)|\[|\]|\{|\}")
-
-;(paragraph-forward {:str (rope "aaa\nbb") :pos 0 :y 0})
-
 (defn char+[buf]
   (buf-move buf (fn [r pos]
                   (let [ch (or (char-at r pos) \newline)]
