@@ -8,9 +8,9 @@
 (defrecord MyResultHandler [output]
   ExecuteResultHandler
   (onProcessComplete [_ _]
-    (output "[Finish]"))
+    (output "[Finish]\n"))
   (onProcessFailed [_ e]
-    (output (format "[%s]" e))))
+    (output (format "[%s]\n" e))))
 
 (defn exec-async[args output]
   (exec/sh args {:dir (str fs/*cwd*)

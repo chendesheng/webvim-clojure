@@ -80,7 +80,7 @@
 (defn- exec-shell-commands[buf panel cmds]
   (exec-async cmds (fn[line]
                      (append-panel buf panel line false)))
-  (append-panel buf panel (str (string/join " " cmds) "\n") true))
+  (append-panel buf panel (str (string/join " " cmds)) true))
 
 (defn- expand-path[f]
   (if (= (first f) \~)
@@ -172,9 +172,9 @@
       (append-output-panel
         buf
         (str 
-          args \newline
+          ":" execmd " " args
           output \newline
-          @result)
+          @result \newline)
         true))
     (catch Exception e
       (assoc buf :message (str e)))))
@@ -211,7 +211,7 @@
                        (map (fn[abuf]
                               (let [buf @abuf]
                                 (str (buf :id) ":" " " (printable-filepath buf))))
-                            (vals @buffer-list)))) true))
+                            (vals @buffer-list))) "\n") true))
 
 (defn cmd-nohl[buf _ _] 
   (assoc buf :highlights []))
@@ -224,7 +224,7 @@
         all (concat (reverse before) after)]
     (append-output-panel 
       buf
-      (str ":history\n" (string/join "\n" all)) 
+      (str ":history\n" (string/join "\n" all) "\n") 
       true)))
 
 (defn cmd-register[buf _ _]
@@ -237,7 +237,7 @@
                   (str "\"" (key reg)
                        "  "
                        (-> reg val :str)))
-                @registers)))
+                @registers)) "\n")
     true))
 
 (defn cmd-jumps[buf _ _]
@@ -248,7 +248,7 @@
            "\n" 
            (map (fn[item]
                   (format "%s:%s" (or (item :filepath) (item :name)) (item :y)))
-                (@jump-list :before))))
+                (@jump-list :before))) "\n")
     true))
 
 (defn- ex-commands[]

@@ -315,10 +315,10 @@
 (defn append-panel[buf apanel s goto?]
   (send apanel
         (fn[buf]
-          (let [row (buf :linescnt)
-                newbuf (-> buf
+          (let [newbuf (-> buf
                            (buf-append s "\n")
-                           (move-to-line row)
+                           buf-end
+                           line-start
                            cursor-center-viewport)]
             (send-buf! newbuf))))
   (if goto? (goto-buf buf apanel) buf))

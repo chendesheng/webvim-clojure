@@ -63,8 +63,9 @@
 (defn- print-eval[buf code]
   (append-output-panel 
     buf
-    (with-out-str
-      (->> code read-string eval str))
+    (format ":eval %s\n %s" code
+            (with-out-str
+              (->> code read-string eval str)))
     true))
 
 (defn- cmd-doc[buf execmd args]
