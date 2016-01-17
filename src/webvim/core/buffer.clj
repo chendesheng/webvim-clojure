@@ -19,6 +19,7 @@
 (defonce output-panel-name "[Output]")
 (defonce grep-panel-name "[Grep]")
 (defonce find-panel-name "[Find]")
+(defonce directory-panel-name "[Directory]")
 
 ;A panel is just a speical buffer
 (defonce panels #{output-panel-name grep-panel-name find-panel-name})

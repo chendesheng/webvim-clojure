@@ -250,27 +250,6 @@
       (println ex)
       false)))
 
-(defn edit-file[buf file new-file?]
-  (if (or (empty? file) (path= file (:filepath buf)))
-    buf
-    (let [buf-exists (some #(if (path= file (% :filepath)) %)
-                           (->> @buffer-list vals (map deref)))
-          newbuf (if (nil? buf-exists)
-                   (if (or new-file? (-> file expand-home fs/exists?))
-                     (-> file expand-home str new-file deref)
-                     nil)
-                   buf-exists)]
-      (if (nil? newbuf) buf
-        (let [newid (newbuf :id)]
-          (change-active-buffer (buf :id) newid)
-          (jump-push buf)
-          (assoc buf :nextid newid))))))
-
-(defn move-to-line[buf row]
-  (-> buf
-      (lines-row row)
-      line-start))
-
 (defn get-panel[create? name]
   (or (some (fn[[_ abuf]]
               (if (= (@abuf :name) name) abuf nil))
@@ -296,6 +275,49 @@
     (get-panel create? find-panel-name))
   ([]
     (find-panel true)))
+
+(defn directory-panel
+  ([create?]
+    (get-panel create? directory-panel-name))
+  ([]
+    (directory-panel true)))
+
+(defn- edit-dir[path]
+  (let [abuf (directory-panel)
+        files (clojure.string/join "\n"
+                                   (map (fn[f] (-> f str shorten-path))
+                                        (cons (fs/parent path) (fs/list-dir path))))]
+    (send abuf
+          (fn[buf]
+            (let [newbuf (-> buf
+                             (buf-replace 0 (-> buf :str count) (str files "\n"))
+                             buf-start)]
+              (send-buf! newbuf))))
+    @abuf))
+
+(defn edit-file[buf file new-file?]
+  (if (or (empty? file) (path= file (:filepath buf)))
+    buf
+    (let [buf-exists (some #(if (path= file (% :filepath)) %)
+                           (->> @buffer-list vals (map deref)))
+          file (expand-home file)
+          newbuf (if (nil? buf-exists)
+                   (if (or new-file? (fs/exists? file))
+                     (if (fs/directory? file)
+                       (edit-dir file)
+                       (-> file str new-file deref))
+                     nil)
+                   buf-exists)]
+      (if (or (nil? newbuf) (= (buf :id) (newbuf :id))) buf
+        (let [newid (newbuf :id)]
+          (change-active-buffer (buf :id) newid)
+          (jump-push buf)
+          (assoc buf :nextid newid))))))
+
+(defn move-to-line[buf row]
+  (-> buf
+      (lines-row row)
+      line-start))
 
 (defn goto-buf [buf anextbuf]
   (if (nil? anextbuf) buf
