@@ -58,8 +58,7 @@
                     (buf-delete buf a1 (dec b1)) buf))) buf (buf :last-indents))) :last-indents))
 
 (defn init-insert-mode-keymap[normal-mode-keymap]
-  {;"<c+o>" normal-mode-keymap 
-   "<c+n>" #(autocompl-move (new-autocompl %) inc)
+  {"<c+n>" #(autocompl-move (new-autocompl %) inc)
    "<c+p>" #(autocompl-move (new-autocompl %) dec)
    "<c+r>" {"<esc>" identity
             :else (fn[buf keycode]

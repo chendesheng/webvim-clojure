@@ -23,7 +23,7 @@
 ; c+i                | {:before (A)     :after (D')}    | D'
 ; c+i                | {:before (A)     :after (D')}    | D'
 
-(defonce jump-list (agent (parallel-universe)))
+(defonce jump-list (atom (parallel-universe)))
 
 ;jump-push before these motions
 ;ONLY work for single keycode
@@ -55,7 +55,7 @@
 (defn jump-push
   "Add :pos to jump list"
   [buf]
-  (send jump-list (fn[jl {id :id pos :pos :as buf}]
+  (swap! jump-list (fn[jl {id :id pos :pos :as buf}]
                      (if (and
                            (= (-> jl just-now :pos) pos)
                            (= (-> jl just-now :id) id))
@@ -66,49 +66,44 @@
 ;TODO: handle not exist buffer
 (defn jump-next
   [buf]
-  (if (no-next? @jump-list)
-    nil
-    (let [res (-> @jump-list
-                  go-future
-                  next-future)]
-          (send jump-list go-future)
-          res)))
+  (if (no-next? @jump-list) nil
+    (-> jump-list
+        (swap! go-future)
+        next-future)))
 
 (defn jump-prev
   [buf]
-  (if (no-prev? @jump-list)
-    nil
-    (do
-      (let [res (just-now @jump-list)]
-        (send jump-list (fn [jl]
-                          (if (no-current? jl) 
-                            (-> jl
-                                (push-current buf)
-                                go-back
-                                go-back)
-                            (go-back jl))))
-        res))))
+  (if (no-prev? @jump-list) nil
+    (-> jump-list
+        (swap! (fn [jl]
+                 (if (no-current? jl) 
+                   (-> jl
+                       (push-current buf)
+                       go-back
+                       go-back)
+                   (go-back jl))))
+        next-future)))
 
-(defn- shift-pos[pos y cpos del-len ins-len del-y ins-y]
+;split old buffer to 3 parts [0 a) [a b) [b count)
+(defn- shift-by-change[pos y oldbuf {cpos :pos clen :len :as c}]
   (let [a cpos
-        b (+ a del-len)]
-    ;split old buffer to 3 parts [0 a) [a b) [b count)
-    (cond 
+        b (+ a clen)]
+    (cond
       (< pos a)
       {:pos pos :y y}
-      (and (<= a pos) (< pos b))
-      {:pos (+ a ins-len) :y (+ y ins-y)}
       (<= b pos)
-      {:pos (+ pos (- ins-len del-len)) :y (+ y (- ins-y del-y))})))
-
-(defn- shift-by-change[pos y oldbuf {cpos :pos clen :len :as c}]
-  (shift-pos pos y cpos clen (-> c :to count)
-             (-> oldbuf :str (subr cpos (+ cpos clen)) count-<br>)
-             (-> c :to count-<br>)))
+      (let [del-len clen
+            ins-len (-> c :to count)
+            del-y (-> oldbuf :str (subr cpos (+ cpos clen)) count-<br>)
+            ins-y (-> c :to count-<br>)]
+        {:pos (+ pos (- ins-len del-len)) :y (+ y (- ins-y del-y))})
+      :else
+      {:pos (-> c :to count (+ a)) :y (-> c :to count-<br> (+ y))})))
 
 (defn- on-buffer-change[buf oldbuf c]
   (let [bufid (buf :id)]
-    (send jump-list 
+    ;TODO: This could be slow.
+    (swap! jump-list 
            rewrite-history
            (fn[{id :id pos :pos y :y :as p}]
              (if (= id bufid)
