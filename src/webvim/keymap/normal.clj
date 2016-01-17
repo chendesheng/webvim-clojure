@@ -232,7 +232,9 @@
       (let[anextbuf (@buffer-list nextid)]
         (send anextbuf (fn[buf row]
                          (if (<= row 0) buf
-                           (move-to-line buf (dec row)))) (parse-int linenum))
+                           (-> buf
+                               (move-to-line (dec row))
+                               update-x))) (parse-int linenum))
         newbuf))))
 
 (defn- dont-cross-line[f]
