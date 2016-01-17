@@ -663,7 +663,7 @@ function renderToScreen(paddinglines, scrolling){
 		$empty($high);
 	}
 
-	var $brackets = $cursorBrace(bufid);
+	var $brackets = $cursorBracket(bufid);
 	if (localbuf.brackets && localbuf.brackets.length>0) {
 		renderSelections($brackets, localbuf, localbuf.brackets);
 	} else {
@@ -835,18 +835,18 @@ function render(buf) {
 
 	//render matched bracket pair
 	if (typeof buf.brackets != 'undefined') {
-		$cursorBrace(buf.id).innerHTML = '';
-		var $p = $cursorBrace(buf.id);
+		$cursorBracket(buf.id).innerHTML = '';
+		var $p = $cursorBracket(buf.id);
 
 		if (buf.brackets) {
 			localbuf.brackets = [];//buf.brackets;
 
-			for (var i = 0; i < buf.braces.length; i++) {
-				var pt = buf.braces[i];
+			for (var i = 0; i < buf.brackets.length; i++) {
+				var pt = buf.brackets[i];
 				//skip cursor, don't draw twice at the same point
 				if (buffers[buf.id].cursor == pt) continue; 
 
-				localbuf.braces.push([pt, pt]);
+				localbuf.brackets.push([pt, pt]);
 			}
 		}
 	}

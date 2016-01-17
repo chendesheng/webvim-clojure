@@ -63,7 +63,7 @@ function $highlights(bufid) {
 	return _$bufid('highlights-', bufid);
 }
 
-function $cursorBrace(bufid) {
+function $cursorBracket(bufid) {
 	return _$bufid('cursor-bracket-', bufid);
 }
 
