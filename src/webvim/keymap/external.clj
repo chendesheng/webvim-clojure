@@ -20,5 +20,5 @@
      "s" readonly
      "x" readonly
      "d" readonly
-     "<c+o>" #(move-to-jumplist % jump-prev)
-     "<c+i>" #(move-to-jumplist % jump-next)}))
+     "<c-o>" #(move-to-jumplist % jump-prev)
+     "<c-i>" #(move-to-jumplist % jump-next)}))

@@ -348,6 +348,6 @@
    "}" paragraph+
    "{" paragraph-
    "%" move-to-matched-brackets
-   "<c+u>" #(cursor-move-viewport %1 -0.5) 
-   "<c+d>" #(cursor-move-viewport %1 0.5)})
+   "<c-u>" #(cursor-move-viewport %1 -0.5) 
+   "<c-d>" #(cursor-move-viewport %1 0.5)})
 

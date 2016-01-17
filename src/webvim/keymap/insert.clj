@@ -58,19 +58,19 @@
                     (buf-delete buf a1 (dec b1)) buf))) buf (buf :last-indents))) :last-indents))
 
 (defn init-insert-mode-keymap[normal-mode-keymap line-editor-keymap]
-  {"<c+n>" #(autocompl-move (new-autocompl %) inc)
-   "<c+p>" #(autocompl-move (new-autocompl %) dec)
-   "<c+r>" {"<esc>" identity
+  {"<c-n>" #(autocompl-move (new-autocompl %) inc)
+   "<c-p>" #(autocompl-move (new-autocompl %) dec)
+   "<c-r>" {"<esc>" identity
             "=" (expression-keymap line-editor-keymap)
             :else (fn[buf keycode]
                     (-> buf
                         (put-from-register keycode false)
                         char+))}
    "<esc>" identity
-   "<c+o>" (-> normal-mode-keymap
-               (dissoc "u" "<c+r>") ;can't make undo/redo in the middle of change
+   "<c-o>" (-> normal-mode-keymap
+               (dissoc "u" "<c-r>") ;can't make undo/redo in the middle of change
                (assoc :continue (fn[buf keycode] false)
-                      ;FIXME: Vim's <c+o> breaks history and dot repeat.
+                      ;FIXME: Vim's <c-o> breaks history and dot repeat.
                       ;I think keep them seems a better chioce.
                       :enter (fn[buf keycode]
                                (-> buf

@@ -89,22 +89,22 @@
       (linebuf-insert buf (-> txt rope first-line .trimEnd str))
       buf)))
 
-(defn- line-editor-<c+w>
+(defn- line-editor-<c-w>
   [{{r :str pos :pos} :line-buffer :as buf}]
   (let [newpos (or (first (pos-re- r pos #"(?<=\s|^)\S")) pos)]
     (linebuf-delete buf (- newpos pos))))
 
 (defn init-line-editor-keymap[]
-  {"<c+f>" linebuf-char+
-   "<c+b>" linebuf-char-
-   "<c+a>" linebuf-start
-   "<c+e>" linebuf-end
+  {"<c-f>" linebuf-char+
+   "<c-b>" linebuf-char-
+   "<c-a>" linebuf-start
+   "<c-e>" linebuf-end
    "<bs>" line-editor-<bs>
-   "<c+h>" line-editor-<bs>
-   "<c+d>" #(linebuf-delete % 1)
-   "<c+r>" {"<esc>" identity
+   "<c-h>" line-editor-<bs>
+   "<c-d>" #(linebuf-delete % 1)
+   "<c-r>" {"<esc>" identity
             :else line-editor-put}
-   "<c+w>" line-editor-<c+w>
+   "<c-w>" line-editor-<c-w>
    :enter line-editor-enter
    :else line-editor-default
    :continue line-editor-continue

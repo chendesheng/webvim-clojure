@@ -267,10 +267,10 @@
        "r" {"<esc>" identity
             :else replace-char-keycode}
        "u" undo
-       "<c+r>" redo
-       "<c+o>" #(move-to-jumplist % jump-prev)
-       "<c+i>" #(move-to-jumplist % jump-next)
-       "<c+g>" buf-pos-info
+       "<c-r>" redo
+       "<c-o>" #(move-to-jumplist % jump-prev)
+       "<c-i>" #(move-to-jumplist % jump-next)
+       "<c-g>" buf-pos-info
        "<esc>" set-normal-mode
        "<f1>" #(goto-buf % (output-panel false))
        "g" {"v" (assoc
@@ -284,7 +284,7 @@
             "f" goto-file}
        "v" visual-mode-keymap
        "V" visual-mode-keymap
-       "<c+v>" visual-mode-keymap
+       "<c-v>" visual-mode-keymap
        "z" {"z" cursor-center-viewport }
        "d" (merge
              motion-keymap-fix-w
@@ -324,7 +324,7 @@
        "\"" {"<esc>" identity
              "=" (expression-keymap line-editor-keymap)
              :else start-register}
-       "<c+s+6>" (fn[buf]
+       "<c-s-6>" (fn[buf]
                    (let [reg (@registers "#")]
                      (if (nil? reg)
                        (assoc buf :message "No alternative file")

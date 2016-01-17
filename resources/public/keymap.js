@@ -4,13 +4,13 @@ function imap(key, callback) {
 		return;
 	}
 
-	if (key == '<c+[>') {
+	if (key == '<c-[>') {
 		key = '<esc>';
-	} else if (key == '<c+j>') {
+	} else if (key == '<c-j>') {
 		//can't capture ctrl-n and ctrl-p on Windows's Chrome
-		key = '<c+n>';
-	} else if (key == '<c+k>') {
-		key = '<c+p>';
+		key = '<c-n>';
+	} else if (key == '<c-k>') {
+		key = '<c-p>';
 	}
 
 	if (key == 'j') {
@@ -51,9 +51,9 @@ function imap(key, callback) {
 }
 
 function nmap(key, callback) {
-	if (key == '<c+l>') {
+	if (key == '<c-l>') {
 		callback(':nohl<cr>');
-	} else if (key == '<c+[>') {
+	} else if (key == '<c-[>') {
 		callback('<esc>');
 	} else if (key == '<f6>') {
 		callback(':reload<cr>');

@@ -46,13 +46,13 @@
 ;visual-line  |  v      | visual-range
 ;visual-line  |  V      | normal
 (defn- keycode2type[keycode]
-  ({"v" visual-range "V" visual-line "<c+v>" visual-block} keycode))
+  ({"v" visual-range "V" visual-line "<c-v>" visual-block} keycode))
 
 (defn- visual-mode-continue?[buf keycode]
   (let [typ (-> buf :context :visual-mode-type)
         newtyp (keycode2type keycode)]
     (if (nil? newtyp)
-      (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<c+r>" "<esc>"} keycode))
+      (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<c-r>" "<esc>"} keycode))
       (not (= typ newtyp)))))
 
 (defn- change-visual-mode-type[buf keycode]
@@ -273,7 +273,7 @@
                              (-> buf :visual :type))
                    (assoc-in [:context :range] nil)))
      :after (fn[buf keycode]
-              (if (contains? #{"u" "<c+r>"} keycode)
+              (if (contains? #{"u" "<c-r>"} keycode)
                 (update-x-if-not-jk buf keycode)
                 (-> buf
                     visual-select
@@ -283,10 +283,10 @@
      "=" #(indent-range % true)
      "o" swap-visual-start-end
      "u" undo
-     "<c+r>" redo
+     "<c-r>" redo
      "V" #(change-visual-mode-type % "V")
      "v" #(change-visual-mode-type % "v")
-     "<c+v>" #(change-visual-mode-type % "<c+v>")
+     "<c-v>" #(change-visual-mode-type % "<c-v>")
      "d" visual-keymap-d
      "c" visual-keymap-c
      "y" visual-keymap-y

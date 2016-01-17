@@ -351,11 +351,11 @@
                      (let [after (or (line-editor-keymap :after) nop)
                            buf (after buf keycode)]
                        ;cache current typing content if it's latest one
-                       (if (and (not (contains? #{"<c+p>" "<c+n>" "<cr>"} keycode))
+                       (if (and (not (contains? #{"<c-p>" "<c-n>" "<cr>"} keycode))
                                 (no-future? @commands-history))
                          (swap! commands-history assoc :current (-> buf :line-buffer :str str)))
                        (if (or (= keycode "<tab>")
-                               (= keycode "<s+tab>")
+                               (= keycode "<s-tab>")
                                (-> buf :autocompl nil?))
                          buf
                          (autocompl-suggest buf))))
@@ -365,18 +365,18 @@
                          (dissoc :autocompl)
                          fix-message
                          set-normal-mode))
-            "<c+p>" (fn[buf]
+            "<c-p>" (fn[buf]
                       (swap! commands-history go-back)
                       (let [buf (recover-command-history buf)]
                         buf))
-            "<c+n>" (fn[buf]
+            "<c-n>" (fn[buf]
                       (swap! commands-history go-future)
                       (if (no-future? @commands-history)
                         (set-line-buffer buf (@commands-history :current))
                         (recover-command-history buf)))
             "<cr>" (fn[buf]
                      (execute buf cmds))
-            "<s+tab>" (fn[buf]
+            "<s-tab>" (fn[buf]
                         (autocompl-move buf dec))
             "<tab>" (fn[buf]
                       (ex-tab-complete buf cmds))})))

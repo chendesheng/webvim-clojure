@@ -127,7 +127,7 @@
   [buf keycode]
   (let [lastbuf (buf :context :lastbuf)]
     (if-not (or (= (:pos lastbuf) (:pos buf))
-                (contains? #{"j" "k" "<c+d>" "<c+u>"} keycode))
+                (contains? #{"j" "k" "<c-d>" "<c-u>"} keycode))
       (update-x buf) buf)))
 
 ;one server only serve one window at one time
@@ -395,7 +395,7 @@
     (if-not (or nochange? ;only repeat keys make changes
                 (empty? keys)
                 ;don't repeat these keys
-                (contains? #{"." "u" "p" "P" ":" "<c+r>"} (first keys)))
+                (contains? #{"." "u" "p" "P" ":" "<c-r>"} (first keys)))
       (put-register! buf "." {:keys keys :str (string/join keys)}))
     (dissoc buf :dot-repeat-keys)))
 

@@ -25,18 +25,18 @@ function keyboardInit() {
 
 			if (event.ctrlKey) {
 				if (event.keyCode != 16 && event.keyCode != 17 && event.keyCode != 18) {
-					var prefix = "c+";
+					var prefix = "c-";
 					if (event.shiftKey) {
-						prefix += "s+"
+						prefix += "s-"
 					}
 					if (event.altKey) {
-						prefix += "a+";
+						prefix += "a-";
 					}
 					key = prefix+KEYCODE_DIC[event.keyCode];
 				}
 			} else if (event.shiftKey) {
 				if (event.keyCode == 9) {
-					key = "s+"+KEYCODE_DIC[event.keyCode];
+					key = "s-"+KEYCODE_DIC[event.keyCode];
 				}
 			}
 
