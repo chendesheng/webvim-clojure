@@ -31,7 +31,10 @@
      :punctuation-chars (str "^" word-chars space-chars)
      :not-punctuation-chars (str word-chars space-chars) }))
 
-(def indent-tab-size #{"try" "catch" "ns" "def" "defn-" "defonce" "defn" "if" "if-not" "nil?" "fn" "let" "cond" "loop" "doseq" "for" "defmethod" "defmulti" "condp"})
+(defn- indent-tab-size[^String s] 
+  (or (contains?
+        #{"try" "catch" "ns" "if" "if-not" "nil?" "fn" "let" "cond" "loop" "doseq" "for" "condp"} s)
+      (.startsWith s "def")))
 
 (defn clojure-comment? [line]
   (re-test #"^\s*;" line))
@@ -48,7 +51,7 @@
     (re-test #"^\(\s*[^,\s]+[\s,]+[^,\s]+" line)
     (let [w (re-subs #"[^\s\[\{\(]+"
                      (subr line 1 (count line)))]
-      (if (contains? indent-tab-size (str w))
+      (if (indent-tab-size (str w))
         2
         (-> w count (+ 2))))
     :else 2))
