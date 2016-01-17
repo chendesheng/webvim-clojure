@@ -354,11 +354,6 @@
       (if (nil? abuf) nil
         abuf))))
 
-(defn line-editor-enter[buf keycode]
-  (-> buf
-      (dissoc :message)
-      (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
-
 (defn- read-eval-insert[buf code]
   (try
     (->> code read-string eval str (buf-insert buf))

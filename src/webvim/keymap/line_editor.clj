@@ -67,6 +67,11 @@
   (let [ch (keycode-to-char keycode)]
     (linebuf-insert buf ch)))
 
+(defn- line-editor-enter[buf keycode]
+  (-> buf
+      (dissoc :message)
+      (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
+
 (defn- line-editor-continue[buf keycode]
   (not (or
          (-> buf :line-buffer nil?)
