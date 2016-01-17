@@ -16,14 +16,14 @@
         webvim.jumplist
         webvim.autocompl))
 
-(defn- unmatched-bracket+[r pos re rch]
+(defn- unbalanced-bracket+[r pos re rch]
   (let [[a _] (pos-re+ r pos re)]
     (if (or (nil? a)
             (= (char-at r a) rch))
       a
       (recur r (inc (pos-match-bracket r a)) re rch))))
 
-(defn- unmatched-bracket-[r pos re lch]
+(defn- unbalanced-bracket-[r pos re lch]
   (let [[a _] (pos-re- r pos re)]
     (if (or (nil? a)
             (= (char-at r a) lch))
@@ -31,7 +31,7 @@
       (recur r (dec (pos-match-bracket r a)) re lch))))
 
 ;(defn test-right-bracket[]
-;  (unmatched-bracket- (rope "(aaa(()()))bbb") 10 (re-pattern (quote-patterns \( \))) \())
+;  (unbalanced-bracket- (rope "(aaa(()()))bbb") 10 (re-pattern (quote-patterns \( \))) \())
 
 (defn- pair-range[lch rch around?]
   (fn[buf]
@@ -46,9 +46,9 @@
                          [(pos-match-bracket r pos) pos]
                          :else
                          ;FIXME: This is ugly.
-                         (let [b (unmatched-bracket+ r pos re rch)]
+                         (let [b (unbalanced-bracket+ r pos re rch)]
                            (if (nil? b) nil
-                             (let [a (unmatched-bracket- r pos re lch)]
+                             (let [a (unbalanced-bracket- r pos re lch)]
                                (if (nil? a) nil
                                  [a b])))))]
       (if (nil? rg) buf
