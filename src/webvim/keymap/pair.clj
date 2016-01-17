@@ -88,12 +88,14 @@
          r :str
          lang :language} buf
          not-space-chars ((word-re lang) :not-space-chars)
-        re (re-pattern (str "[" not-space-chars "]|\\R"))] ;Java 8 new '\R' matches all line breaks
-    [(inc (or (first (pos-re- r (dec a) re)) -1))
-     (dec (or (first (pos-re+ r (inc b) re)) (count r)))]))
+        re (re-pattern (str "[" not-space-chars "]|\\R")) ;Java 8 new '\R' matches all line breaks
+        b1 (dec (or (first (pos-re+ r (inc b) re)) (count r)))]
+    (if (= b b1)
+      [(inc (or (first (pos-re- r (dec a) re)) -1)) b1]
+      [a b1])))
 
 (defn current-word-range[buf around?]
-  "return range of word under cursor, both side is inclusive"
+  "return range of word under cursor, both sides are inclusive"
   (let [{pos :pos
          r :str
          lang :language} buf
