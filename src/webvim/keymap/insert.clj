@@ -61,7 +61,7 @@
   {"<c-n>" #(autocompl-move (new-autocompl %) inc)
    "<c-p>" #(autocompl-move (new-autocompl %) dec)
    "<c-r>" {"<esc>" identity
-            "=" (expression-keymap line-editor-keymap)
+            "=" (expression-keymap line-editor-keymap true)
             :else (fn[buf keycode]
                     (-> buf
                         (put-from-register keycode false)

@@ -320,7 +320,7 @@
        "P" #(put-from-register % (-> % :context :register) false)
        "J" join-line
        "\"" {"<esc>" identity
-             "=" (expression-keymap line-editor-keymap)
+             "=" (expression-keymap line-editor-keymap false)
              :else start-register}
        "<c-s-6>" (fn[buf]
                    (let [reg (registers-get "#")]

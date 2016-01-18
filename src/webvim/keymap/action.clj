@@ -179,8 +179,7 @@
         line-start)))
 
 (defn put-from-register[buf reg append?]
-  (let [{s :str linewise? :linewise? blockwise? :blockwise?} (registers-get reg)]
-    (println "put-from-register: blockwise?" blockwise?)
+  (let [{s :str res :result linewise? :linewise? blockwise? :blockwise?} (registers-get reg)]
     (cond
       linewise?
       (put-linewise buf s append?)
@@ -188,6 +187,7 @@
       (put-blockwise buf s append?)
       :else
       (let [pos (if append? (inc (buf :pos)) (buf :pos))
+            s (if (= reg "=") res s) 
             newpos (-> pos (+ (count s)) dec)]
         (-> buf
             (buf-insert pos s)
@@ -353,13 +353,19 @@
       (if (nil? abuf) nil
         abuf))))
 
-(defn- read-eval-insert[buf code]
+(defn- read-eval-put[buf code insert?]
   (try
-    (->> code read-string eval str (buf-insert buf))
+    (let [result (->> code read-string eval str)]
+      (registers-put! "=" {:str code :result result})
+      (if insert?
+        (-> buf
+            (assoc-in [:context :register] "=")
+            (buf-insert result))
+        (assoc-in buf [:context :register] "=")))
     (catch Exception e
       (assoc buf :message (str e)))))
 
-(defn expression-keymap[line-editor-keymap]
+(defn expression-keymap[line-editor-keymap insert?]
   (assoc line-editor-keymap
          :enter (fn[buf keycode]
                   (-> buf
@@ -367,8 +373,7 @@
                       (assoc :line-buffer {:prefix keycode :str (rope "()") :pos 1})))
          "<cr>" (fn[buf] 
                   (let [code (-> buf :line-buffer :str str)]
-                    (registers-put! "=" {:str code})
-                    (read-eval-insert buf code)))))
+                    (read-eval-put buf code insert?)))))
 
 (defn start-insert-mode [keycode fnmotion fnedit]
   (fn[buf]
