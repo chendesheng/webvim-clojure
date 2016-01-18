@@ -194,7 +194,7 @@
       ranges) ranges))
 
 (defn- yank-blockwise[buf items]
-  (put-register! buf "\"" {:str (string/join <br> (map first items)) :blockwise? true}))
+  (registers-put! (buf :register) {:str (string/join <br> (map first items)) :blockwise? true}))
 
 (defn- visual-block-yank[buf]
   (let [items (visual-block-lines buf)

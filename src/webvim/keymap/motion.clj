@@ -106,25 +106,25 @@
     (buf-set-pos buf newpos)))
 
 (defn- move-to-char+[buf keycode]
-  (put-register! buf ";" {:str keycode :forward? true :inclusive? true})
+  (registers-put! ";" {:str keycode :forward? true :inclusive? true})
   (move-by-char buf keycode true true))
 
 (defn- move-to-char-[buf keycode]
-  (put-register! buf ";" {:str keycode :forward? false :inclusive? true})
+  (registers-put! ";" {:str keycode :forward? false :inclusive? true})
   (move-by-char buf keycode false true))
 
 (defn- move-before-char+[buf keycode]
-  (put-register! buf ";" {:str keycode :forward? true :inclusive? false})
+  (registers-put! ";" {:str keycode :forward? true :inclusive? false})
   (move-by-char buf keycode true false))
 
 (defn- move-before-char-[buf keycode]
-  (put-register! buf ";" {:str keycode :forward? false :inclusive? false})
+  (registers-put! ";" {:str keycode :forward? false :inclusive? false})
   (move-by-char buf keycode false false))
 
 (defn- repeat-move-by-char[buf same-dir?]
   (let [{ch :str 
          forward? :forward? 
-         inclusive? :inclusive?} (get-register buf ";")]
+         inclusive? :inclusive?} (registers-get ";")]
     (move-by-char buf ch (= same-dir? forward?) inclusive?)))
 
 (defn- repeat-move-by-char+[buf]
@@ -160,21 +160,21 @@
 
 (defn- same-word+[buf]
   (let [re (re-current-word buf)]
-    (put-register! buf "/" {:str (str re) :forward? true})
+    (registers-put! "/" {:str (str re) :forward? true})
     (-> buf 
         (re-forward-highlight re)
         (highlight-all-matches re))))
 
 (defn- same-word-[buf]
   (let [re (re-current-word buf)]
-    (put-register! buf "/" {:str (str re) :forward? false})
+    (registers-put! "/" {:str (str re) :forward? false})
     (-> buf 
         (re-backward-highlight re)
         (highlight-all-matches re))))
 
 (defn- same-word-first[buf]
   (let [re (re-current-word buf)]
-    (put-register! buf "/" {:str (str re) :forward? true})
+    (registers-put! "/" {:str (str re) :forward? true})
     (-> buf
         buf-start
         (re-forward-highlight re)
@@ -256,7 +256,7 @@
   ;(println "increment-search-<cr>" (buf :message))
   (let [s (-> buf :line-buffer :str str)
         prefix (-> buf :line-buffer :prefix)]
-    (put-register! buf "/" {:str s :forward? (= prefix "/")})
+    (registers-put! "/" {:str s :forward? (= prefix "/")})
     (-> buf
         (assoc :message (str prefix s))
         (highlight-all-matches (search-pattern s)))))
@@ -287,7 +287,7 @@
           :after (increment-search-after forward?)}))
 
 (defn- repeat-search[buf same-dir?]
-  (let[{s :str forward? :forward?} (or (get-register buf "/") 
+  (let[{s :str forward? :forward?} (or (registers-get "/") 
                                       {:str "" :forward? true})
        re (search-pattern s)
        hightlightall? (-> buf :highlights empty?)
@@ -306,7 +306,7 @@
   (listen 
     :change-buffer
     (fn [buf oldbuf c]
-      (let [s (-> buf (get-register "/") :str str)]
+      (let [s (:str (registers-get "/"))]
         (if-not (or (-> buf :highlights empty?) (empty? s))
           (highlight-all-matches buf (search-pattern s))
           buf)))))

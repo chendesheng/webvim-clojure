@@ -2,6 +2,7 @@
   (:use webvim.core.rope
         webvim.core.pos
         webvim.core.line
+        webvim.core.register
         webvim.keymap.action
         webvim.core.utils)) 
 
@@ -89,7 +90,7 @@
     (linebuf-delete buf -1)))
 
 (defn- line-editor-put[buf keycode]
-  (let [txt (-> buf (get-register keycode) :str)]
+  (let [txt ((registers-get keycode) :str)]
     (if (string? txt)
       (linebuf-insert buf (-> txt rope first-line .trimEnd str))
       buf)))

@@ -64,7 +64,7 @@
 (defn- start-file[f]
   (println "start-file:" f)
   (let [buf @(new-file f)]
-    (registers-put! registers "%" {:str f :id (buf :id)})
+    (registers-put! "%" {:str f :id (buf :id)})
     (send-buf! buf)))
 
 (defn- parse-input[body]

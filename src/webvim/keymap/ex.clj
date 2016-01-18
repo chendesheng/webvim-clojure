@@ -151,16 +151,16 @@
 
 (defn cmd-bdelete[buf execmd args]
   (swap! buffer-list dissoc (buf :id))
-  (let [nextbuf @(or (get-buffer-from-reg (@registers "#")) (new-file nil))
+  (let [nextbuf @(or (get-buffer-from-reg (registers-get "#")) (new-file nil))
         nextid (nextbuf :id)
         alternatebuf (some (fn[buf]
                              (if (not= (buf :id) nextid)
                                buf nil))
                            (map deref (vals @buffer-list)))]
-    (registers-put! registers "%" (file-register nextbuf))
+    (registers-put! "%" (file-register nextbuf))
     (if (nil? alternatebuf)
-      (registers-put! registers "#" nil)
-      (registers-put! registers "#" (file-register alternatebuf)))
+      (registers-put! "#" nil)
+      (registers-put! "#" (file-register alternatebuf)))
     (assoc buf :nextid nextid)))
 
 (defn cmd-eval[buf execmd args]
@@ -233,11 +233,10 @@
     (str ":register\n" 
          (string/join
            "\n" 
-           (map (fn[reg]
-                  (str "\"" (key reg)
-                       "  "
-                       (-> reg val :str)))
-                @registers)) "\n")
+           (map-registers (fn[[k v]]
+                            (str "\"" k
+                                 "  "
+                                 (clojure.string/escape (or (:str v) "") {\newline "\\n"}))))) "\n")
     true))
 
 (defn cmd-jumps[buf _ _]

@@ -19,7 +19,7 @@
 (defn- delete-char[buf]
   (let [pos (buf :pos)
         [a b] [pos (inc pos)]]
-    (buf-yank buf a b false)
+    (buf-yank buf a b false true)
     (buf-delete buf a b)))
 
 (defn- insert-new-line[buf]
@@ -150,14 +150,12 @@
       :else buf)))
 
 (defn- start-register[buf keycode]
-  (if (re-test #"[0-9a-zA-Z/*#%.:+=\-]" keycode)
+  (if (re-test #"[0-9a-zA-Z/*#%.:+=\-_~]" keycode)
     (assoc-in buf [:context :register] keycode)
     buf))
 
 (defn- dot-repeat[buf]
-  (let [keycodes (-> buf
-                     (get-register ".")
-                     :keys)]
+  (let [keycodes ((registers-get ".") :keys)]
     (if (empty? keycodes)
       buf
       (replay-keys buf keycodes))))
@@ -325,7 +323,7 @@
              "=" (expression-keymap line-editor-keymap)
              :else start-register}
        "<c-s-6>" (fn[buf]
-                   (let [reg (@registers "#")]
+                   (let [reg (registers-get "#")]
                      (if (nil? reg)
                        (assoc buf :message "No alternative file")
                        (goto-buf buf (get-buffer-from-reg reg)))))

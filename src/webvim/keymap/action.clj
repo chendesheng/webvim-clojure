@@ -25,12 +25,6 @@
 (def visual-line 2)
 (def visual-block 3) ;TODO
 
-(defn get-register[buf c]
-  (registers-get (buf :registers) c))
-
-(defn put-register![buf c v]
-  (registers-put! (buf :registers) c v))
-
 (defn file-register[buf]
   {:id (buf :id) :str (or (buf :filepath) (buf :name))})
 
@@ -79,19 +73,24 @@
               :keymap (buf :normal-mode-keymap)
               :visual {:type no-visual}}))
 
-(defn buf-yank[buf a b linewise?]
-  (let [s (buf-subr buf a b)]
-    (put-register! buf (-> buf :context :register) {:str s :linewise? linewise?})
-    (update-in buf [:context] dissoc :register)))
+(defn buf-yank
+  ([buf a b linewise? delete?]
+   (let [s (buf-subr buf a b)]
+     ((if delete?
+        registers-delete-to!
+        registers-yank-to!) (-> buf :context :register) {:str s :linewise? linewise?})
+     (update-in buf [:context] dissoc :register)))
+  ([buf a b linewise?]
+   (buf-yank buf a b linewise? false)))
 
 (defn change-active-buffer[id nextid]
   (let [path-name #(or (% :filepath) (% :name))]
     (if (not= id nextid)
       (do
-        (registers-put! registers "#" 
+        (registers-put! "#" 
                         (file-register
                           (-> @buffer-list (get id) deref)))
-        (registers-put! registers "%"
+        (registers-put! "%"
                         (file-register
                           (-> @buffer-list (get nextid) deref)))))))
 
@@ -111,7 +110,7 @@
 (defn change-range[buf inclusive? linewise?]
   (let [[a b] (range-prefix buf inclusive?)]
     (-> buf
-        (buf-yank a b linewise?)
+        (buf-yank a b linewise? true)
         (buf-delete a b)
         set-insert-mode)))
 
@@ -141,7 +140,7 @@
   (let [[a b] (range-prefix buf inclusive?)]
     ;(println "delete-range:" a b)
     (-> buf
-        (buf-yank a b linewise?)
+        (buf-yank a b linewise? true)
         (buf-delete a b)
         (buf-set-pos a))))
 
@@ -180,7 +179,7 @@
         line-start)))
 
 (defn put-from-register[buf reg append?]
-  (let [{s :str linewise? :linewise? blockwise? :blockwise?} (get-register buf reg)]
+  (let [{s :str linewise? :linewise? blockwise? :blockwise?} (registers-get reg)]
     (println "put-from-register: blockwise?" blockwise?)
     (cond
       linewise?
@@ -368,6 +367,7 @@
                       (assoc :line-buffer {:prefix keycode :str (rope "()") :pos 1})))
          "<cr>" (fn[buf] 
                   (let [code (-> buf :line-buffer :str str)]
+                    (registers-put! "=" {:str code})
                     (read-eval-insert buf code)))))
 
 (defn start-insert-mode [keycode fnmotion fnedit]
@@ -391,7 +391,7 @@
                 (empty? keys)
                 ;don't repeat these keys
                 (contains? #{"." "u" "p" "P" ":" "<c-r>"} (first keys)))
-      (put-register! buf "." {:keys keys :str (string/join keys)}))
+      (registers-put! "." {:keys keys :str (string/join keys)}))
     (dissoc buf :dot-repeat-keys)))
 
 (defn replay-keys [buf keycodes]
