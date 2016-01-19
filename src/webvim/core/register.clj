@@ -9,6 +9,7 @@
 (def ^:private clipboard-reg "+")
 (def ^:private clipboard-reg2 "*")
 (def ^:private last-yank-reg "0")
+(def ^:private small-delete-reg "-")
 
 (defn- clipboard-upate-reg[ch]
   (let [s (clipboard/get-text)]
@@ -37,7 +38,8 @@
 ;TODO: A-Z append
 (defn registers-delete-to! [ch v]
   (registers-put! ch v)
-  (if (not= ch black-hole-reg)
+  (if (and (not= ch black-hole-reg)
+           (= ch unnamed-reg))
     (do
       ;Register 1: Last deletion. Register 2: Second last deletion. And so on.
       (swap! registers 
@@ -52,4 +54,6 @@
                    (assoc "7" (registers "6"))
                    (assoc "8" (registers "7"))
                    (assoc "9" (registers "8")))))
-      (registers-put! unnamed-reg v))))
+      (if (->> v :str (re-seq #"\R") count zero?)
+        (registers-put! small-delete-reg v)))
+    (registers-put! unnamed-reg v)))
