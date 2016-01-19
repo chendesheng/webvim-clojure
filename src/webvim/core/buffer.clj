@@ -22,7 +22,7 @@
 (defonce directory-panel-name "[Directory]")
 
 ;A panel is just a speical buffer
-(defonce panels #{output-panel-name grep-panel-name find-panel-name})
+(defonce panels #{output-panel-name grep-panel-name find-panel-name directory-panel-name})
 
 (defn buffer-list-save!
   "Generate buffer id (increase from 1) and add to buffer-list"

@@ -290,7 +290,8 @@
           (fn[buf]
             (let [newbuf (-> buf
                              (buf-replace 0 (-> buf :str count) (str files "\n"))
-                             buf-start)]
+                             buf-start
+                             save-undo)]
               (send-buf! newbuf))))
     @abuf))
 
@@ -340,6 +341,7 @@
                            (buf-append s "\n")
                            buf-end
                            line-start
+                           save-undo
                            cursor-center-viewport)]
             (send-buf! newbuf))))
   (if goto? (goto-buf buf apanel) buf))
