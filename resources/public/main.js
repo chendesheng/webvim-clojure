@@ -1062,11 +1062,22 @@ function renderCursor(localbuf, from, visibleLines) {
 	if (cursor.textContent != res.ch) {
 		cursor.textContent = res.ch;
 	}
+
+	function colorStyle() {
+		if (localbuf.focusStatusBar) {
+			return 'border:solid 1px ' + color + ';' + 'color:rgba(0,0,0,0);';
+		} else {
+			return 'background-color:' + color + ';' + 'color:' + background + ';';
+		}
+	}
+
 	cursor.style.cssText = 'left:'+(res.left + (alignright ? res.width : 0) +'px;'  //right align
 		+'margin-left:' + (((alignright?-1:0)-gutterWidth(localbuf.id)))+'ch') + ';'
-		+'background-color:' + color + ';'
-		+'color:' + background + ';'
-		+'top:' + res.top + 'px;';
+		+'top:' + res.top + 'px;' + colorStyle();
+	if (localbuf.focusStatusBar) {
+		cursor.style.width = cursor.offsetWidth-4+'px';
+		cursor.style.height = cursor.offsetHeight-4+'px';
+	}
 }
 
 function renderLineBuffer(buf) {
@@ -1074,16 +1085,19 @@ function renderLineBuffer(buf) {
 	var str = linebuf.str;
 	var pos = linebuf.pos;
 	var ex = $statusBuf(buf.id);
+	var localbuf = buffers[buf.id];
 
 	//cursor
 	if (str[str.length-1] == '\n') {
 		ex.textContent = str.substring(0, str.length-1);
 
 		$statusCursor(buf.id).style.display= 'none';
+		localbuf.focusStatusBar = false;
 	} else {
 		ex.textContent = str;
 		if (pos > str.length || pos == 0) {
 			$statusCursor(buf.id).style.display= 'none';
+			localbuf.focusStatusBar = false;
 			return;
 		}
 
@@ -1094,6 +1108,7 @@ function renderLineBuffer(buf) {
 		var cursor = $statusCursor(buf.id)
 		cursor.style.display = 'block';
 		cursor.style.left = (rect.left+rect.width)+'px';
+		localbuf.focusStatusBar = true;
 	}
 }
 
@@ -1105,6 +1120,7 @@ function renderMode(buf, text) {
 }
 
 function renderStatusBar(buf) {
+	var localbuf = buffers[buf.id];
 	if (typeof buf.message != 'undefined') {
 		$statusCursor(buf.id).style.cssText = 'display:none';
 
@@ -1114,12 +1130,15 @@ function renderStatusBar(buf) {
 		if (buf.message == "") {
 			renderMode(buf, MODES[buffers[buf.id].mode]);
 		}
+		localbuf.focusStatusBar = false;
 	} else if (typeof buf['line-buffer'] != 'undefined') {
 		renderLineBuffer(buf);
 	} else {
 		if (typeof buf.mode != 'undefined' && buf.mode < MODES.length) {
 			renderMode(buf, MODES[buf.mode]);
 			keymap = keymaps[buf.mode];
+
+			localbuf.focusStatusBar = false;
 		}
 	}
 }

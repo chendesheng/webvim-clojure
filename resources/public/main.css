@@ -78,7 +78,6 @@ pre {
 
 .cursor {
 	position:absolute;
-	background:#ae81ff;
 	color:white;
 	z-index:99;
 	white-space:pre;
