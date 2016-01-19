@@ -323,7 +323,7 @@
    "j" #(lines-n+ % 1)
    "g" {"g" (comp buf-start jump-push)
         "d" (comp same-word-first jump-push)}
-   "G" buf-end
+   "G" (comp line-start buf-end)
    "w" word+
    "W" WORD+
    "b" word-
@@ -350,4 +350,3 @@
    "%" move-to-matched-brackets
    "<c-u>" #(cursor-move-viewport %1 -0.5) 
    "<c-d>" #(cursor-move-viewport %1 0.5)})
-
