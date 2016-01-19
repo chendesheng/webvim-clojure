@@ -64,14 +64,15 @@
             (add-highlight [a (dec b)]))))))
 
 (defn set-insert-mode [buf]
-  (merge buf {:mode insert-mode
-              :keymap (buf :insert-mode-keymap)}))
+  (assoc buf
+         :mode insert-mode
+         :keymap (buf :insert-mode-keymap)))
 
 (defn set-normal-mode[buf]
   ;(println "set-normal-mode:")
-  (merge buf {:mode normal-mode
-              :keymap (buf :normal-mode-keymap)
-              :visual {:type no-visual}}))
+  (assoc buf
+         :mode normal-mode
+         :keymap (buf :normal-mode-keymap)))
 
 (defn buf-yank
   ([buf a b linewise? delete?]

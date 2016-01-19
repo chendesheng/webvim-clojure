@@ -84,7 +84,7 @@
                       pos newpos)))))
 
 (defn buf-start[buf]
-  (merge buf {:x 0 :y 0 :pos 0}))
+  (assoc buf :x 0 :y 0 :pos 0))
 
 (defn buf-end[buf]
   (-> buf

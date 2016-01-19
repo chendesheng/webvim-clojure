@@ -53,7 +53,7 @@
   (GET "/resize/:w/:h" [w h]
        (send ui-agent 
              (fn[ui w h]
-               (update-in ui [:viewport] merge {:w w :h h})) (parse-int w) (parse-int h))))
+               (update-in ui [:viewport] assoc :w w :h h)) (parse-int w) (parse-int h))))
 
 (def ^:private app
   (-> (compojure.handler/api main-routes)

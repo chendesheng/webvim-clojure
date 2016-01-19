@@ -279,12 +279,12 @@
                 (f re))))))))
 
 (defn- increment-search-keymap[line-editor-keymap forward?]
-  (merge line-editor-keymap
-         {:enter (increment-search-enter line-editor-keymap)
-          :leave (increment-search-leave line-editor-keymap)
-          "<esc>" increment-search-<esc> 
-          "<cr>" increment-search-<cr>
-          :after (increment-search-after forward?)}))
+  (assoc line-editor-keymap
+         :enter (increment-search-enter line-editor-keymap)
+         :leave (increment-search-leave line-editor-keymap)
+         "<esc>" increment-search-<esc> 
+         "<cr>" increment-search-<cr>
+         :after (increment-search-after forward?)))
 
 (defn- repeat-search[buf same-dir?]
   (let[{s :str forward? :forward?} (or (registers-get "/") 

@@ -807,7 +807,7 @@ function render(buf) {
 	var localbuf = buffers[buf.id];
 
 	//render visual
-	if (buf.visual) {
+	if (typeof buf.visual != 'undefined') {
 		if (buf.visual.type > 0) {
 			renderMode(buf, VISUAL_MODES[buf.visual.type]);
 		}

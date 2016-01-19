@@ -12,13 +12,13 @@
 
 ;for buffer generate by external commands like grep, make etc
 (defn init-external-output-keymap[motion-keymap]
-  (merge
+  (assoc
     motion-keymap
-    {"i" readonly
-     "c" readonly
-     "a" readonly
-     "s" readonly
-     "x" readonly
-     "d" readonly
-     "<c-o>" #(move-to-jumplist % jump-prev)
-     "<c-i>" #(move-to-jumplist % jump-next)}))
+    "i" readonly
+    "c" readonly
+    "a" readonly
+    "s" readonly
+    "x" readonly
+    "d" readonly
+    "<c-o>" #(move-to-jumplist % jump-prev)
+    "<c-i>" #(move-to-jumplist % jump-next)))

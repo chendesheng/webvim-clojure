@@ -13,7 +13,7 @@
 
 (defn- clipboard-upate-reg[ch]
   (let [s (clipboard/get-text)]
-    (swap! registers update-in [ch] merge {:str s :linewise? (-> s last (= \newline))})))
+    (swap! registers update-in [ch] assoc :str s :linewise? (-> s last (= \newline)))))
 
 (defn registers-get [ch]
   (if (or (= clipboard-reg ch) (= clipboard-reg2 ch))

@@ -325,59 +325,55 @@
           (if (nil? news) buf
             (update-in buf [:line-buffer]
                        (fn[linebuf]
-                         (merge linebuf {:str (rope news) :pos (count news)})))))
+                         (assoc linebuf :str (rope news) :pos (count news))))))
         buf)
       (autocompl-move 
         (new-autocompl buf) inc))))
 
 ;Make sure each cmd have a not-nil response message
-(defn- fix-message[buf]
-  (if (-> buf :message nil?)
-    (assoc buf :message "") buf))
-
 (defn init-ex-mode-keymap[line-editor-keymap]
   (let [cmds (ex-commands)
         enter (or (line-editor-keymap :enter) nop)]
-    (merge line-editor-keymap
-           {:enter (fn[buf keycode]
-                     (swap! commands-history #(-> %
-                                                  fast-forward
-                                                  (assoc :current "")))
-                     (-> buf
-                         (enter keycode)
-                         (dissoc :autocompl)))
-            :after (fn[buf keycode]
-                     (let [after (or (line-editor-keymap :after) nop)
-                           buf (after buf keycode)]
+    (assoc line-editor-keymap
+           :enter (fn[buf keycode]
+                    (swap! commands-history #(-> %
+                                                 fast-forward
+                                                 (assoc :current "")))
+                    (-> buf
+                        (enter keycode)
+                        (dissoc :autocompl)))
+           :after (fn[buf keycode]
+                    (let [after (or (line-editor-keymap :after) nop)
+                          buf (after buf keycode)]
                        ;cache current typing content if it's latest one
-                       (if (and (not (contains? #{"<c-p>" "<c-n>" "<cr>"} keycode))
-                                (no-future? @commands-history))
-                         (swap! commands-history assoc :current (-> buf :line-buffer :str str)))
-                       (if (or (= keycode "<tab>")
-                               (= keycode "<s-tab>")
-                               (-> buf :autocompl nil?))
-                         buf
-                         (autocompl-suggest buf))))
-            :leave (fn[buf keycode]
-                     (-> buf
-                         (dissoc :line-buffer)
-                         (dissoc :autocompl)
-                         fix-message
-                         set-normal-mode))
-            "<c-p>" (fn[buf]
-                      (swap! commands-history go-back)
-                      (let [buf (recover-command-history buf)]
-                        buf))
-            "<c-n>" (fn[buf]
-                      (swap! commands-history go-future)
-                      (if (no-future? @commands-history)
-                        (set-line-buffer buf (@commands-history :current))
-                        (recover-command-history buf)))
-            "<cr>" (fn[buf]
-                     (execute buf cmds))
-            "<s-tab>" (fn[buf]
-                        (autocompl-move buf dec))
-            "<tab>" (fn[buf]
-                      (ex-tab-complete buf cmds))})))
+                      (if (and (not (contains? #{"<c-p>" "<c-n>" "<cr>"} keycode))
+                               (no-future? @commands-history))
+                        (swap! commands-history assoc :current (-> buf :line-buffer :str str)))
+                      (if (or (= keycode "<tab>")
+                              (= keycode "<s-tab>")
+                              (-> buf :autocompl nil?))
+                        buf
+                        (autocompl-suggest buf))))
+           :leave (fn[buf keycode]
+                    (let [leave (or (line-editor-keymap :leave) nop)]
+                      (-> buf
+                          (leave keycode)
+                          (dissoc :autocompl)
+                          set-normal-mode)))
+           "<c-p>" (fn[buf]
+                     (swap! commands-history go-back)
+                     (let [buf (recover-command-history buf)]
+                       buf))
+           "<c-n>" (fn[buf]
+                     (swap! commands-history go-future)
+                     (if (no-future? @commands-history)
+                       (set-line-buffer buf (@commands-history :current))
+                       (recover-command-history buf)))
+           "<cr>" (fn[buf]
+                    (execute buf cmds))
+           "<s-tab>" (fn[buf]
+                       (autocompl-move buf dec))
+           "<tab>" (fn[buf]
+                     (ex-tab-complete buf cmds)))))
 
 
