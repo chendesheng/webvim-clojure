@@ -327,6 +327,36 @@
                      (if (nil? reg)
                        (assoc buf :message "No alternative file")
                        (goto-buf buf (get-buffer-from-reg reg)))))
+       "<c-a>" (fn[buf]
+                 (let [pos (buf :pos)
+                       r (buf :str)
+                       re-start (re-pattern (str "([^0-9](?=[-0-9]))|((?<=[^0-9])$)"))
+                       re-end (re-pattern (str "[0-9](?=[^0-9])"))
+                       b (or (last (pos-re+ r pos re-end)) (count r))
+                       a (last (pos-re- r (dec b) re-start))]
+                   (if (or (nil? a) (nil? b) (>= a b))
+                     buf
+                     (let [num (Integer. (str (subr r a b)))]
+                       ;(println "num:" num)
+                       (-> buf
+                           (buf-set-pos (dec b))
+                           (buf-replace a b (-> num inc str))
+                           char-)))))
+       "<c-x>" (fn[buf]
+                 (let [pos (buf :pos)
+                       r (buf :str)
+                       re-start (re-pattern (str "([^0-9](?=[0-9]))|((?<=[^0-9])$)"))
+                       re-end (re-pattern (str "[0-9](?=[^0-9])"))
+                       b (or (last (pos-re+ r pos re-end)) (count r))
+                       a (last (pos-re- r (dec b) re-start))]
+                   (if (or (nil? a) (nil? b) (>= a b))
+                     buf
+                     (let [num (Integer. (str (subr r a b)))]
+                       ;(println "num:" num)
+                       (-> buf
+                           (buf-set-pos (dec b))
+                           (buf-replace a b (-> num dec str))
+                           char-)))))
        :continue (fn[buf keycode]
                    (= (buf :mode) normal-mode))
        :before (fn [buf keycode]
