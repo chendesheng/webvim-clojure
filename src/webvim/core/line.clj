@@ -77,20 +77,16 @@
                           cx (visualx-to-charx s vx (buf :tabsize))]  
                       (+ a (bound-range cx 0 (- b a 1))))))))))
 
-(defn lines-n+[buf n]
-  (lines-move buf n pos-lines-seq+))
-
-;(lines-n+ {:pos 0 :x 2 :str (rope "abc\n\n") :y 0} 1)
-
-(defn lines-n-[buf n]
-  (lines-move buf n pos-lines-seq-))
+(defn lines-n[buf n]
+  (cond 
+    (pos? n) (lines-move buf n pos-lines-seq+)
+    (neg? n) (lines-move buf (- n) pos-lines-seq-)
+    :else buf))
 
 (defn lines-row[buf n]
   (let [y (buf :y)
         dy (- n y)]
-    (if (pos? dy)
-      (lines-n+ buf dy)
-      (lines-n- buf (- dy)))))
+    (lines-n buf dy)))
 
 (defn make-linewise-range [[a b] buf]
   ;(println "make-linewise-range:" a b)

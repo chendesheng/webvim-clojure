@@ -316,14 +316,23 @@
       (assoc-in [:context :lastbuf] buf)
       (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
 
+(defn- viewport-position[percentFromTop]
+  (fn[buf]
+    (move-to-line buf 
+                  (+ (buf :scroll-top)
+                     (-> @ui-agent :viewport :h dec (* percentFromTop) Math/ceil)))))
+
 (defn init-motion-keymap[line-editor-keymap]
   {"h" char-
    "l" char+
-   "k" #(lines-n- % 1)
-   "j" #(lines-n+ % 1)
+   "k" #(lines-n % -1)
+   "j" #(lines-n % 1)
    "g" {"g" (comp buf-start jump-push)
         "d" (comp same-word-first jump-push)}
    "G" (comp line-start buf-end)
+   "H" (viewport-position 0)
+   "M" (viewport-position 0.5)
+   "L" (viewport-position 1)
    "w" word+
    "W" WORD+
    "b" word-
