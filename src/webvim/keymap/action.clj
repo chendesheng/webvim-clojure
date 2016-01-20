@@ -152,7 +152,7 @@
 (defn indent-range[buf inclusive?]
   (let [[a b] (range-prefix buf inclusive?)]
     (-> buf
-        (buf-indent-lines [a b]))))
+        (buf-indent-lines [a (dec b)]))))
 
 (defn- put-blockwise[buf s append?]
   (let [{r :str pos :pos tabsize :tabsize} buf
