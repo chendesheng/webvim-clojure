@@ -273,6 +273,7 @@
                           [(+ a line-start 2)
                            (+ b line-start)
                            (format (if (re-test s #"[A-Z]") "%X" "%x")
+                                   ;http://stackoverflow.com/questions/508630/java-equivalent-of-unsigned-long-long
                                    (-> s (subs 2) (Long/parseUnsignedLong 16) f))]
                           [(+ a line-start)
                            (+ b line-start)
