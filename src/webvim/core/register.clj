@@ -1,6 +1,6 @@
 (ns webvim.core.register
-  (:require [snipsnap.core :as clipboard])
-  (:use webvim.core.event))
+  (:use webvim.core.event
+        webvim.core.utils))
 
 (defonce ^:private registers (atom {}))
 
@@ -12,7 +12,7 @@
 (def ^:private small-delete-reg "-")
 
 (defn- clipboard-upate-reg[ch]
-  (let [s (clipboard/get-text)]
+  (let [s (clipboard-get)]
     (swap! registers update-in [ch] assoc :str s :linewise? (-> s last (= \newline)))))
 
 (defn registers-get [ch]
@@ -22,7 +22,7 @@
 
 (defn registers-put! [ch v]
   (if (or (= clipboard-reg ch) (= clipboard-reg2 ch))
-    (clipboard/set-text! (v :str)))
+    (clipboard-set! (v :str)))
   (swap! registers assoc ch v))
 
 (defn map-registers[f]

@@ -1,4 +1,5 @@
 (ns webvim.core.utils
+  (:require [snipsnap.core :as clipboard])
   (:use [me.raynes.fs :as fs :only (child-of? *cwd*)]))
 
 (defn quote-pattern[ch]
@@ -134,6 +135,30 @@
 
 (defn repeat-space[n]
   (clojure.string/join (repeat n " ")))
+
+(def windows?
+  (-> (System/getProperty "os.name")
+      (.indexOf "Windows")
+      (>= 0)))
+
+(def osx?
+  (-> (System/getProperty "os.name")
+      (.indexOf "Mac OS X")
+      (>= 0)))
+
+(defn clipboard-get[]
+  (if osx?
+    ((clojure.java.shell/sh "pbpaste") :out)
+    (clipboard/get-text)))
+
+;TODO: use xclip in linux
+(defn clipboard-set![text]
+  (cond
+    osx?
+    (clojure.java.shell/sh "pbcopy" :in text)
+    windows?
+    (clojure.java.shell/sh "clip" :in text)
+    :else (clipboard/set-text! text)))
 
 (comment
   (webvim.core.utils/visual-size "\t\ta" 5)
