@@ -243,6 +243,46 @@
                       (pos-line-end (buf :str) (buf :pos)))]
       (buf-set-pos newbuf newpos))))
 
+(defn- padding-zeroes[news olds]
+  (let [nega? (.startsWith olds "-")
+        negb? (.startsWith news "-")
+        a (if nega? (-> olds count dec) (count olds))
+        b (if negb? (-> news count dec) (count news))
+        zeroes (clojure.string/join (repeat (- (max a b) b) "0"))]
+    (if negb?
+      (str "-" zeroes (subs news 1))
+      (str zeroes news))))
+
+(defn- inc-dec-number[f]
+  (fn[buf]
+    (let [pos (buf :pos)
+          r (buf :str)
+          [line-start line-end] (pos-line r pos)
+          line (subr r line-start line-end)
+          [a b] (first
+                  (filter
+                    (fn[[_ b]]
+                      (-> b
+                          (+ line-start)
+                          (> pos)))
+                    (pos-re-seq+ line 0 #"(?i)(0x[0-9a-fA-F]+)|(-?[0-9]+)")))]
+      (if (nil? a)
+        buf
+        (let[s (str (subr line a b))
+             [a b news] (if (re-test s #"^0x|X")
+                          [(+ a line-start 2)
+                           (+ b line-start)
+                           (format (if (re-test s #"[A-Z]") "%X" "%x")
+                                   (-> s (subs 2) (Long/parseUnsignedLong 16) f))]
+                          [(+ a line-start)
+                           (+ b line-start)
+                           (-> s Long/parseLong f str (padding-zeroes s))])]
+          
+          (-> buf
+              (buf-set-pos (dec b))
+              (buf-replace a b news)
+              char-))))))
+
 (defn init-normal-mode-keymap[motion-keymap visual-mode-keymap pair-keymap line-editor-keymap]
   (let [motion-keymap-fix-w (-> motion-keymap
                                 (assoc "w" (dont-cross-line (motion-keymap "w")))
@@ -327,36 +367,8 @@
                      (if (nil? reg)
                        (assoc buf :message "No alternative file")
                        (goto-buf buf (get-buffer-from-reg reg)))))
-       "<c-a>" (fn[buf]
-                 (let [pos (buf :pos)
-                       r (buf :str)
-                       re-start (re-pattern (str "([^0-9](?=[-0-9]))|((?<=[^0-9])$)"))
-                       re-end (re-pattern (str "[0-9](?=[^0-9])"))
-                       b (or (last (pos-re+ r pos re-end)) (count r))
-                       a (last (pos-re- r (dec b) re-start))]
-                   (if (or (nil? a) (nil? b) (>= a b))
-                     buf
-                     (let [num (Integer. (str (subr r a b)))]
-                       ;(println "num:" num)
-                       (-> buf
-                           (buf-set-pos (dec b))
-                           (buf-replace a b (-> num inc str))
-                           char-)))))
-       "<c-x>" (fn[buf]
-                 (let [pos (buf :pos)
-                       r (buf :str)
-                       re-start (re-pattern (str "([^0-9](?=[0-9]))|((?<=[^0-9])$)"))
-                       re-end (re-pattern (str "[0-9](?=[^0-9])"))
-                       b (or (last (pos-re+ r pos re-end)) (count r))
-                       a (last (pos-re- r (dec b) re-start))]
-                   (if (or (nil? a) (nil? b) (>= a b))
-                     buf
-                     (let [num (Integer. (str (subr r a b)))]
-                       ;(println "num:" num)
-                       (-> buf
-                           (buf-set-pos (dec b))
-                           (buf-replace a b (-> num dec str))
-                           char-)))))
+       "<c-a>" (inc-dec-number inc)
+       "<c-x>" (inc-dec-number dec)
        :continue (fn[buf keycode]
                    (= (buf :mode) normal-mode))
        :before (fn [buf keycode]
