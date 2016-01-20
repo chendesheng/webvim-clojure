@@ -284,14 +284,43 @@
               (buf-replace a b news)
               char-))))))
 
+(defn indent-more[buf]
+  (let [[a b] (range-prefix buf true)]
+    (reduce
+      (fn[buf [a b]]
+        (buf-insert buf a "\t"))
+      buf
+      (filter 
+        (fn[rg]
+          (-> buf :str (subr rg) rblank? not))
+        (reverse (pos-lines-seq+ (buf :str) a (dec b)))))))
+
+(defn- count-leading-space[line]
+  (let [[[a b]] (pos-re-seq+ line 0 #"^ *")]
+    (- b a)))
+
+(defn indent-less[buf]
+  (let [[a b] (range-prefix buf true)]
+    (reduce
+      (fn[{r :str pos :pos :as buf} [a b]]
+        (let [line (subr r a b)]
+          ;(println "spaces:" (count-leading-space line))
+          (cond
+            (= (char-at line 0) \tab)
+            (buf-delete buf a (inc a))
+            :else
+            (buf-delete buf a (+ a (min (buf :tabsize) (count-leading-space line)))))))
+      buf
+      (reverse (pos-lines-seq+ (buf :str) a (dec b))))))
+
 (defn init-normal-mode-keymap[motion-keymap visual-mode-keymap pair-keymap line-editor-keymap]
   (let [motion-keymap-fix-w (-> motion-keymap
                                 (assoc "w" (dont-cross-line (motion-keymap "w")))
                                 (assoc "W" (dont-cross-line (motion-keymap "W"))))
         motion-keymap-fix-cw (-> motion-keymap
-                                ;vim's "cw" is identical to "ce", but "dw"/"yw" is not equal to "de"/"ye"
-                                (assoc "w" (dont-cross-line (comp char+ (motion-keymap "e"))))
-                                (assoc "W" (dont-cross-line (comp char+ (motion-keymap "E")))))]
+                                 ;vim's "cw" is identical to "ce", but "dw"/"yw" is not equal to "de"/"ye"
+                                 (assoc "w" (dont-cross-line (comp char+ (motion-keymap "e"))))
+                                 (assoc "W" (dont-cross-line (comp char+ (motion-keymap "E")))))]
     (deep-merge
       motion-keymap
       {"i" (start-insert-mode "i" identity identity)
@@ -370,6 +399,20 @@
                        (goto-buf buf (get-buffer-from-reg reg)))))
        "<c-a>" (inc-dec-number inc)
        "<c-x>" (inc-dec-number dec)
+       ">" (merge
+             motion-keymap-fix-w
+             pair-keymap
+             {:after (fn[buf keycode]
+                       (-> buf
+                           setup-range
+                           indent-more))})
+       "<" (merge
+             motion-keymap-fix-w
+             pair-keymap
+             {:after (fn[buf keycode]
+                       (-> buf
+                           setup-range
+                           indent-less))})
        :continue (fn[buf keycode]
                    (= (buf :mode) normal-mode))
        :before (fn [buf keycode]
