@@ -243,7 +243,7 @@
         negb? (.startsWith news "-")
         a (if nega? (-> olds count dec) (count olds))
         b (if negb? (-> news count dec) (count news))
-        zeroes (clojure.string/join (repeat (- (max a b) b) "0"))]
+        zeroes (repeat-chars (- (max a b) b) \0)]
     (if negb?
       (str "-" zeroes (subs news 1))
       (str zeroes news))))

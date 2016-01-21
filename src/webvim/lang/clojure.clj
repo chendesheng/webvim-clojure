@@ -89,9 +89,9 @@
                 (let [ch (char-at r mpos)
                       [a b] (pos-line r mpos)
                       cnt (- mpos a)]
-                  (repeat-space 
+                  (repeat-chars 
                     (+ (- mpos a) 
-                       (clojure-get-indent (subr r mpos b))))))))))
+                       (clojure-get-indent (subr r mpos b))) \space)))))))
 
 (defmethod indent-pos ::clojure
   [lang r pos]

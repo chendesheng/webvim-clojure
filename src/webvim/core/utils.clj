@@ -133,8 +133,8 @@
 (defn quote-patterns[& args]
   (clojure.string/join "|" (map quote-pattern args)))
 
-(defn repeat-space[n]
-  (clojure.string/join (repeat n " ")))
+(defn repeat-chars[n ch]
+  (clojure.string/join (repeat n ch)))
 
 (def windows?
   (-> (System/getProperty "os.name")
@@ -159,9 +159,6 @@
     windows?
     (clojure.java.shell/sh "clip" :in text)
     :else (clipboard/set-text! text)))
-
-(defn repeat-chars[n ch]
-  (clojure.string/join (repeat n ch)))
 
 (comment
   (webvim.core.utils/visual-size "\t\ta" 5)

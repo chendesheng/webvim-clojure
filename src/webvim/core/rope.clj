@@ -1,5 +1,6 @@
 (ns webvim.core.rope
   (:use webvim.core.event
+        webvim.core.utils
         webvim.core.parallel-universe)
   (:import (org.ahmadsoft.ropes RopeBuilder)))
 
@@ -140,9 +141,9 @@
         (str ret (subs s i))
         (recur (inc nexti) 
                (let [ret (str ret (subs s i nexti))]
-                 (apply str ret 
-                        (repeat 
-                          (- tabsize (rem (+ (.length ret) idx) tabsize)) " "))))))))
+                 (str ret 
+                      (repeat-chars 
+                        (- tabsize (rem (+ (.length ret) idx) tabsize)) \space))))))))
 
 (defn buf-replace 
   ([buf a b to]
