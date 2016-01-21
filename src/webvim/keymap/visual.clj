@@ -52,7 +52,7 @@
   (let [typ (-> buf :context :visual-mode-type)
         newtyp (keycode2type keycode)]
     (if (nil? newtyp)
-      (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<c-r>" "<esc>"} keycode))
+      (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<c-r>" "<esc>" "<" ">"} keycode))
       (not (= typ newtyp)))))
 
 (defn- change-visual-mode-type[buf keycode]
@@ -256,6 +256,13 @@
 (defmethod visual-keymap-A visual-block [buf]
   (start-insert-and-repeat buf true))
 
+(defn- indent[f]
+  (fn[buf]
+    (let [[a b :as rg] (range-prefix buf true)]
+    (-> buf
+        (buf-set-pos (pos-line-start (buf :str) a))
+        (f rg)))))
+
 (defn init-visual-mode-keymap[motion-keymap pair-keymap]
   (merge 
     motion-keymap 
@@ -291,7 +298,9 @@
      "c" visual-keymap-c
      "y" visual-keymap-y
      "I" visual-keymap-I
-     "A" visual-keymap-A}))
+     "A" visual-keymap-A
+     ">" (indent indent-more)
+     "<" (indent indent-less)}))
 
 ;keep track visual ranges when buffer changed
 (defonce ^:private listen-change-buffer 

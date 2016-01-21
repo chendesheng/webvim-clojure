@@ -127,12 +127,7 @@
         setup-range
         (yank-range (inclusive? keycode) false))))
 
-(defn- indent[buf keycode]
-  (if (contains? #{"=" "j" "k"} keycode)
-    (buf-indent-current-line buf)
-    (-> buf
-        setup-range
-        (indent-range true))))
+
 
 (defn- replace-char-keycode[buf keycode]
   (let [ch (keycode-to-char keycode)
@@ -284,34 +279,11 @@
               (buf-replace a b news)
               char-))))))
 
-(defn indent-more[buf]
-  (let [[a b] (range-prefix buf true)]
-    (reduce
-      (fn[buf [a b]]
-        (buf-insert buf a "\t"))
-      buf
-      (filter 
-        (fn[rg]
-          (-> buf :str (subr rg) rblank? not))
-        (reverse (pos-lines-seq+ (buf :str) a (dec b)))))))
-
-(defn- count-leading-space[line]
-  (let [[[a b]] (pos-re-seq+ line 0 #"^ *")]
-    (- b a)))
-
-(defn indent-less[buf]
-  (let [[a b] (range-prefix buf true)]
-    (reduce
-      (fn[{r :str pos :pos :as buf} [a b]]
-        (let [line (subr r a b)]
-          ;(println "spaces:" (count-leading-space line))
-          (cond
-            (= (char-at line 0) \tab)
-            (buf-delete buf a (inc a))
-            :else
-            (buf-delete buf a (+ a (min (buf :tabsize) (count-leading-space line)))))))
-      buf
-      (reverse (pos-lines-seq+ (buf :str) a (dec b))))))
+(defn- indent[f]
+  (fn[buf keycode]
+    (-> buf
+        setup-range
+        (f (range-prefix buf true)))))
 
 (defn init-normal-mode-keymap[motion-keymap visual-mode-keymap pair-keymap line-editor-keymap]
   (let [motion-keymap-fix-w (-> motion-keymap
@@ -379,7 +351,12 @@
              motion-keymap-fix-w
              pair-keymap
              {"=" identity
-              :after indent})
+              :after (fn[buf keycode]
+                       (if (contains? #{"=" "j" "k"} keycode)
+                         (buf-indent-current-line buf)
+                         (-> buf
+                             setup-range
+                             (indent-range true))))})
        "D" delete-to-line-end
        "C" (start-insert-mode "C" identity change-to-line-end)
        "Y" #(yank % "y")
@@ -402,17 +379,11 @@
        ">" (merge
              motion-keymap-fix-w
              pair-keymap
-             {:after (fn[buf keycode]
-                       (-> buf
-                           setup-range
-                           indent-more))})
+             {:after (indent indent-more)})
        "<" (merge
              motion-keymap-fix-w
              pair-keymap
-             {:after (fn[buf keycode]
-                       (-> buf
-                           setup-range
-                           indent-less))})
+             {:after (indent indent-less)})
        :continue (fn[buf keycode]
                    (= (buf :mode) normal-mode))
        :before (fn [buf keycode]
