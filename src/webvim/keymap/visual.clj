@@ -15,6 +15,10 @@
         webvim.jumplist
         webvim.autocompl))
 
+(defn- not-empty-range[ranges]
+  (filter (fn[[a b]]
+            (< a (inc b))) ranges))
+
 (defn- clear-visual[buf]
   (-> buf
       (assoc :last-visual (-> buf :visual (dissoc :ranges))) ;keep last visual
@@ -52,7 +56,7 @@
   (let [typ (-> buf :context :visual-mode-type)
         newtyp (keycode2type keycode)]
     (if (nil? newtyp)
-      (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<c-r>" "<esc>" "<" ">"} keycode))
+      (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<c-r>" "<esc>" "<" ">" "r"} keycode))
       (not (= typ newtyp)))))
 
 (defn- change-visual-mode-type[buf keycode]
@@ -111,8 +115,7 @@
                      (filter (fn[[a b]]
                                (< a (inc b) (dec (pos-line-last (buf :str) a)))) ranges))
                 (map first
-                     (filter (fn[[a b]]
-                               (< a (inc b))) ranges)))
+                     (not-empty-range ranges)))
         buf (buf-set-pos buf (if append?
                                (-> firstline second inc)
                                (first firstline)))
@@ -259,9 +262,46 @@
 (defn- indent[f]
   (fn[buf]
     (let [[a b :as rg] (range-prefix buf true)]
-    (-> buf
-        (buf-set-pos (pos-line-start (buf :str) a))
-        (f rg)))))
+      (-> buf
+          (buf-set-pos (pos-line-start (buf :str) a))
+          (f rg)))))
+
+(defn- replace-char[buf a b ch]
+  (buf-replace buf a b
+               (-> buf :str (subr a b) str
+                   (.replaceAll "[^\r\n]" ch))))
+
+(defmulti replace-char-keycode
+  (fn [buf keycode]
+    (if (not= (count (keycode-to-char keycode)) 1)
+      :nop
+      (if (= visual-block (-> buf :visual :type))
+        :visual-block
+        :not-visual-block))))
+
+(defmethod replace-char-keycode :nop [buf keycode]
+  buf)
+
+(defmethod replace-char-keycode :not-visual-block [buf keycode]
+  (let [ch (keycode-to-char keycode)
+        r (buf :str)
+        pos (buf :pos)
+        [a b :as rg] (range-prefix buf true)]
+      (-> buf
+          (replace-char a b ch) 
+          (buf-set-pos a))))
+
+(defmethod replace-char-keycode :visual-block [buf keycode]
+  (let [ranges (-> buf :visual :ranges)
+        firstline (last ranges) ;ranges in reverse order
+        ch (keycode-to-char keycode)
+        r (buf :str)
+        pos (buf :pos)
+        _ (println "ranges:" (not-empty-range ranges))
+        newbuf (reduce
+                 (fn[buf [a b]]
+                   (replace-char buf a (inc b) ch)) buf (not-empty-range ranges))]
+    (buf-set-pos newbuf (first firstline))))
 
 (defn init-visual-mode-keymap[motion-keymap pair-keymap]
   (merge 
@@ -300,7 +340,10 @@
      "I" visual-keymap-I
      "A" visual-keymap-A
      ">" (indent indent-more)
-     "<" (indent indent-less)}))
+     "<" (indent indent-less)
+     "r" {"<esc>" identity
+          "<cr>" identity
+          :else replace-char-keycode}}))
 
 ;keep track visual ranges when buffer changed
 (defonce ^:private listen-change-buffer 

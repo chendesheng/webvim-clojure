@@ -160,6 +160,9 @@
     (clojure.java.shell/sh "clip" :in text)
     :else (clipboard/set-text! text)))
 
+(defn repeat-chars[n ch]
+  (clojure.string/join (repeat n ch)))
+
 (comment
   (webvim.core.utils/visual-size "\t\ta" 5)
   (webvim.core.utils/visualx-to-charx "\t\t345" 3 4))
