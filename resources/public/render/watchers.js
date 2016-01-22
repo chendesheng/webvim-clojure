@@ -42,9 +42,7 @@ watchLocalbufChange('keys', function(buf) {
 
 watchLocalbufChange('visual', function(buf) {
 	if (buf.visual.type == 0) {
-		if (buffers[buf.id].mode < MODES.length) {
-			renderMode(buf);
-		}
+		renderMode(buf);
 		buf.selections = [];
 	} else if (buf.visual.type == 2) {
 		var ranges = buf.visual.ranges;
@@ -115,6 +113,10 @@ watchLocalbufChange('mode', function(buf) {
 });
 
 function renderMode(buf) {
+	var MODES = ['NORMAL', 'INSERT'];
+	var SUBMODES = ['', '(insert)'];
+	var VISUAL_MODES = ['', 'VISUAL', 'VISUAL LINE', 'VISUAL BLOCK']
+
 	$statusCursor(buf.id).style.display = 'none';
 
 	var mode = buf.mode;
@@ -136,8 +138,4 @@ function renderMode(buf) {
 	var ex = $statusBuf(buf.id);
 	ex.textContent = '-- '+text+' --';
 }
-
-var MODES = ['NORMAL', 'INSERT'];
-var SUBMODES = ['', '(insert)'];
-var VISUAL_MODES = ['', 'VISUAL', 'VISUAL LINE', 'VISUAL BLOCK']
 
