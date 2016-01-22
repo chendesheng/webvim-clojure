@@ -499,4 +499,15 @@
     buf
     (reverse (pos-lines-seq+ (buf :str) a (dec b)))))
 
+(defn change-case[f]
+  (fn[buf [a b]]
+    buf [a b] 
+    (-> buf
+        (buf-replace a b
+                     (-> buf
+                         :str
+                         (subr a b)
+                         str
+                         f))
+        (buf-set-pos a))))
 

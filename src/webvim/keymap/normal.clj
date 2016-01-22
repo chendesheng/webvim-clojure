@@ -90,7 +90,7 @@
 
 ;setup range prefix for delete/change/yank etc.
 (defn- setup-range[buf]
-  (println (-> buf :context :range))
+  (println "setup-range:" (-> buf :context :range))
   (if (-> buf :context :range nil?)
     (let [pos (buf :pos)
           lastbuf (-> buf :context :lastbuf)
@@ -279,11 +279,11 @@
               (buf-replace a b news)
               char-))))))
 
-(defn- indent[f]
+(defn- operator[f]
   (fn[buf keycode]
-    (-> buf
-        setup-range
-        (f (range-prefix buf true)))))
+    (let [buf (setup-range buf)
+          rg (range-prefix buf (inclusive? keycode))]
+        (f buf rg))))
 
 (defn init-normal-mode-keymap[motion-keymap visual-mode-keymap pair-keymap line-editor-keymap]
   (let [motion-keymap-fix-w (-> motion-keymap
@@ -321,7 +321,15 @@
                       (-> buf
                           (set-visual-mode visual)
                           (buf-set-pos (-> visual :range first))))))
-            "f" goto-file}
+            "f" goto-file
+            "u" (merge
+                  motion-keymap-fix-w
+                  pair-keymap
+                  {:after (operator (change-case clojure.string/lower-case))})
+            "U" (merge
+                  motion-keymap-fix-w
+                  pair-keymap
+                  {:after (operator (change-case clojure.string/upper-case))})}
        "v" visual-mode-keymap
        "V" visual-mode-keymap
        "<c-v>" visual-mode-keymap
@@ -379,11 +387,11 @@
        ">" (merge
              motion-keymap-fix-w
              pair-keymap
-             {:after (indent indent-more)})
+             {:after (operator indent-more)})
        "<" (merge
              motion-keymap-fix-w
              pair-keymap
-             {:after (indent indent-less)})
+             {:after (operator indent-less)})
        :continue (fn[buf keycode]
                    (= (buf :mode) normal-mode))
        :before (fn [buf keycode]

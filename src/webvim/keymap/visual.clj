@@ -56,7 +56,7 @@
   (let [typ (-> buf :context :visual-mode-type)
         newtyp (keycode2type keycode)]
     (if (nil? newtyp)
-      (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<c-r>" "<esc>" "<" ">" "r"} keycode))
+      (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<c-r>" "<esc>" "<" ">" "r" "g"} keycode))
       (not (= typ newtyp)))))
 
 (defn- change-visual-mode-type[buf keycode]
@@ -266,6 +266,22 @@
           (buf-set-pos (pos-line-start (buf :str) a))
           (f rg)))))
 
+(defn- visual-change-case[f]
+  (fn[buf]
+    (if (= (-> buf :visual :type) visual-block)
+      (let [ranges (-> buf :visual :ranges)
+            firstline (last ranges) ;ranges in reverse order
+            r (buf :str)
+            pos (buf :pos)
+            newbuf (reduce
+                     (fn[buf [a b]]
+                       ((change-case f) buf [a (inc b)])) buf (not-empty-range ranges))]
+        (buf-set-pos newbuf (first firstline)))
+      (let [[a b :as rg] (range-prefix buf true)]
+        (-> buf
+            (buf-set-pos (pos-line-start (buf :str) a))
+            ((change-case f) rg))))))
+
 (defn- replace-char[buf a b ch]
   (buf-replace buf a b
                (-> buf :str (subr a b) str
@@ -341,6 +357,8 @@
      "A" visual-keymap-A
      ">" (indent indent-more)
      "<" (indent indent-less)
+     "g" {"u" (visual-change-case clojure.string/lower-case)
+          "U" (visual-change-case clojure.string/upper-case)}
      "r" {"<esc>" identity
           "<cr>" identity
           :else replace-char-keycode}}))
