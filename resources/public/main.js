@@ -66,11 +66,12 @@ function render(buf) {
 	if (!buf) return;
 	$buffer(buf.id);
 	
+	var newbuf = !!buf.str;
 	mergeToLocal(buf);
 
 	setTimeout(function(){
 		renderViewport();
-		scrollToCursor(buffers.active, !!buf.str);
+		scrollToCursor(buffers.active, newbuf);
 	}, 0);
 }
 
