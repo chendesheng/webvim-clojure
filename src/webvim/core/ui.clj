@@ -86,6 +86,7 @@
                     (dissoc-if-equal before :visual)
                     (dissoc-if-equal before :scroll-top)
                     (dissoc-if-equal before :mode)
+                    (dissoc-if-equal before :submode)
                     (dissoc-if-equal before :brackets)
                     (dissoc-if-equal before :keys)
                     (dissoc-if-equal before :name)

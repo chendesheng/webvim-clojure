@@ -176,3 +176,15 @@ function $empty(ele) {
 	}
 }
 
+function removeUnused($p, usedIds) {
+	var i = $p.firstChild;
+	while(i) {
+		var prev = i;
+		i = i.nextSibling;
+		if (!usedIds[prev.id]) {
+			prev.remove();
+		}
+	}
+}
+
+

@@ -19,6 +19,9 @@
 (def insert-mode 1)
 (def ex-mode 2)
 
+;submodes
+(def temp-normal-mode 1)
+
 ;0 means no visual
 (def no-visual 0)
 (def visual-range 1)

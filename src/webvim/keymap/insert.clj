@@ -79,9 +79,12 @@
                                    char-
                                    update-x
                                    normal-mode-fix-pos
-                                   (assoc :mode normal-mode)))
+                                   (assoc :mode normal-mode
+                                          :submode temp-normal-mode)))
                       :leave (fn[buf keycode]
-                               (assoc buf :mode insert-mode))))
+                               (assoc buf
+                                      :mode insert-mode
+                                      :submode 0))))
    :else insert-mode-default 
    :continue #(not (= "<esc>" %2))
    :leave (fn[buf keycode]

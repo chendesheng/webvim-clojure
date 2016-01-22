@@ -73,6 +73,9 @@
              :visual {:type 0 :range [0 0] :ranges nil}
              ;=0 normal mode =1 insert mode =2 ex mode
              :mode 0
+             ;=0 nothing =1 temp normal mode =2 replace mode
+             ;Only for displaying, like -- (insert) -- or -- Replace -- etc.
+             :submode 0
              ;Ongoing command keys. This holds recent keycodes, MUST NOT changed by keymap handler directly.
              :keys nil
              ;List of highlight ranges, for hlsearch.
