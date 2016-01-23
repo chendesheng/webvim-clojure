@@ -65,10 +65,54 @@
     (if-not (nil? rg)
       (cons rg (lazy-seq (pos-re-seq+ r (-> rg second)re))))))
 
-(defn pos-re-seq-[r pos re]
-  (let [rg (pos-re- r pos re)]
-    (if-not (nil? rg)
-      (cons rg (lazy-seq (pos-re-seq- r (-> rg first dec) re))))))
+(defn- matches[m m1]
+  (loop [rgs '()]
+    (if (.find m)
+      (let [pos (.start m)]
+        (.find m1 pos)
+        (recur (conj rgs [pos (.end m1)])))
+      rgs)))
+
+(defn pos-re-seq-
+  ([r m1 re-ahead pos re]
+   (if (>= pos 0)
+     (let [a (max 0 (- pos 50))
+           b pos
+           m (-> (.matcher r re-ahead)
+                 (.useTransparentBounds true)
+                 (.useAnchoringBounds false)
+                 (.region a b))]
+       (if (.find m)
+         (let [start (.start m)
+               _ (.find m1 start)
+               rg [(.start m1) (.end m1)]]
+           (concat
+             (matches m m1)
+             (cons rg
+                   (lazy-seq
+                     (pos-re-seq-
+                       r m1 re-ahead
+                       (dec start) re)))))
+         (lazy-seq
+           (pos-re-seq-
+             r m1 re-ahead
+             (dec a) re))))))
+  ([r pos re]
+   (let [re-ahead (re-pattern (str "(?=" re ")"))
+         m1 (.useAnchoringBounds (.matcher r re) false)]
+     (pos-re-seq- r m1 re-ahead pos re))))
+
+(comment
+  (pos-re-seq- (rope "12ab") 3 #".")
+  ;about 10 times slower
+  (defn slow-pos-re-seq-[r pos re]
+    (let [rg (pos-re- r pos re)]
+      (if-not (nil? rg)
+        (cons rg (lazy-seq (slow-pos-re-seq- r (-> rg first dec) re))))))
+
+  (let [r (rope (clojure.string/join (repeat 10000 "defn")))]
+    (time (def x (into '() (slow-pos-re-seq- r 40000 #"defn"))))
+    (time (def x (into '() (pos-re-seq- r 40000 #"defn"))))))
 
 (defn char+[buf]
   (buf-move buf (fn [r pos]
