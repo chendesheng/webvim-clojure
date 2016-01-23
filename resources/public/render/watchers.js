@@ -117,12 +117,16 @@ function renderMode(buf) {
 	var SUBMODES = ['', '(insert)'];
 	var VISUAL_MODES = ['', 'VISUAL', 'VISUAL LINE', 'VISUAL BLOCK']
 
-	$statusCursor(buf.id).style.display = 'none';
-
 	var mode = buf.mode;
+	if (mode >= MODES.length) {
+		return;
+	}
+
 	var submode = buf.submode;
 	var visualtype = buf.visual.type;
 	var text = '';
+
+	$statusCursor(buf.id).style.display = 'none';
 
 	if (submode == 0 && visualtype == 0) {
 		text = MODES[mode];
