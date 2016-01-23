@@ -92,7 +92,7 @@
         (if (nil? nextid) buf
           (do
             (let [anextbuf (@buffer-list nextid)]
-            ;(println "nextid" nextid)
+              ;(println "nextid" nextid)
               (if-not (nil? anextbuf)
                 (send anextbuf
                       (fn[buf]
@@ -105,8 +105,8 @@
               pw (java.io.PrintWriter. sw)]
           (.printStackTrace e pw)
           (-> buf
-              (dissoc :nextid)
-              (append-output-panel (str sw) true)))))))
+              (append-output-panel (str sw) true)
+              (dissoc :nextid)))))))
 
 (defn- handle-socket[req]
   {:on-connect (fn[ws]
