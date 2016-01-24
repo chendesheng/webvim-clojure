@@ -140,6 +140,9 @@
                 (if (nil? a) pos
                   (pos-match-bracket r a))))))
 
+(defn- search-message[buf s forward?]
+  (assoc buf :message (str (if forward? "/" "?") s)))
+
 (defn- re-current-word
   "create regexp from word under cursor"
   [buf]
@@ -158,25 +161,23 @@
                   [a (dec b)])
                 (pos-re-seq+ r 0 re)))))
 
-(defn- same-word+[buf]
-  (let [re (re-current-word buf)]
-    (registers-put! "/" {:str (str re) :forward? true})
-    (-> buf 
-        (re-forward-highlight re)
-        (highlight-all-matches re))))
-
-(defn- same-word-[buf]
-  (let [re (re-current-word buf)]
-    (registers-put! "/" {:str (str re) :forward? false})
-    (-> buf 
-        (re-backward-highlight re)
-        (highlight-all-matches re))))
+(defn- same-word[forward?]
+  (fn[buf]
+    (let [re (re-current-word buf)
+          s (str re)]
+      (registers-put! "/" {:str s :forward? forward?})
+      (-> buf 
+          (search-message s forward?)
+          (re-forward-highlight re)
+          (highlight-all-matches re)))))
 
 (defn- same-word-first[buf]
-  (let [re (re-current-word buf)]
-    (registers-put! "/" {:str (str re) :forward? true})
+  (let [re (re-current-word buf)
+        s (str re)]
+    (registers-put! "/" {:str s :forward? true})
     (-> buf
         buf-start
+        (search-message s true)
         (re-forward-highlight re)
         (highlight-all-matches re))))
 
@@ -297,13 +298,15 @@
 
 (defn- repeat-search[buf same-dir?]
   (let[{s :str forward? :forward?} (or (registers-get "/") 
-                                      {:str "" :forward? true})
+                                       {:str "" :forward? true})
        re (search-pattern s)
        hightlightall? (-> buf :highlights empty?)
        fnsearch (if (= same-dir? forward?) re-forward-highlight re-backward-highlight)
-       b1 (fnsearch buf re)] ;TODO: 1. no need fnsearch if highlight all matches. 2. cache highlight-all-matches
+       buf (-> buf
+               (fnsearch re)
+               (search-message s (= same-dir? forward?)))] ;TODO: 1. no need fnsearch if highlight all matches. 2. cache highlight-all-matches
     (if hightlightall?
-      (highlight-all-matches b1 re) b1)))
+      (highlight-all-matches buf re) buf)))
 
 (defn- repeat-search+[buf]
   (repeat-search buf true))
@@ -359,8 +362,8 @@
    "," repeat-move-by-char-
    "/" (increment-search-keymap line-editor-keymap true)
    "?" (increment-search-keymap line-editor-keymap false)
-   "*" same-word+
-   "#" same-word-
+   "*" (same-word true)
+   "#" (same-word false)
    "n" repeat-search+
    "N" repeat-search-
    "}" paragraph+
