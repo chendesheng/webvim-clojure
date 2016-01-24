@@ -252,10 +252,17 @@
       (assoc :highlights [])
       (buf-set-pos (-> buf :context :lastpos))))
 
+(defn- search-str[linebuf]
+  (let [s (-> linebuf :str str)]
+    (if (.startsWith s (linebuf :prefix))
+      (:str (registers-get "/"))
+      s)))
+
 (defn- increment-search-<cr>[buf]
   ;(println "increment-search-<cr>" (buf :message))
-  (let [s (-> buf :line-buffer :str str)
-        prefix (-> buf :line-buffer :prefix)]
+  (let [linebuf (buf :line-buffer)
+        s (search-str linebuf)
+        prefix (linebuf :prefix)]
     (registers-put! "/" {:str s :forward? (= prefix "/")})
     (-> buf
         (assoc :message (str prefix s))
@@ -268,7 +275,9 @@
       ;(println "increment-search" (buf :message))
       (let [linebuf (buf :line-buffer)]
         (if (nil? linebuf) buf
-          (let [re (-> linebuf :str str search-pattern)
+          (let [re (-> linebuf
+                       search-str
+                       search-pattern)
                 f (if forward?
                     re-forward-highlight 
                     re-backward-highlight)]
