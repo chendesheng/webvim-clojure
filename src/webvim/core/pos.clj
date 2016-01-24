@@ -65,14 +65,6 @@
     (if-not (nil? rg)
       (cons rg (lazy-seq (pos-re-seq+ r (-> rg second)re))))))
 
-(defn- matches[m m1]
-  (loop [rgs '()]
-    (if (.find m)
-      (let [pos (.start m)]
-        (.find m1 pos)
-        (recur (conj rgs [pos (.end m1)])))
-      rgs)))
-
 (defn pos-re-seq-
   ([r m1 re-ahead pos re]
    (if (>= pos 0)
@@ -83,16 +75,21 @@
                  (.useAnchoringBounds false)
                  (.region a b))]
        (if (.find m)
-         (let [start (.start m)
-               _ (.find m1 start)
-               rg [(.start m1) (.end m1)]]
+         (let [_ (.find m1 (.start m))
+               a (.start m1)
+               b (.end m1)]
            (concat
-             (matches m m1)
-             (cons rg
+             (loop [rgs '()]
+               (if (.find m)
+                 (do
+                   (.find m1 (.start m))
+                   (recur (conj rgs [(.start m1) (.end m1)])))
+                 rgs))
+             (cons [a b]
                    (lazy-seq
                      (pos-re-seq-
                        r m1 re-ahead
-                       (dec start) re)))))
+                       (dec a) re)))))
          (lazy-seq
            (pos-re-seq-
              r m1 re-ahead
@@ -168,8 +165,8 @@
                 inc-brackets (if left? left-brackets right-brackets)
                 re (re-pattern (quote-patterns bracket m))]
             (loop [[[a _] & brackets] (if left?
-                                      (pos-re-seq+ r pos re)
-                                      (pos-re-seq- r pos re))
+                                        (pos-re-seq+ r pos re)
+                                        (pos-re-seq- r pos re))
                    cnt 0]
               (if (nil? a) a
                 (let [newcnt (if (contains? inc-brackets (char-at r a))
