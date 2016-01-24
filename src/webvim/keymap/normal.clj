@@ -22,6 +22,15 @@
     (buf-yank buf a b false true)
     (buf-delete buf a b)))
 
+(defn- delete-line[buf]
+  (let [pos (buf :pos)
+        r (buf :str)
+        [a b] (pos-line r pos)]
+    (-> buf
+        (buf-yank a b false true)
+        (buf-replace a (dec b) "")
+        buf-indent-current-line)))
+
 (defn- insert-new-line[buf]
   (buf-indent-current-line
     (let [pos (buf :pos)
@@ -300,6 +309,7 @@
        "A" (start-insert-mode "A" line-end identity)
        "I" (start-insert-mode "I" line-start identity)
        "s" (start-insert-mode "s" identity delete-char)
+       "S" (start-insert-mode "S" identity delete-line)
        "o" (start-insert-mode "o" identity insert-new-line)
        "O" (start-insert-mode "O" identity insert-new-line-before)
        "." dot-repeat
