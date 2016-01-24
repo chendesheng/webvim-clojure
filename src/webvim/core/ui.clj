@@ -21,8 +21,8 @@
     after))
 
 (defn- remove-autocompl[{autocompl :autocompl :as after} before]
-  (if (or (nil? autocompl) (-> autocompl :suggestions count (<= 1)))
-    (dissoc after :autocompl)
+  (if (-> autocompl :suggestions count (<= 1))
+    (assoc after :autocompl nil)
     (assoc after :autocompl
            (-> autocompl
                (dissoc-if-equal (:autocompl before) :suggestions)
