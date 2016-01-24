@@ -11,7 +11,7 @@
         webvim.keymap.normal
         webvim.keymap.insert
         webvim.keymap.ex
-        webvim.keymap.line-editor
+        webvim.keymap.linebuf.linebuf
         webvim.keymap.pair
         webvim.keymap.action
         webvim.core.register
@@ -23,12 +23,12 @@
 
 (defn init-keymap-tree []
   (let [pair-keymap (init-pair-keymap)
-        line-editor-keymap (init-line-editor-keymap)
-        motion-keymap (init-motion-keymap line-editor-keymap)
+        motion-keymap (init-motion-keymap)
         visual-mode-keymap (init-visual-mode-keymap motion-keymap pair-keymap)
-        normal-mode-keymap (init-normal-mode-keymap motion-keymap visual-mode-keymap pair-keymap line-editor-keymap)
-        insert-mode-keymap (init-insert-mode-keymap normal-mode-keymap line-editor-keymap)
-        ex-mode-keymap (init-ex-mode-keymap line-editor-keymap)]
+        expression-linebuf-keymap (init-linebuf-keymap)
+        normal-mode-keymap (init-normal-mode-keymap motion-keymap visual-mode-keymap pair-keymap expression-linebuf-keymap)
+        insert-mode-keymap (init-insert-mode-keymap normal-mode-keymap expression-linebuf-keymap)
+        ex-mode-keymap (init-ex-mode-keymap)]
     {:normal-mode-keymap normal-mode-keymap
      :insert-mode-keymap insert-mode-keymap
      :ex-mode-keymap ex-mode-keymap}))

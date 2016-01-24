@@ -371,15 +371,16 @@
     (catch Exception e
       (assoc buf :message (str e)))))
 
-(defn expression-keymap[line-editor-keymap insert?]
-  (assoc line-editor-keymap
-         :enter (fn[buf keycode]
-                  (-> buf
-                      (dissoc :message)
-                      (assoc :line-buffer {:prefix keycode :str (rope "()") :pos 1})))
-         "<cr>" (fn[buf] 
-                  (let [code (-> buf :line-buffer :str str)]
-                    (read-eval-put buf code insert?)))))
+(defn expression-keymap[linebuf-keymap insert?]
+  (let [enter (or (linebuf-keymap :enter) nop)]
+    (assoc linebuf-keymap
+           :enter (fn[buf keycode]
+                    (-> buf
+                        (assoc :line-buffer {:prefix keycode :str (rope "()") :pos 1})
+                        (enter keycode)))
+           "<cr>" (fn[buf] 
+                    (let [code (-> buf :line-buffer :str str)]
+                      (read-eval-put buf code insert?))))))
 
 (defn start-insert-mode [keycode fnmotion fnedit]
   (fn[buf]

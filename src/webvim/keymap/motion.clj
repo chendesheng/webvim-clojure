@@ -7,7 +7,8 @@
         webvim.core.line
         webvim.core.event
         webvim.core.ui
-        webvim.keymap.line-editor
+        webvim.core.parallel-universe
+        webvim.keymap.linebuf.linebuf
         webvim.keymap.action
         webvim.keymap.ex
         webvim.jumplist
@@ -233,16 +234,16 @@
     (catch Exception e 
       (re-pattern "(?m)(?!x)x"))))
 
-(defn- increment-search-enter[line-editor-keymap]
+(defn- increment-search-enter[linebuf-keymap]
   (fn[buf keycode]
-    (let [enter (or (line-editor-keymap :enter) nop)]
+    (let [enter (or (linebuf-keymap :enter) nop)]
       (-> buf
           (assoc-in [:context :lastpos] (buf :pos))
           (enter keycode)))))
 
-(defn- increment-search-leave[line-editor-keymap]
+(defn- increment-search-leave[linebuf-keymap]
   (fn[buf keycode]
-    (let [leave (or (line-editor-keymap :leave) nop)]
+    (let [leave (or (linebuf-keymap :leave) nop)]
       (-> buf
           (leave keycode)
           (update-in [:context] dissoc :lastpos)))))
@@ -288,10 +289,10 @@
                 (assoc :highlights [])
                 (f re))))))))
 
-(defn- increment-search-keymap[line-editor-keymap forward?]
-  (assoc line-editor-keymap
-         :enter (increment-search-enter line-editor-keymap)
-         :leave (increment-search-leave line-editor-keymap)
+(defn- increment-search-keymap[linebuf-keymap forward?]
+  (assoc linebuf-keymap
+         :enter (increment-search-enter linebuf-keymap)
+         :leave (increment-search-leave linebuf-keymap)
          "<esc>" increment-search-<esc> 
          "<cr>" increment-search-<cr>
          :after (increment-search-after forward?)))
@@ -334,40 +335,41 @@
                   (+ (buf :scroll-top)
                      (-> @ui-agent :viewport :h dec (* percentFromTop) Math/ceil)))))
 
-(defn init-motion-keymap[line-editor-keymap]
-  {"h" char-
-   "l" char+
-   "k" #(lines-n % -1)
-   "j" #(lines-n % 1)
-   "g" {"g" (comp buf-start jump-push)
-        "d" (comp same-word-first jump-push)}
-   "G" (comp line-start buf-end)
-   "H" (viewport-position 0)
-   "M" (viewport-position 0.5)
-   "L" (viewport-position 1)
-   "w" word+
-   "W" WORD+
-   "b" word-
-   "B" WORD-
-   "e" word-end+
-   "E" WORD-end-
-   "0" line-first
-   "^" line-start
-   "$" line-end
-   "f" {:else move-to-char+}
-   "F" {:else move-to-char-}
-   "t" {:else move-before-char+}
-   "T" {:else move-before-char-}
-   ";" repeat-move-by-char+
-   "," repeat-move-by-char-
-   "/" (increment-search-keymap line-editor-keymap true)
-   "?" (increment-search-keymap line-editor-keymap false)
-   "*" (same-word true)
-   "#" (same-word false)
-   "n" repeat-search+
-   "N" repeat-search-
-   "}" paragraph+
-   "{" paragraph-
-   "%" move-to-matched-brackets
-   "<c-u>" #(cursor-move-viewport %1 -0.5) 
-   "<c-d>" #(cursor-move-viewport %1 0.5)})
+(defn init-motion-keymap[]
+  (let [linebuf-keymap (init-linebuf-keymap)]
+    {"h" char-
+     "l" char+
+     "k" #(lines-n % -1)
+     "j" #(lines-n % 1)
+     "g" {"g" (comp buf-start jump-push)
+          "d" (comp same-word-first jump-push)}
+     "G" (comp line-start buf-end)
+     "H" (viewport-position 0)
+     "M" (viewport-position 0.5)
+     "L" (viewport-position 1)
+     "w" word+
+     "W" WORD+
+     "b" word-
+     "B" WORD-
+     "e" word-end+
+     "E" WORD-end-
+     "0" line-first
+     "^" line-start
+     "$" line-end
+     "f" {:else move-to-char+}
+     "F" {:else move-to-char-}
+     "t" {:else move-before-char+}
+     "T" {:else move-before-char-}
+     ";" repeat-move-by-char+
+     "," repeat-move-by-char-
+     "/" (increment-search-keymap linebuf-keymap true)
+     "?" (increment-search-keymap linebuf-keymap false)
+     "*" (same-word true)
+     "#" (same-word false)
+     "n" repeat-search+
+     "N" repeat-search-
+     "}" paragraph+
+     "{" paragraph-
+     "%" move-to-matched-brackets
+     "<c-u>" #(cursor-move-viewport %1 -0.5) 
+     "<c-d>" #(cursor-move-viewport %1 0.5)}))

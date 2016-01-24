@@ -285,7 +285,7 @@
           rg (range-prefix buf (inclusive? keycode))]
         (f buf rg))))
 
-(defn init-normal-mode-keymap[motion-keymap visual-mode-keymap pair-keymap line-editor-keymap]
+(defn init-normal-mode-keymap[motion-keymap visual-mode-keymap pair-keymap linebuf-keymap]
   (let [motion-keymap-fix-w (-> motion-keymap
                                 (assoc "w" (dont-cross-line (motion-keymap "w")))
                                 (assoc "W" (dont-cross-line (motion-keymap "W"))))
@@ -375,7 +375,7 @@
        "P" #(put-from-register % (-> % :context :register) false)
        "J" join-line
        "\"" {"<esc>" identity
-             "=" (expression-keymap line-editor-keymap false)
+             "=" (expression-keymap linebuf-keymap false)
              :else start-register}
        "<c-s-6>" (fn[buf]
                    (let [reg (registers-get "#")]

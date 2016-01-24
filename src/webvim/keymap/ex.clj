@@ -19,6 +19,7 @@
         webvim.fuzzy
         webvim.exec
         webvim.keymap.external
+        webvim.keymap.linebuf.linebuf
         webvim.keymap.compile
         webvim.keymap.action))
 
@@ -48,24 +49,6 @@
   (-> buf
       (assoc-in [:line-buffer :str] (rope s))
       (assoc-in [:line-buffer :pos] (count s))))
-
-(defonce commands-history (atom (parallel-universe)))
-
-(defn- save-history![buf]
-  (let [s (-> buf :line-buffer :str str .trim)
-        last-cmd (just-now @commands-history)]
-    (if-not (or (empty? s) (= last-cmd s))
-      (swap! commands-history 
-             #(-> %
-                  fast-forward
-                  (new-future s))))
-    buf))
-
-(defn- recover-command-history[buf]
-  (let [s (next-future @commands-history)]
-    (if (nil? s) 
-      buf
-      (set-line-buffer buf s))))
 
 (defn- find-buffer [buffers f]
   (reduce-kv
@@ -284,10 +267,10 @@
                                         (if (not (nil? m)) handler nil)))) cmds))]
         ;(println excmd args)
         (if (>= (count handlers) 1)
+          ((first handlers) buf excmd args)
           (-> buf
-              ((first handlers) excmd args)
-              save-history!)
-          (assoc buf :message "unknown command"))))))
+              (assoc :message "unknown command")
+              (dissoc :line-buffer)))))))
 
 (defn- replace-suggestion[buf w _]
   (let [news (str "e " w)]
@@ -331,44 +314,30 @@
         (new-autocompl buf) inc))))
 
 ;Make sure each cmd have a not-nil response message
-(defn init-ex-mode-keymap[line-editor-keymap]
+(defn init-ex-mode-keymap[]
   (let [cmds (ex-commands)
-        enter (or (line-editor-keymap :enter) nop)]
-    (assoc line-editor-keymap
+        linebuf-keymap (init-linebuf-keymap)
+        enter (or (linebuf-keymap :enter) nop)
+        after (or (linebuf-keymap :after) nop)
+        leave (or (linebuf-keymap :leave) nop)]
+    ;TODO: consider add an "inherit" (or "wrap") function
+    (assoc linebuf-keymap
            :enter (fn[buf keycode]
-                    (swap! commands-history #(-> %
-                                                 fast-forward
-                                                 (assoc :current "")))
                     (-> buf
                         (enter keycode)
                         (dissoc :autocompl)))
            :after (fn[buf keycode]
-                    (let [after (or (line-editor-keymap :after) nop)
-                          buf (after buf keycode)]
-                       ;cache current typing content if it's latest one
-                      (if (and (not (contains? #{"<c-p>" "<c-n>" "<cr>"} keycode))
-                               (no-future? @commands-history))
-                        (swap! commands-history assoc :current (-> buf :line-buffer :str str)))
+                    (let [buf (after buf keycode)]
                       (if (or (= keycode "<tab>")
                               (= keycode "<s-tab>")
                               (-> buf :autocompl nil?))
                         buf
                         (autocompl-suggest buf))))
            :leave (fn[buf keycode]
-                    (let [leave (or (line-editor-keymap :leave) nop)]
                       (-> buf
                           (leave keycode)
                           (dissoc :autocompl)
-                          set-normal-mode)))
-           "<c-p>" (fn[buf]
-                     (swap! commands-history go-back)
-                     (let [buf (recover-command-history buf)]
-                       buf))
-           "<c-n>" (fn[buf]
-                     (swap! commands-history go-future)
-                     (if (no-future? @commands-history)
-                       (set-line-buffer buf (@commands-history :current))
-                       (recover-command-history buf)))
+                          set-normal-mode))
            "<cr>" (fn[buf]
                     (execute buf cmds))
            "<s-tab>" (fn[buf]

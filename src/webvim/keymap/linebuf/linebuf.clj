@@ -1,10 +1,30 @@
-(ns webvim.keymap.line-editor
+(ns webvim.keymap.linebuf.linebuf
   (:use webvim.core.rope
         webvim.core.pos
         webvim.core.line
         webvim.core.register
+        webvim.core.parallel-universe
         webvim.keymap.action
+        webvim.keymap.linebuf.history
         webvim.core.utils)) 
+
+(defn- set-line-buffer[buf s]
+  (-> buf
+      (assoc-in [:line-buffer :str] (rope s))
+      (assoc-in [:line-buffer :pos] (count s))))
+
+(defn- recover-command-history[buf ahistory]
+  (let [s (@ahistory next-future)]
+    (if (nil? s) 
+      buf
+      (set-line-buffer buf s))))
+
+(defn- save-history![ahistory s]
+  (if-not (or (empty? s) (= (just-now @ahistory) s))
+    (swap! ahistory 
+           #(-> %
+                fast-forward
+                (new-future s)))))
 
 (defn- linebuf-update-pos[linebuf a b to]
   (let [pos (linebuf :pos)
@@ -64,54 +84,68 @@
 (defn- linebuf-end[buf]
   (linebuf-move buf (fn [r pos] (count r))))
 
-(defn- line-editor-default[buf keycode]
+(defn- linebuf-default[buf keycode]
   (let [ch (keycode-to-char keycode)]
     (linebuf-insert buf ch)))
 
-(defn- line-editor-enter[buf keycode]
-  (-> buf
-      (dissoc :message)
-      (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
+(defn- linebuf-enter[buf keycode]
+  (println "linebuf-enter:" keycode)
+  (let [buf (dissoc buf :message)]
+    (if (-> buf :line-buffer nil?)
+      (assoc buf :line-buffer {:prefix keycode
+                               :str (rope "")
+                               :pos 0})
+      buf)))
 
-(defn- line-editor-continue[buf keycode]
+(defn- linebuf-continue[buf keycode]
   (not (or
          (-> buf :line-buffer nil?)
          (contains? #{"<cr>" "<esc>"} keycode))))
 
-(defn- line-editor-leave [buf keycode] 
+(defn- linebuf-leave [buf keycode] 
   (-> buf
       (dissoc :line-buffer)
       (assoc :message (or (buf :message) "")))) ;Make sure got :message filled
 
-(defn- line-editor-<bs>
+(defn- linebuf-<bs>
   [{{r :str} :line-buffer :as buf}] 
   (if (empty? r)
     (dissoc buf :line-buffer)
     (linebuf-delete buf -1)))
 
-(defn- line-editor-put[buf keycode]
+(defn- linebuf-put[buf keycode]
   (let [txt ((registers-get keycode) :str)]
     (if (string? txt)
       (linebuf-insert buf (-> txt rope first-line .trimEnd str))
       buf)))
 
-(defn- line-editor-<c-w>
+(defn- linebuf-<c-w>
   [{{r :str pos :pos} :line-buffer :as buf}]
   (let [newpos (or (first (pos-re- r pos #"(?<=\s|^)\S")) pos)]
     (linebuf-delete buf (- newpos pos))))
 
-(defn init-line-editor-keymap[]
-  {"<c-f>" linebuf-char+
-   "<c-b>" linebuf-char-
-   "<c-a>" linebuf-start
-   "<c-e>" linebuf-end
-   "<bs>" line-editor-<bs>
-   "<c-h>" line-editor-<bs>
-   "<c-d>" #(linebuf-delete % 1)
-   "<c-r>" {"<esc>" identity
-            :else line-editor-put}
-   "<c-w>" line-editor-<c-w>
-   :enter line-editor-enter
-   :else line-editor-default
-   :continue line-editor-continue
-   :leave line-editor-leave})
+(defn init-linebuf-keymap
+  ([ahistory]
+   (let [history-keymap (init-history-keymap ahistory)
+         leave (or (history-keymap :leave) nop)]
+     (assoc history-keymap
+            "<c-f>" linebuf-char+
+            "<c-b>" linebuf-char-
+            "<c-a>" linebuf-start
+            "<c-e>" linebuf-end
+            "<bs>" linebuf-<bs>
+            "<c-h>" linebuf-<bs>
+            "<c-d>" #(linebuf-delete % 1)
+            "<c-r>" {"<esc>" identity
+                     :else linebuf-put}
+            "<c-w>" linebuf-<c-w>
+            :enter linebuf-enter
+            :else linebuf-default
+            :continue linebuf-continue
+            :leave (fn[buf keycode]
+                     (-> buf
+                         (leave keycode)
+                         (linebuf-leave keycode))))))
+  ([]
+   (init-linebuf-keymap (atom (parallel-universe)))))
+
