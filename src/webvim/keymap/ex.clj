@@ -202,6 +202,8 @@
 (defn cmd-edit[buf excmd file]
   (edit-file buf file true))
 
+(def ^:private commands-history (atom (parallel-universe)))
+
 (defn cmd-history[buf _ _]
   (let [{before :before after :after} @commands-history
         all (concat (reverse before) after)]
@@ -316,7 +318,7 @@
 ;Make sure each cmd have a not-nil response message
 (defn init-ex-mode-keymap[]
   (let [cmds (ex-commands)
-        linebuf-keymap (init-linebuf-keymap)
+        linebuf-keymap (init-linebuf-keymap commands-history)
         enter (or (linebuf-keymap :enter) nop)
         after (or (linebuf-keymap :after) nop)
         leave (or (linebuf-keymap :leave) nop)]

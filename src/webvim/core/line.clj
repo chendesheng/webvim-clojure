@@ -13,8 +13,8 @@
   (or (first (pos-re+ r (inc pos) #"(?m)^")) (count r)))
 
 (defn pos-line[r pos]
-  [a (pos-line-first r pos)
-   b (pos-line-last r pos)])
+  [(pos-line-first r pos)
+   (pos-line-last r pos)])
 
 ;(pos-line (rope "aa\nbb") 1)
 
