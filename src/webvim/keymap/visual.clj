@@ -358,7 +358,8 @@
      ">" (indent indent-more)
      "<" (indent indent-less)
      "g" {"u" (visual-change-case clojure.string/lower-case)
-          "U" (visual-change-case clojure.string/upper-case)}
+          "U" (visual-change-case clojure.string/upper-case)
+          "~" (visual-change-case swap-case)}
      "r" {"<esc>" identity
           "<cr>" identity
           :else replace-char-keycode}}))

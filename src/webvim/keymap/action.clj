@@ -515,3 +515,12 @@
                          f))
         (buf-set-pos a))))
 
+(defn swap-case[^String s]
+  (clojure.string/join
+    (map (fn[ch]
+           (cond
+             (Character/isUpperCase ch) (Character/toLowerCase ch)
+             (Character/isLowerCase ch) (Character/toUpperCase ch)
+             :else ch)) s)))
+
+
