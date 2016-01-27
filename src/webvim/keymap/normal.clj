@@ -304,14 +304,14 @@
                                  (assoc "W" (dont-cross-line (comp char+ (motion-keymap "E")))))]
     (deep-merge
       motion-keymap
-      {"i" (start-insert-mode "i" identity identity)
-       "a" (start-insert-mode "a" char+ identity)
-       "A" (start-insert-mode "A" line-end identity)
-       "I" (start-insert-mode "I" line-start identity)
-       "s" (start-insert-mode "s" identity delete-char)
-       "S" (start-insert-mode "S" identity delete-line)
-       "o" (start-insert-mode "o" identity insert-new-line)
-       "O" (start-insert-mode "O" identity insert-new-line-before)
+      {"i" (start-insert-mode identity identity)
+       "a" (start-insert-mode char+ identity)
+       "A" (start-insert-mode line-end identity)
+       "I" (start-insert-mode line-start identity)
+       "s" (start-insert-mode identity delete-char)
+       "S" (start-insert-mode identity delete-line)
+       "o" (start-insert-mode identity insert-new-line)
+       "O" (start-insert-mode identity insert-new-line-before)
        "." dot-repeat
        ":" start-ex-mode
        "r" {"<esc>" identity
@@ -380,7 +380,7 @@
                              setup-range
                              (indent-range true))))})
        "D" delete-to-line-end
-       "C" (start-insert-mode "C" identity change-to-line-end)
+       "C" (start-insert-mode identity change-to-line-end)
        "Y" #(yank % "y")
        "x" delete-char
        "p" (fn[buf]

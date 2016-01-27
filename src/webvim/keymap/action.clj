@@ -382,7 +382,7 @@
                     (let [code (-> buf :line-buffer :str str)]
                       (read-eval-put buf code insert?))))))
 
-(defn start-insert-mode [keycode fnmotion fnedit]
+(defn start-insert-mode [fnmotion fnedit]
   (fn[buf]
     (-> buf 
         fnmotion

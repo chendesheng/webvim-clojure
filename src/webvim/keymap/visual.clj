@@ -215,7 +215,7 @@
                   (buf-delete a b))) buf items)))
 
 (defn- change-visual[linewise?]
-  (start-insert-mode "c" identity #(change-range % true linewise?)))
+  (start-insert-mode identity #(change-range % true linewise?)))
 
 (defmulti visual-keymap-d (fn[buf] (-> buf :visual :type)))
 (defmethod visual-keymap-d visual-range [buf]
