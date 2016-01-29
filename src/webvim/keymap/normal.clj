@@ -356,14 +356,14 @@
        "c" (merge
              motion-keymap-fix-cw
              pair-keymap
-             {:leave (fn[buf keycode]
-                       (let [f (start-insert-mode-with-keycode nop change-by-motion)]
-                         (if (and
-                               (= (-> buf :context :lastbuf :pos) (buf :pos))
-                               (-> buf :context :range empty?))
-                           buf
-                           (f buf keycode))))
-              "c" identity})
+             {"c" (start-insert-mode identity delete-line)
+              :after (fn[buf keycode]
+                       (if (or (= keycode "c")
+                               (and
+                                 (= (-> buf :context :lastbuf :pos) (buf :pos))
+                                 (-> buf :context :range empty?)))
+                         buf
+                         ((start-insert-mode-with-keycode nop change-by-motion) buf keycode)))})
        "y" (merge
              motion-keymap-fix-w
              pair-keymap
