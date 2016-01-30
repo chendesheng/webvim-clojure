@@ -158,12 +158,6 @@
     (assoc-in buf [:context :register] keycode)
     buf))
 
-(defn- dot-repeat[buf]
-  (let [keycodes ((registers-get ".") :keys)]
-    (if (empty? keycodes)
-      buf
-      (replay-keys buf keycodes))))
-
 (defn- reset-context-register[buf keycode]
   (if (= keycode "\"") buf
     (assoc-in buf [:context :register] "\""))) ;reset
@@ -171,14 +165,12 @@
 (defn- normal-mode-after[buf keycode]
   (let [insert-mode? (= (buf :mode) insert-mode)
         lastbuf (-> buf :context :lastbuf)
-        save-undo (if insert-mode? identity save-undo)
-        save-dot-repeat (if insert-mode? identity save-dot-repeat)]
+        save-undo (if insert-mode? identity save-undo)]
     (if-not (nil? (motions-push-jumps (string/join (buf :keys))))
       (jump-push lastbuf))
     (let [newbuf (if insert-mode? buf
                    (normal-mode-fix-pos buf))]
       (-> newbuf
-          save-dot-repeat
           (reset-context-register keycode)
           (update-x-if-not-jk keycode)
           (update-in [:context] dissoc :range)
@@ -312,7 +304,6 @@
        "S" (start-insert-mode identity delete-line)
        "o" (start-insert-mode identity insert-new-line)
        "O" (start-insert-mode identity insert-new-line-before)
-       "." dot-repeat
        ":" start-ex-mode
        "r" {"<esc>" identity
             :else replace-char-keycode}

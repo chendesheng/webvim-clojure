@@ -5,9 +5,6 @@
 (defn- fire-before-handle-key[buf keycode]
   (fire-event :before-handle-key buf keycode)) 
 
-(defn- record-macro[buf keycode]
-  (update-in buf [:dot-repeat-keys] conj keycode))
-
 (defn- save-key[buf keycode]
   (update-in buf [:keys] conj keycode))
 
@@ -57,7 +54,7 @@
         (assoc ctx1
           (clojure.string/join (map key path))
           (keycode-func-comp
-            (list enter before fire-before-handle-key record-macro save-key)))))
+            (list enter before fire-before-handle-key save-key)))))
     
     (fn[ctx [[keycode func] & [[_ {before :before after :after continue? :continue}] & _ :as allparents] :as path]]
       (if (contains? #{:enter :leave :before :after :continue} keycode)
@@ -66,7 +63,7 @@
                      func
                      (fn[buf keycode]
                        (func buf)))
-              funcs (list func before fire-before-handle-key record-macro save-key)]
+              funcs (list func before fire-before-handle-key save-key)]
           ;(println "keycode:" keycode)
           (assoc ctx
             (clojure.string/join (map key path))

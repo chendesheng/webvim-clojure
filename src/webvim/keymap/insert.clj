@@ -93,7 +93,6 @@
                 cancel-last-indents
                 char-
                 update-x
-                save-dot-repeat
                 save-undo
                 normal-mode-fix-pos
                 set-normal-mode))})

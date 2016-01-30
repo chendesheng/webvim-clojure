@@ -396,17 +396,6 @@
       (if (= (or ch \newline) \newline)
         (char- buf) buf)))
 
-(defn save-dot-repeat[buf]
-  (let [keys (-> buf :dot-repeat-keys reverse)
-        nochange? (-> buf :pending-undo empty?)]
-    (if-not (or nochange? ;only repeat keys make changes
-                (empty? keys)
-                ;don't repeat these keys
-                (contains? #{"." "u" "p" "P" ":" "<c-r>"} (first keys)))
-      (registers-put! "." {:keys keys :str (string/join keys)}))
-    (dissoc buf :dot-repeat-keys)))
-
-
 (defn replay-keys [buf keycodes]
   (let [keys (buf :keys)] 
     (-> buf
@@ -538,10 +527,18 @@
           (k1 keycode)
           (k2 keycode)))))
 
-(defn merge-key[keymap key f]
+(defn key-do-after[keymap key f]
   (cond (nil? (keymap key))
     (assoc keymap key f)
     (contains? #{:enter :leave :before :after :else} key)
     (assoc keymap key (comp-keys (keymap key) f))
     :else
     (assoc keymap key (comp f (keymap key)))))
+
+(defn key-do-before[keymap key f]
+  (cond (nil? (keymap key))
+    (assoc keymap key f)
+    (contains? #{:enter :leave :before :after :else} key)
+    (assoc keymap key (comp-keys f (keymap key)))
+    :else
+    (assoc keymap key (comp (keymap key) f))))
