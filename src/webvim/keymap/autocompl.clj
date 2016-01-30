@@ -11,32 +11,9 @@
         webvim.keymap.ex
         webvim.autocompl))
 
-;TODO: autocompl provider interface
-
-(defn- ex-replace-suggestion[buf w _]
-  (let [news (str "e " w)]
-        (update-in buf [:line-buffer]
-                   (fn[linebuf]
-                     (merge linebuf {:str (rope news)
-                                     :pos (count news)})))))
-
-(defn- ex-uncomplete-word[{{r :str} :line-buffer :as buf}]
-  (let [[[_ w]] (re-seq #"^e\s(.*)" (-> buf :line-buffer :str str))] w))
-
-(defmulti uncomplete-word (fn[buf] (buf :mode)))
-(defmethod uncomplete-word insert-mode [buf]
-  (buffer-uncomplete-word buf))
-(defmethod uncomplete-word ex-mode [buf]
-  (ex-uncomplete-word buf))
-
-(defmulti replace-suggestion (fn[buf word oldword] (buf :mode)))
-(defmethod replace-suggestion insert-mode [buf word oldword]
-  (buffer-replace-suggestion buf word oldword))
-(defmethod replace-suggestion ex-mode [buf word oldword]
-  (ex-replace-suggestion buf word oldword))
-
-(defn new-autocompl[buf fn-words]
-  (println "new-autocompl insert-mode")
+(defn- new-autocompl[buf
+                     {uncomplete-word :uncomplete-word
+                      fn-words :fn-words}]
   (if (-> buf :autocompl nil?) 
     (let [w (uncomplete-word buf)]
       (if (nil? w) buf
@@ -45,8 +22,7 @@
                ;words is fixed during auto complete
                {:words (fn-words w)
                 :suggestions nil
-                :index 0
-                :limit-number 20})))
+                :index 0})))
     buf))
 
 (defn- fuzzy-suggest [w words]
@@ -63,8 +39,9 @@
                                                 (first indexes) word])))) 
                        [[0 0 w]] words)))))
 
-(defn- autocompl-suggest[{{words :words
-                          limit-number :limit-number :as autocompl} :autocompl :as buf}]
+(defn- autocompl-suggest[{{words :words :as autocompl} :autocompl :as buf}
+                         {limit-number :limit-number
+                          uncomplete-word :uncomplete-word}]
   (let [w (uncomplete-word buf)]
     (if (empty? w)
       (assoc buf :autocompl nil) ;stop if no uncomplete word
@@ -77,9 +54,11 @@
                         (vec (take limit-number suggestions))
                         (vec suggestions))))))))
 
-(defn- autocompl-move[buf f]
+(defn- autocompl-move[buf
+                      {replace-suggestion :replace-suggestion :as provider}
+                      f]
   (let [buf (if (empty? (-> buf :autocompl :suggestions))
-              (autocompl-suggest buf) buf)]
+              (autocompl-suggest buf provider) buf)]
     (if (-> buf :autocompl nil?)
       buf
       (let [{suggestions :suggestions i :index} (buf :autocompl)
@@ -93,25 +72,20 @@
                 (assoc-in [:autocompl :index] newi)
                 (replace-suggestion neww w))))))))
 
-(defn- buffer-words[w]
-  (keys (autocompl-remove-word @autocompl-words w)))
 
-(defn- filenames[w]
-  (get-files))
-
-(defn- extends-autocompl[keymap move-up move-down fn-words]
+(defn- extends-autocompl[keymap provider]
   (-> keymap
-      (key-do-after move-up
+      (key-do-after (provider :move-up)
                     (fn[buf]
                       (-> buf
-                          (new-autocompl fn-words)
-                          (autocompl-move dec))))
-      (key-do-after move-down 
+                          (new-autocompl provider)
+                          (autocompl-move provider dec))))
+      (key-do-after (provider :move-down) 
                     (fn[buf]
                       (println "move-down")
                       (-> buf
-                          (new-autocompl fn-words)
-                          (autocompl-move inc))))
+                          (new-autocompl provider)
+                          (autocompl-move provider inc))))
       (key-do-before :leave
                      (fn[buf keycode]
                        (assoc buf :autocompl nil)))
@@ -120,7 +94,19 @@
                         ;continue checking until there is no suggestions
                       (if (-> buf :autocompl nil?)
                         buf
-                        (autocompl-suggest buf))))))
+                        (autocompl-suggest buf provider))))))
+
+(defn- on-insert-mode-keymap[keymap]
+  (extends-autocompl keymap
+                     {:move-up "<c-p>"
+                      :move-down "<c-n>"
+                      :uncomplete-word buffer-uncomplete-word
+                      :replace-suggestion buffer-replace-suggestion
+                      :fn-words (fn[w] (keys (autocompl-remove-word @autocompl-words w)))
+                      :limit-number 0}))
+
+(defn- on-ex-mode-keymap[keymap]
+  (extends-autocompl keymap ex-autocompl-provider))
 
 (defn- on-temp-normal-mode-keymap[keymap]
   (key-do-before keymap :enter
@@ -131,7 +117,7 @@
   (listen
     :insert-mode-keymap
     (fn[keymap]
-      (extends-autocompl keymap "<c-p>" "<c-n>" buffer-words))))
+      (on-insert-mode-keymap keymap))))
 
 (defonce ^:private listener2
   (listen
@@ -143,4 +129,4 @@
   (listen
     :ex-mode-keymap
     (fn[keymap]
-      (extends-autocompl keymap "<s-tab>" "<tab>" filenames))))
+      (on-ex-mode-keymap keymap))))

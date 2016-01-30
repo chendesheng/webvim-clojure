@@ -32,7 +32,7 @@
   (or (fs/hidden? f)
       (not (not-any? #(re-test #"^\..+" %) (fs/split f)))))
 
-(defn get-files[]
+(defn- get-files[]
   (if (nil? @all-files)
     ;https://clojuredocs.org/clojure.core/tree-seq
     (let [dir? #(.isDirectory %)]
@@ -287,6 +287,16 @@
                    (fn[linebuf]
                      (assoc linebuf :str (rope news) :pos (count news))))))
     buf))
+
+(defn- ex-replace-suggestion[buf w _]
+  (let [news (str "e " w)]
+        (update-in buf [:line-buffer]
+                   (fn[linebuf]
+                     (merge linebuf {:str (rope news)
+                                     :pos (count news)})))))
+
+(defn- ex-uncomplete-word[{{r :str} :line-buffer :as buf}]
+  (let [[[_ w]] (re-seq #"^e\s(.*)" (-> buf :line-buffer :str str))] w))
 
 ;Make sure each cmd have a not-nil response message
 (defn init-ex-mode-keymap[]
