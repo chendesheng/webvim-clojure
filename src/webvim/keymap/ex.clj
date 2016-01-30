@@ -319,15 +319,10 @@
 (defn init-ex-mode-keymap[]
   (let [cmds (ex-commands)
         linebuf-keymap (init-linebuf-keymap commands-history)
-        enter (or (linebuf-keymap :enter) nop)
         after (or (linebuf-keymap :after) nop)
         leave (or (linebuf-keymap :leave) nop)]
     ;TODO: consider add an "inherit" (or "wrap") function
     (assoc linebuf-keymap
-           :enter (fn[buf keycode]
-                    (-> buf
-                        (enter keycode)
-                        (assoc :autocompl nil)))
            :after (fn[buf keycode]
                     (let [buf (after buf keycode)]
                       (if (or (= keycode "<tab>")
