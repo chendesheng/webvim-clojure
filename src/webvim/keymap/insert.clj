@@ -74,7 +74,7 @@
                       ;I think keep them seems a better chioce.
                       :enter (fn[buf keycode]
                                (-> buf
-                                   (dissoc :autocompl)
+                                   (assoc :autocompl nil)
                                    cancel-last-indents
                                    char-
                                    update-x
@@ -89,7 +89,7 @@
    :continue #(not (= "<esc>" %2))
    :leave (fn[buf keycode]
             (-> buf
-                (dissoc :autocompl)
+                (assoc :autocompl nil)
                 cancel-last-indents
                 char-
                 update-x

@@ -21,8 +21,8 @@
     after))
 
 (defn- remove-autocompl[{autocompl :autocompl :as after} before]
-  (if (-> autocompl :suggestions count (<= 1))
-    (assoc after :autocompl nil)
+  (if (nil? autocompl)
+    after
     (assoc after :autocompl
            (-> autocompl
                (dissoc-if-equal (:autocompl before) :suggestions)
@@ -82,6 +82,7 @@
                 (-> after
                     (diff-dirty before)
                     (dissoc-if-equal before :line-buffer)
+                    (dissoc-if-equal before :autocompl)
                     (remove-autocompl before)
                     (dissoc-if-equal before :visual)
                     (dissoc-if-equal before :scroll-top)

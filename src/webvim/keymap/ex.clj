@@ -327,7 +327,7 @@
            :enter (fn[buf keycode]
                     (-> buf
                         (enter keycode)
-                        (dissoc :autocompl)))
+                        (assoc :autocompl nil)))
            :after (fn[buf keycode]
                     (let [buf (after buf keycode)]
                       (if (or (= keycode "<tab>")
@@ -338,7 +338,7 @@
            :leave (fn[buf keycode]
                       (-> buf
                           (leave keycode)
-                          (dissoc :autocompl)
+                          (assoc :autocompl nil)
                           set-normal-mode))
            "<cr>" (fn[buf]
                     (execute buf cmds))
