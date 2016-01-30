@@ -9,23 +9,7 @@
         webvim.core.lang
         webvim.indent
         webvim.core.utils
-        webvim.jumplist
-        webvim.autocompl))
-
-(defn- new-autocompl[buf]
-  (if (-> buf :autocompl nil?) 
-    (let [w (uncomplete-word buf)]
-      (if (nil? w) buf
-        (assoc buf :autocompl
-               ;remove current word
-               ;words is fixed during auto complete
-               {:words (keys (autocompl-remove-word @autocompl-words w))
-                :suggestions nil
-                :index 0
-                :uncomplete-word uncomplete-word
-                :replace buffer-replace-suggestion
-                :limit-number 0})))
-    buf))
+        webvim.jumplist))
 
 (defn- insert-keycode[{pos :pos :as buf} keycode]
   (if (= "<bs>" keycode)
@@ -35,14 +19,10 @@
 (defn- insert-mode-default[buf keycode]
   (let [pos (buf :pos)
         buf1 (insert-keycode buf keycode)
-        buf2 (buf-update-highlight-bracket-pair buf1 (-> buf1 :pos dec))
-        buf3 (if (or (indent-trigger? (buf :language) keycode) (= keycode "<cr>"))
-               (buf-indent-current-line buf2)
-               buf2)]
-    ;continue checking until there is no suggestions
-    (if (-> buf3 :autocompl nil?)
-      buf3
-      (autocompl-suggest buf3))))
+        buf2 (buf-update-highlight-bracket-pair buf1 (-> buf1 :pos dec))]
+    (if (or (indent-trigger? (buf :language) keycode) (= keycode "<cr>"))
+      (buf-indent-current-line buf2)
+      buf2)))
 
 (defn- cancel-last-indents[buf]
   (dissoc (if (-> buf :last-indents empty?)
@@ -67,7 +47,6 @@
                         ;I think keep them seems a better chioce.
              :enter (fn[buf keycode]
                       (-> buf
-                          (assoc :autocompl nil)
                           cancel-last-indents
                           update-x
                           normal-mode-fix-pos
@@ -79,9 +58,7 @@
                              :submode 0)))))
 
 (defn init-insert-mode-keymap[normal-mode-keymap linebuf-keymap]
-  {"<c-n>" #(autocompl-move (new-autocompl %) inc)
-   "<c-p>" #(autocompl-move (new-autocompl %) dec)
-   "<c-r>" {"<esc>" identity
+  {"<c-r>" {"<esc>" identity
             "=" (expression-keymap linebuf-keymap true)
             :else (fn[buf keycode]
                     (-> buf
@@ -95,7 +72,6 @@
    :continue #(not (= "<esc>" %2))
    :leave (fn[buf keycode]
             (-> buf
-                (assoc :autocompl nil)
                 cancel-last-indents
                 char-
                 update-x

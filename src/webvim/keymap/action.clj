@@ -403,55 +403,6 @@
         (apply-keycodes keycodes)
         (assoc :keys keys))))
 
-(defn- fuzzy-suggest [w words]
-  ;(println "fuzzy-suggest:" w)
-  ;(println "make-linewise-range:" a b)
-  ;(println "make-linewise-range:" a b)
-  (if (empty? w) nil
-    (reduce #(conj %1 (last %2)) []
-            (sort-by (juxt first second str)
-                     (reduce 
-                       (fn [suggestions word]
-                         (let [indexes (fuzzy-match word w)]
-                           (if (empty? indexes)
-                             suggestions
-                             (conj suggestions [(- (last indexes) 
-                                                   (first indexes)) 
-                                                (first indexes) word])))) 
-                       [[0 0 w]] words)))))
-
-(defn autocompl-suggest[{{words :words
-                          limit-number :limit-number
-                          uncomplete-word :uncomplete-word :as autocompl} :autocompl :as buf}]
-  (let [w (uncomplete-word buf)]
-    (if (nil? w)
-      (assoc buf :autocompl nil) ;stop if no uncomplete word
-      (let [suggestions (fuzzy-suggest w words)]
-        ;(println "suggestions" suggestions)
-        (-> buf 
-            (assoc-in [:autocompl :index] 0)
-            (assoc-in [:autocompl :suggestions]
-                      (if (pos? limit-number)
-                        (vec (take limit-number suggestions))
-                        (vec suggestions))))))))
-
-(defn autocompl-move[buf f]
-  (let [buf (if (empty? (-> buf :autocompl :suggestions))
-              (autocompl-suggest buf) buf)
-        {suggestions :suggestions
-         i :index
-         replace :replace} (buf :autocompl)
-        w (suggestions i)
-        ;_ (println "word:" w)
-        cnt (count suggestions)]
-    (if (or (zero? cnt) (empty? w))
-      buf
-      (let [newi (mod (+ (f i) cnt) cnt)
-            neww (suggestions newi)]
-        (-> buf 
-            (assoc-in [:autocompl :index] newi)
-            (replace neww w))))))
-
 (defn set-visual-ranges[{{tp :type rg :range} :visual :as buf}]
   ;(println "set-visual-ranges:" tp rg)
   (assoc-in buf [:visual :ranges]
@@ -527,18 +478,28 @@
           (k1 keycode)
           (k2 keycode)))))
 
+(defn comp-keys2[k1 k2]
+  (fn[buf]
+    (cond
+      (nil? k1) k2
+      (nil? k2) k1
+      :else
+      (-> buf k1 k2))))
+
 (defn key-do-after[keymap key f]
-  (cond (nil? (keymap key))
+  (cond
+    (nil? (keymap key))
     (assoc keymap key f)
     (contains? #{:enter :leave :before :after :else} key)
     (assoc keymap key (comp-keys (keymap key) f))
     :else
-    (assoc keymap key (comp f (keymap key)))))
+    (assoc keymap key (comp-keys2 (keymap key) f))))
 
 (defn key-do-before[keymap key f]
-  (cond (nil? (keymap key))
+  (cond
+    (nil? (keymap key))
     (assoc keymap key f)
     (contains? #{:enter :leave :before :after :else} key)
     (assoc keymap key (comp-keys f (keymap key)))
     :else
-    (assoc keymap key (comp (keymap key) f))))
+    (assoc keymap key (comp-keys2 f (keymap key)))))

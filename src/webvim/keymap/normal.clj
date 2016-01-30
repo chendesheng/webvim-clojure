@@ -14,8 +14,7 @@
         webvim.core.register
         webvim.indent
         webvim.core.utils
-        webvim.jumplist
-        webvim.autocompl))
+        webvim.jumplist))
 
 (defn- delete-char[buf]
   (let [pos (buf :pos)
@@ -136,8 +135,6 @@
     (-> buf
         setup-range
         (yank-range (inclusive? keycode) false))))
-
-
 
 (defn- replace-char-keycode[buf keycode]
   (let [ch (keycode-to-char keycode)

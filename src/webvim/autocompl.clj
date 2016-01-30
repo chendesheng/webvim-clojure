@@ -78,7 +78,7 @@
           a (or (last (pos-re- s pos re-start)) 0)]
       [a pos])))
 
-(defn uncomplete-word
+(defn buffer-uncomplete-word
   [buf]
   (let [s (buf :str)
         pos (buf :pos)

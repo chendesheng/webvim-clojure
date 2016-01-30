@@ -16,6 +16,7 @@
         webvim.keymap.action
         webvim.keymap.showkeys
         webvim.keymap.dotrepeat
+        webvim.keymap.autocompl
         webvim.core.register
         webvim.jumplist
         webvim.core.utils

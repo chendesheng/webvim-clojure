@@ -27,7 +27,7 @@
 ;TODO: monitor disk file change
 (def ^:private all-files (atom nil))
 
-(defn hidden?[f]
+(defn- hidden?[f]
   ;(pprint (fs/split f))
   (or (fs/hidden? f)
       (not (not-any? #(re-test #"^\..+" %) (fs/split f)))))
@@ -181,7 +181,6 @@
       ;(println "dir:2" dir)
       (if (fs/directory? dir)
         (do
-          (reset! all-files nil)
           (alter-var-root (var fs/*cwd*) (constantly dir))
           (assoc buf :message (str "Set working directory to: " fs/*cwd*)))
         (assoc buf :message "Path is not a directory or not exists.")))))
@@ -274,71 +273,36 @@
               (assoc :message "unknown command")
               (dissoc :line-buffer)))))))
 
-(defn- replace-suggestion[buf w _]
-  (let [news (str "e " w)]
+(defn- ex-tab-complete [{{r :str} :line-buffer :as buf} cmds]
+  (if (re-test #"^\s*\S+\s*$" r)
+    (let [s (str r)
+          news (first
+                 (filter
+                   (fn[k]
+                     (and (string? k)
+                          (.startsWith k s)))
+                   (map first cmds)))]
+      (if (nil? news) buf
         (update-in buf [:line-buffer]
                    (fn[linebuf]
-                     (merge linebuf {:str (rope news)
-                                     :pos (count news)})))))
-
-(defn- uncomplete-word[{{r :str} :line-buffer :as buf}]
-  (let [[[_ w]] (re-seq #"^e\s(.*)" (-> buf :line-buffer :str str))] w))
-
-(defn- new-autocompl[buf]
-  (if (-> buf :autocompl nil?) 
-    (assoc buf :autocompl
-           {:words (get-files)
-            :suggestions nil
-            :index 0
-            :uncomplete-word uncomplete-word
-            :replace replace-suggestion
-            :limit-number 20})
+                     (assoc linebuf :str (rope news) :pos (count news))))))
     buf))
-
-(defn- ex-tab-complete [{{r :str} :line-buffer :as buf} cmds]
-  (let [w (uncomplete-word buf)]
-    ;(println "ex-tab-complete:" w)
-    (if (nil? w)
-      (if (re-test #"^\s*\S+\s*$" r)
-        (let [s (str r)
-              news (first
-                     (filter
-                       (fn[k]
-                         (and (string? k)
-                              (.startsWith k s)))
-                       (map first cmds)))]
-          (if (nil? news) buf
-            (update-in buf [:line-buffer]
-                       (fn[linebuf]
-                         (assoc linebuf :str (rope news) :pos (count news))))))
-        buf)
-      (autocompl-move 
-        (new-autocompl buf) inc))))
 
 ;Make sure each cmd have a not-nil response message
 (defn init-ex-mode-keymap[]
   (let [cmds (ex-commands)
         linebuf-keymap (init-linebuf-keymap commands-history)
+        else (or (linebuf-keymap :else) nop)
         after (or (linebuf-keymap :after) nop)
         leave (or (linebuf-keymap :leave) nop)]
     ;TODO: consider add an "inherit" (or "wrap") function
     (assoc linebuf-keymap
-           :after (fn[buf keycode]
-                    (let [buf (after buf keycode)]
-                      (if (or (= keycode "<tab>")
-                              (= keycode "<s-tab>")
-                              (-> buf :autocompl nil?))
-                        buf
-                        (autocompl-suggest buf))))
            :leave (fn[buf keycode]
                       (-> buf
                           (leave keycode)
-                          (assoc :autocompl nil)
                           set-normal-mode))
            "<cr>" (fn[buf]
                     (execute buf cmds))
-           "<s-tab>" (fn[buf]
-                       (autocompl-move buf dec))
            "<tab>" (fn[buf]
                      (ex-tab-complete buf cmds)))))
 
