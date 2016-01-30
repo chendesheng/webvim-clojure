@@ -4,6 +4,7 @@
         webvim.keymap.motion
         webvim.keymap.insert
         webvim.keymap.ex
+        webvim.keymap.pair
         webvim.core.buffer
         webvim.core.rope
         webvim.core.line
@@ -319,10 +320,10 @@
                    (replace-char buf a (inc b) ch)) buf (not-empty-range ranges))]
     (buf-set-pos newbuf (first firstline))))
 
-(defn init-visual-mode-keymap[motion-keymap pair-keymap]
+(defn init-visual-mode-keymap[motion-keymap]
   (merge 
     motion-keymap 
-    pair-keymap
+    (init-pair-keymap)
     {:enter (fn[buf keycode]
               (let [pos (buf :pos)]
                 (set-visual-mode buf 

@@ -25,16 +25,21 @@
         webvim.keymap.compile))
 
 (defn init-keymap-tree []
-  (let [pair-keymap (init-pair-keymap)
-        motion-keymap (init-motion-keymap)
-        visual-mode-keymap (init-visual-mode-keymap motion-keymap pair-keymap)
+  (let [motion-keymap (init-motion-keymap)
+        visual-mode-keymap (init-visual-mode-keymap motion-keymap)
         expression-linebuf-keymap (init-linebuf-keymap)
-        normal-mode-keymap (init-normal-mode-keymap motion-keymap visual-mode-keymap pair-keymap expression-linebuf-keymap)
-        insert-mode-keymap (init-insert-mode-keymap normal-mode-keymap expression-linebuf-keymap)
-        ex-mode-keymap (init-ex-mode-keymap)]
-    {:normal-mode-keymap (fire-event normal-mode-keymap :normal-mode-keymap)
-     :insert-mode-keymap (fire-event insert-mode-keymap :insert-mode-keymap)
-     :ex-mode-keymap (fire-event ex-mode-keymap :ex-mode-keymap)}))
+        normal-mode-keymap (fire-event
+                             (init-normal-mode-keymap motion-keymap visual-mode-keymap expression-linebuf-keymap)
+                             :normal-mode-keymap)
+        insert-mode-keymap (fire-event
+                             (init-insert-mode-keymap normal-mode-keymap expression-linebuf-keymap)
+                             :insert-mode-keymap)
+        ex-mode-keymap (fire-event
+                         (init-ex-mode-keymap)
+                         :ex-mode-keymap)]
+    {:normal-mode-keymap normal-mode-keymap
+     :insert-mode-keymap insert-mode-keymap
+     :ex-mode-keymap ex-mode-keymap}))
 
 (listen :new-buffer
         (fn[buf]
