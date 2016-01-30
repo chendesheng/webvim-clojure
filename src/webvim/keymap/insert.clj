@@ -76,7 +76,6 @@
                                (-> buf
                                    (assoc :autocompl nil)
                                    cancel-last-indents
-                                   char-
                                    update-x
                                    normal-mode-fix-pos
                                    (assoc :mode normal-mode

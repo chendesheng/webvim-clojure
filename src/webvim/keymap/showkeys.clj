@@ -17,7 +17,7 @@
                    nil))))
 
 (defn- on-normal-mode-keymap[keymap]
-  (merge-key 
+  (key-do-after 
     keymap :after
     (fn[buf keycode]
       (cond (= "\"" keycode)
