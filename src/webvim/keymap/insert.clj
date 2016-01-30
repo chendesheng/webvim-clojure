@@ -1,6 +1,7 @@
 (ns webvim.keymap.insert
   (:use webvim.keymap.action
         webvim.core.buffer
+        webvim.core.event
         webvim.core.rope
         webvim.core.line
         webvim.core.pos
@@ -57,6 +58,26 @@
                            (rblank? s))
                     (buf-delete buf a1 (dec b1)) buf))) buf (buf :last-indents))) :last-indents))
 
+(defn- temp-normal-mode-keymap[normal-mode-keymap]
+  (-> normal-mode-keymap
+      (dissoc "u" "<c-r>") ;can't make undo/redo in the middle of change
+      (assoc :continue (fn[buf keycode]
+                         (= keycode "\""))
+                        ;FIXME: Vim's <c-o> breaks history and dot repeat.
+                        ;I think keep them seems a better chioce.
+             :enter (fn[buf keycode]
+                      (-> buf
+                          (assoc :autocompl nil)
+                          cancel-last-indents
+                          update-x
+                          normal-mode-fix-pos
+                          (assoc :mode normal-mode
+                                 :submode temp-normal-mode)))
+             :leave (fn[buf keycode]
+                      (assoc buf
+                             :mode insert-mode
+                             :submode 0)))))
+
 (defn init-insert-mode-keymap[normal-mode-keymap linebuf-keymap]
   {"<c-n>" #(autocompl-move (new-autocompl %) inc)
    "<c-p>" #(autocompl-move (new-autocompl %) dec)
@@ -67,23 +88,9 @@
                         (put-from-register keycode false)
                         char+))}
    "<esc>" identity
-   "<c-o>" (-> normal-mode-keymap
-               (dissoc "u" "<c-r>") ;can't make undo/redo in the middle of change
-               (assoc :continue (fn[buf keycode] false)
-                      ;FIXME: Vim's <c-o> breaks history and dot repeat.
-                      ;I think keep them seems a better chioce.
-                      :enter (fn[buf keycode]
-                               (-> buf
-                                   (assoc :autocompl nil)
-                                   cancel-last-indents
-                                   update-x
-                                   normal-mode-fix-pos
-                                   (assoc :mode normal-mode
-                                          :submode temp-normal-mode)))
-                      :leave (fn[buf keycode]
-                               (assoc buf
-                                      :mode insert-mode
-                                      :submode 0))))
+   "<c-o>" (fire-event
+             (temp-normal-mode-keymap normal-mode-keymap)             
+             :temp-normal-mode-keymap)
    :else insert-mode-default 
    :continue #(not (= "<esc>" %2))
    :leave (fn[buf keycode]
