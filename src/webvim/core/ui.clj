@@ -51,7 +51,7 @@
       (dissoc :expandtab :CRLF? :history :context :last-cursor 
               :language :filepath :x :y :cursor :keymap 
               :normal-mode-keymap :insert-mode-keymap :ex-mode-keymap
-              :pending-undo :saved-undo :registers :linescnt 
+              :pending-undo :saved-undo :registers :linescnt :keys
               :save-point :ext :last-visual :nextid :dot-repeat-keys :last-indents)
       (dissoc-empty [:changes])
       remove-visual
@@ -96,6 +96,7 @@
                     (dissoc-if-equal before :highlights)
                     (dissoc-if-equal before :tabsize)
                     (dissoc-if-equal before :pos)
+                    (dissoc-if-equal before :showkeys)
                     (dissoc :str)
                     remove-fields))]
     buf))

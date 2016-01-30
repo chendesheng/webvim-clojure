@@ -8,6 +8,9 @@
   (swap! listeners update-in [typ] conj handler))
 
 (defn fire-event
+  ([typ b arg]
+    (reduce (fn[b f]
+              (f b arg)) b (@listeners typ)))
   ([b typ]
     (reduce (fn[b f]
               (f b)) b (@listeners typ)))

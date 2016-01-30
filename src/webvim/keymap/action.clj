@@ -406,6 +406,7 @@
       (registers-put! "." {:keys keys :str (string/join keys)}))
     (dissoc buf :dot-repeat-keys)))
 
+
 (defn replay-keys [buf keycodes]
   (let [keys (buf :keys)] 
     (-> buf
@@ -435,7 +436,7 @@
                           uncomplete-word :uncomplete-word :as autocompl} :autocompl :as buf}]
   (let [w (uncomplete-word buf)]
     (if (nil? w)
-      (dissoc buf :autocompl) ;stop if no uncomplete word
+      (assoc buf :autocompl nil) ;stop if no uncomplete word
       (let [suggestions (fuzzy-suggest w words)]
         ;(println "suggestions" suggestions)
         (-> buf 
@@ -523,4 +524,24 @@
              (Character/isLowerCase ch) (Character/toUpperCase ch)
              :else ch)) s)))
 
+(defn append-number-prefix[buf digit-str]
+  (update-in buf [:context :number-prefix] #(str % digit-str)))
 
+;FIXME: why comp is right-to-left order?? 
+(defn comp-keys[k1 k2]
+  (fn[buf keycode]
+    (cond
+      (nil? k1) k2
+      (nil? k2) k1
+      :else
+      (-> buf
+          (k1 keycode)
+          (k2 keycode)))))
+
+(defn merge-key[keymap key f]
+  (cond (nil? (keymap key))
+    (assoc keymap key f)
+    (contains? #{:enter :leave :before :after :else} key)
+    (assoc keymap key (comp-keys (keymap key) f))
+    :else
+    (assoc keymap key (comp f (keymap key)))))

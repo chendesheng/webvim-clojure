@@ -32,9 +32,17 @@ watchLocalbufChange('dirty', function(buf) {
 	}
 });
 
-watchLocalbufChange('keys', function(buf) {
-	if (buf.keys && buf.keys.length > 0 && buf.keys[0] != ':') {
-		$statusKeys(buf.id).textContent = buf.keys.reverse().join('');
+watchLocalbufChange('showkeys', function(buf) {
+	var keys = buf['showkeys'];
+	if (keys && keys.length > 0 && keys[0] != ':') {
+		$statusKeys(buf.id).textContent = keys.reverse().join('');
+		if (keys[0] === null) {
+			setTimeout(function() {
+				if (buf.id == buffers.active.id) {
+					$statusKeys(buf.id).innerHTML = '';
+				}
+			}, 100);
+		}
 	} else {
 		$statusKeys(buf.id).innerHTML = '';
 	}
