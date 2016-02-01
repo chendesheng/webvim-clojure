@@ -343,7 +343,10 @@
      "j" #(lines-n % 1)
      "g" {"g" (comp buf-start jump-push)
           "d" (comp same-word-first jump-push)}
-     "G" (comp line-start buf-end)
+     "G" (fn[buf]
+           (if (-> buf :context :repeat-prefix nil? not)
+             (lines-row buf (dec (repeat-prefix-value buf)))
+             (-> buf buf-end line-start)))
      "H" (viewport-position 0)
      "M" (viewport-position 0.5)
      "L" (viewport-position 1)

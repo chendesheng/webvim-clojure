@@ -249,7 +249,9 @@
 
 (defn- inc-dec-number[f]
   (fn[buf]
-    (let [pos (buf :pos)
+    (let [repeat-times (repeat-prefix-value buf)
+          f (fn[n] (f n repeat-times))
+          pos (buf :pos)
           r (buf :str)
           [line-start line-end] (pos-line r pos)
           line (subr r line-start line-end)
@@ -386,8 +388,8 @@
                      (if (nil? reg)
                        (assoc buf :message "No alternative file")
                        (goto-buf buf (get-buffer-from-reg reg)))))
-       "<c-a>" (inc-dec-number inc)
-       "<c-x>" (inc-dec-number dec)
+       "<c-a>" (inc-dec-number +)
+       "<c-x>" (inc-dec-number -)
        ">" (merge
              motion-keymap-fix-w
              pair-keymap

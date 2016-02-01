@@ -2,6 +2,7 @@
   (:use clojure.pprint
         webvim.keymap.action
         webvim.core.ui
+        webvim.core.rope
         webvim.core.buffer
         webvim.core.event))
 
@@ -26,6 +27,10 @@
             (and (= "\"" keycode)
                  (-> buf :context :register nil? not)
                  (-> buf :context :register (not= "\"")))
+            buf
+            (or (re-test #"^[1-9]$" keycode)
+                (and (-> buf :context :repeat-prefix nil? not)
+                     (= keycode "0")))
             buf
             (= "<esc>" keycode)
             (assoc buf :showkeys nil)

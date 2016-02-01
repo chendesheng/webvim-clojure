@@ -464,8 +464,8 @@
              (Character/isLowerCase ch) (Character/toUpperCase ch)
              :else ch)) s)))
 
-(defn append-number-prefix[buf digit-str]
-  (update-in buf [:context :number-prefix] #(str % digit-str)))
+(defn append-repeat-prefix[buf digit-str]
+  (update-in buf [:context :repeat-prefix] #(str % digit-str)))
 
 (defn special-key?[key]
   (contains? #{:enter :leave :before :after :else} key))
@@ -474,5 +474,8 @@
   (let [handler (or (keymap key)
                     (if (special-key? key) nop identity))]
     (assoc keymap key (f handler))))
+
+(defn repeat-prefix-value[buf]
+  (-> buf :context :repeat-prefix (or "1") parse-int))
 
 
