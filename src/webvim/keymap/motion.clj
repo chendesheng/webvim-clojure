@@ -69,19 +69,6 @@
 (defn- paragraph-[buf]
   (re- buf #"((?<=\n)\n[^\n])"))
 
-(defn- current-word[buf]
-  "return range of word under cursor, right side is exclusive"
-  (let [{pos :pos
-         r :str
-         lang :language} buf
-        {word-chars :word-chars
-         not-word-chars :not-word-chars} (word-re lang)
-        re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
-        re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
-        b (or (last (pos-re+ r pos re-end)) (count r))
-        a (or (last (pos-re- r (dec b) re-start)) 0)]
-    (subr r a b)))
-
 (defn- move-by-char[buf ch forward? inclusive?]
   (let [{r :str pos :pos} buf
         a (pos-line-first r pos)

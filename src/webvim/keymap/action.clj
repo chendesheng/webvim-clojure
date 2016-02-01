@@ -9,6 +9,7 @@
         webvim.core.register
         webvim.indent
         webvim.fuzzy
+        webvim.core.lang
         webvim.core.utils
         webvim.jumplist
         webvim.keymap.compile
@@ -477,5 +478,17 @@
 
 (defn repeat-prefix-value[buf]
   (-> buf :context :repeat-prefix (or "1") parse-int))
+
+(defn current-word[buf]
+  (let [{pos :pos
+         r :str
+         lang :language} buf
+        {word-chars :word-chars
+         not-word-chars :not-word-chars} (word-re lang)
+        re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
+        re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
+        b (or (last (pos-re+ r pos re-end)) (count r))
+        a (or (last (pos-re- r (dec b) re-start)) 0)]
+    (subr r a b)))
 
 

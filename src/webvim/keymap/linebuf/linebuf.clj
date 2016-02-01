@@ -137,6 +137,8 @@
             "<c-h>" linebuf-<bs>
             "<c-d>" #(linebuf-delete % 1)
             "<c-r>" {"<esc>" identity
+                     "<c-w>" (fn[buf]
+                               (linebuf-insert buf (current-word buf)))
                      :else linebuf-put}
             "<c-w>" linebuf-<c-w>
             :enter linebuf-enter
