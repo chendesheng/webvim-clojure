@@ -6,10 +6,10 @@
         webvim.core.event))
 
 (defn- on-before-handle-key[buf keycode]
-  (println "on-before-handle-key:" keycode)
   (update-in buf [:showkeys]
              (fn[showkeys]
                  (if (and (= (buf :mode) normal-mode)
+                          (= (-> buf :visual :type) no-visual)
                           (-> buf :line-buffer nil?)
                           (not= keycode "/")
                           (not= keycode ":"))
@@ -17,22 +17,27 @@
                    nil))))
 
 (defn- on-normal-mode-keymap[keymap]
-  (key-do-after 
+  (wrap-key 
     keymap :after
-    (fn[buf keycode]
-      (cond (= "\"" keycode)
-        buf
-        (= "<esc>" keycode)
-        (assoc buf :showkeys nil)
-        :else
-        (do
-          (send ui-agent
-                (fn[ui]
-                  (update-in ui [:buf] dissoc :showkeys)))
-          (send (@buffer-list (buf :id))
-                (fn[buf]
-                  (dissoc buf :showkeys)))
-          (update-in buf [:showkeys] conj nil))))))
+    (fn[handler]
+      (fn[buf keycode]
+        (let [buf (handler buf keycode)]
+          (cond
+            (and (= "\"" keycode)
+                 (-> buf :context :register nil? not)
+                 (-> buf :context :register (not= "\"")))
+            buf
+            (= "<esc>" keycode)
+            (assoc buf :showkeys nil)
+            :else
+            (do
+              (send ui-agent
+                    (fn[ui]
+                      (update-in ui [:buf] dissoc :showkeys)))
+              (send (@buffer-list (buf :id))
+                    (fn[buf]
+                      (dissoc buf :showkeys)))
+              (update-in buf [:showkeys] conj nil))))))))
 
 (defonce ^:private listener1
   (listen

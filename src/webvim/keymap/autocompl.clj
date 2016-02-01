@@ -75,26 +75,36 @@
 
 (defn- extends-autocompl[keymap provider]
   (-> keymap
-      (key-do-after (provider :move-up)
-                    (fn[buf]
+      (wrap-key (provider :move-up)
+                (fn[handler]
+                  (fn[buf]
+                    (-> buf
+                        handler
+                        (new-autocompl provider)
+                        (autocompl-move provider dec)))))
+      (wrap-key (provider :move-down) 
+                (fn[handler]
+                  (fn[buf]
+                    (println "move-down")
+                    (-> buf
+                        handler
+                        (new-autocompl provider)
+                        (autocompl-move provider inc)))))
+      (wrap-key :leave
+                (fn[handler]
+                  (fn[buf keycode]
+                    (-> buf
+                        (assoc :autocompl nil)
+                        (handler keycode)))))
+      (wrap-key :else
+                (fn[handler]
+                  (fn[buf keycode]
+                    ;continue checking until there is no suggestions
+                    (if (-> buf :autocompl nil?)
+                      (handler buf keycode)
                       (-> buf
-                          (new-autocompl provider)
-                          (autocompl-move provider dec))))
-      (key-do-after (provider :move-down) 
-                    (fn[buf]
-                      (println "move-down")
-                      (-> buf
-                          (new-autocompl provider)
-                          (autocompl-move provider inc))))
-      (key-do-before :leave
-                     (fn[buf keycode]
-                       (assoc buf :autocompl nil)))
-      (key-do-after :else
-                    (fn[buf keycode]
-                        ;continue checking until there is no suggestions
-                      (if (-> buf :autocompl nil?)
-                        buf
-                        (autocompl-suggest buf provider))))))
+                          (handler keycode)
+                          (autocompl-suggest provider))))))))
 
 (defn- on-insert-mode-keymap[keymap]
   (extends-autocompl keymap
@@ -109,9 +119,12 @@
   (extends-autocompl keymap ex-autocompl-provider))
 
 (defn- on-temp-normal-mode-keymap[keymap]
-  (key-do-before keymap :enter
-                 (fn[buf keycode]
-                   (assoc buf :autocompl nil))))
+  (wrap-key keymap :enter
+            (fn[handler]
+              (fn[buf keycode]
+                (-> buf
+                    (assoc :autocompl nil)
+                    (handler keycode))))))
 
 (defonce ^:private listener1
   (listen

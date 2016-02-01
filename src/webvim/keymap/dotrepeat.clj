@@ -29,19 +29,25 @@
 
 (defn- on-normal-mode-keymap[keymap]
   (-> keymap
-      (key-do-before 
+      (wrap-key 
         :after
-        (fn[buf keycode]
-          (if (= (buf :mode) insert-mode)
-            buf
-            (save-dot-repeat buf))))
+        (fn[handler]
+          (fn[buf keycode]
+            (if (= (buf :mode) insert-mode)
+              (handler buf keycode)
+              (-> buf
+                  save-dot-repeat
+                  (handler keycode))))))
       (assoc "." dot-repeat)))
 
 (defn- on-insert-mode-keymap[keymap]
-  (key-do-before
+  (wrap-key
     keymap :leave
-    (fn[buf keycode]
-      (save-dot-repeat buf))))
+    (fn[handler]
+      (fn[buf keycode]
+        (-> buf
+            save-dot-repeat
+            (handler keycode))))))
 
 (defonce ^:private listener1
   (listen
