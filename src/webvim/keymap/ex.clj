@@ -63,7 +63,12 @@
 (defn- exec-shell-commands[buf panel cmds]
   (exec-async cmds (fn[line]
                      (append-panel buf panel line false)))
-  (append-panel buf panel (str (string/join " " cmds)) true))
+  (append-panel buf panel (reduce (fn[s arg]
+                                    (str s
+                                         " "
+                                         (if (re-test #"\s" arg)
+                                           (str "\"" arg "\"")
+                                           arg))) "" cmds) true))
 
 (defn- expand-path[f]
   (if (= (first f) \~)
