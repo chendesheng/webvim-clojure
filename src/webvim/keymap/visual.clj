@@ -362,9 +362,9 @@
      "A" visual-keymap-A
      ">" (indent indent-more)
      "<" (indent indent-less)
+     "~" (visual-change-case swap-case)
      "g" {"u" (visual-change-case clojure.string/lower-case)
-          "U" (visual-change-case clojure.string/upper-case)
-          "~" (visual-change-case swap-case)}
+          "U" (visual-change-case clojure.string/upper-case)}
      "r" {"<esc>" identity
           "<cr>" identity
           :else replace-char-keycode}}))

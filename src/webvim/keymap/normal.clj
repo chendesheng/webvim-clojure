@@ -307,6 +307,10 @@
        "<c-g>" buf-pos-info
        "<esc>" set-normal-mode
        "<f1>" #(goto-buf % (output-panel false))
+       "~" (merge
+             motion-keymap-fix-w
+             pair-keymap
+             {:after (operator (change-case swap-case))})
        "g" {"v" (assoc
                   visual-mode-keymap
                   :enter
@@ -316,10 +320,6 @@
                           (set-visual-mode visual)
                           (buf-set-pos (-> visual :range first))))))
             "f" goto-file
-            "~" (merge
-                  motion-keymap-fix-w
-                  pair-keymap
-                  {:after (operator (change-case swap-case))})
             "u" (merge
                   motion-keymap-fix-w
                   pair-keymap
