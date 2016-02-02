@@ -292,8 +292,12 @@
   (fn [buf keycode]
     (if (not= (count (keycode-to-char keycode)) 1)
       :nop
-      (if (= visual-block (-> buf :visual :type))
+      (cond
+        (= no-visual (-> buf :visual :type))
+        :no-visual
+        (= visual-block (-> buf :visual :type))
         :visual-block
+        :else
         :not-visual-block))))
 
 (defmethod replace-char-keycode :nop [buf keycode]

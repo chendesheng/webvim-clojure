@@ -7,6 +7,7 @@
         webvim.keymap.insert
         webvim.keymap.ex
         webvim.keymap.pair
+        webvim.keymap.visual
         webvim.core.buffer
         webvim.core.rope
         webvim.core.line
@@ -136,7 +137,7 @@
         setup-range
         (yank-range (inclusive? keycode) false))))
 
-(defn- replace-char-keycode[buf keycode]
+(defmethod replace-char-keycode :no-visual [buf keycode]
   (let [ch (keycode-to-char keycode)
         pos (buf :pos)]
     (cond
