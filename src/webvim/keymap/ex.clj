@@ -298,6 +298,14 @@
 (defn- ex-uncomplete-word[{{r :str} :line-buffer :as buf}]
   (let [[[_ w]] (re-seq #"^e\s(.*)" (-> buf :line-buffer :str str))] w))
 
+(def ex-autocompl-provider
+  {:move-up "<s-tab>"
+   :move-down "<tab>"
+   :uncomplete-word ex-uncomplete-word
+   :replace-suggestion ex-replace-suggestion
+   :fn-words (fn[w] (get-files))
+   :limit-number 20})
+
 ;Make sure each cmd have a not-nil response message
 (defn init-ex-mode-keymap[]
   (let [cmds (ex-commands)
