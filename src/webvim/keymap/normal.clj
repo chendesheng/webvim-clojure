@@ -276,8 +276,9 @@
           rg (range-prefix buf (inclusive? keycode))]
         (f buf rg))))
 
-(defn init-normal-mode-keymap[motion-keymap visual-mode-keymap]
-  (let [pair-keymap (init-pair-keymap)
+(defn init-normal-mode-keymap[motion-keymap]
+  (let [visual-mode-keymap (init-visual-mode-keymap motion-keymap)
+        pair-keymap (init-pair-keymap)
         motion-keymap-fix-w (-> motion-keymap
                                 (assoc "w" (dont-cross-line (motion-keymap "w")))
                                 (assoc "W" (dont-cross-line (motion-keymap "W"))))

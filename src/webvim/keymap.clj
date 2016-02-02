@@ -28,9 +28,8 @@
 
 (defn init-keymap-tree []
   (let [motion-keymap (init-motion-keymap)
-        visual-mode-keymap (init-visual-mode-keymap motion-keymap)
         normal-mode-keymap (fire-event
-                             (init-normal-mode-keymap motion-keymap visual-mode-keymap)
+                             (init-normal-mode-keymap motion-keymap)
                              :normal-mode-keymap)
         insert-mode-keymap (fire-event
                              (init-insert-mode-keymap normal-mode-keymap)
