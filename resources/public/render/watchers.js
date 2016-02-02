@@ -34,7 +34,7 @@ watchLocalbufChange('dirty', function(buf) {
 
 watchLocalbufChange('showkeys', function(buf) {
 	var keys = buf['showkeys'];
-	if (keys && keys.length > 0 && keys[0] != ':') {
+	if (keys && keys.length > 0) {
 		$statusKeys(buf.id).textContent = keys.reverse().join('');
 		if (keys[0] === null) {
 			setTimeout(function() {

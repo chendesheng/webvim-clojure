@@ -268,7 +268,9 @@
                                         (if (not (nil? m)) handler nil)))) cmds))]
         ;(println excmd args)
         (if (>= (count handlers) 1)
-          ((first handlers) buf excmd args)
+          (let [buf ((first handlers) buf excmd args)]
+            (registers-put! ":" {:str (-> buf :line-buffer :str str)})
+            buf)
           (-> buf
               (assoc :message "unknown command")
               (dissoc :line-buffer)))))))

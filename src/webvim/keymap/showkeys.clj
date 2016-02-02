@@ -11,9 +11,7 @@
              (fn[showkeys]
                  (if (and (= (buf :mode) normal-mode)
                           (= (-> buf :visual :type) no-visual)
-                          (-> buf :line-buffer nil?)
-                          (not= keycode "/")
-                          (not= keycode ":"))
+                          (-> buf :line-buffer nil?))
                    (conj showkeys keycode)
                    nil))))
 
@@ -23,6 +21,7 @@
     (fn[handler]
       (fn[buf keycode]
         (let [buf (handler buf keycode)]
+          ;(println "normal-after:" keycode (-> buf :context :register) (buf :showkeys))
           (cond
             (and (= "\"" keycode)
                  (-> buf :context :register nil? not)
@@ -32,7 +31,8 @@
                 (and (-> buf :context :repeat-prefix nil? not)
                      (= keycode "0")))
             buf
-            (= "<esc>" keycode)
+            (or (= "<esc>" keycode)
+                (-> buf :line-buffer nil? not))
             (assoc buf :showkeys nil)
             :else
             (do
