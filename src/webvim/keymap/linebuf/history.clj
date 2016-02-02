@@ -43,7 +43,7 @@
   (let [ahistory (or ahistory (atom (parallel-universe)))]
     {:leave (fn[buf keycode]
               (let [linebuf (buf :line-buffer)]
-                (println "leave:" linebuf)
+                ;(println "leave:" linebuf)
                 ;remove :line-buffer or :line-buffer :str can prevent current operation save to history
                 (if-not (nil? linebuf)
                   (save-history! ahistory

@@ -306,22 +306,20 @@
    :fn-words (fn[w] (get-files))
    :limit-number 20})
 
-;Make sure each cmd have a not-nil response message
 (defn init-ex-mode-keymap[]
-  (let [cmds (ex-commands)
-        linebuf-keymap (init-linebuf-keymap commands-history)
-        else (or (linebuf-keymap :else) nop)
-        after (or (linebuf-keymap :after) nop)
-        leave (or (linebuf-keymap :leave) nop)]
-    ;TODO: consider add an "inherit" (or "wrap") function
-    (assoc linebuf-keymap
-           :leave (fn[buf keycode]
+  (let [cmds (ex-commands)]
+    (-> (init-linebuf-keymap commands-history)
+        (wrap-key :leave
+                  (fn[handler]
+                    (fn[buf keycode]
                       (-> buf
-                          (leave keycode)
-                          set-normal-mode))
-           "<cr>" (fn[buf]
-                    (execute buf cmds))
-           "<tab>" (fn[buf]
-                     (ex-tab-complete buf cmds)))))
+                          (handler keycode)
+                          set-normal-mode))))
+        (assoc "<cr>"
+               (fn[buf]
+                 (execute buf cmds))
+               "<tab>"
+               (fn[buf]
+                 (ex-tab-complete buf cmds))))))
 
 

@@ -89,7 +89,7 @@
     (linebuf-insert buf ch)))
 
 (defn- linebuf-enter[buf keycode]
-  (println "linebuf-enter:" keycode)
+  ;(println "linebuf-enter:" keycode)
   (let [buf (dissoc buf :message)]
     (if (-> buf :line-buffer nil?)
       (assoc buf :line-buffer {:prefix keycode
@@ -105,7 +105,7 @@
 (defn- linebuf-leave [buf keycode] 
   (-> buf
       (dissoc :line-buffer)
-      (assoc :message (or (buf :message) "")))) ;Make sure got :message filled
+      (assoc :message (or (buf :message) "")))) ;Make sure :message get value
 
 (defn- linebuf-<bs>
   [{{r :str} :line-buffer :as buf}] 
@@ -126,28 +126,28 @@
 
 (defn init-linebuf-keymap
   ([ahistory]
-   (let [history-keymap (init-history-keymap ahistory)
-         leave (or (history-keymap :leave) nop)]
-     (assoc history-keymap
-            "<c-f>" linebuf-char+
-            "<c-b>" linebuf-char-
-            "<c-a>" linebuf-start
-            "<c-e>" linebuf-end
-            "<bs>" linebuf-<bs>
-            "<c-h>" linebuf-<bs>
-            "<c-d>" #(linebuf-delete % 1)
-            "<c-r>" {"<esc>" identity
-                     "<c-w>" (fn[buf]
-                               (linebuf-insert buf (current-word buf)))
-                     :else linebuf-put}
-            "<c-w>" linebuf-<c-w>
-            :enter linebuf-enter
-            :else linebuf-default
-            :continue linebuf-continue
-            :leave (fn[buf keycode]
-                     (-> buf
-                         (leave keycode)
-                         (linebuf-leave keycode))))))
+    (-> (init-history-keymap ahistory)
+        (wrap-key :leave
+                  (fn[handler]
+                    (fn[buf keycode]
+                      (-> buf
+                          (handler keycode)
+                          (linebuf-leave keycode)))))
+        (assoc "<c-f>" linebuf-char+
+               "<c-b>" linebuf-char-
+               "<c-a>" linebuf-start
+               "<c-e>" linebuf-end
+               "<bs>" linebuf-<bs>
+               "<c-h>" linebuf-<bs>
+               "<c-d>" #(linebuf-delete % 1)
+               "<c-r>" {"<esc>" identity
+                        "<c-w>" (fn[buf]
+                                  (linebuf-insert buf (current-word buf)))
+                        :else linebuf-put}
+               "<c-w>" linebuf-<c-w>
+               :enter linebuf-enter
+               :else linebuf-default
+               :continue linebuf-continue)))
   ([]
    (init-linebuf-keymap (atom (parallel-universe)))))
 
