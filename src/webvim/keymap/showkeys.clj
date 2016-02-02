@@ -19,7 +19,7 @@
       (wrap-key :before
                 (fn[handler]
                   (fn[buf keycode]
-                    (update-in (handler buf)
+                    (update-in (handler buf keycode)
                                [:showkeys]
                                (fn[showkeys]
                                  (if (not= keycode "/")
