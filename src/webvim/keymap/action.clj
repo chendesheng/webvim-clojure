@@ -7,6 +7,7 @@
         webvim.core.line
         webvim.core.pos
         webvim.core.register
+        webvim.core.event
         webvim.indent
         webvim.fuzzy
         webvim.core.lang
@@ -198,6 +199,12 @@
             (buf-insert pos s)
             (buf-set-pos newpos))))))
 
+(defn- fire-before-handle-key[buf keycode]
+  (fire-event :before-handle-key buf keycode)) 
+
+(defn- fire-after-handle-key[buf keycode]
+  (fire-event :after-handle-key buf keycode)) 
+
 (defn apply-keycode[buf keycode]
   (let [keymap (compile-keymap (buf :keymap))
         allkeycode (conj (buf :keys) keycode)
@@ -208,7 +215,10 @@
                      (keymap (clojure.string/join (conj (pop (buf :keys)) ":else" keycode))) ;last :else can be map too
                      (keymap (clojure.string/join (conj (pop (buf :keys)) ":else:else")))))
                  nop)]
-    (func buf keycode)))
+    (-> buf
+        (fire-before-handle-key keycode)
+        (func keycode)
+        (fire-after-handle-key keycode))))
 
 (defn apply-keycodes[buf keycodes]
   (reduce apply-keycode buf keycodes))

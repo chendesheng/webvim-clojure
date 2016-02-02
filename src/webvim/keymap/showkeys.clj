@@ -12,37 +12,44 @@
                  (if (and (= (buf :mode) normal-mode)
                           (= (-> buf :visual :type) no-visual)
                           (-> buf :line-buffer nil?))
-                   (conj showkeys keycode)
-                   nil))))
+                   (conj showkeys keycode)))))
 
 (defn- on-normal-mode-keymap[keymap]
-  (wrap-key 
-    keymap :after
-    (fn[handler]
-      (fn[buf keycode]
-        (let [buf (handler buf keycode)]
-          ;(println "normal-after:" keycode (-> buf :context :register) (buf :showkeys))
-          (cond
-            (and (= "\"" keycode)
-                 (-> buf :context :register nil? not)
-                 (-> buf :context :register (not= "\"")))
-            buf
-            (or (re-test #"^[1-9]$" keycode)
-                (and (-> buf :context :repeat-prefix nil? not)
-                     (= keycode "0")))
-            buf
-            (or (= "<esc>" keycode)
-                (-> buf :line-buffer nil? not))
-            (assoc buf :showkeys nil)
-            :else
-            (do
-              (send ui-agent
-                    (fn[ui]
-                      (update-in ui [:buf] dissoc :showkeys)))
-              (send (@buffer-list (buf :id))
-                    (fn[buf]
-                      (dissoc buf :showkeys)))
-              (update-in buf [:showkeys] conj nil))))))))
+  (-> keymap
+      (wrap-key :before
+                (fn[handler]
+                  (fn[buf keycode]
+                    (update-in (handler buf)
+                               [:showkeys]
+                               (fn[showkeys]
+                                 (if (not= keycode "/")
+                                   showkeys))))))
+      (wrap-key :after
+                (fn[handler]
+                  (fn[buf keycode]
+                    (let [buf (handler buf keycode)]
+                      ;(println "normal-after:" keycode (-> buf :context :register) (buf :showkeys))
+                      (cond
+                        (and (= "\"" keycode)
+                             (-> buf :context :register nil? not)
+                             (-> buf :context :register (not= "\"")))
+                        buf
+                        (or (re-test #"^[1-9]$" keycode)
+                            (and (-> buf :context :repeat-prefix nil? not)
+                                 (= keycode "0")))
+                        buf
+                        (or (= "<esc>" keycode)
+                            (-> buf :line-buffer nil? not))
+                        (assoc buf :showkeys nil)
+                        :else
+                        (do
+                          (send ui-agent
+                                (fn[ui]
+                                  (update-in ui [:buf] dissoc :showkeys)))
+                          (send (@buffer-list (buf :id))
+                                (fn[buf]
+                                  (dissoc buf :showkeys)))
+                          (update-in buf [:showkeys] conj nil)))))))))
 
 (defonce ^:private listener1
   (listen

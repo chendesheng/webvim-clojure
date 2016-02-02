@@ -2,9 +2,6 @@
   (:use webvim.core.utils
         webvim.core.event))
 
-(defn- fire-before-handle-key[buf keycode]
-  (fire-event :before-handle-key buf keycode)) 
-
 (defn- save-key[buf keycode]
   (update-in buf [:keys] conj keycode))
 
@@ -54,7 +51,7 @@
         (assoc ctx1
           (clojure.string/join (map key path))
           (keycode-func-comp
-            (list enter before fire-before-handle-key save-key)))))
+            (list enter before save-key)))))
     
     (fn[ctx [[keycode func] & [[_ {before :before after :after continue? :continue}] & _ :as allparents] :as path]]
       (if (contains? #{:enter :leave :before :after :continue} keycode)
@@ -63,7 +60,7 @@
                      func
                      (fn[buf keycode]
                        (func buf)))
-              funcs (list func before fire-before-handle-key save-key)]
+              funcs (list func before save-key)]
           ;(println "keycode:" keycode)
           (assoc ctx
             (clojure.string/join (map key path))
