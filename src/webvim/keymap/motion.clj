@@ -60,8 +60,14 @@
 (defn- word-end+[buf]
   (re+ buf (re-word-end-border (buf :language))))
 
-(defn- WORD-end-[buf]
+(defn- WORD-end+[buf]
   (re+ buf (re-WORD-end-border (buf :language))))
+
+(defn- word-end-[buf]
+  (re- buf (re-word-end-border (buf :language))))
+
+(defn- WORD-end-[buf]
+  (re- buf (re-WORD-end-border (buf :language))))
 
 (defn- paragraph+[buf]
   (re+ buf #"(?<=\n)\n[^\n]"))
@@ -329,7 +335,9 @@
      "k" #(lines-n % -1)
      "j" #(lines-n % 1)
      "g" {"g" (comp buf-start jump-push)
-          "d" (comp same-word-first jump-push)}
+          "d" (comp same-word-first jump-push)
+          "e" word-end-
+          "E" WORD-end-}
      "G" (fn[buf]
            (if (-> buf :context :repeat-prefix nil? not)
              (lines-row buf (dec (repeat-prefix-value buf)))
@@ -342,7 +350,7 @@
      "b" word-
      "B" WORD-
      "e" word-end+
-     "E" WORD-end-
+     "E" WORD-end+
      "0" line-first
      "^" line-start
      "$" line-end
