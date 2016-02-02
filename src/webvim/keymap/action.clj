@@ -370,29 +370,6 @@
       (if (nil? abuf) nil
         abuf))))
 
-(defn- read-eval-put[buf code insert?]
-  (try
-    (let [result (->> code read-string eval str)]
-      (registers-put! "=" {:str code :result result})
-      (if insert?
-        (-> buf
-            (assoc-in [:context :register] "=")
-            (buf-insert result))
-        (assoc-in buf [:context :register] "=")))
-    (catch Exception e
-      (assoc buf :message (str e)))))
-
-(defn expression-keymap[linebuf-keymap insert?]
-  (let [enter (or (linebuf-keymap :enter) nop)]
-    (assoc linebuf-keymap
-           :enter (fn[buf keycode]
-                    (-> buf
-                        (assoc :line-buffer {:prefix keycode :str (rope "()") :pos 1})
-                        (enter keycode)))
-           "<cr>" (fn[buf] 
-                    (let [code (-> buf :line-buffer :str str)]
-                      (read-eval-put buf code insert?))))))
-
 (defn start-insert-mode [fnmotion fnedit]
   (fn[buf]
     (-> buf 

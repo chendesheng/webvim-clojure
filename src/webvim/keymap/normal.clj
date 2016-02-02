@@ -151,15 +151,6 @@
           (buf-set-pos pos))
       :else buf)))
 
-(defn- start-register[buf keycode]
-  (if (re-test #"[0-9a-zA-Z/*#%.:+=\-_~]" keycode)
-    (assoc-in buf [:context :register] keycode)
-    buf))
-
-(defn- reset-context-register[buf keycode]
-  (if (= keycode "\"") buf
-    (assoc-in buf [:context :register] "\""))) ;reset
-
 (defn- normal-mode-after[buf keycode]
   (let [insert-mode? (= (buf :mode) insert-mode)
         lastbuf (-> buf :context :lastbuf)
@@ -169,7 +160,6 @@
     (let [newbuf (if insert-mode? buf
                    (normal-mode-fix-pos buf))]
       (-> newbuf
-          (reset-context-register keycode)
           (update-x-if-not-jk keycode)
           (update-in [:context] dissoc :range)
           save-undo
@@ -286,7 +276,7 @@
           rg (range-prefix buf (inclusive? keycode))]
         (f buf rg))))
 
-(defn init-normal-mode-keymap[motion-keymap visual-mode-keymap linebuf-keymap]
+(defn init-normal-mode-keymap[motion-keymap visual-mode-keymap]
   (let [pair-keymap (init-pair-keymap)
         motion-keymap-fix-w (-> motion-keymap
                                 (assoc "w" (dont-cross-line (motion-keymap "w")))
@@ -380,9 +370,6 @@
                (put-from-register buf (-> buf :context :register) append?)))
        "P" #(put-from-register % (-> % :context :register) false)
        "J" join-line
-       "\"" {"<esc>" identity
-             "=" (expression-keymap linebuf-keymap false)
-             :else start-register}
        "<c-s-6>" (fn[buf]
                    (let [reg (registers-get "#")]
                      (if (nil? reg)

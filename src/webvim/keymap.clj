@@ -17,6 +17,7 @@
         webvim.keymap.showkeys
         webvim.keymap.dotrepeat
         webvim.keymap.autocompl
+        webvim.keymap.register
         webvim.core.register
         webvim.jumplist
         webvim.core.utils
@@ -28,12 +29,11 @@
 (defn init-keymap-tree []
   (let [motion-keymap (init-motion-keymap)
         visual-mode-keymap (init-visual-mode-keymap motion-keymap)
-        expression-linebuf-keymap (init-linebuf-keymap)
         normal-mode-keymap (fire-event
-                             (init-normal-mode-keymap motion-keymap visual-mode-keymap expression-linebuf-keymap)
+                             (init-normal-mode-keymap motion-keymap visual-mode-keymap)
                              :normal-mode-keymap)
         insert-mode-keymap (fire-event
-                             (init-insert-mode-keymap normal-mode-keymap expression-linebuf-keymap)
+                             (init-insert-mode-keymap normal-mode-keymap)
                              :insert-mode-keymap)
         ex-mode-keymap (fire-event
                          (init-ex-mode-keymap)

@@ -57,9 +57,8 @@
                              :mode insert-mode
                              :submode 0)))))
 
-(defn init-insert-mode-keymap[normal-mode-keymap linebuf-keymap]
+(defn init-insert-mode-keymap[normal-mode-keymap]
   {"<c-r>" {"<esc>" identity
-            "=" (expression-keymap linebuf-keymap true)
             :else (fn[buf keycode]
                     (-> buf
                         (put-from-register keycode false)
