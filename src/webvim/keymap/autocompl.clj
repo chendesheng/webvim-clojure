@@ -96,11 +96,13 @@
                     (-> buf
                         (assoc :autocompl nil)
                         (handler keycode)))))
-      (wrap-key :else
+      (wrap-key :after
                 (fn[handler]
                   (fn[buf keycode]
                     ;continue checking until there is no suggestions
-                    (if (-> buf :autocompl nil?)
+                    (if (or (-> buf :autocompl nil?)
+                            (= keycode (provider :move-up))
+                            (= keycode (provider :move-down)))
                       (handler buf keycode)
                       (-> buf
                           (handler keycode)
