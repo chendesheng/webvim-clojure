@@ -16,6 +16,12 @@
 
 (defn- on-normal-mode-keymap[keymap]
   (-> keymap
+      (wrap-key :else
+                (fn[handler]
+                  (fn[buf keycode]
+                    (-> buf
+                        (dissoc buf :showkeys)
+                        (handler keycode)))))
       (wrap-key :before
                 (fn[handler]
                   (fn[buf keycode]
