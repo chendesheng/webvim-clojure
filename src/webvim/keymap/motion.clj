@@ -12,6 +12,7 @@
         webvim.keymap.action
         webvim.keymap.ex
         webvim.jumplist
+        webvim.keymap.search
         webvim.core.utils))
 
 (defn- re-word-start-border[lang]
@@ -144,14 +145,6 @@
     (re-pattern
       (str re-start (quote-pattern word) re-end))))
 
-(defn- highlight-all-matches[buf re]
-  ;(println "highlight-all-matches:" (buf :message))
-  (let [r (buf :str)]
-    (assoc buf :highlights 
-           (map (fn[[a b]]
-                  [a (dec b)])
-                (pos-re-seq+ r 0 re)))))
-
 (defn- same-word[forward?]
   (fn[buf keycode]
     (let [re (re-current-word buf)
@@ -216,78 +209,6 @@
 ;      (assoc newt
 ;             :highlights (cons not-insects newhighlights)))))
 
-(defn- search-pattern[s]
-  (try
-    (if (empty? s) 
-      ;http://stackoverflow.com/questions/1723182/a-regex-that-will-never-be-matched-by-anything
-      (re-pattern "(?m)(?!x)x")
-      (re-pattern (str "(?m)" s)))
-    (catch Exception e 
-      (re-pattern "(?m)(?!x)x"))))
-
-(defn- increment-search-enter[linebuf-keymap]
-  (fn[buf keycode]
-    (let [enter (or (linebuf-keymap :enter) nop)]
-      (-> buf
-          (assoc-in [:context :lastpos] (buf :pos))
-          (enter keycode)))))
-
-(defn- increment-search-leave[linebuf-keymap]
-  (fn[buf keycode]
-    (let [leave (or (linebuf-keymap :leave) nop)]
-      (-> buf
-          (leave keycode)
-          (update-in [:context] dissoc :lastpos)))))
-
-(defn increment-search-<esc>[buf]
-  (-> buf
-      (assoc :message "")
-      (assoc :highlights [])
-      (buf-set-pos (-> buf :context :lastpos))))
-
-(defn- search-str[linebuf]
-  (let [s (-> linebuf :str str)]
-    (if (.startsWith s (linebuf :prefix))
-      (:str (registers-get "/"))
-      s)))
-
-(defn- increment-search-<cr>[buf]
-  ;(println "increment-search-<cr>" (buf :message))
-  (let [linebuf (buf :line-buffer)
-        s (search-str linebuf)
-        prefix (linebuf :prefix)]
-    (registers-put! "/" {:str s :forward? (= prefix "/")})
-    (-> buf
-        (assoc :message (str prefix s))
-        (highlight-all-matches (search-pattern s)))))
-
-(defn- increment-search-after[forward?]
-  (fn[buf keycode]
-    (if (contains? #{"<cr>" "<esc>"} keycode)
-      buf
-      ;(println "increment-search" (buf :message))
-      (let [linebuf (buf :line-buffer)]
-        (if (nil? linebuf) buf
-          (let [re (-> linebuf
-                       search-str
-                       search-pattern)
-                f (if forward?
-                    re-forward-highlight 
-                    re-backward-highlight)]
-            ;(println "lastpos" (-> buf :context :lastpos))
-            (-> buf
-                (buf-set-pos (-> buf :context :lastpos))
-                (assoc :highlights [])
-                (f re))))))))
-
-(defn- increment-search-keymap[linebuf-keymap forward?]
-  (assoc linebuf-keymap
-         :enter (increment-search-enter linebuf-keymap)
-         :leave (increment-search-leave linebuf-keymap)
-         "<esc>" increment-search-<esc> 
-         "<cr>" increment-search-<cr>
-         :after (increment-search-after forward?)))
-
 (defn- repeat-search[buf same-dir?]
   (let[{s :str forward? :forward?} (or (registers-get "/") 
                                        {:str "" :forward? true})
@@ -322,45 +243,44 @@
                      (-> @ui-agent :viewport :h dec (* percentFromTop) Math/ceil)))))
 
 (defn init-motion-keymap[]
-  (let [linebuf-keymap (init-linebuf-keymap)]
-    {"h" (wrap-keycode char-)
-     "l" (wrap-keycode char+)
-     "k" (wrap-keycode #(lines-n % -1))
-     "j" (wrap-keycode #(lines-n % 1))
-     "g" {"g" (wrap-keycode (comp buf-start jump-push))
-          "d" (wrap-keycode (comp same-word-first jump-push))
-          "e" word-end-
-          "E" WORD-end-}
-     "G" (fn[buf keycode]
-           (if (-> buf :context :repeat-prefix nil? not)
-             (lines-row buf (dec (repeat-prefix-value buf)))
-             (-> buf buf-end line-start)))
-     "H" (viewport-position 0)
-     "M" (viewport-position 0.5)
-     "L" (viewport-position 1)
-     "w" word+
-     "W" WORD+
-     "b" word-
-     "B" WORD-
-     "e" word-end+
-     "E" WORD-end+
-     "0" (wrap-keycode line-first)
-     "^" (wrap-keycode line-start)
-     "$" (wrap-keycode line-end)
-     "f" {:else move-to-char+}
-     "F" {:else move-to-char-}
-     "t" {:else move-before-char+}
-     "T" {:else move-before-char-}
-     ";" repeat-move-by-char+
-     "," repeat-move-by-char-
-     "/" (increment-search-keymap linebuf-keymap true)
-     "?" (increment-search-keymap linebuf-keymap false)
-     "*" (same-word true)
-     "#" (same-word false)
-     "n" repeat-search+
-     "N" repeat-search-
-     "}" paragraph+
-     "{" paragraph-
-     "%" move-to-matched-brackets
-     "<c-u>" (cursor-move-viewport -0.5) 
-     "<c-d>" (cursor-move-viewport 0.5)}))
+  {"h" (wrap-keycode char-)
+   "l" (wrap-keycode char+)
+   "k" (wrap-keycode #(lines-n % -1))
+   "j" (wrap-keycode #(lines-n % 1))
+   "g" {"g" (wrap-keycode (comp buf-start jump-push))
+        "d" (wrap-keycode (comp same-word-first jump-push))
+        "e" word-end-
+        "E" WORD-end-}
+   "G" (fn[buf keycode]
+         (if (-> buf :context :repeat-prefix nil? not)
+           (lines-row buf (dec (repeat-prefix-value buf)))
+           (-> buf buf-end line-start)))
+   "H" (viewport-position 0)
+   "M" (viewport-position 0.5)
+   "L" (viewport-position 1)
+   "w" word+
+   "W" WORD+
+   "b" word-
+   "B" WORD-
+   "e" word-end+
+   "E" WORD-end+
+   "0" (wrap-keycode line-first)
+   "^" (wrap-keycode line-start)
+   "$" (wrap-keycode line-end)
+   "f" {:else move-to-char+}
+   "F" {:else move-to-char-}
+   "t" {:else move-before-char+}
+   "T" {:else move-before-char-}
+   ";" repeat-move-by-char+
+   "," repeat-move-by-char-
+   "/" (increment-search-keymap true)
+   "?" (increment-search-keymap false)
+   "*" (same-word true)
+   "#" (same-word false)
+   "n" repeat-search+
+   "N" repeat-search-
+   "}" paragraph+
+   "{" paragraph-
+   "%" move-to-matched-brackets
+   "<c-u>" (cursor-move-viewport -0.5) 
+   "<c-d>" (cursor-move-viewport 0.5)})
