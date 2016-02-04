@@ -1,29 +1,15 @@
 (ns webvim.keymap
-  (:use clojure.pprint
-        webvim.core.event
-        webvim.core.rope
-        webvim.core.pos
-        webvim.core.buffer
-        webvim.core.line
+  (:use webvim.core.event
         webvim.core.ui
         webvim.keymap.motion
-        webvim.keymap.visual
         webvim.keymap.normal
         webvim.keymap.insert
         webvim.keymap.ex
-        webvim.keymap.linebuf.linebuf
-        webvim.keymap.pair
-        webvim.keymap.action
         webvim.keymap.showkeys
         webvim.keymap.dotrepeat
         webvim.keymap.autocompl
         webvim.keymap.register
-        webvim.core.register
-        webvim.jumplist
-        webvim.core.utils
-        webvim.core.event
         webvim.indent
-        webvim.autocompl
         webvim.keymap.compile))
 
 (defn init-keymap-tree []

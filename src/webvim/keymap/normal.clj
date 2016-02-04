@@ -6,7 +6,7 @@
         webvim.keymap.motion
         webvim.keymap.insert
         webvim.keymap.ex
-        webvim.keymap.pair
+        webvim.keymap.objects
         webvim.keymap.visual
         webvim.core.buffer
         webvim.core.rope
