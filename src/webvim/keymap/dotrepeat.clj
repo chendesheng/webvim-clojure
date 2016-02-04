@@ -8,7 +8,7 @@
         webvim.core.register
         webvim.core.event))
 
-(defn- dot-repeat[buf]
+(defn- dot-repeat[buf keycode]
   (let [keycodes ((registers-get ".") :keys)]
     (if (empty? keycodes)
       buf

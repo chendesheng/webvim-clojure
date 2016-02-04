@@ -45,34 +45,34 @@
             (fn[r pos]
               (or (first (pos-re- r (dec pos) re)) 0))))
 
-(defn- word+[buf]
+(defn- word+[buf keycode]
   (re+ buf (re-word-start-border (buf :language))))
 
-(defn- word-[buf]
+(defn- word-[buf keycode]
   (re- buf (re-word-start-border (buf :language))))
 
-(defn- WORD+[buf]
+(defn- WORD+[buf keycode]
   (re+ buf (re-WORD-start-border (buf :language))))
 
-(defn- WORD-[buf]
+(defn- WORD-[buf keycode]
   (re- buf (re-WORD-start-border (buf :language))))
 
-(defn- word-end+[buf]
+(defn- word-end+[buf keycode]
   (re+ buf (re-word-end-border (buf :language))))
 
-(defn- WORD-end+[buf]
+(defn- WORD-end+[buf keycode]
   (re+ buf (re-WORD-end-border (buf :language))))
 
-(defn- word-end-[buf]
+(defn- word-end-[buf keycode]
   (re- buf (re-word-end-border (buf :language))))
 
-(defn- WORD-end-[buf]
+(defn- WORD-end-[buf keycode]
   (re- buf (re-WORD-end-border (buf :language))))
 
-(defn- paragraph+[buf]
+(defn- paragraph+[buf keycode]
   (re+ buf #"(?<=\n)\n[^\n]"))
 
-(defn- paragraph-[buf]
+(defn- paragraph-[buf keycode]
   (re- buf #"((?<=\n)\n[^\n])"))
 
 (defn- move-by-char[buf ch forward? inclusive?]
@@ -121,21 +121,18 @@
          inclusive? :inclusive?} (registers-get ";")]
     (move-by-char buf ch (= same-dir? forward?) inclusive?)))
 
-(defn- repeat-move-by-char+[buf]
+(defn- repeat-move-by-char+[buf keycode]
   (repeat-move-by-char buf true))
 
-(defn- repeat-move-by-char-[buf]
+(defn- repeat-move-by-char-[buf keycode]
   (repeat-move-by-char buf false))
 
-(defn- move-to-matched-brackets[buf]
+(defn- move-to-matched-brackets[buf keycode]
   (buf-move buf
             (fn [r pos]
               (let [[a _] (pos-re+ r pos re-brackets)]
                 (if (nil? a) pos
                   (pos-match-bracket r a))))))
-
-(defn- search-message[buf s forward?]
-  (assoc buf :message (str (if forward? "/" "?") s)))
 
 (defn- re-current-word
   "create regexp from word under cursor"
@@ -156,7 +153,7 @@
                 (pos-re-seq+ r 0 re)))))
 
 (defn- same-word[forward?]
-  (fn[buf]
+  (fn[buf keycode]
     (let [re (re-current-word buf)
           s (str re)]
       (registers-put! "/" {:str s :forward? forward?})
@@ -187,17 +184,18 @@
 
 (defn- cursor-move-viewport
   "Jump cursor by viewport height, deps to window's :viewport"
-  [buf factor]
-  (let [h (-> @ui-agent :viewport :h)
-        d (round-to-zero (* h factor))
-        scroll-top (buf :scroll-top)
-        row (-> buf :y)
-        vrow (- row scroll-top)
-        newrow (bound-range (+ row d) 0 (buf :linescnt))
-        newst (-> newrow (- vrow) negzero)]
-    (-> buf
-        (assoc :scroll-top newst)
-        (lines-row newrow))))
+  [factor]
+  (fn[buf keycode]
+    (let [h (-> @ui-agent :viewport :h)
+          d (round-to-zero (* h factor))
+          scroll-top (buf :scroll-top)
+          row (-> buf :y)
+          vrow (- row scroll-top)
+          newrow (bound-range (+ row d) 0 (buf :linescnt))
+          newst (-> newrow (- vrow) negzero)]
+      (-> buf
+          (assoc :scroll-top newst)
+          (lines-row newrow)))))
 
 ;TODO: only highlight diff parts
 ;(defonce listen-change-buffer
@@ -302,10 +300,10 @@
     (if hightlightall?
       (highlight-all-matches buf re) buf)))
 
-(defn- repeat-search+[buf]
+(defn- repeat-search+[buf keycode]
   (repeat-search buf true))
 
-(defn- repeat-search-[buf]
+(defn- repeat-search-[buf keycode]
   (repeat-search buf false))
 
 (defonce ^:private listen-change-buffer
@@ -317,28 +315,23 @@
           (highlight-all-matches buf (search-pattern s))
           buf)))))
 
-(defn- enter-increment-search[buf keycode]
-  (-> buf
-      (assoc-in [:context :lastbuf] buf)
-      (assoc :line-buffer {:prefix keycode :str (rope "") :pos 0})))
-
 (defn- viewport-position[percentFromTop]
-  (fn[buf]
+  (fn[buf keycode]
     (move-to-line buf 
                   (+ (buf :scroll-top)
                      (-> @ui-agent :viewport :h dec (* percentFromTop) Math/ceil)))))
 
 (defn init-motion-keymap[]
   (let [linebuf-keymap (init-linebuf-keymap)]
-    {"h" char-
-     "l" char+
-     "k" #(lines-n % -1)
-     "j" #(lines-n % 1)
-     "g" {"g" (comp buf-start jump-push)
-          "d" (comp same-word-first jump-push)
+    {"h" (wrap-keycode char-)
+     "l" (wrap-keycode char+)
+     "k" (wrap-keycode #(lines-n % -1))
+     "j" (wrap-keycode #(lines-n % 1))
+     "g" {"g" (wrap-keycode (comp buf-start jump-push))
+          "d" (wrap-keycode (comp same-word-first jump-push))
           "e" word-end-
           "E" WORD-end-}
-     "G" (fn[buf]
+     "G" (fn[buf keycode]
            (if (-> buf :context :repeat-prefix nil? not)
              (lines-row buf (dec (repeat-prefix-value buf)))
              (-> buf buf-end line-start)))
@@ -351,9 +344,9 @@
      "B" WORD-
      "e" word-end+
      "E" WORD-end+
-     "0" line-first
-     "^" line-start
-     "$" line-end
+     "0" (wrap-keycode line-first)
+     "^" (wrap-keycode line-start)
+     "$" (wrap-keycode line-end)
      "f" {:else move-to-char+}
      "F" {:else move-to-char-}
      "t" {:else move-before-char+}
@@ -369,5 +362,5 @@
      "}" paragraph+
      "{" paragraph-
      "%" move-to-matched-brackets
-     "<c-u>" #(cursor-move-viewport %1 -0.5) 
-     "<c-d>" #(cursor-move-viewport %1 0.5)}))
+     "<c-u>" (cursor-move-viewport -0.5) 
+     "<c-d>" (cursor-move-viewport 0.5)}))

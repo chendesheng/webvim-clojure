@@ -24,7 +24,7 @@
 (defn- on-normal-mode-keymap[keymap]
   (-> keymap
       (wrap-key "0" (fn[handler]
-                      (fn[buf]
+                      (fn[buf keycode]
                         (if (-> buf :context :repeat-prefix nil? not)
                           (append-repeat-prefix buf "0")
                           (handler buf)))))

@@ -72,16 +72,16 @@
             newpos (or (fnmove r pos) pos)]
         (assoc linebuf :pos (bound-range newpos 0 (count r)))))))
 
-(defn- linebuf-char+[buf]
+(defn- linebuf-char+[buf keycode]
   (linebuf-move buf (fn [r pos] (inc pos))))
 
-(defn- linebuf-char-[buf]
+(defn- linebuf-char-[buf keycode]
   (linebuf-move buf (fn [r pos] (dec pos))))
 
-(defn- linebuf-start[buf]
+(defn- linebuf-start[buf keycode]
   (linebuf-move buf (fn [r pos] 0)))
 
-(defn- linebuf-end[buf]
+(defn- linebuf-end[buf keycode]
   (linebuf-move buf (fn [r pos] (count r))))
 
 (defn- linebuf-default[buf keycode]
@@ -108,7 +108,7 @@
       (assoc :message (or (buf :message) "")))) ;Make sure :message get value
 
 (defn- linebuf-<bs>
-  [{{r :str} :line-buffer :as buf}] 
+  [{{r :str} :line-buffer :as buf} keycode] 
   (if (empty? r)
     (dissoc buf :line-buffer)
     (linebuf-delete buf -1)))
@@ -120,7 +120,7 @@
       buf)))
 
 (defn- linebuf-<c-w>
-  [{{r :str pos :pos} :line-buffer :as buf}]
+  [{{r :str pos :pos} :line-buffer :as buf} keycode]
   (let [newpos (or (first (pos-re- r pos #"(?<=\s|^)\S")) pos)]
     (linebuf-delete buf (- newpos pos))))
 
@@ -139,9 +139,9 @@
                "<c-e>" linebuf-end
                "<bs>" linebuf-<bs>
                "<c-h>" linebuf-<bs>
-               "<c-d>" #(linebuf-delete % 1)
-               "<c-r>" {"<esc>" identity
-                        "<c-w>" (fn[buf]
+               "<c-d>" (wrap-keycode #(linebuf-delete % 1))
+               "<c-r>" {"<esc>" nop
+                        "<c-w>" (fn[buf keycode]
                                   (linebuf-insert buf (current-word buf)))
                         :else linebuf-put}
                "<c-w>" linebuf-<c-w>

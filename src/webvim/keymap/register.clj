@@ -3,6 +3,7 @@
         webvim.keymap.action
         webvim.keymap.linebuf.linebuf
         webvim.core.ui
+        webvim.core.utils
         webvim.core.rope
         webvim.core.register
         webvim.core.buffer
@@ -34,7 +35,7 @@
                    (-> buf
                        (assoc :line-buffer {:prefix keycode :str (rope "()") :pos 1})
                        (handler keycode)))))
-      (assoc "<cr>" (fn[buf] 
+      (assoc "<cr>" (fn[buf keycode] 
                       (let [code (-> buf :line-buffer :str str)]
                         (read-eval-put buf code insert?))))))
 
@@ -48,7 +49,7 @@
                                    (fn[reg]
                                      (or reg "\"")))
                         (handler keycode)))))
-      (assoc "\"" {"<esc>" identity
+      (assoc "\"" {"<esc>" nop
                    "=" (expression-keymap false)
                    :else start-register})))
 

@@ -77,17 +77,17 @@
   (-> keymap
       (wrap-key (provider :move-up)
                 (fn[handler]
-                  (fn[buf]
+                  (fn[buf keycode]
                     (-> buf
-                        handler
+                        (handler keycode)
                         (new-autocompl provider)
                         (autocompl-move provider dec)))))
       (wrap-key (provider :move-down) 
                 (fn[handler]
-                  (fn[buf]
+                  (fn[buf keycode]
                     (println "move-down")
                     (-> buf
-                        handler
+                        (handler keycode)
                         (new-autocompl provider)
                         (autocompl-move provider inc)))))
       (wrap-key :leave

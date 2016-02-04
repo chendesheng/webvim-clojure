@@ -34,7 +34,7 @@
 ;  (unbalanced-bracket- (rope "(aaa(()()))bbb") 10 (re-pattern (quote-patterns \( \))) \())
 
 (defn- pair-range[lch rch around?]
-  (fn[buf]
+  (fn[buf keycode]
     (println lch rch around?)
     (let [{r :str pos :pos} buf
           re (re-pattern (quote-patterns lch rch))
@@ -58,7 +58,7 @@
               (buf-set-pos b)))))))
 
 (defn- pair-quotes-range[ch around?]
-  (fn[buf]
+  (fn[buf keycode]
     (let [{r :str pos :pos} buf
           re (re-pattern (quote-pattern ch))
           b (first (pos-re+ r pos re))]
@@ -69,21 +69,22 @@
             (let [rg (if around? [a b] [(inc a) (dec b)])]
               (assoc-in buf [:context :range] rg))))))))
 
-(defn- xml-tag-range[buf around?]
-  (let [{r :str pos :pos} buf
-        re #"</[^>]+>"
-        [ba bb :as rgb] (pos-re+ r pos re)]
-    (if (nil? rgb) buf
-      (let [s (subr r [(+ ba 2) (dec bb)])
-            rga (pos-re- r (dec pos) (->> s
-                                          (format "<%s>")
-                                          quote-pattern 
-                                          re-pattern))]
-        (if (nil? rga) buf
-          (let [rg (if around? 
-                     [(first rga) (-> rgb last dec)]
-                     [(-> rga last) (-> rgb first dec)])]
-            (assoc-in buf [:context :range] rg)))))))
+(defn- xml-tag-range[around?]
+  (fn[buf keycode]
+    (let [{r :str pos :pos} buf
+          re #"</[^>]+>"
+          [ba bb :as rgb] (pos-re+ r pos re)]
+      (if (nil? rgb) buf
+        (let [s (subr r [(+ ba 2) (dec bb)])
+              rga (pos-re- r (dec pos) (->> s
+                                            (format "<%s>")
+                                            quote-pattern 
+                                            re-pattern))]
+          (if (nil? rga) buf
+            (let [rg (if around? 
+                       [(first rga) (-> rgb last dec)]
+                       [(-> rga last) (-> rgb first dec)])]
+              (assoc-in buf [:context :range] rg))))))))
 
 (defn- expand-around[buf a b]
   (let [{pos :pos
@@ -112,7 +113,7 @@
       [a b])))
 
 (defn- pair-current-word[around?]
-  (fn[buf]
+  (fn[buf keycode]
     (let [[_ b :as rg] (current-word-range buf around?)]
       (-> buf
           (buf-set-pos b)
@@ -134,7 +135,7 @@
       [a b])))
 
 (defn- pair-current-WORD[around?]
-  (fn[buf]
+  (fn[buf keycode]
     (let [[_ b :as rg] (current-WORD-range buf around?)]
       (-> buf
           (buf-set-pos b)
@@ -154,7 +155,7 @@
                  (assoc ch (pair-quotes-range ch around?))))
            {}
            ["\"" "'" "`"])
-         {"t" #(xml-tag-range % around?)
+         {"t" (xml-tag-range around?)
           "w" (pair-current-word around?)
           "W" (pair-current-WORD around?)}))
 

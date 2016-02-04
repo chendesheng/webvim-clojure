@@ -18,7 +18,6 @@
         webvim.core.event
         webvim.fuzzy
         webvim.exec
-        webvim.keymap.external
         webvim.keymap.linebuf.linebuf
         webvim.keymap.compile
         webvim.keymap.action))
@@ -323,10 +322,10 @@
                           (handler keycode)
                           set-normal-mode))))
         (assoc "<cr>"
-               (fn[buf]
+               (fn[buf keycode]
                  (execute buf cmds))
                "<tab>"
-               (fn[buf]
+               (fn[buf keycode]
                  (ex-tab-complete buf cmds))))))
 
 

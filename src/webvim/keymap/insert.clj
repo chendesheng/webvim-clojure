@@ -58,12 +58,12 @@
                              :submode 0)))))
 
 (defn init-insert-mode-keymap[normal-mode-keymap]
-  {"<c-r>" {"<esc>" identity
+  {"<c-r>" {"<esc>" nop
             :else (fn[buf keycode]
                     (-> buf
                         (put-from-register keycode false)
                         char+))}
-   "<esc>" identity
+   "<esc>" nop
    "<c-o>" (fire-event
              (temp-normal-mode-keymap normal-mode-keymap)             
              :temp-normal-mode-keymap)

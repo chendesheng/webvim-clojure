@@ -137,11 +137,6 @@
 
 ;one server only serve one window at one time
 
-(defn cursor-center-viewport[buf]
-  (assoc buf :scroll-top
-            (-> buf :y
-                (- (int (/ (-> @ui-agent :viewport :h) 2))))))
-
 (defn delete-range[buf inclusive? linewise?]
   (let [[a b] (range-prefix buf inclusive?)]
     ;(println "delete-range:" a b)
@@ -222,30 +217,6 @@
 
 (defn apply-keycodes[buf keycodes]
   (reduce apply-keycode buf keycodes))
-
-(defn move-to-jumplist
-  [buf fndir]
-  (loop [pos (fndir buf)]  ;TODO: filter lazy seq instead of loop
-    (if (nil? pos)
-      buf ;newest or oldest
-      (let [newb @(@buffer-list (pos :id))]
-        (if (nil? newb)
-          ;buffer has been deleted, ignore
-          (recur (fndir buf))
-          ;pos is avaliable
-          (if (< (pos :pos) (count (newb :str)))
-            (let [id (buf :id)
-                  newid (pos :id)
-                  newpos (pos :pos)]
-              (if (= newid id)
-                ;update pos inside current buffer
-                (buf-set-pos buf newpos)
-                (let []
-                  (change-active-buffer id newid)
-                  ;(swap! buffer-list update-in [newid] #(buf-set-pos % newpos))
-                  (assoc buf :nextid newid))))
-            ;buffer has been modifed and cursor is no longer inside, ignore
-            (recur (fndir buf))))))))
 
 (defn buf-info[buf]
   (if (and (empty? (buf :str))
@@ -349,6 +320,11 @@
     (-> buf :str count)
     (apply str strs)))
 
+(defn cursor-center-viewport[buf]
+  (assoc buf :scroll-top
+            (-> buf :y
+                (- (int (/ (-> @ui-agent :viewport :h) 2))))))
+
 (defn append-panel[buf apanel s goto?]
   (send apanel
         (fn[buf]
@@ -371,7 +347,7 @@
         abuf))))
 
 (defn start-insert-mode [fnmotion fnedit]
-  (fn[buf]
+  (fn[buf keycode]
     (-> buf 
         fnmotion
         set-insert-mode
@@ -459,9 +435,11 @@
   (contains? #{:enter :leave :before :after :else} key))
 
 (defn wrap-key[keymap key f]
-  (let [handler (or (keymap key)
-                    (if (special-key? key) nop identity))]
-    (assoc keymap key (f handler))))
+  (assoc keymap key (f (or (keymap key) nop))))
+
+(defn wrap-keycode[f]
+  (fn[buf keycode]
+    (f buf)))
 
 (defn repeat-prefix-value[buf]
   (-> buf :context :repeat-prefix (or "1") parse-int))

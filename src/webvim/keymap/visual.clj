@@ -36,7 +36,7 @@
           (assoc-in [:visual :range] [b a])
           (buf-set-pos b)))))
 
-(defn- swap-visual-start-end[buf]
+(defn- swap-visual-start-end[buf keycode]
   (let [[a b] (-> buf :visual :range)]
     (-> buf
         (assoc-in [:visual :range] [b a])
@@ -218,57 +218,57 @@
 (defn- change-visual[linewise?]
   (start-insert-mode identity #(change-range % true linewise?)))
 
-(defmulti visual-keymap-d (fn[buf] (-> buf :visual :type)))
-(defmethod visual-keymap-d visual-range [buf]
+(defmulti visual-keymap-d (fn[buf keycode] (-> buf :visual :type)))
+(defmethod visual-keymap-d visual-range [buf keycode]
   (delete-range buf true false))
-(defmethod visual-keymap-d visual-line [buf]
+(defmethod visual-keymap-d visual-line [buf keycode]
   (delete-range buf true true))
-(defmethod visual-keymap-d visual-block [buf]
+(defmethod visual-keymap-d visual-block [buf keycode]
   (visual-block-delete buf))
 
-(defmulti visual-keymap-c (fn[buf] (-> buf :visual :type)))
-(defmethod visual-keymap-c visual-range [buf]
+(defmulti visual-keymap-c (fn[buf keycode] (-> buf :visual :type)))
+(defmethod visual-keymap-c visual-range [buf keycode]
   ((change-visual false) buf))
-(defmethod visual-keymap-c visual-line [buf]
+(defmethod visual-keymap-c visual-line [buf keycode]
   ((change-visual true) buf))
-(defmethod visual-keymap-c visual-block [buf]
+(defmethod visual-keymap-c visual-block [buf keycode]
   (-> buf
       visual-block-delete
       (start-insert-and-repeat false)))
 
-(defmulti visual-keymap-y (fn[buf] (-> buf :visual :type)))
-(defmethod visual-keymap-y visual-range [buf]
+(defmulti visual-keymap-y (fn[buf keycode] (-> buf :visual :type)))
+(defmethod visual-keymap-y visual-range [buf keycode]
   (yank-range buf true false))
-(defmethod visual-keymap-y visual-line [buf]
+(defmethod visual-keymap-y visual-line [buf keycode]
   (yank-range buf true true))
-(defmethod visual-keymap-y visual-block [buf]
+(defmethod visual-keymap-y visual-block [buf keycode]
   (visual-block-yank buf))
 
-(defmulti visual-keymap-I (fn[buf] (-> buf :visual :type)))
-(defmethod visual-keymap-I visual-range [buf]
+(defmulti visual-keymap-I (fn[buf keycode] (-> buf :visual :type)))
+(defmethod visual-keymap-I visual-range [buf keycode]
   buf)
-(defmethod visual-keymap-I visual-line [buf]
+(defmethod visual-keymap-I visual-line [buf keycode]
   (visual-line-repeat-change buf false))
-(defmethod visual-keymap-I visual-block [buf]
+(defmethod visual-keymap-I visual-block [buf keycode]
   (start-insert-and-repeat buf false))
 
-(defmulti visual-keymap-A (fn[buf] (-> buf :visual :type)))
-(defmethod visual-keymap-A visual-range [buf]
+(defmulti visual-keymap-A (fn[buf keycode] (-> buf :visual :type)))
+(defmethod visual-keymap-A visual-range [buf keycode]
   buf)
-(defmethod visual-keymap-A visual-line [buf]
+(defmethod visual-keymap-A visual-line [buf keycode]
   (visual-line-repeat-change buf true))
-(defmethod visual-keymap-A visual-block [buf]
+(defmethod visual-keymap-A visual-block [buf keycode]
   (start-insert-and-repeat buf true))
 
 (defn- indent[f]
-  (fn[buf]
+  (fn[buf keycode]
     (let [[a b :as rg] (range-prefix buf true)]
       (-> buf
           (buf-set-pos (pos-line-start (buf :str) a))
           (f rg)))))
 
 (defn- visual-change-case[f]
-  (fn[buf]
+  (fn[buf keycode]
     (if (= (-> buf :visual :type) visual-block)
       (let [ranges (-> buf :visual :ranges)
             firstline (last ranges) ;ranges in reverse order
@@ -347,14 +347,14 @@
                     visual-select
                     set-visual-ranges
                     (update-x-if-not-jk keycode))))
-     "z" {"z" cursor-center-viewport}
-     "=" #(indent-range % true)
+     "z" {"z" (wrap-keycode cursor-center-viewport)}
+     "=" (wrap-keycode #(indent-range % true))
      "o" swap-visual-start-end
-     "u" undo
-     "<c-r>" redo
-     "V" #(change-visual-mode-type % "V")
-     "v" #(change-visual-mode-type % "v")
-     "<c-v>" #(change-visual-mode-type % "<c-v>")
+     "u" (wrap-keycode undo)
+     "<c-r>" (wrap-keycode redo)
+     "V" change-visual-mode-type
+     "v" change-visual-mode-type
+     "<c-v>" change-visual-mode-type
      "d" visual-keymap-d
      "c" visual-keymap-c
      "y" visual-keymap-y
@@ -365,8 +365,8 @@
      "~" (visual-change-case swap-case)
      "g" {"u" (visual-change-case clojure.string/lower-case)
           "U" (visual-change-case clojure.string/upper-case)}
-     "r" {"<esc>" identity
-          "<cr>" identity
+     "r" {"<esc>" nop
+          "<cr>" nop
           :else replace-char-keycode}}))
 
 ;keep track visual ranges when buffer changed

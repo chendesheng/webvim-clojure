@@ -49,16 +49,16 @@
                   (save-history! ahistory
                                  (-> linebuf :str str))))
               buf)
-     "<c-p>" (fn[buf]
+     "<c-p>" (fn[buf keycode]
                (swap! ahistory (fn[h]
                                  (-> h
                                      (save-current buf)
                                      go-back)))
                (recover-command-history buf @ahistory))
-     "<c-n>" (fn[buf]
+     "<c-n>" (fn[buf keycode]
                (println "c-n")
                (swap! ahistory go-future)
                (if (no-future? @ahistory)
                  (restore-current buf @ahistory)
                  (recover-command-history buf @ahistory)))
-     "<esc>" (fn[buf] (dissoc buf :line-buffer))})) ;prevent save to history
+     "<esc>" (fn[buf keycode] (dissoc buf :line-buffer))})) ;prevent save to history

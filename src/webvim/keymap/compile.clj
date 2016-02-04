@@ -34,44 +34,38 @@
           (update-in [:keys] pop)
           (leave keycode)))))
 
-(def ^:private cache (atom {}))
+(def compile-keymap
+  (memoize
+    (fn[keymap]
+      (tree-reduce
+        (fn[ctx [[_ {enter :enter leave :leave else :else}] [_ {before :before}] & _ :as path]]
+          (let [leave (or leave nop)
+                ctx1 (if (nil? else)
+                       (assoc ctx (clojure.string/join (conj (map key path) ":else")) 
+                              (fn[buf keycode]
+                                (reduce leave-map
+                                        (leave buf keycode)
+                                        (pop path))))
+                       ctx)]
+            (assoc ctx1
+                   (clojure.string/join (map key path))
+                   (keycode-func-comp
+                     (list enter before save-key)))))
 
-(defn compile-keymap[keymap]
-  (if (nil? (@cache keymap))
-  (swap! cache assoc keymap (tree-reduce
-    (fn[ctx [[_ {enter :enter leave :leave else :else}] [_ {before :before}] & _ :as path]]
-      (let [leave (or leave nop)
-            ctx1 (if (nil? else)
-                   (assoc ctx (clojure.string/join (conj (map key path) ":else")) 
-                     (fn[buf keycode]
-                       (reduce leave-map
-                               (leave buf keycode)
-                               (pop path))))
-                   ctx)]
-        (assoc ctx1
-          (clojure.string/join (map key path))
-          (keycode-func-comp
-            (list enter before save-key)))))
-    
-    (fn[ctx [[keycode func] & [[_ {before :before after :after continue? :continue}] & _ :as allparents] :as path]]
-      (if (contains? #{:enter :leave :before :after :continue} keycode)
-        ctx
-        (let [func (if (= keycode :else)
-                     func
-                     (fn[buf keycode]
-                       (func buf)))
-              funcs (list func before save-key)]
-          ;(println "keycode:" keycode)
-          (assoc ctx
-            (clojure.string/join (map key path))
-            (keycode-func-comp 
-              (conj funcs
-                    (fn[buf keycode]
-                      ;(println "keycode:" keycode)
-                      (if (empty? allparents) buf
-                        (reduce leave-map buf allparents)))))))))
-    {}
-    keymap)))
-  (@cache keymap))
+        (fn[ctx [[keycode func] & [[_ {before :before after :after continue? :continue}] & _ :as allparents] :as path]]
+          (if (contains? #{:enter :leave :before :after :continue} keycode)
+            ctx
+            (let [funcs (list func before save-key)]
+              ;(println "keycode:" keycode)
+              (assoc ctx
+                     (clojure.string/join (map key path))
+                     (keycode-func-comp 
+                       (conj funcs
+                             (fn[buf keycode]
+                               ;(println "keycode:" keycode)
+                               (if (empty? allparents) buf
+                                 (reduce leave-map buf allparents)))))))))
+        {}
+        keymap))))
 
 
