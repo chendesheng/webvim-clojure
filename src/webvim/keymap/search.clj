@@ -22,10 +22,10 @@
                   [a (dec b)])
                 (pos-re-seq+ r 0 re)))))
 
-(defn- search-message[buf s forward?]
+(defn search-message[buf s forward?]
   (assoc buf :message (str (if forward? "/" "?") s)))
 
-(defn- search-pattern[s]
+(defn search-pattern[s]
   (try
     (if (empty? s) 
       ;http://stackoverflow.com/questions/1723182/a-regex-that-will-never-be-matched-by-anything
