@@ -53,7 +53,9 @@
                                  [a b])))))]
       (if (nil? rg) buf
         (let [[_ b :as rg] (if around? rg [(inc a) (dec b)])]
-          (assoc-in buf [:context :range] rg))))))
+          (-> buf
+              (assoc-in [:context :range] rg)
+              (buf-set-pos b)))))))
 
 (defn- pair-quotes-range[ch around?]
   (fn[buf]
