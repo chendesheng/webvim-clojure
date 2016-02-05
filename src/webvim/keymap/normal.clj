@@ -393,7 +393,10 @@
        "Y" yank
        "x" (wrap-keycode delete-char)
        "p" (fn[buf keycode]
-             (let [append? (not= (char-at (buf :str) (buf :pos)) \newline)]
+             (let [append? (if (-> buf :context :register registers-get :linewise?)
+                             true 
+                             (not= (char-at (buf :str) (buf :pos)) \newline))]
+               ;(println "append?" append?)
                (put-from-register buf (-> buf :context :register) append?)))
        "P" (wrap-keycode #(put-from-register % (-> % :context :register) false))
        "J" join-line
