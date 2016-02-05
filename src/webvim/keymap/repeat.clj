@@ -27,12 +27,14 @@
                       (fn[buf keycode]
                         (if (-> buf :context :repeat-prefix nil? not)
                           (append-repeat-prefix buf "0")
-                          (handler buf)))))
+                          (handler buf keycode)))))
       (wrap-key :else (fn[handler]
                         (fn[buf keycode]
                           (if (re-test #"^[0-9]$" keycode)
-                            (append-repeat-prefix buf keycode)
-                            buf))))
+                            (-> buf
+                                (handler keycode)
+                                (append-repeat-prefix keycode))
+                            (handler buf keycode)))))
       (wrap-key :after (fn[handler]
                          (fn[buf keycode]
                            (-> buf

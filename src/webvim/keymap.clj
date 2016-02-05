@@ -7,6 +7,7 @@
         webvim.keymap.ex
         webvim.keymap.showkeys
         webvim.keymap.dotrepeat
+        webvim.keymap.repeat
         webvim.keymap.autocompl
         webvim.keymap.register
         webvim.indent
