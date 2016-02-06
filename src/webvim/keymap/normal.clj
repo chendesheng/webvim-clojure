@@ -302,8 +302,12 @@
               ;buffer has been modifed and cursor is no longer inside, ignore
               (recur (fndir buf)))))))))
 
-(defn init-normal-mode-keymap[motion-keymap]
-  (let [visual-mode-keymap (init-visual-mode-keymap motion-keymap)
+(defn- motion-keymap-for-operator[motion-keymap]
+  motion-keymap)
+
+(defn init-normal-mode-keymap[]
+  (let [motion-keymap (init-motion-keymap)
+        visual-mode-keymap (init-visual-mode-keymap motion-keymap)
         pair-keymap (init-pair-keymap)
         motion-keymap-fix-w (-> motion-keymap
                                 (assoc "w" (dont-cross-line (motion-keymap "w")))

@@ -1,7 +1,6 @@
 (ns webvim.keymap
   (:use webvim.core.event
         webvim.core.ui
-        webvim.keymap.motion
         webvim.keymap.normal
         webvim.keymap.insert
         webvim.keymap.ex
@@ -14,9 +13,8 @@
         webvim.keymap.compile))
 
 (defn init-keymap-tree []
-  (let [motion-keymap (init-motion-keymap)
-        normal-mode-keymap (fire-event
-                             (init-normal-mode-keymap motion-keymap)
+  (let [normal-mode-keymap (fire-event
+                             (init-normal-mode-keymap)
                              :normal-mode-keymap)
         insert-mode-keymap (fire-event
                              (init-insert-mode-keymap normal-mode-keymap)
