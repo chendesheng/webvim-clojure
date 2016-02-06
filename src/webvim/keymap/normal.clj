@@ -365,7 +365,7 @@
        "c" (merge
              motion-keymap-fix-cw
              pair-keymap
-             {"c" (start-insert-mode nop delete-line)
+             {"c" (start-insert-mode identity delete-line)
               :after (fn[buf keycode]
                        (if (or (= keycode "c")
                                (and
