@@ -22,7 +22,7 @@
         buf))))
 
 (defmethod word-re ::clojure [lang]
-  (let [word-chars "a-zA-Z_\\-!.?+*=<>&#\\':0-9"
+  (let [word-chars "a-zA-Z_\\-!.?+*=<>&#\\':0-9/"
         space-chars "\\s,"]
     {:word-chars word-chars
      :not-word-chars (str "^" word-chars)
