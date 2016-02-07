@@ -74,29 +74,15 @@
                                 (printable-filepath buf)
                                 (inc y) linescnt percent (inc x)))))
 
-(def ^:private map-key-inclusive
-  {"h" false
-   "l" false
-   "w" false
-   "W" false
-   "e" true
-   "E" true
-   "b" false
-   "B" false
-   "f" true
-   "F" false
-   "t" true
-   "T" false
-   "/" false
-   "$" false
-   "a" true
-   "i" true})
-
 (defn- inclusive? [keycode]
-  (let [res (map-key-inclusive keycode)]
-    (if (nil? res)
-      true
-      res)))
+  (println "keycode:" keycode)
+  (let [m {"h" false "l" false "w" false "W" false "e" true
+           "E" true "b" false "B" false "f" true "F" false
+           "t" true "T" false "/" false "$" false "a" true
+           "i" true}]
+    (if (contains? m keycode)
+      (m keycode)
+      true)))
 
 ;setup range prefix for delete/change/yank etc.
 (defn- setup-range[buf]
@@ -302,9 +288,6 @@
               ;buffer has been modifed and cursor is no longer inside, ignore
               (recur (fndir buf)))))))))
 
-(defn- motion-keymap-for-operator[motion-keymap]
-  motion-keymap)
-
 (defn init-normal-mode-keymap[]
   (let [motion-keymap (init-motion-keymap)
         visual-mode-keymap (init-visual-mode-keymap motion-keymap)
@@ -314,8 +297,8 @@
                                 (assoc "W" (dont-cross-line (motion-keymap "W"))))
         motion-keymap-fix-cw (-> motion-keymap
                                  ;vim's "cw" is identical to "ce", but "dw"/"yw" is not equal to "de"/"ye"
-                                 (assoc "w" (dont-cross-line (comp char+ (motion-keymap "e"))))
-                                 (assoc "W" (dont-cross-line (comp char+ (motion-keymap "E")))))]
+                                 (assoc "w" (dont-cross-line cw-move))
+                                 (assoc "W" (dont-cross-line cW-move)))]
     (deep-merge
       motion-keymap
       {"i" (start-insert-mode identity identity)

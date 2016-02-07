@@ -15,10 +15,29 @@
         webvim.keymap.search
         webvim.core.utils))
 
+(defn- re-cw[lang]
+  (let [res (word-re lang)]
+    (re-pattern 
+      (str "(?<=[" (res :space-chars) "])[" (res :not-space-chars) "]|"
+           "(?<=[" (res :word-chars) "])[" (res :not-word-chars) "]|"
+           "(?<=[" (res :punctuation-chars) "])[" (res :not-punctuation-chars) "]"))))
+
+(defn re-cW[lang]
+  (let [res (word-re lang)]
+    (re-pattern 
+      (str "(?<=[" (res :space-chars) "])[" (res :not-space-chars) "]|"
+           "(?<=[" (res :not-space-chars) "])[" (res :space-chars) "]"))))
+
+(defn cw-move[buf keycode]
+  (re+ buf (re-cw (buf :language))))
+
+(defn cW-move[buf keycode]
+  (re+ buf (re-cW (buf :language))))
+
 (defn- re-word-start-border[lang]
   (let [res (word-re lang)]
-  (re-pattern 
-    (str "(?<=[" (res :not-word-chars) "])[" (res :word-chars) "]|(?<=[" (res :not-punctuation-chars) "])[" (res :punctuation-chars) "]"))))
+    (re-pattern 
+      (str "(?<=[" (res :not-word-chars) "])[" (res :word-chars) "]|(?<=[" (res :not-punctuation-chars) "])[" (res :punctuation-chars) "]"))))
 
 (defn- re-WORD-start-border[lang]
   (let [res (word-re lang)]
