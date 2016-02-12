@@ -28,12 +28,6 @@
       (str "(?<=[" (res :space-chars) "])[" (res :not-space-chars) "]|"
            "(?<=[" (res :not-space-chars) "])[" (res :space-chars) "]"))))
 
-(defn cw-move[buf keycode]
-  (re+ buf (re-cw (buf :language))))
-
-(defn cW-move[buf keycode]
-  (re+ buf (re-cW (buf :language))))
-
 (defn- re-word-start-border[lang]
   (let [res (word-re lang)]
     (re-pattern 
@@ -64,6 +58,12 @@
   (buf-move buf 
             (fn[r pos]
               (or (first (pos-re- r (dec pos) re)) 0))))
+
+(defn cw-move[buf keycode]
+  (re+ buf (re-cw (buf :language))))
+
+(defn cW-move[buf keycode]
+  (re+ buf (re-cW (buf :language))))
 
 (defn- word+[buf keycode]
   (re+ buf (re-word-start-border (buf :language))))
