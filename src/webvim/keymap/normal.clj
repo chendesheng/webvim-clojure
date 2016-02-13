@@ -376,7 +376,7 @@
                              setup-range
                              (indent-range true))))})
        "D" delete-to-line-end
-       "C" (start-insert-mode nop change-to-line-end)
+       "C" (start-insert-mode identity change-to-line-end)
        "Y" yank
        "x" (wrap-keycode delete-char)
        "p" (fn[buf keycode]
