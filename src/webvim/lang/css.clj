@@ -5,7 +5,6 @@
         webvim.core.line
         webvim.core.lang
         webvim.indent
-        webvim.lang.javascript
         webvim.core.utils))
 
 (defonce ^:private listen-new-buffer

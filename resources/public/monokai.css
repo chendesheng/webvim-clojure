@@ -5,8 +5,11 @@ body {
 	color:#E92672;
 }
 
+.lines .meta, .lines .meta-keyword {
+	color:#75715E;
+}
+
 /*red*/
-.lines .meta,
 .lines .selector-tag {
 	color:#E30054;
 }
