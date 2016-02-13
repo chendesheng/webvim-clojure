@@ -28,16 +28,16 @@ function updateViewportSize(fnok) {
 	}
 }
 
-function renderViewport(paddinglines, scrolling){
-	paddinglines = paddinglines || 5;
+function renderViewport(aheadlines, scrolling){
+	aheadlines = aheadlines || 5;
 
 	var buf = buffers.active;
 	var bufid = buf.id;
 	var $buf = $buffer(bufid);
-	var from = Math.floor($buf.scrollTop/lineHeight)-paddinglines;
+	var from = Math.floor($buf.scrollTop/lineHeight)-aheadlines;
 	from = from < 0 ? 0 : from;
 	var offscreenLines = buf.offscreenLines;
-	var h = viewport.height+1+paddinglines*2;
+	var h = viewport.height+1+aheadlines*2;
 	var lines = $lines(bufid);
 
 
