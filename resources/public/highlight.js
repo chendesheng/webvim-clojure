@@ -254,8 +254,8 @@ function hlcompile(language) {
 		mode.contains = expanded_contains;
 
 		if (mode.contains.length > 0) {
-			mode.contains.each(function(c) {
-				compile(c, mode);
+			mode.contains = mode.contains.map(function(c) {
+				return compile(c, mode);
 			});
 		} else if (mode.subLanguage) {
 			var subLanguage = highlights[mode.subLanguage];
