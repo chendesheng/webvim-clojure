@@ -138,6 +138,9 @@ var highlights = (function() {
 		'JavaScript': hljavascript(hljs),
 		'CSS': hlcss(hljs),
 		'XML': hlxml(hljs),
+		'SQL': hlsql(hljs),
+		'Go': hlgo(hljs),
+		'C#': hlcs(hljs),
 	}
 })();
 

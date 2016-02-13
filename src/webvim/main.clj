@@ -8,6 +8,9 @@
         webvim.lang.clojure ;TODO: load language setting dynamically
         webvim.lang.javascript
         webvim.lang.css
+        webvim.lang.sql
+        webvim.lang.go
+        webvim.lang.csharp
         webvim.core.buffer
         webvim.core.register
         webvim.core.keys
@@ -36,6 +39,9 @@
      [:script {:src "syntax/clojure.js" :type "text/javascript"}]
      [:script {:src "syntax/css.js" :type "text/javascript"}]
      [:script {:src "syntax/xml.js" :type "text/javascript"}]
+     [:script {:src "syntax/sql.js" :type "text/javascript"}]
+     [:script {:src "syntax/go.js" :type "text/javascript"}]
+     [:script {:src "syntax/cs.js" :type "text/javascript"}]
      [:script {:src "syntax/javascript.js" :type "text/javascript"}]
      [:script {:src "highlight.js" :type "text/javascript"}]
      [:script {:src "main.js" :type "text/javascript"}]

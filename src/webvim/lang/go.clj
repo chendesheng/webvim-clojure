@@ -1,4 +1,4 @@
-(ns webvim.lang.javascript
+(ns webvim.lang.go
   (:use webvim.core.event
         webvim.core.rope
         webvim.core.pos
@@ -7,22 +7,24 @@
         webvim.indent
         webvim.core.utils))
 
-(println "load javascript language")
+(println "load go language")
 
 (defonce ^:private listen-new-buffer
   (listen
     :load-language
     (fn [buf]
-      (if (= (buf :ext) ".js")
+      (if (= (buf :ext) ".go")
         (-> buf
-            (assoc-in [:language :id] ::javascript)
-            (assoc-in [:language :name] "JavaScript"))
+            (assoc-in [:language :id] ::go)
+            (assoc-in [:language :name] "Go")
+            (assoc :tabsize 4)
+            (assoc :expandtab false))
         buf))))
 
-(defmethod indent-pos ::javascript
+(defmethod indent-pos ::go
   [lang r pos]
   (clang-indent r pos))
 
-(defmethod indent-trigger? ::javascript
+(defmethod indent-trigger? ::go
   [lang keycode]
   (= keycode "}"))

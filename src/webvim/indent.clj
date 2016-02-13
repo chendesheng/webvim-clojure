@@ -61,6 +61,76 @@
       (update-in buf [:last-indents] conj (pos-line (buf :str) pos))
       buf)))
 
+(def re-c-statements #"\b(if|while|switch|for|struct)\s*\(.*?\)\s*$")
+
+(defn clang-comment? [line]
+  (re-test #"^\s*//" line))
+
+(defn clang-not-blank-or-comment? [line]
+  (not (or (rblank? line) (clang-comment? line))))
+
+;1. indent -1: line contains bracket but pline not
+;   if {
+;       aaaa    <- pline
+;   }           <- line 
+;
+;2. indent +1: pline contains bracket but line not
+;   if {        <- pline
+;       aaaa    <- line
+;   }
+;
+;3. keep indent: both contains brackets or both not
+;   if {        <- pline
+;   }           <- line
+;   if {
+;       aaaa    <- pline
+;       bbbb    <- line
+;   }
+;
+;4. indent +1
+;   if (aa==bb) <- pline
+;       aaaaa;  <- line
+;
+;5. indent -1
+;   if (aa==bb) <- ppline
+;       aaaaa;  <- pline
+;   bbbbb;      <- line
+;
+;6. function {
+;       hello(aa==bb)  <- ppline
+;   }                  <- pline
+;   aaaa               <- line
+(defn clang-indent [r pos]
+  (let [[head & ranges] (pos-lines-seq- r pos)
+        line (subr r head)
+        lines (filter clang-not-blank-or-comment?
+                      (ranges-to-texts r ranges))
+        _ (println (str "[" line "]"))
+        pline (or (first lines) "")
+        _ (println (str "[" pline "]"))
+        pindent (str (re-subs #"^\s*" pline))
+        pbracket? (re-test #"[\{]\s*$" pline)
+        bracket? (re-test #"^\s*\}" line)]
+    (cond (clang-comment? line)
+          (auto-indent r pos)
+          (empty? pline)
+          ""
+          (and (not pbracket?) bracket?)
+          (if (empty? pindent) "" (subs pindent 1))
+          (and pbracket? (not bracket?))
+          (str pindent "\t")
+          (and pbracket? bracket?)
+          pindent
+          (re-test re-c-statements pline)
+          (str pindent "\t")
+          :else
+          (let [ppline (nth lines 3 "")
+                ppindent (re-subs #"^\s*" ppline)]
+            (if (and (re-test re-c-statements ppline)
+                     (not (re-test #"[\}]\s*$" pline)))
+              ppindent
+              pindent)))))
+
 (defmethod indent-pos :default
   [lang r pos]
   (auto-indent r pos))
