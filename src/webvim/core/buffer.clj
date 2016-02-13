@@ -6,6 +6,7 @@
         (clojure [string :only (join split blank? lower-case)])
         webvim.core.rope
         webvim.core.pos
+        webvim.core.lang
         webvim.core.utils
         webvim.core.parallel-universe
         webvim.core.event))
@@ -88,11 +89,8 @@
              :CRLF? (crlf? txt)
              :tabsize 4
              :expandtab false}]
-    ;(pprint (buf :language))
     (-> buf
-        ;make sure :new-buffer happens after languages loaded
-        ;TODO: kind of ugly here
-        (fire-event :load-language)
+        init-file-type
         (fire-event :new-buffer))))
 
 ;http://stackoverflow.com/questions/13789092/length-of-the-first-line-in-an-utf-8-file-with-bom

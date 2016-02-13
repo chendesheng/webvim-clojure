@@ -1,25 +1,16 @@
 (ns webvim.lang.go
-  (:use webvim.core.event
-        webvim.core.rope
-        webvim.core.pos
-        webvim.core.line
-        webvim.core.lang
-        webvim.indent
-        webvim.core.utils))
+  (:use webvim.core.lang
+        webvim.indent))
 
 (println "load go language")
 
-(defonce ^:private listen-new-buffer
-  (listen
-    :load-language
-    (fn [buf]
-      (if (= (buf :ext) ".go")
-        (-> buf
-            (assoc-in [:language :id] ::go)
-            (assoc-in [:language :name] "Go")
-            (assoc :tabsize 4)
-            (assoc :expandtab false))
-        buf))))
+(defmethod init-file-type ".go"
+  [buf]
+  (-> buf
+      (assoc-in [:language :id] ::go)
+      (assoc-in [:language :name] "Go")
+      (assoc :tabsize 4)
+      (assoc :expandtab false)))
 
 (defmethod indent-pos ::go
   [lang r pos]

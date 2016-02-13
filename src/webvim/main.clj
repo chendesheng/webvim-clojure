@@ -4,7 +4,6 @@
             [cheshire.core :as json]
             [ring.adapter.jetty9 :as jetty])
   (:use clojure.pprint
-        webvim.lang.default
         webvim.lang.clojure ;TODO: load language setting dynamically
         webvim.lang.javascript
         webvim.lang.css

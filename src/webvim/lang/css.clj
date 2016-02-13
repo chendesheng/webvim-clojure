@@ -1,21 +1,14 @@
 (ns webvim.lang.css
-  (:use webvim.core.event
-        webvim.core.rope
-        webvim.core.pos
-        webvim.core.line
-        webvim.core.lang
-        webvim.indent
-        webvim.core.utils))
+  (:use webvim.core.lang
+        webvim.indent))
 
-(defonce ^:private listen-new-buffer
-  (listen
-    :load-language
-    (fn [buf]
-      (if (= (buf :ext) ".css")
-        (-> buf
-            (assoc-in [:language :id] ::css)
-            (assoc-in [:language :name] "CSS"))
-        buf))))
+(defmethod init-file-type ".css"
+  [buf]
+  (-> buf
+      (assoc-in [:language :id] ::css)
+      (assoc-in [:language :name] "CSS")
+      (assoc :tabsize 4)
+      (assoc :expandtab false)))
 
 (defmethod indent-pos ::css
   [lang r pos]

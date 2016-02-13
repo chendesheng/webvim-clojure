@@ -9,17 +9,13 @@
 
 (println "load clojure language")
 
-(defonce ^:private listen-new-buffer
-  (listen
-    :load-language
-    (fn [buf]
-      (if (= (buf :ext) ".clj")
-        (-> buf
-            (assoc-in [:language :id] ::clojure)
-            (assoc-in [:language :name] "Clojure")
-            (assoc :tabsize 2)
-            (assoc :expandtab true))
-        buf))))
+(defmethod init-file-type ".clj"
+  [buf]
+  (-> buf
+      (assoc-in [:language :id] ::clojure)
+      (assoc-in [:language :name] "Clojure")
+      (assoc :tabsize 2)
+      (assoc :expandtab true)))
 
 (defmethod word-re ::clojure [lang]
   (let [word-chars "a-zA-Z_\\-!.?+*=<>&#\\':0-9/"

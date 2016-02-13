@@ -1,25 +1,16 @@
 (ns webvim.lang.csharp
-  (:use webvim.core.event
-        webvim.core.rope
-        webvim.core.pos
-        webvim.core.line
-        webvim.core.lang
-        webvim.indent
-        webvim.core.utils))
+  (:use webvim.core.lang
+        webvim.indent))
 
-(println "load C# language")
+(println "load c# language")
 
-(defonce ^:private listen-new-buffer
-  (listen
-    :load-language
-    (fn [buf]
-      (if (= (buf :ext) ".cs")
-        (-> buf
-            (assoc-in [:language :id] ::csharp)
-            (assoc-in [:language :name] "C#")
-            (assoc :tabsize 4)
-            (assoc :expandtab false))
-        buf))))
+(defmethod init-file-type ".cs"
+  [buf]
+  (-> buf
+      (assoc-in [:language :id] ::csharp)
+      (assoc-in [:language :name] "C#")
+      (assoc :tabsize 4)
+      (assoc :expandtab false)))
 
 (defmethod indent-pos ::csharp
   [lang r pos]
