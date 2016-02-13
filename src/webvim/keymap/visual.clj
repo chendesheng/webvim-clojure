@@ -228,9 +228,9 @@
 
 (defmulti visual-keymap-c (fn[buf keycode] (-> buf :visual :type)))
 (defmethod visual-keymap-c visual-range [buf keycode]
-  ((change-visual false) buf))
+  ((change-visual false) buf keycode))
 (defmethod visual-keymap-c visual-line [buf keycode]
-  ((change-visual true) buf))
+  ((change-visual true) buf keycode))
 (defmethod visual-keymap-c visual-block [buf keycode]
   (-> buf
       visual-block-delete
