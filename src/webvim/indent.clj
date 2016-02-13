@@ -10,10 +10,9 @@
 
 (defn auto-indent 
   [r pos]
-  (let [lines (filter #(-> % rblank? not)
-                      (ranges-to-texts r (pos-lines-seq- r pos)))
+  (let [lines (ranges-to-texts r (pos-lines-seq- r pos))
         line (first lines)
-        pline (second lines)]
+        pline (->> lines rest (filter #(-> % rblank? not)) first)]
     (if (nil? pline) ""
       (or (re-subs #"^\s*" pline) ""))))
 
