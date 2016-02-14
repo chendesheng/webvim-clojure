@@ -130,23 +130,28 @@
          (identical? (-> buf :history just-now) (-> buf :save-point first))
          (= (buf :filepath) (-> buf :save-point second)))))
 
+(defn- write-to-disk[buf]
+  (let [tmp (buf :str)
+        s (if (buf :CRLF?) (.replace tmp "\n" "\r\n") tmp)
+        f (buf :filepath)]
+    (if (not (fs/exists? f))
+      (do
+        (-> f fs/parent fs/mkdirs)
+        (-> f fs/file fs/create)))
+    (spit f s)
+    (-> buf
+        (assoc :save-point [(-> buf :history just-now) f])
+        (assoc :message (format "\"%s\" %dL, %dC written" (shorten-path f) (buf :linescnt) (count s))))))
+
 ;TODO make write atomic
 ;TODO check disk file change
 (defn write-buffer
   [buf]
   (try 
     (if (dirty? buf)
-      (let [tmp (buf :str)
-            s (if (buf :CRLF?) (.replace tmp "\n" "\r\n") tmp)
-            f (buf :filepath)]
-        (if (not (fs/exists? f))
-          (do
-            (-> f fs/parent fs/mkdirs)
-            (-> f fs/file fs/create)))
-        (spit f s)
-        (-> buf
-            (assoc :save-point [(-> buf :history just-now) f])
-            (assoc :message (format "\"%s\" %dL, %dC written" (shorten-path f) (buf :linescnt) (count s)))))
+      (-> buf
+          (fire-event :write-buffer)
+          write-to-disk)
       (assoc buf :message "No changes to write"))
     (catch Exception e 
       ;(println (.getMessage e))
