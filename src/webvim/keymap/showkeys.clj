@@ -10,7 +10,9 @@
   (update-in buf [:showkeys]
              (fn[showkeys]
                  (if (and (= (buf :mode) normal-mode)
-                          (= (-> buf :visual :type) no-visual)
+                          (or (= (-> buf :visual :type) no-visual)
+                              (= keycode "\"")
+                              (= (last showkeys) "\""))
                           (-> buf :line-buffer nil?))
                    (conj showkeys keycode)))))
 

@@ -53,6 +53,9 @@
                    "=" (expression-keymap false)
                    :else start-register})))
 
+(defn- on-visual-mode-keymap[keymap]
+  (on-normal-mode-keymap keymap))
+
 (defn- on-insert-mode-keymap[keymap]
   (-> keymap
       (update-in ["<c-r>"] assoc "=" (expression-keymap true))))
@@ -68,4 +71,10 @@
     :insert-mode-keymap
     (fn[keymap]
       (on-insert-mode-keymap keymap))))
+
+(defonce ^:private listener3
+  (listen
+    :visual-mode-keymap
+    (fn[keymap]
+      (on-visual-mode-keymap keymap))))
 

@@ -325,49 +325,50 @@
     (buf-set-pos newbuf (first firstline))))
 
 (defn init-visual-mode-keymap[motion-keymap]
-  (merge 
-    motion-keymap 
-    (init-pair-keymap)
-    {:enter (fn[buf keycode]
-              (let [pos (buf :pos)]
-                (set-visual-mode buf 
-                                 {:type (keycode2type keycode)
-                                  :range [pos pos]})))
-     :leave (fn[buf keycode] (clear-visual buf))
-     :continue visual-mode-continue?
-     :before (fn[buf keycode] 
-               (-> buf
-                   (assoc-in [:context :visual-mode-type]
-                             (-> buf :visual :type))
-                   (assoc-in [:context :range] nil)))
-     :after (fn[buf keycode]
-              (if (contains? #{"u" "<c-r>"} keycode)
-                (update-x-if-not-jk buf keycode)
-                (-> buf
-                    visual-select
-                    set-visual-ranges
-                    (update-x-if-not-jk keycode))))
-     "z" {"z" (wrap-keycode cursor-center-viewport)}
-     "=" (wrap-keycode #(indent-range % true))
-     "o" swap-visual-start-end
-     "u" (wrap-keycode undo)
-     "<c-r>" (wrap-keycode redo)
-     "V" change-visual-mode-type
-     "v" change-visual-mode-type
-     "<c-v>" change-visual-mode-type
-     "d" visual-keymap-d
-     "c" visual-keymap-c
-     "y" visual-keymap-y
-     "I" visual-keymap-I
-     "A" visual-keymap-A
-     ">" (indent indent-more)
-     "<" (indent indent-less)
-     "~" (visual-change-case swap-case)
-     "g" {"u" (visual-change-case clojure.string/lower-case)
-          "U" (visual-change-case clojure.string/upper-case)}
-     "r" {"<esc>" nop
-          "<cr>" nop
-          :else replace-char-keycode}}))
+  (fire-event
+    (merge 
+      motion-keymap 
+      (init-pair-keymap)
+      {:enter (fn[buf keycode]
+                (let [pos (buf :pos)]
+                  (set-visual-mode buf 
+                                   {:type (keycode2type keycode)
+                                    :range [pos pos]})))
+       :leave (fn[buf keycode] (clear-visual buf))
+       :continue visual-mode-continue?
+       :before (fn[buf keycode] 
+                 (-> buf
+                     (assoc-in [:context :visual-mode-type]
+                               (-> buf :visual :type))
+                     (assoc-in [:context :range] nil)))
+       :after (fn[buf keycode]
+                (if (contains? #{"u" "<c-r>"} keycode)
+                  (update-x-if-not-jk buf keycode)
+                  (-> buf
+                      visual-select
+                      set-visual-ranges
+                      (update-x-if-not-jk keycode))))
+       "z" {"z" (wrap-keycode cursor-center-viewport)}
+       "=" (wrap-keycode #(indent-range % true))
+       "o" swap-visual-start-end
+       "u" (wrap-keycode undo)
+       "<c-r>" (wrap-keycode redo)
+       "V" change-visual-mode-type
+       "v" change-visual-mode-type
+       "<c-v>" change-visual-mode-type
+       "d" visual-keymap-d
+       "c" visual-keymap-c
+       "y" visual-keymap-y
+       "I" visual-keymap-I
+       "A" visual-keymap-A
+       ">" (indent indent-more)
+       "<" (indent indent-less)
+       "~" (visual-change-case swap-case)
+       "g" {"u" (visual-change-case clojure.string/lower-case)
+            "U" (visual-change-case clojure.string/upper-case)}
+       "r" {"<esc>" nop
+            "<cr>" nop
+            :else replace-char-keycode}}) :visual-mode-keymap))
 
 ;keep track visual ranges when buffer changed
 (defonce ^:private listen-change-buffer 
