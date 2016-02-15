@@ -9,6 +9,9 @@
   (re-seq #"@@ -(\d+),?(\d+)? \+(\d+),?(\d+)? @@([\s\S]*?)(?=$|(?<=\R)@@.*?@@)" diff))
 
 (defn- parse-hunk[from lines]
+;  (println "parse-hunk")
+;  (println (dec from))
+;  (pprint lines)
   (loop [[line & lines] lines
          linenum (dec from) ;start from 0
          changes nil
@@ -19,13 +22,15 @@
 ;    (pprint lines)
 ;    (println linenum)
 ;    (println changes)
-;    (println "change:" change)
-;    (println (str "lasttype:[" lasttype "]"))
+    ;(println "change:" change)
+    ;(println (str "lasttype:[" lasttype "]"))
     (if (nil? line)
       (if (nil? change) changes (conj changes change))
       (let [tmp (str (first line))
             type (if (contains? #{" " "-" "+"} tmp) tmp " ")
             ;_ (println (str "type:[" type "]"))
+            ;_ (println linenum)
+            ;_ (pprint change)
             [linenum changes change]
             (cond
               (and (= lasttype " ") (= type " "))
@@ -46,13 +51,14 @@
               [(inc linenum) changes (update-in change :len inc)]
               (and (= lasttype "+") (= type " "))
               [(inc linenum) (conj changes change) nil])]
+        ;(pprint changes)
         (recur lines linenum changes change type)))))
 
 ;http://www.gnu.org/software/diffutils/manual/diffutils.html#Unified-Format
 (defn parse-diff[diff]
   (println "parse-diff")
-  (print diff)
-  (pprint (parse-hunks diff))
+  ;(print diff)
+  ;(pprint (parse-hunks diff))
   (loop [[hunk & hunks] (parse-hunks diff)
          changes nil]
     ;(println "hunk:" hunk)
@@ -74,6 +80,13 @@
 
 (comment
   (defn test-parse-diff[]
+(pprint (parse-diff
+"diff <standard input> gofmt/<standard input>
+--- lao  2002-02-21 23:30:39.942229878 -0800
++++ tzu  2002-02-21 23:30:50.442260588 -0800
+@@ -1,7 +1,6 @@
+ first line
++insert line"))
     (pprint (parse-diff
 "diff <standard input> gofmt/<standard input>
 --- lao  2002-02-21 23:30:39.942229878 -0800
@@ -125,7 +138,7 @@
           ;(pprint  (str (subr r (nth lines from))))
           ;(println (nth lines (+ from len) [len 0]))
           ;(println "line:" (+ from len) (nth lines (+ from len)) (str (subr r (nth lines (+ from len)))))
-          (let [[a _] (nth lines from)
+          (let [[a _] (nth lines from [cnt 0])
                 [b _] (nth lines (+ from len) [cnt 0])]
             ;(println "a b" a b)
             ;(print "to" to)
