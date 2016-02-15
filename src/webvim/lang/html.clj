@@ -3,7 +3,7 @@
 
 (println "load html language")
 
-(defn- init[buf]
+(defn- init [buf]
   (-> buf
       (assoc-in [:language :id] ::xml)
       (assoc-in [:language :name] "XML")

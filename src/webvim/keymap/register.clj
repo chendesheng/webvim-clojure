@@ -9,12 +9,12 @@
         webvim.core.buffer
         webvim.core.event))
 
-(defn- start-register[buf keycode]
+(defn- start-register [buf keycode]
   (if (re-test #"[0-9a-zA-Z/*#%.:+=\-_~]" keycode)
     (assoc-in buf [:context :register] keycode)
     buf))
 
-(defn- read-eval-put[buf code insert?]
+(defn- read-eval-put [buf code insert?]
   (try
     (let [result (->> code read-string eval str)]
       (registers-put! "=" {:str code :result result})
@@ -27,54 +27,54 @@
       (assoc buf :message (str e)))))
 
 (defonce ^:private linebuf-keymap (init-linebuf-keymap))
-(defn- expression-keymap[insert?]
+(defn- expression-keymap [insert?]
   (-> linebuf-keymap
       (wrap-key 
-        :enter (fn[handler]
-                 (fn[buf keycode]
+        :enter (fn [handler]
+                 (fn [buf keycode]
                    (-> buf
                        (assoc :line-buffer {:prefix keycode :str (rope "()") :pos 1})
                        (handler keycode)))))
-      (assoc "<cr>" (fn[buf keycode] 
+      (assoc "<cr>" (fn [buf keycode] 
                       (let [code (-> buf :line-buffer :str str)]
                         (read-eval-put buf code insert?))))))
 
-(defn- on-normal-mode-keymap[keymap]
+(defn- on-normal-mode-keymap [keymap]
   (-> keymap
       (wrap-key :before
-                (fn[handler]
-                  (fn[buf keycode]
+                (fn [handler]
+                  (fn [buf keycode]
                     (-> buf
                         (update-in [:context :register]
-                                   (fn[reg]
+                                   (fn [reg]
                                      (or reg "\"")))
                         (handler keycode)))))
       (assoc "\"" {"<esc>" nop
                    "=" (expression-keymap false)
                    :else start-register})))
 
-(defn- on-visual-mode-keymap[keymap]
+(defn- on-visual-mode-keymap [keymap]
   (on-normal-mode-keymap keymap))
 
-(defn- on-insert-mode-keymap[keymap]
+(defn- on-insert-mode-keymap [keymap]
   (-> keymap
       (update-in ["<c-r>"] assoc "=" (expression-keymap true))))
 
 (defonce ^:private listener1
   (listen
     :normal-mode-keymap
-    (fn[keymap]
+    (fn [keymap]
       (on-normal-mode-keymap keymap))))
 
 (defonce ^:private listener2
   (listen
     :insert-mode-keymap
-    (fn[keymap]
+    (fn [keymap]
       (on-insert-mode-keymap keymap))))
 
 (defonce ^:private listener3
   (listen
     :visual-mode-keymap
-    (fn[keymap]
+    (fn [keymap]
       (on-visual-mode-keymap keymap))))
 

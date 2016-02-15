@@ -14,9 +14,9 @@
         line (first lines)
         pline (->> lines rest (filter #(-> % rblank? not)) first)]
     (if (nil? pline) ""
-      (or (re-subs #"^\s*" pline) ""))))
+        (or (re-subs #"^\s*" pline) ""))))
 
-(defn- buf-indent-line[buf pos]
+(defn- buf-indent-line [buf pos]
   (let [r (buf :str)
         ;_ (println (buf :language))
         indent (indent-pos (buf :language) r pos) 
@@ -35,7 +35,7 @@
         lang (buf :language)]
     (line-start
       (first (reduce
-               (fn[[buf delta] [pos _]]
+               (fn [[buf delta] [pos _]]
                  (let [r (buf :str)
                        a (+ pos delta)
                        b (pos-line-start r a)
@@ -46,7 +46,7 @@
                [buf 0]
                lines)))))
 
-(defn- line-str[r pos]
+(defn- line-str [r pos]
   (subr r (pos-line r pos)))
 
 (defn buf-indent-current-line

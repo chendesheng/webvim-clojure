@@ -1,7 +1,7 @@
 (ns
-  ^{:author "Caleb Peterson", 
-       :doc "Access to the system clipboard using AWT"}
-  snipsnap.core
+ ^{:author "Caleb Peterson", 
+   :doc "Access to the system clipboard using AWT"}
+ snipsnap.core
   (:import java.awt.Toolkit)
   (:import (java.awt.datatransfer Clipboard
                                   ClipboardOwner
@@ -29,7 +29,7 @@
 (defn get-text []
   (let [content (get-content)]
     (if (.isDataFlavorSupported content DataFlavor/stringFlavor)
-        (.getTransferData content DataFlavor/stringFlavor))))
+      (.getTransferData content DataFlavor/stringFlavor))))
 
 (defn set-text! [^String text]
   (let [current (get-text)]
@@ -47,6 +47,6 @@
 
 ;; Listen to the clipboard for content changes
 (let [listener (reify FlavorListener
-                      (flavorsChanged [this e]
-                                      (reset! content (get-content))))]
+                 (flavorsChanged [this e]
+                   (reset! content (get-content))))]
   (.addFlavorListener (get-clipboard) listener))

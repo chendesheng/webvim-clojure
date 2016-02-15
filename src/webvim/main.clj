@@ -65,9 +65,9 @@
   (GET "/buf" [request] (json/generate-string (ui-buf)))
   (GET "/" [request] (homepage request))
   (GET "/resize/:w/:h" [w h]
-       (send ui-agent 
-             (fn[ui w h]
-               (update-in ui [:viewport] assoc :w w :h h)) (parse-int w) (parse-int h))))
+    (send ui-agent 
+          (fn [ui w h]
+            (update-in ui [:viewport] assoc :w w :h h)) (parse-int w) (parse-int h))))
 
 (def ^:private app
   (-> (compojure.handler/api main-routes)
@@ -75,13 +75,13 @@
       (wrap-resource "public")
       (wrap-content-type)))
 
-(defn- start-file[f]
+(defn- start-file [f]
   (println "start-file:" f)
   (let [buf @(new-file f)]
     (registers-put! "%" {:str f :id (buf :id)})
     (send-buf! buf)))
 
-(defn- parse-input[body]
+(defn- parse-input [body]
   (let [[id keycode]
         (-> #"(?s)(\d+)\!(.*)"
             (re-seq body)
@@ -89,20 +89,20 @@
             rest)]
     [(Integer. id) keycode]))
 
-(defn- change-buffer![buf keycodes]
+(defn- change-buffer! [buf keycodes]
   (time
     (try
       (let [buf (-> buf (apply-keycodes keycodes) send-buf!)
             nextid (buf :nextid)]
         (if (nil? nextid) buf
-          (do
-            (let [anextbuf (@buffer-list nextid)]
+            (do
+              (let [anextbuf (@buffer-list nextid)]
               ;(println "nextid" nextid)
-              (if-not (nil? anextbuf)
-                (send anextbuf
-                      (fn[buf]
-                        (send-buf! buf)))))
-            (dissoc buf :nextid))))
+                (if-not (nil? anextbuf)
+                  (send anextbuf
+                        (fn [buf]
+                          (send-buf! buf)))))
+              (dissoc buf :nextid))))
       (catch Exception e
         (println e)
         (.printStackTrace e)
@@ -113,15 +113,15 @@
               (append-output-panel (str sw) true)
               (dissoc :nextid)))))))
 
-(defn- handle-socket[req]
-  {:on-connect (fn[ws]
-                 (send ui-agent (fn[ui ws]
+(defn- handle-socket [req]
+  {:on-connect (fn [ws]
+                 (send ui-agent (fn [ui ws]
                                   (assoc ui :ws ws)) ws))
-   :on-text (fn[ws body]
+   :on-text (fn [ws body]
               (let [[id keycode] (parse-input body)]
                 (send (@buffer-list id) change-buffer! (input-keys keycode))))})
 
-(defn- write-client![ui diff]
+(defn- write-client! [ui diff]
   (let [ws (ui :ws)]
     (try
       (jetty/send! ws (-> ui :queue (vconj diff) json/generate-string))
@@ -132,21 +132,21 @@
 (defonce ^:private web-server (atom nil))
 
 ;start app with init file and webserver configs
-(defn start[file options]
+(defn start [file options]
   (if-not (empty? file) (start-file file))
-  (send ui-agent (fn[ui]
+  (send ui-agent (fn [ui]
                    ;(println "render" (ui :render!))
                    (assoc ui :render! write-client!)))
   (println "start web server:" (options :port))
   (reset! web-server
           (jetty/run-jetty #'app
-                   (assoc options :websockets {"/socket" handle-socket}))))
+                           (assoc options :websockets {"/socket" handle-socket}))))
 
-(defn stop[]
+(defn stop []
   (println "stop web server")
   (jetty/stop-server @web-server))
 
-(defn -main[& args]
+(defn -main [& args]
   (start
     "/tmp/webvim/welcome.txt"
     {:port 8080 :join? true}))

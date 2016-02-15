@@ -2,16 +2,16 @@
   (:require [snipsnap.core :as clipboard])
   (:use [me.raynes.fs :as fs :only (child-of? *cwd*)]))
 
-(defn quote-pattern[ch]
+(defn quote-pattern [ch]
   (java.util.regex.Pattern/quote (str ch)))
 
 (defn sort2
   ([a b]
-   (if (< a b) [a b] [b a]))
+    (if (< a b) [a b] [b a]))
   ([[a b]]
-   (sort2 a b)))
+    (sort2 a b)))
 
-(defn keycode-to-char[keycode]
+(defn keycode-to-char [keycode]
   (cond 
     (= 1 (count keycode))
     keycode
@@ -25,14 +25,14 @@
 
 (defn make-range
   ([a b inclusive?]
-   (if inclusive? 
-     (let [[a b] (sort2 a b)]
-       [a (inc b)])
-     (sort2 a b)))
+    (if inclusive? 
+      (let [[a b] (sort2 a b)]
+        [a (inc b)])
+      (sort2 a b)))
   ([[a b] inclusive?]
-   (make-range a b inclusive?)))
+    (make-range a b inclusive?)))
 
-(defn bound-range[v r e]
+(defn bound-range [v r e]
   (cond (<= v r) r
         (>= v e) e
         :else v))
@@ -48,9 +48,9 @@
 ;"tree" actually means nested map like {:a {:aa "haha" :c {:cc "ccc"} } :b "hehe"}
 ;(map? node) equals true then node is a branch node (or a sub tree)
 ;(map? node) equals false then node is a leaf
-(defn- tree-reduce-recur[visit-branch visit-leaf path ctx root]
+(defn- tree-reduce-recur [visit-branch visit-leaf path ctx root]
   (reduce 
-    (fn[ctx [k v :as node]]
+    (fn [ctx [k v :as node]]
       (let [path (conj path node)]
         (if (map? v)
           (visit-branch 
@@ -59,16 +59,16 @@
           (visit-leaf ctx path)))) ctx root))
 
 ;deep first order
-(defn tree-reduce[visit-branch visit-leaf ctx root]
+(defn tree-reduce [visit-branch visit-leaf ctx root]
   (tree-reduce-recur visit-branch visit-leaf (into '() {"" root}) ctx root))
 
 (defn tree-map
   "only map leaf nodes"
   [f root]
   (tree-reduce-recur
-    (fn[ctx path]
+    (fn [ctx path]
       ctx)
-    (fn[ctx path]
+    (fn [ctx path]
       ;(println path)
       (let [ks (reverse (map key path))]
         ;(println (get-in root ks))
@@ -89,36 +89,36 @@
 (defn parse-int [s]
   (Integer. (re-find #"\d+" (or s "0"))))
 
-(defn vconj[coll x]
+(defn vconj [coll x]
   (conj (or coll []) x))
 
-(defn shorten-path[path]
+(defn shorten-path [path]
   (if (nil? path) nil
-    (let [cwd (str fs/*cwd*)]
-      (if (fs/child-of? cwd path)
-        (subs path (-> cwd str count inc))
-        path))))
+      (let [cwd (str fs/*cwd*)]
+        (if (fs/child-of? cwd path)
+          (subs path (-> cwd str count inc))
+          path))))
 
-(defn crlf?[txt]
+(defn crlf? [txt]
   (let [[m] (re-seq #"\r?\n" txt)]
     (= (count m) 2)))
 
 
-(defn visual-size[s tabsize]
+(defn visual-size [s tabsize]
   (let [len (count s)]
     (if (empty? s) 0
-      (loop [i 0 ret 0]
-        (if (>= i len)
-          ret
-          (let [nexti (.indexOf s "\t" i)]
-            (if (neg? nexti)
-              (+ ret (- (count s) i))
-              (recur (inc nexti) 
-                     (+ ret (- tabsize (rem ret tabsize)))))))))))
+        (loop [i 0 ret 0]
+          (if (>= i len)
+            ret
+            (let [nexti (.indexOf s "\t" i)]
+              (if (neg? nexti)
+                (+ ret (- (count s) i))
+                (recur (inc nexti) 
+                       (+ ret (- tabsize (rem ret tabsize)))))))))))
 
-(defn visualx-to-charx[^String s vx tabsize]
+(defn visualx-to-charx [^String s vx tabsize]
   (let [chars (char-array s)]
-    (loop[i 0 vxi 0]
+    (loop [i 0 vxi 0]
       (let [vxi (if (= (aget chars i) \tab)
                   (+ vxi (- tabsize (rem vxi tabsize)))
                   (inc vxi))]
@@ -128,12 +128,12 @@
           (>= i (-> s count dec)) (inc i)
           :else (recur (inc i) vxi))))))
 
-(defn nop[buf keycode] buf)
- 
-(defn quote-patterns[& args]
+(defn nop [buf keycode] buf)
+
+(defn quote-patterns [& args]
   (clojure.string/join "|" (map quote-pattern args)))
 
-(defn repeat-chars[n ch]
+(defn repeat-chars [n ch]
   (clojure.string/join (repeat n ch)))
 
 (def windows?
@@ -146,13 +146,13 @@
       (.indexOf "Mac OS X")
       (>= 0)))
 
-(defn clipboard-get[]
+(defn clipboard-get []
   (if osx?
     ((clojure.java.shell/sh "pbpaste") :out)
     (clipboard/get-text)))
 
 ;TODO: use xclip in linux
-(defn clipboard-set![text]
+(defn clipboard-set! [text]
   (cond
     osx?
     (clojure.java.shell/sh "pbcopy" :in text)

@@ -14,12 +14,12 @@
 ;Keep reference count of each word: {"w1" 1 "w2" 3}
 (defonce autocompl-words (agent {}))
 
-(defn- not-word-chars[lang]
+(defn- not-word-chars [lang]
   (-> lang word-re :not-word-chars))
 
 (defn- split-words 
   "split text to word vector"
-   [lang txt]
+  [lang txt]
   (split txt (re-pattern (str "[" (not-word-chars lang) "]")) -1))
 
 ;(split-words (rope "(ns [me.ray])"))
@@ -27,7 +27,7 @@
 (defn- autocompl-parse
   "Split to word with length longer than 2."
   [lang txt]
-  (reduce (fn[m w]
+  (reduce (fn [m w]
             (let [c (m w)]
               (if (nil? c)
                 (assoc m w 1)
@@ -40,7 +40,7 @@
 
 (defn- remove-words [m words]
   (reduce-kv
-    (fn[m w diffcnt]
+    (fn [m w diffcnt]
       (let [oldcnt (or (m w) 0)
             newcnt (- oldcnt diffcnt)]
         (if (pos? newcnt)
@@ -49,7 +49,7 @@
 
 ;(remove-words {"aa" 2 "bb" 1} {"aa" 3 "bb" 1 "cc" 2})
 
-(defn autocompl-remove-word[words w]
+(defn autocompl-remove-word [words w]
   (remove-words words {w 1}))
 
 (defonce ^:private listen-new-buffer
@@ -58,9 +58,9 @@
     (fn [buf]
       (println "autocompl new-buffer")
       (send autocompl-words
-            (fn[words]
+            (fn [words]
               (merge-words words
-                (autocompl-parse (buf :language) (buf :str)))))
+                           (autocompl-parse (buf :language) (buf :str)))))
       buf)))
 
 (defn expand-ends-word [lang s a b]
@@ -74,9 +74,9 @@
 (defn pos-uncomplete-word
   [lang s pos]
   (if (zero? pos) nil
-    (let [re-start (re-pattern (str "(?<=[" (not-word-chars lang) "])"))
-          a (or (last (pos-re- s pos re-start)) 0)]
-      [a pos])))
+      (let [re-start (re-pattern (str "(?<=[" (not-word-chars lang) "])"))
+            a (or (last (pos-re- s pos re-start)) 0)]
+        [a pos])))
 
 (defn buffer-uncomplete-word
   [buf]
@@ -87,12 +87,12 @@
     (if (or (nil? rg) (= (rg 0) (rg 1))) nil
         (str (subr s rg)))))
 
-(defn buffer-replace-suggestion[buf word oldword]
+(defn buffer-replace-suggestion [buf word oldword]
   (if (= word oldword) buf
-    (let [pos (buf :pos)
-          s (buf :str)
-          lang (buf :language)]
-      (buf-replace buf (- pos (count oldword)) pos word))))
+      (let [pos (buf :pos)
+            s (buf :str)
+            lang (buf :language)]
+        (buf-replace buf (- pos (count oldword)) pos word))))
 
 ;(uncomplete-word {:pos 5 :str (rope " b cd")})
 
@@ -102,7 +102,7 @@
 (defn- autocompl-update
   [lang news olds c]
   (send autocompl-words
-        (fn[words]
+        (fn [words]
           (let [a (c :pos)
                 oldb (-> c :len (+ a))
                 newb (-> c :to count (+ a))]
@@ -124,6 +124,6 @@
          {olds :str
           :as oldbuf} c]
       (when-not (= news olds)
-                (autocompl-update
-                  lang news olds c))
+        (autocompl-update
+          lang news olds c))
       buf)))

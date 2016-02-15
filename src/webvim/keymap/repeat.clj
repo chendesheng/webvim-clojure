@@ -14,34 +14,34 @@
         webvim.jumplist
         webvim.core.utils))
 
-(defn- reset-repeat-prefix[buf keycode]
+(defn- reset-repeat-prefix [buf keycode]
   (if (and
         (-> buf :context :repeat-prefix nil? not)
         (not (re-test #"^[0-9]$" keycode)))
     (update-in buf [:context] dissoc :repeat-prefix)
     buf))
 
-(defn- on-normal-mode-keymap[keymap]
+(defn- on-normal-mode-keymap [keymap]
   (-> keymap
-      (wrap-key "0" (fn[handler]
-                      (fn[buf keycode]
+      (wrap-key "0" (fn [handler]
+                      (fn [buf keycode]
                         (if (-> buf :context :repeat-prefix nil? not)
                           (append-repeat-prefix buf "0")
                           (handler buf keycode)))))
-      (wrap-key :else (fn[handler]
-                        (fn[buf keycode]
+      (wrap-key :else (fn [handler]
+                        (fn [buf keycode]
                           (if (re-test #"^[0-9]$" keycode)
                             (-> buf
                                 (handler keycode)
                                 (append-repeat-prefix keycode))
                             (handler buf keycode)))))
-      (wrap-key :after (fn[handler]
-                         (fn[buf keycode]
+      (wrap-key :after (fn [handler]
+                         (fn [buf keycode]
                            (-> buf
                                (handler keycode)
                                (reset-repeat-prefix keycode)))))))
 
 (defonce ^:private listener1
   (listen :normal-mode-keymap
-          (fn[keymap]
+          (fn [keymap]
             (on-normal-mode-keymap keymap))))

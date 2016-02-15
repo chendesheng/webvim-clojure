@@ -26,7 +26,7 @@
   [lang keycode]
   (= keycode "}"))
 
-(defn- format-buffer[buf]
+(defn- format-buffer [buf]
   (if (-> buf :language :id (= ::go))
     (let [res (clojure.java.shell/sh "goimports" "-d" :in (str (buf :str)))]
       (println "gofmt")
@@ -39,5 +39,5 @@
 
 (defonce ^:private listener
   (listen :write-buffer
-        (fn[buf]
-          (format-buffer buf))))
+          (fn [buf]
+            (format-buffer buf))))

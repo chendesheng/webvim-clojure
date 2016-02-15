@@ -27,13 +27,13 @@
      :ex-mode-keymap ex-mode-keymap}))
 
 (listen :new-buffer
-        (fn[buf]
+        (fn [buf]
           (let [tmp (@ui-agent :keymaps)
                 keymaps (or tmp (init-keymap-tree))]
             (if (nil? tmp)
-                  (send ui-agent
-                        (fn[ui]
-                          (assoc ui :keymaps keymaps))))
+              (send ui-agent
+                    (fn [ui]
+                      (assoc ui :keymaps keymaps))))
             (merge buf 
                    (assoc keymaps 
                           :keymap (keymaps :normal-mode-keymap))))))

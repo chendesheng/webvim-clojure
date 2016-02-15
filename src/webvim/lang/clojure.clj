@@ -32,7 +32,7 @@
 
 (defn- indent-tab-size [^String s] 
   (or (contains?
-        #{"try" "catch" "ns" "if" "if-not" "nil?" "fn" "let" "cond" "loop" "doseq" "for" "condp" "doseq" "do"} s)
+        #{"try" "catch" "ns" "if" "if-not" "nil?" "fn" "let" "cond" "loop" "doseq" "for" "condp" "do"} s)
       (.startsWith s "def")))
 
 (defn clojure-comment? [line]

@@ -23,10 +23,10 @@
   [lang keycode]
   (= keycode "}"))
 
-(defn- fix-last-newline[s]
+(defn- fix-last-newline [s]
   (if (re-test #"\R$" s) s (str s "\n")))
 
-(defn- js-beautify[s name]
+(defn- js-beautify [s name]
   (println "js-beautify")
   (let [res (clojure.java.shell/sh "js-beautify" "--type" "css" :in s)]
     (if (-> res :exit zero? not)
@@ -38,7 +38,7 @@
           "diff" tmpfile "-" "-u"
           :in (fix-last-newline (res :out)))))))
 
-(defn- format-buffer[buf]
+(defn- format-buffer [buf]
   ;use temp file
   (if (-> buf :language :id (= ::css))
     (let [res (time (js-beautify (-> buf :str str) (buf :name)))]
@@ -54,5 +54,5 @@
 
 (defonce ^:private listener
   (listen :write-buffer
-        (fn[buf]
-          (format-buffer buf))))
+          (fn [buf]
+            (format-buffer buf))))

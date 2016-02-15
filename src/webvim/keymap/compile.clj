@@ -2,23 +2,23 @@
   (:use webvim.core.utils
         webvim.core.event))
 
-(defn- save-key[buf keycode]
+(defn- save-key [buf keycode]
   (update-in buf [:keys] conj keycode))
 
-(defn- stop[buf keycode]
+(defn- stop [buf keycode]
   false)
 
-(defn- keycode-func-comp[funcs]
+(defn- keycode-func-comp [funcs]
   (let [funcs (filter #(and (not (nil? %)) (not (= % nop))) funcs)]
     ;(pprint funcs)
     (if (empty? funcs)
       nil
-      (fn[buf keycode]
+      (fn [buf keycode]
         (reduce
-         (fn[buf f]
-           (f buf keycode)) buf (reverse funcs))))))
+          (fn [buf f]
+            (f buf keycode)) buf (reverse funcs))))))
 
-(defn- leave-map[buf [_ {after :after continue? :continue leave :leave}]]
+(defn- leave-map [buf [_ {after :after continue? :continue leave :leave}]]
   (let [keycode (-> buf :keys first)
         after (or after nop)
         continue? (or continue? stop)
@@ -36,13 +36,13 @@
 
 (def compile-keymap
   (memoize
-    (fn[keymap]
+    (fn [keymap]
       (tree-reduce
-        (fn[ctx [[_ {enter :enter leave :leave else :else}] [_ {before :before}] & _ :as path]]
+        (fn [ctx [[_ {enter :enter leave :leave else :else}] [_ {before :before}] & _ :as path]]
           (let [leave (or leave nop)
                 ctx1 (if (nil? else)
                        (assoc ctx (clojure.string/join (conj (map key path) ":else")) 
-                              (fn[buf keycode]
+                              (fn [buf keycode]
                                 (reduce leave-map
                                         (leave buf keycode)
                                         (pop path))))
@@ -52,7 +52,7 @@
                    (keycode-func-comp
                      (list enter before save-key)))))
 
-        (fn[ctx [[keycode func] & [[_ {before :before after :after continue? :continue}] & _ :as allparents] :as path]]
+        (fn [ctx [[keycode func] & [[_ {before :before after :after continue? :continue}] & _ :as allparents] :as path]]
           (if (contains? #{:enter :leave :before :after :continue} keycode)
             ctx
             (let [funcs (list func before save-key)]
@@ -61,10 +61,10 @@
                      (clojure.string/join (map key path))
                      (keycode-func-comp 
                        (conj funcs
-                             (fn[buf keycode]
+                             (fn [buf keycode]
                                ;(println "keycode:" keycode)
                                (if (empty? allparents) buf
-                                 (reduce leave-map buf allparents)))))))))
+                                   (reduce leave-map buf allparents)))))))))
         {}
         keymap))))
 

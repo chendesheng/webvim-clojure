@@ -2,8 +2,8 @@
   (:use webvim.core.event))
 ;different language use differnt indent-pos, word-re etc.
 
-(defmulti indent-pos (fn[lang r pos] (lang :id)))
-(defmulti indent-trigger? (fn[lang keycode] (lang :id)))
+(defmulti indent-pos (fn [lang r pos] (lang :id)))
+(defmulti indent-trigger? (fn [lang keycode] (lang :id)))
 (defmulti word-re :id)
 
 (defmulti init-file-type :ext)
@@ -16,7 +16,7 @@
      :space-chars space-chars
      :not-space-chars (str "^" space-chars)
      :punctuation-chars (str "^" word-chars space-chars)
-     :not-punctuation-chars (str word-chars space-chars) }))
+     :not-punctuation-chars (str word-chars space-chars)}))
 
 (defmethod init-file-type :default
   [buf]

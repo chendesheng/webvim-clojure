@@ -17,13 +17,13 @@
         webvim.core.utils
         webvim.jumplist))
 
-(defn- delete-char[buf]
+(defn- delete-char [buf]
   (let [pos (buf :pos)
         [a b] [pos (inc pos)]]
     (buf-yank buf a b false true)
     (buf-delete buf a b)))
 
-(defn- delete-line[buf]
+(defn- delete-line [buf]
   (let [pos (buf :pos)
         r (buf :str)
         [a b] (pos-line r pos)]
@@ -32,7 +32,7 @@
         (buf-replace a (dec b) "")
         buf-indent-current-line)))
 
-(defn- insert-new-line[buf]
+(defn- insert-new-line [buf]
   (buf-indent-current-line
     (let [pos (buf :pos)
           r (buf :str)
@@ -41,7 +41,7 @@
           (buf-insert b <br>)
           (buf-set-pos b)))))
 
-(defn- insert-new-line-before[buf]
+(defn- insert-new-line-before [buf]
   (buf-indent-current-line
     (let [pos (buf :pos)
           r (buf :str)
@@ -61,11 +61,11 @@
         r (buf :str)
         [a b] (pos-re+ r pos #"\r?\n.*?(?=(\r|\n|\S))")]
     (if (nil? a) buf
-      (-> buf
-          (buf-replace a b " ")
-          (buf-set-pos a)))))
+        (-> buf
+            (buf-replace a b " ")
+            (buf-set-pos a)))))
 
-(defn- pos-info[buf]
+(defn- pos-info [buf]
   (let [{y :y
          x :x
          linescnt :linescnt} buf
@@ -85,7 +85,7 @@
       true)))
 
 ;setup range prefix for delete/change/yank etc.
-(defn- setup-range[buf]
+(defn- setup-range [buf]
   (println "setup-range:" (-> buf :context :range))
   (if (-> buf :context :range nil?)
     (let [pos (buf :pos)
@@ -96,15 +96,15 @@
           (merge (select-keys lastbuf [:pos :x :y]))
           (assoc-in [:context :range] [lastpos pos]))) buf))
 
-(defn- setup-range-line[buf]
+(defn- setup-range-line [buf]
   (assoc-in buf [:context :range] (pos-line (buf :str) (buf :pos))))
 
-(defn- setup-range-line-end[buf]
+(defn- setup-range-line-end [buf]
   (let [a (buf :pos)
         b (pos-line-end (buf :str) a)]
     (assoc-in buf [:context :range] [a b])))
 
-(defn- delete[buf keycode]
+(defn- delete [buf keycode]
   (if (contains? #{"d" "j" "k"} keycode)
     (-> buf
         setup-range-line
@@ -114,7 +114,7 @@
         setup-range
         (delete-range (inclusive? keycode) false))))
 
-(defn- yank[buf keycode]
+(defn- yank [buf keycode]
   (if (contains? #{"y" "j" "k" "Y"} keycode)
     (-> buf
         setup-range-line
@@ -138,14 +138,14 @@
           (buf-set-pos pos))
       :else buf)))
 
-(defn- normal-mode-after[buf keycode]
+(defn- normal-mode-after [buf keycode]
   (let [insert-mode? (= (buf :mode) insert-mode)
         lastbuf (-> buf :context :lastbuf)
         save-undo (if insert-mode? identity save-undo)]
     (if-not (nil? (motions-push-jumps (string/join (buf :keys))))
       (jump-push lastbuf))
     (let [newbuf (if insert-mode? buf
-                   (normal-mode-fix-pos buf))]
+                     (normal-mode-fix-pos buf))]
       (-> newbuf
           (update-x-if-not-jk keycode)
           (update-in [:context] dissoc :range)
@@ -154,13 +154,13 @@
           (buf-update-highlight-bracket-pair (newbuf :pos))))))
 
 (defn- start-insert-mode-with-keycode [fnmotion fnedit]
-  (fn[buf keycode]
+  (fn [buf keycode]
     (-> buf 
         (fnmotion keycode)
         set-insert-mode
         (fnedit keycode))))
 
-(defn- start-ex-mode[buf keycode]
+(defn- start-ex-mode [buf keycode]
   (let [enter (or (-> buf :ex-mode-keymap :enter) nop)]
     (-> buf
         (enter ":")
@@ -168,22 +168,22 @@
           :keymap (buf :ex-mode-keymap)
           :mode ex-mode))))
 
-(defn- delete-to-line-end[buf keycode]
+(defn- delete-to-line-end [buf keycode]
   (-> buf
       setup-range-line-end
       (delete-range false false)))
 
-(defn- change-to-line-end[buf]
+(defn- change-to-line-end [buf]
   (-> buf
       setup-range-line-end
       (change-range false false)))
 
-(defn- change-by-motion[buf keycode]
+(defn- change-by-motion [buf keycode]
   (-> buf 
       setup-range
       (change-range (inclusive? keycode) false)))
 
-(defn- path-under-cursor[buf]
+(defn- path-under-cursor [buf]
   (let [r (buf :str)
         pos (buf :pos)
         filename-black-list "\\s:?%*|\"'<>"
@@ -193,28 +193,28 @@
         [start _] (pos-re- r pos re-start)
         [[_ uri linenum]] (re-seq #"([^:]+)(:\d+)?" (str (subr r start end)))]
     [uri linenum]))
-        
-(defn goto-file[buf]
+
+(defn goto-file [buf]
   (let [[uri linenum] (path-under-cursor buf)
         newbuf (edit-file buf uri false)
         nextid (newbuf :nextid)]
     (if (nil? nextid) newbuf
-      (let[anextbuf (@buffer-list nextid)]
-        (send anextbuf (fn[buf row]
-                         (if (<= row 0) buf
-                           (-> buf
-                               (move-to-line (dec row))
-                               update-x))) (parse-int linenum))
-        newbuf))))
+        (let [anextbuf (@buffer-list nextid)]
+          (send anextbuf (fn [buf row]
+                           (if (<= row 0) buf
+                               (-> buf
+                                   (move-to-line (dec row))
+                                   update-x))) (parse-int linenum))
+          newbuf))))
 
-(defn- dont-cross-line[f]
-  (fn[buf keycode]
+(defn- dont-cross-line [f]
+  (fn [buf keycode]
     (let [newbuf (f buf keycode)
           newpos (min (newbuf :pos) 
                       (pos-line-end (buf :str) (buf :pos)))]
       (buf-set-pos newbuf newpos))))
 
-(defn- padding-zeroes[news olds]
+(defn- padding-zeroes [news olds]
   (let [nega? (.startsWith olds "-")
         negb? (.startsWith news "-")
         a (if nega? (-> olds count dec) (count olds))
@@ -224,48 +224,48 @@
       (str "-" zeroes (subs news 1))
       (str zeroes news))))
 
-(defn- inc-dec-number[f]
-  (fn[buf keycode]
+(defn- inc-dec-number [f]
+  (fn [buf keycode]
     (let [repeat-times (repeat-prefix-value buf)
-          f (fn[n] (f n repeat-times))
+          f (fn [n] (f n repeat-times))
           pos (buf :pos)
           r (buf :str)
           [line-start line-end] (pos-line r pos)
           line (subr r line-start line-end)
           [a b] (first
                   (filter
-                    (fn[[_ b]]
+                    (fn [[_ b]]
                       (-> b
                           (+ line-start)
                           (> pos)))
                     (pos-re-seq+ line 0 #"(?i)(0x[0-9a-fA-F]+)|(-?[0-9]+)")))]
       (if (nil? a)
         buf
-        (let[s (str (subr line a b))
-             [a b news] (if (re-test s #"^0x|X")
-                          [(+ a line-start 2)
-                           (+ b line-start)
-                           (format (if (re-test s #"[A-Z]") "%X" "%x")
+        (let [s (str (subr line a b))
+              [a b news] (if (re-test s #"^0x|X")
+                           [(+ a line-start 2)
+                            (+ b line-start)
+                            (format (if (re-test s #"[A-Z]") "%X" "%x")
                                    ;http://stackoverflow.com/questions/508630/java-equivalent-of-unsigned-long-long
-                                   (-> s (subs 2) (Long/parseUnsignedLong 16) f))]
-                          [(+ a line-start)
-                           (+ b line-start)
-                           (-> s Long/parseLong f str (padding-zeroes s))])]
+                                    (-> s (subs 2) (Long/parseUnsignedLong 16) f))]
+                           [(+ a line-start)
+                            (+ b line-start)
+                            (-> s Long/parseLong f str (padding-zeroes s))])]
           
           (-> buf
               (buf-set-pos (dec b))
               (buf-replace a b news)
               char-))))))
 
-(defn- operator[f]
-  (fn[buf keycode]
+(defn- operator [f]
+  (fn [buf keycode]
     (let [buf (setup-range buf)
           rg (range-prefix buf (inclusive? keycode))]
-        (f buf rg))))
+      (f buf rg))))
 
 (defn- move-to-jumplist
   [fndir]
-  (fn[buf keycode]
+  (fn [buf keycode]
     (loop [pos (fndir buf)]  ;TODO: filter lazy seq instead of loop
       (if (nil? pos)
         buf ;newest or oldest
@@ -288,7 +288,7 @@
               ;buffer has been modifed and cursor is no longer inside, ignore
               (recur (fndir buf)))))))))
 
-(defn init-normal-mode-keymap[]
+(defn init-normal-mode-keymap []
   (let [motion-keymap (init-motion-keymap)
         visual-mode-keymap (init-visual-mode-keymap motion-keymap)
         pair-keymap (init-pair-keymap)
@@ -326,7 +326,7 @@
        "g" {"v" (assoc
                   visual-mode-keymap
                   :enter
-                  (fn[buf keycode]
+                  (fn [buf keycode]
                     (let [visual (buf :last-visual)]
                       (-> buf
                           (set-visual-mode visual)
@@ -343,7 +343,7 @@
        "v" visual-mode-keymap
        "V" visual-mode-keymap
        "<c-v>" visual-mode-keymap
-       "z" {"z" (wrap-keycode cursor-center-viewport) }
+       "z" {"z" (wrap-keycode cursor-center-viewport)}
        "d" (merge
              motion-keymap-fix-w
              pair-keymap
@@ -353,7 +353,7 @@
              motion-keymap-fix-cw
              pair-keymap
              {"c" (start-insert-mode identity delete-line)
-              :after (fn[buf keycode]
+              :after (fn [buf keycode]
                        (if (or (= keycode "c")
                                (and
                                  (= (-> buf :context :lastbuf :pos) (buf :pos))
@@ -369,7 +369,7 @@
              motion-keymap-fix-w
              pair-keymap
              {"=" nop
-              :after (fn[buf keycode]
+              :after (fn [buf keycode]
                        (if (contains? #{"=" "j" "k"} keycode)
                          (buf-indent-current-line buf)
                          (-> buf
@@ -379,7 +379,7 @@
        "C" (start-insert-mode identity change-to-line-end)
        "Y" yank
        "x" (wrap-keycode delete-char)
-       "p" (fn[buf keycode]
+       "p" (fn [buf keycode]
              (let [append? (if (-> buf :context :register registers-get :linewise?)
                              true 
                              (not= (char-at (buf :str) (buf :pos)) \newline))]
@@ -387,7 +387,7 @@
                (put-from-register buf (-> buf :context :register) append?)))
        "P" (wrap-keycode #(put-from-register % (-> % :context :register) false))
        "J" join-line
-       "<c-s-6>" (fn[buf keycode]
+       "<c-s-6>" (fn [buf keycode]
                    (let [reg (registers-get "#")]
                      (if (nil? reg)
                        (assoc buf :message "No alternative file")
@@ -402,7 +402,7 @@
              motion-keymap-fix-w
              pair-keymap
              {:after (operator indent-less)})
-       :continue (fn[buf keycode]
+       :continue (fn [buf keycode]
                    (= (buf :mode) normal-mode))
        :before (fn [buf keycode]
                  (-> buf

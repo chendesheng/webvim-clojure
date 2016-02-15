@@ -5,10 +5,10 @@
         clojure.pprint
         webvim.core.rope))
 
-(defn- parse-hunks[diff]
+(defn- parse-hunks [diff]
   (re-seq #"@@ -(\d+),?(\d+)? \+(\d+),?(\d+)? @@([\s\S]*?)(?=$|(?<=\R)@@.*?@@)" diff))
 
-(defn- parse-hunk[from lines]
+(defn- parse-hunk [from lines]
 ;  (println "parse-hunk")
 ;  (println (dec from))
 ;  (pprint lines)
@@ -55,7 +55,7 @@
         (recur lines linenum changes change type)))))
 
 ;http://www.gnu.org/software/diffutils/manual/diffutils.html#Unified-Format
-(defn parse-diff[diff]
+(defn parse-diff [diff]
   (println "parse-diff")
   ;(print diff)
   ;(pprint (parse-hunks diff))
@@ -79,16 +79,16 @@
                (concat (parse-hunk from (next lines)) changes))))))
 
 (comment
-  (defn test-parse-diff[]
-(pprint (parse-diff
-"diff <standard input> gofmt/<standard input>
+  (defn test-parse-diff []
+    (pprint (parse-diff
+              "diff <standard input> gofmt/<standard input>
 --- lao  2002-02-21 23:30:39.942229878 -0800
 +++ tzu  2002-02-21 23:30:50.442260588 -0800
 @@ -1,7 +1,6 @@
  first line
 +insert line"))
     (pprint (parse-diff
-"diff <standard input> gofmt/<standard input>
+              "diff <standard input> gofmt/<standard input>
 --- lao  2002-02-21 23:30:39.942229878 -0800
 +++ tzu  2002-02-21 23:30:50.442260588 -0800
 @@ -1,7 +1,6 @@
@@ -115,14 +115,14 @@
 ;  (pprint (buf :str))
 ;  buf)
 
-(defn- fix-position[buf]
+(defn- fix-position [buf]
   (let [r (buf :str)
         buf (if (empty? r) (buf-insert buf 0 "\n") buf)]
     (if (>= (buf :pos) (-> buf :str count))
       (buf-end buf)
       buf)))
 
-(defn apply-line-changes[buf changes]
+(defn apply-line-changes [buf changes]
   ;(pprint changes)
   (let [lines (pos-lines-seq+ (buf :str))
         r (buf :str)
@@ -133,7 +133,7 @@
 ;    (pprint changes)
     (fix-position
       (reduce
-        (fn[buf {from :from len :len to :to}]
+        (fn [buf {from :from len :len to :to}]
           ;(println "line:" from (nth lines from))
           ;(pprint  (str (subr r (nth lines from))))
           ;(println (nth lines (+ from len) [len 0]))

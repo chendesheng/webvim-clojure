@@ -30,13 +30,13 @@
 (def motions-push-jumps
   #{"/" "?" "*" "#" "n" "N" "%" "G" "{" "}" "H" "M" "L"})
 
-(defn- no-next?[jl]
+(defn- no-next? [jl]
   (-> jl
       go-future
       next-future
       nil?))
 
-(defn- no-prev?[jl]
+(defn- no-prev? [jl]
   (-> jl
       just-now
       nil?))
@@ -44,18 +44,18 @@
 ;just-now is prev
 ;next-future is current
 ;next-future next-future is next
-(defn- no-current?[jl]
+(defn- no-current? [jl]
   (-> jl
       next-future
       nil?))
 
-(defn- push-current[jl buf]
+(defn- push-current [jl buf]
   (new-future jl (select-keys buf [:id :pos :y :filepath :name])))
 
 (defn jump-push
   "Add :pos to jump list"
   [buf]
-  (swap! jump-list (fn[jl {id :id pos :pos :as buf}]
+  (swap! jump-list (fn [jl {id :id pos :pos :as buf}]
                      (if (and
                            (= (-> jl just-now :pos) pos)
                            (= (-> jl just-now :id) id))
@@ -67,25 +67,25 @@
 (defn jump-next
   [buf]
   (if (no-next? @jump-list) nil
-    (-> jump-list
-        (swap! go-future)
-        next-future)))
+      (-> jump-list
+          (swap! go-future)
+          next-future)))
 
 (defn jump-prev
   [buf]
   (if (no-prev? @jump-list) nil
-    (-> jump-list
-        (swap! (fn [jl]
-                 (if (no-current? jl) 
-                   (-> jl
-                       (push-current buf)
-                       go-back
-                       go-back)
-                   (go-back jl))))
-        next-future)))
+      (-> jump-list
+          (swap! (fn [jl]
+                   (if (no-current? jl) 
+                     (-> jl
+                         (push-current buf)
+                         go-back
+                         go-back)
+                     (go-back jl))))
+          next-future)))
 
 ;split old buffer to 3 parts [0 a) [a b) [b count)
-(defn- shift-by-change[pos y oldbuf {cpos :pos clen :len :as c}]
+(defn- shift-by-change [pos y oldbuf {cpos :pos clen :len :as c}]
   (let [a cpos
         b (+ a clen)]
     (cond
@@ -100,12 +100,12 @@
       :else
       {:pos (-> c :to count (+ a)) :y (-> c :to count-<br> (+ y))})))
 
-(defn- on-buffer-change[buf oldbuf c]
+(defn- on-buffer-change [buf oldbuf c]
   (let [bufid (buf :id)]
     ;TODO: This could be slow.
     (swap! jump-list 
            rewrite-history
-           (fn[{id :id pos :pos y :y :as p}]
+           (fn [{id :id pos :pos y :y :as p}]
              (if (= id bufid)
                (merge p (shift-by-change pos y oldbuf c))
                p)))

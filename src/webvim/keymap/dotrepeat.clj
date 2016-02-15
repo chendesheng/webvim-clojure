@@ -8,13 +8,13 @@
         webvim.core.register
         webvim.core.event))
 
-(defn- dot-repeat[buf keycode]
+(defn- dot-repeat [buf keycode]
   (let [keycodes ((registers-get ".") :keys)]
     (if (empty? keycodes)
       buf
       (replay-keys buf keycodes))))
 
-(defn- save-dot-repeat[buf]
+(defn- save-dot-repeat [buf]
   (let [keys (-> buf :dot-repeat-keys reverse)
         nochange? (-> buf :pending-undo empty?)]
     (if-not (or nochange? ;only repeat keys make changes
@@ -24,15 +24,15 @@
       (registers-put! "." {:keys keys :str (string/join keys)}))
     (dissoc buf :dot-repeat-keys)))
 
-(defn- on-before-handle-key[buf keycode]
+(defn- on-before-handle-key [buf keycode]
   (update-in buf [:dot-repeat-keys] conj keycode))
 
-(defn- on-normal-mode-keymap[keymap]
+(defn- on-normal-mode-keymap [keymap]
   (-> keymap
       (wrap-key 
         :after
-        (fn[handler]
-          (fn[buf keycode]
+        (fn [handler]
+          (fn [buf keycode]
             (if (= (buf :mode) insert-mode)
               (handler buf keycode)
               (-> buf
@@ -40,11 +40,11 @@
                   (handler keycode))))))
       (assoc "." dot-repeat)))
 
-(defn- on-insert-mode-keymap[keymap]
+(defn- on-insert-mode-keymap [keymap]
   (wrap-key
     keymap :leave
-    (fn[handler]
-      (fn[buf keycode]
+    (fn [handler]
+      (fn [buf keycode]
         (-> buf
             save-dot-repeat
             (handler keycode))))))
@@ -52,19 +52,19 @@
 (defonce ^:private listener1
   (listen
     :before-handle-key
-    (fn[buf keycode]
+    (fn [buf keycode]
       (on-before-handle-key buf keycode))))
 
 (defonce ^:private listener2
   (listen
     :normal-mode-keymap
-    (fn[keymap]
+    (fn [keymap]
       (on-normal-mode-keymap keymap))))
 
 (defonce ^:private listener3
   (listen
     :insert-mode-keymap
-    (fn[keymap]
+    (fn [keymap]
       (on-insert-mode-keymap keymap))))
 
 

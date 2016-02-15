@@ -6,15 +6,15 @@
 
 (def <br> "\n")
 
-(defn rope[r]
+(defn rope [r]
   (let [builder (RopeBuilder.)]
     (.build builder r)))
 
 (defn subr
   ([r a b]
-   (.subSequence r a b))
+    (.subSequence r a b))
   ([r [a b]]
-   (.subSequence r a b)))
+    (.subSequence r a b)))
 
 (defn replacer
   [r a b to]
@@ -24,7 +24,7 @@
              (.insert r1 a to) r1)]
     r2))
 
-(defn- apply-change[r c]
+(defn- apply-change [r c]
   (let [{pos :pos
          len :len
          to :to} c
@@ -33,23 +33,23 @@
            :len (count to)
            :to (str (subr r pos (+ pos len)))}]))
 
-(defn indexr[r s]
+(defn indexr [r s]
   (if (empty? r) -1 (.indexOf r s)))
 
 (defn rblank? 
   ([s]
-   (or (nil? s)
-       (let [m (.matcher s #"^\s*$")]
-         (.find m 0))))
+    (or (nil? s)
+        (let [m (.matcher s #"^\s*$")]
+          (.find m 0))))
   ([s rg]
-   (rblank? (subr s rg))))
+    (rblank? (subr s rg))))
 
-(defn count-<br>[r]
+(defn count-<br> [r]
   (let [cnt (count <br>)]
-    (loop[r r n 0]
+    (loop [r r n 0]
       (let [i (indexr r <br>)]
         (if (neg? i) n
-          (recur (subr r (+ i cnt) (.length r)) (inc n)))))))
+            (recur (subr r (+ i cnt) (.length r)) (inc n)))))))
 
 (defn rope-size
   "How many chars and lines rope contains"
@@ -65,7 +65,7 @@
       (update-in [:y] op dy)))
 
 ;TODO: keep track of current line number is annoying
-(defn buf-set-pos[buf newpos]
+(defn buf-set-pos [buf newpos]
   (let [pos (buf :pos)
         r (buf :str)
         newpos (min newpos (-> r .length dec))]
@@ -83,48 +83,48 @@
 (defn- shift-pos
   ;only need (buf :pos) and (buf :y)
   ([buf a from to]
-   (let [pos (buf :pos)
-         b (+ a (count from))
-         szfrom (rope-size from)
-         szto (rope-size to)
-         t1 (cond 
-              (< pos a)
-              buf
-              (>= pos b)
-              (-> buf
-                  (rope-op-size - szfrom)
-                  (rope-op-size + szto))
-              :else
-              (-> buf
-                  (rope-op-size - (rope-size (subr from 0 (- pos a))))
-                  (rope-op-size + szto)))]
-     (update-in t1 [:linescnt] #(-> % (- (szfrom :dy)) (+ (szto :dy)))))))
+    (let [pos (buf :pos)
+          b (+ a (count from))
+          szfrom (rope-size from)
+          szto (rope-size to)
+          t1 (cond 
+               (< pos a)
+               buf
+               (>= pos b)
+               (-> buf
+                   (rope-op-size - szfrom)
+                   (rope-op-size + szto))
+               :else
+               (-> buf
+                   (rope-op-size - (rope-size (subr from 0 (- pos a))))
+                   (rope-op-size + szto)))]
+      (update-in t1 [:linescnt] #(-> % (- (szfrom :dy)) (+ (szto :dy)))))))
 
-(defn- buf-apply-change[buf c]
+(defn- buf-apply-change [buf c]
   (let [r (buf :str)
         [newr rc] (apply-change r c)]
     [(-> buf
         ;keep pos after change
-        (shift-pos (c :pos) (rc :to) (c :to))
-        (assoc :str newr)
-        (fire-event buf c :change-buffer)) rc]))
+         (shift-pos (c :pos) (rc :to) (c :to))
+         (assoc :str newr)
+         (fire-event buf c :change-buffer)) rc]))
 
-(defn- buf-apply-changes[buf changes]
+(defn- buf-apply-changes [buf changes]
   (reduce 
     (fn [[buf rchs] c]
       ;(println c)
       (let [[newbuf rc] (buf-apply-change buf c)]
         [newbuf (conj rchs rc)])) [buf nil] changes))
 
-(defn- push-pending[pending c oldpos]
+(defn- push-pending [pending c oldpos]
   (if (nil? pending)
     ;create one if nil
     {:changes (list c) :cursor oldpos}
     ;don't change :cursor
     (update-in pending [:changes] conj c)))
 
-(defn last-tabstop[r]
-  (loop[i 0 it (.reverseIterator r)] 
+(defn last-tabstop [r]
+  (loop [i 0 it (.reverseIterator r)] 
     (if (.hasNext it)
       (let [ch (.next it)]
         (cond 
@@ -133,7 +133,7 @@
           :else (recur (inc i) it)))
       i)))
 
-(defn expand-tab[s idx tabsize]
+(defn expand-tab [s idx tabsize]
   (loop [i 0 ret ""]
     (let [nexti (.indexOf s "\t" i)]
       ;(println nexti)
@@ -147,38 +147,38 @@
 
 (defn buf-replace 
   ([buf a b to]
-   (if (and (= a b) (empty? to)) buf
-     (let [r (buf :str)
-           tabsize (buf :tabsize)
-           c {:pos a
-              :len (- b a)
-              :to (if (buf :expandtab)
-                    (expand-tab (str to)
-                                (last-tabstop (subr r 0 a))
-                                tabsize)
-                    (str to))}
-           [newbuf rc] (buf-apply-change buf c)
-           undo (push-pending (newbuf :pending-undo) rc (buf :pos))]
-       (-> newbuf
-           (assoc :pending-undo undo)
-           (update-in [:changes] conj c)))))
+    (if (and (= a b) (empty? to)) buf
+        (let [r (buf :str)
+              tabsize (buf :tabsize)
+              c {:pos a
+                 :len (- b a)
+                 :to (if (buf :expandtab)
+                       (expand-tab (str to)
+                                   (last-tabstop (subr r 0 a))
+                                   tabsize)
+                       (str to))}
+              [newbuf rc] (buf-apply-change buf c)
+              undo (push-pending (newbuf :pending-undo) rc (buf :pos))]
+          (-> newbuf
+              (assoc :pending-undo undo)
+              (update-in [:changes] conj c)))))
   ([buf [a b] to]
-   (buf-replace buf a b to)))
+    (buf-replace buf a b to)))
 
 (defn buf-delete
   ([buf a b]
-   (buf-replace buf a b ""))
+    (buf-replace buf a b ""))
   ([buf [a b]]
-   (buf-delete buf a b)))
+    (buf-delete buf a b)))
 
 (defn buf-insert
   ([buf s]
-   (let [pos (buf :pos)]
-     (buf-replace buf pos pos s)))
+    (let [pos (buf :pos)]
+      (buf-replace buf pos pos s)))
   ([buf pos s]
-   (buf-replace buf pos pos s)))
+    (buf-replace buf pos pos s)))
 
-(defn buf-subr[buf a b]
+(defn buf-subr [buf a b]
   (-> buf :str (subr a b) str))
 
 ;A change is one edit at **single** point. 
@@ -197,28 +197,28 @@
   "return nil if can't merge (include c1 = nil) otherwise return merged change"
   [c1 c2]
   (if (nil? c1) nil
-    (let [p1 (c1 :pos) p2 (c2 :pos)
-          to1 (c1 :to) to2 (c2 :to)
-          l1 (c1 :len) l2 (c2 :len)
-          lt1 (count to1) lt2 (count to2)]
-      (cond
-        (= p1 p2)
-        {:pos p1
-         :to (str to2 (subs to1 (min lt1 l2)))
-         :len (+ l1 (max 0 (- l2 lt1)))}
-        (= p1 (+ p2 l2))
-        {:pos p2
-         :to (str to2 to1)
-         :len (+ l1 l2)}
-        (= (+ p1 lt1) p2)
-        {:pos p1
-         :to (str to1 to2)
-         :len (+ l1 l2)}
-        (= (+ p1 lt1) (+ p2 l2))
-        {:pos (min p1 p2)
-         :to (str (subs to1 0 (max (- lt1 l2) 0)) to2)
-         :len (- (+ p1 l1) (min p1 p2))}
-        :else nil))))
+      (let [p1 (c1 :pos) p2 (c2 :pos)
+            to1 (c1 :to) to2 (c2 :to)
+            l1 (c1 :len) l2 (c2 :len)
+            lt1 (count to1) lt2 (count to2)]
+        (cond
+          (= p1 p2)
+          {:pos p1
+           :to (str to2 (subs to1 (min lt1 l2)))
+           :len (+ l1 (max 0 (- l2 lt1)))}
+          (= p1 (+ p2 l2))
+          {:pos p2
+           :to (str to2 to1)
+           :len (+ l1 l2)}
+          (= (+ p1 lt1) p2)
+          {:pos p1
+           :to (str to1 to2)
+           :len (+ l1 l2)}
+          (= (+ p1 lt1) (+ p2 l2))
+          {:pos (min p1 p2)
+           :to (str (subs to1 0 (max (- lt1 l2) 0)) to2)
+           :len (- (+ p1 l1) (min p1 p2))}
+          :else nil))))
 
 ;(merge-change {:pos 2 :len 3 :to "de"} {:pos 3 :len 1 :to "aa"})
 ;(merge-change {:pos 2 :len 3 :to "de"} {:pos 0 :len 4 :to "aa"})
@@ -228,7 +228,7 @@
   "compress changes"
   [changes]
   (reduce 
-    (fn[chs c]
+    (fn [chs c]
       ;(println chs)
       (let [merged (merge-change (peek chs) c)]
         (if (nil? merged)
@@ -284,47 +284,47 @@
 ; --exit inert mode--   | {:changes ()        :pending-undo ()        undoes: ((~c2 ~c1)) redoes: ()}
 ; undo                  | {:changes (~c2 ~c1) :pending-undo ()        undoes: ()          redoes: ((c1 c2))}
 ; redo                  | {:changes (c1 c2)   :pending-undo ()        undoes: ((~c2 ~c1)) redoes: ()}
-(defn save-undo[buf]
+(defn save-undo [buf]
   (let [pending (buf :pending-undo)]
     (if (nil? pending) buf
-      (let [chs (merge-changes (pending :changes))
-            undo (assoc pending :changes (reverse chs))]
+        (let [chs (merge-changes (pending :changes))
+              undo (assoc pending :changes (reverse chs))]
         ;(println "text-save-undo:" pending)
         ;(println "text-save-undo:" chs)
-        (-> buf
-            (assoc :pending-undo nil)
-            (update-in [:history] new-future undo))))))
+          (-> buf
+              (assoc :pending-undo nil)
+              (update-in [:history] new-future undo))))))
 
-(defn- apply-undo[buf undo]
+(defn- apply-undo [buf undo]
   (let [chs (undo :changes)
         [newbuf rchs] (buf-apply-changes buf chs)]
     [(-> newbuf
          (update-in [:changes] concat chs)
          (buf-set-pos (undo :cursor))) rchs]))
 
-(defn undo[buf]
+(defn undo [buf]
   (let [item (just-now (buf :history))]
     (if (nil? item) buf
-      (let [[newbuf rchs] (apply-undo buf item)]
-        (update-in newbuf [:history] 
-                   go-back (fn[item] 
-                             (assoc item :changes rchs)))))))
-
-;(undo (active-buffer))
-(defn redo[buf]
-  (let [item (next-future (buf :history))]
-    (if (nil? item) buf
-      (let[[newbuf rchs] (apply-undo buf item)]
-        (update-in newbuf [:history] 
-                   go-future (fn[item] 
+        (let [[newbuf rchs] (apply-undo buf item)]
+          (update-in newbuf [:history] 
+                     go-back (fn [item] 
                                (assoc item :changes rchs)))))))
 
-(defn re-test[re s]
+;(undo (active-buffer))
+(defn redo [buf]
+  (let [item (next-future (buf :history))]
+    (if (nil? item) buf
+        (let [[newbuf rchs] (apply-undo buf item)]
+          (update-in newbuf [:history] 
+                     go-future (fn [item] 
+                                 (assoc item :changes rchs)))))))
+
+(defn re-test [re s]
   (cond (nil? re) false
         (string? s) (.find (re-matcher re s))
         :else (.find (.matcher s re))))
 
-(defn re-subs[re s]
+(defn re-subs [re s]
   (cond (nil? re) nil
         (string? s) (re-find re s)
         :else (let [m (.matcher s re)]
@@ -332,7 +332,7 @@
                   (subr s (.start m) (.end m))
                   nil))))
 
-(defn count-left-spaces[s]
+(defn count-left-spaces [s]
   (count (re-subs #"^\s*" s)))
 ;(pos-re-backward 2 (rope "aa bb") #"(?<=[^a-zA-Z_\-!.?+*=<>&#\':0-9])[a-zA-Z_\-!.?+*=<>&#\':0-9]|(?<=[a-zA-Z_\-!.?+*=<>&#\':0-9\s,])[^a-zA-Z_\-!.?+*=<>&#\':0-9\s,]")
 

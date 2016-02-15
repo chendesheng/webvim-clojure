@@ -11,7 +11,7 @@
 (def ^:private last-yank-reg "0")
 (def ^:private small-delete-reg "-")
 
-(defn- clipboard-upate-reg[ch]
+(defn- clipboard-upate-reg [ch]
   (let [s (clipboard-get)]
     (swap! registers update-in [ch] assoc :str s :linewise? (-> s last (= \newline)))))
 
@@ -25,15 +25,15 @@
     (clipboard-set! (v :str)))
   (swap! registers assoc ch v))
 
-(defn map-registers[f]
+(defn map-registers [f]
   (map f (sort @registers)))
 
 (defn registers-yank-to! [ch v]
   (registers-put! ch v)
   (if (and (not= ch black-hole-reg)
            (= ch unnamed-reg))
-      (registers-put! last-yank-reg v)
-      (registers-put! unnamed-reg v)))
+    (registers-put! last-yank-reg v)
+    (registers-put! unnamed-reg v)))
 
 ;TODO: A-Z append
 (defn registers-delete-to! [ch v]
@@ -43,7 +43,7 @@
     (do
       ;Register 1: Last deletion. Register 2: Second last deletion. And so on.
       (swap! registers 
-             (fn[registers]
+             (fn [registers]
                (-> registers
                    (assoc "1" v)
                    (assoc "2" (registers "1"))

@@ -33,7 +33,7 @@
     (reset! buffer-list (assoc @buffer-list id abuf))
     abuf))
 
-(defn create-buf[bufname filepath txt]
+(defn create-buf [bufname filepath txt]
   (let [txtLF (.replace txt "\r\n" "\n") ;always use LF in memory
         ;make sure last line ends with line break
         r (if (.endsWith txtLF "\n")
@@ -113,24 +113,24 @@
                   (if (fs/exists? f)
                     (debomify (slurp f)) "")))))
 
-(defn new-file[^String f]
+(defn new-file [^String f]
   (-> f
       open-file
       buffer-list-save!))
 
-(defn printable-filepath[buf]
+(defn printable-filepath [buf]
   (let [{nm :name
          path :filepath} buf]
     (if (nil? path) nm
-      (shorten-path path))))
+        (shorten-path path))))
 
-(defn dirty?[buf]
+(defn dirty? [buf]
   (not (and 
          (-> buf :pending-undo empty?)
          (identical? (-> buf :history just-now) (-> buf :save-point first))
          (= (buf :filepath) (-> buf :save-point second)))))
 
-(defn- write-to-disk[buf]
+(defn- write-to-disk [buf]
   (let [tmp (buf :str)
         s (if (buf :CRLF?) (.replace tmp "\n" "\r\n") tmp)
         f (buf :filepath)]

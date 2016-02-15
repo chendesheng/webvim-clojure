@@ -3,11 +3,11 @@
 (defn fuzzy-match 
   "return char indexs if word \"contains\" subject. length of subject must longer than 2"
   [word subject]
-  (let [indexes (reduce (fn[indexes ch]
+  (let [indexes (reduce (fn [indexes ch]
                           (let [i (.indexOf word (int ch) 
-                                             (if (empty? indexes)
-                                               0
-                                               (-> indexes last inc)))]
+                                            (if (empty? indexes)
+                                              0
+                                              (-> indexes last inc)))]
                             (if (neg? i)
                               (reduced [])
                               (conj indexes i)))) [] subject)]

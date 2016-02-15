@@ -2,25 +2,25 @@
   (:use webvim.core.line
         webvim.core.buffer))
 
-(defn- dissoc-empty[buf ks]
+(defn- dissoc-empty [buf ks]
   (if (empty? (get-in buf ks))
     (if (= 1 (count ks))
       (dissoc buf (first ks))
       (recur (update-in buf (pop ks) dissoc (peek ks)) (pop ks)))
     buf))
 
-(defn- dissoc-nil[buf k]
+(defn- dissoc-nil [buf k]
   (if (nil? (buf k))
     (dissoc buf k)
     buf))
 
-(defn- dissoc-if-equal[after before k]
+(defn- dissoc-if-equal [after before k]
   (if (and (not (nil? before))
            (= (before k) (after k)))
     (dissoc after k)
     after))
 
-(defn- remove-autocompl[{autocompl :autocompl :as after} before]
+(defn- remove-autocompl [{autocompl :autocompl :as after} before]
   (if (nil? autocompl)
     after
     (assoc after :autocompl
@@ -31,7 +31,7 @@
                (dissoc :replace)
                (dissoc :limit-number)))))
 
-(defn- line-editor[buf]
+(defn- line-editor [buf]
   (if (nil? (buf :line-buffer))
     buf
     (let [{s :str
@@ -42,11 +42,11 @@
           (update-in [:line-buffer] assoc :str (str prefix s))
           (update-in [:line-buffer] assoc :pos (+ pos (count prefix)))))))
 
-(defn- remove-visual[buf]
+(defn- remove-visual [buf]
   (if (-> :visual buf nil? not)
     (update-in buf [:visual] dissoc :range) buf))
 
-(defn- remove-fields[buf]
+(defn- remove-fields [buf]
   (-> buf 
       (dissoc :expandtab :CRLF? :history :context :last-cursor 
               :language :filepath :x :y :cursor :keymap 
@@ -58,51 +58,51 @@
       (dissoc-nil :keys)
       line-editor))
 
-(defn- diff-dirty[after before]
+(defn- diff-dirty [after before]
   (let [a (dirty? after)
         b (dirty? before)]
     ;(println "diff-dirty:" a b)
     (if (= a b) after
-      (assoc after :dirty a))))
+        (assoc after :dirty a))))
 
 (defn- render 
   "Write changes to browser."
   [before after]
   (let [txt (after :str)
         buf (cond (= before after)
-                ""
-                (or (nil? before) (not (= (:id before) (:id after))))
-                (-> after
-                    (assoc :str (str txt))
-                    (assoc :lang (-> after :language :name))
-                    (dissoc :changes)
-                    (remove-autocompl before)
-                    remove-fields)
-                :else
-                (-> after
-                    (diff-dirty before)
-                    (dissoc-if-equal before :line-buffer)
-                    (dissoc-if-equal before :autocompl)
-                    (remove-autocompl before)
-                    (dissoc-if-equal before :visual)
-                    (dissoc-if-equal before :scroll-top)
-                    (dissoc-if-equal before :mode)
-                    (dissoc-if-equal before :submode)
-                    (dissoc-if-equal before :brackets)
-                    (dissoc-if-equal before :keys)
-                    (dissoc-if-equal before :name)
-                    (dissoc-if-equal before :dirty)
-                    (dissoc-if-equal before :message)
-                    (dissoc-if-equal before :highlights)
-                    (dissoc-if-equal before :tabsize)
-                    (dissoc-if-equal before :pos)
-                    (dissoc-if-equal before :showkeys)
-                    (dissoc :str)
-                    remove-fields))]
+                  ""
+                  (or (nil? before) (not (= (:id before) (:id after))))
+                  (-> after
+                      (assoc :str (str txt))
+                      (assoc :lang (-> after :language :name))
+                      (dissoc :changes)
+                      (remove-autocompl before)
+                      remove-fields)
+                  :else
+                  (-> after
+                      (diff-dirty before)
+                      (dissoc-if-equal before :line-buffer)
+                      (dissoc-if-equal before :autocompl)
+                      (remove-autocompl before)
+                      (dissoc-if-equal before :visual)
+                      (dissoc-if-equal before :scroll-top)
+                      (dissoc-if-equal before :mode)
+                      (dissoc-if-equal before :submode)
+                      (dissoc-if-equal before :brackets)
+                      (dissoc-if-equal before :keys)
+                      (dissoc-if-equal before :name)
+                      (dissoc-if-equal before :dirty)
+                      (dissoc-if-equal before :message)
+                      (dissoc-if-equal before :highlights)
+                      (dissoc-if-equal before :tabsize)
+                      (dissoc-if-equal before :pos)
+                      (dissoc-if-equal before :showkeys)
+                      (dissoc :str)
+                      remove-fields))]
     buf))
 
 (defonce ui-agent (agent {:viewport {:w 0 :h 0}
-                          :render! (fn[a b] a)}))
+                          :render! (fn [a b] a)}))
 
 (defn- bound-scroll-top
   "Change scroll top make cursor inside viewport"
@@ -118,10 +118,10 @@
                (neg? (-> y (- h) inc)) 0
                :else (-> y (- h) inc))))))
 
-(defn send-buf![newbuf]
+(defn send-buf! [newbuf]
   (let [newbuf (bound-scroll-top newbuf)]
     (send-off ui-agent 
-              (fn[{buf :buf :as ui} newbuf]
+              (fn [{buf :buf :as ui} newbuf]
                 (let [diff (render buf newbuf)
                       render! (ui :render!)]
                   (-> ui
@@ -130,5 +130,5 @@
                                       (dissoc :changes)))))) newbuf)
     (assoc newbuf :changes [])))
 
-(defn ui-buf[]
+(defn ui-buf []
   (render nil (@ui-agent :buf)))
