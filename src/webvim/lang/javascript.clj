@@ -15,7 +15,7 @@
       (assoc-in [:language :id] ::javascript)
       (assoc-in [:language :name] "JavaScript")
       (assoc :tabsize 4)
-      (assoc :expandtab false)))
+      (assoc :expandtab true)))
 
 (defmethod indent-pos ::javascript
   [lang r pos]

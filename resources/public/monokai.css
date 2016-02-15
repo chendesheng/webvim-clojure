@@ -1,59 +1,63 @@
 body {
-	background:#272822;
+    background: #272822;
 }
+
 .lines .keyword {
-	color:#E92672;
+    color: #E92672;
 }
 
-.lines .meta, .lines .meta-keyword {
-	color:#75715E;
+.lines .meta,
+.lines .meta-keyword {
+    color: #75715E;
 }
 
-/*red*/
 .lines .selector-tag {
-	color:#E30054;
+    /*red*/
+    color: #E30054;
 }
 
 .lines .name,
 .lines .selector-id,
 .lines .selector-class,
 .lines .selector-persudo {
-	color:#A6E22E;
+    color: #A6E22E;
 }
 
 .lines .symbol {
-	color:#F92672;
+    color: #F92672;
 }
 
 .lines .comment {
-	color:#75715E;
+    color: #75715E;
 }
 
 .lines .string,
 .lines .regexp {
-	color:#E6DB74;
+    color: #E6DB74;
 }
 
 .lines .number,
 .lines .escape,
 .lines .literal {
-	color:#AE81FF;
+    color: #AE81FF;
 }
 
 .lines .build_in,
 .lines .built_in {
-	color:#e6db74;
+    color: #e6db74;
 }
 
 .lines .title {
-	color:#A6E22E;
+    color: #A6E22E;
 }
 
 .lines .attr,
 .lines .builtin-name,
 .lines .attribute {
-	color:#66D9EF;
+    color: #66D9EF;
 }
+
+
 /*.highlight-bracket-pair .line-selected, .cursor {
 	background:#F8F8F0;
 }
@@ -61,10 +65,13 @@ body {
 	opacity:0.5;
 }
 */
+
 .status-bar {
-	background:#565656;
-	border-top:solid 1px #323232;
+    background: #565656;
+    border-top: solid 1px #323232;
 }
+
+
 /*
  * Textmate monokai theme
 <plist version="1.0">

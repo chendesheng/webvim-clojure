@@ -85,6 +85,16 @@
                   ["print" cmd-print]
                   ["doc" cmd-doc]))))
 
+(defn- get-files[]
+  (let [dir? #(.isDirectory %)]
+    (tree-seq dir? #(.listFiles %) fs/*cwd*)))
+
+(defn format-all-js[]
+  (doseq [f (filter (fn[f]
+                       (clojure.string/ends-with? f ".css")) (get-files))]
+          (println f)
+          (clojure.java.shell/sh "js-beautify" "-r" "-f" (str f))))
+
 ;Not sure why agent await blocking everything. Start a java thread works fine.
 (defonce main 
   (do
