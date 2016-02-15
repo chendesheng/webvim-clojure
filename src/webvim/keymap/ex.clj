@@ -320,6 +320,7 @@
                     (fn[buf keycode]
                       (-> buf
                           (handler keycode)
+                          normal-mode-fix-pos
                           set-normal-mode))))
         (assoc "<cr>"
                (fn[buf keycode]

@@ -1,6 +1,7 @@
 (ns webvim.core.diff
   (:use webvim.core.utils
         webvim.core.line
+        webvim.core.pos
         clojure.pprint
         webvim.core.rope))
 
@@ -101,10 +102,12 @@
 ;  (pprint (buf :str))
 ;  buf)
 
-(defn- newline-if-empty[{r :str :as buf}]
-  (if (empty? r) 
-    (buf-insert buf 0 "\n")
-    buf))
+(defn- fix-position[buf]
+  (let [r (buf :str)
+        buf (if (empty? r) (buf-insert buf 0 "\n") buf)]
+    (if (>= (buf :pos) (-> buf :str count))
+      (buf-end buf)
+      buf)))
 
 (defn apply-line-changes[buf changes]
   (pprint changes)
@@ -115,7 +118,7 @@
 ;    (pprint (count lines))
 ;    (pprint lines)
 ;    (pprint changes)
-    (newline-if-empty
+    (fix-position
       (reduce
         (fn[buf {from :from len :len to :to}]
           ;(println "line:" from (nth lines from))
@@ -124,7 +127,7 @@
           ;(println "line:" (+ from len) (nth lines (+ from len)) (str (subr r (nth lines (+ from len)))))
           (let [[a _] (nth lines from)
                 [b _] (nth lines (+ from len) [cnt 0])]
-            (println "a b" a b)
-            (print "to" to)
+            ;(println "a b" a b)
+            ;(print "to" to)
             (buf-replace buf a b to))) buf changes))))
 
