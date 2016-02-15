@@ -1,9 +1,12 @@
 (ns webvim.lang.clojure
+  (:require [cljfmt.core :as cljfmt]
+            [me.raynes.fs :as fs])
   (:use webvim.core.event
         webvim.core.rope
         webvim.core.pos
         webvim.core.line
         webvim.core.lang
+        webvim.core.diff
         webvim.indent
         webvim.core.utils))
 
@@ -25,11 +28,11 @@
      :space-chars space-chars
      :not-space-chars (str "^" space-chars)
      :punctuation-chars (str "^" word-chars space-chars)
-     :not-punctuation-chars (str word-chars space-chars) }))
+     :not-punctuation-chars (str word-chars space-chars)}))
 
-(defn- indent-tab-size[^String s] 
+(defn- indent-tab-size [^String s] 
   (or (contains?
-        #{"try" "catch" "ns" "if" "if-not" "nil?" "fn" "let" "cond" "loop" "doseq" "for" "condp"} s)
+        #{"try" "catch" "ns" "if" "if-not" "nil?" "fn" "let" "cond" "loop" "doseq" "for" "condp" "doseq" "do"} s)
       (.startsWith s "def")))
 
 (defn clojure-comment? [line]
@@ -38,7 +41,7 @@
 (defn clojure-not-blank-or-comment? [line]
   (not (or (rblank? line) (clojure-comment? line))))
 
-(defn clojure-get-indent[line]
+(defn clojure-get-indent [line]
   (cond 
     (= 1 (count (.trim line)))
     1
@@ -52,9 +55,9 @@
         (-> w count (+ 2))))
     :else 2))
 
-(defn- comment-indent[r pos]
+(defn- comment-indent [r pos]
   (let [lines (ranges-to-texts r (pos-lines-seq+ r pos))
-        line (or (some (fn[line]
+        line (or (some (fn [line]
                          (if (clojure-not-blank-or-comment? line) line))
                        lines) (first lines))]
     ;(println line)
@@ -71,7 +74,7 @@
       (clojure-comment? (subr r a b))
       (comment-indent r pos)
       :else (let [tmp (reduce 
-                        (fn[stack [a _]]
+                        (fn [stack [a _]]
                           (let [ch (char-at r a)]
                             (if (and (contains? left-brackets ch) (empty? stack))
                               (reduced a)
@@ -92,3 +95,37 @@
 (defmethod indent-pos ::clojure
   [lang r pos]
   (clojure-indent r pos))
+
+(defn- fix-last-newline [s]
+  (if (re-test #"\R$" s) s (str s "\n")))
+
+(defn- cljfmt-diff [s name]
+  (println "cljfmt-diff")
+  (let [news (cljfmt/reformat-string s {:indents (assoc cljfmt/default-indents #".*" [[:block 0]])})
+        tmpfile (str (fs/temp-file "" name))]
+    (spit tmpfile (fix-last-newline s))
+    ;TODO: (fs/delete tmpfile)
+    (clojure.java.shell/sh 
+      "diff" tmpfile "-" "-u"
+      :in (fix-last-newline news))))
+
+(defn- format-buffer [buf]
+  ;use temp file
+  (if (-> buf :language :id (= ::clojure))
+    (let [res (time (cljfmt-diff (-> buf :str str) (buf :name)))]
+      ;(let [res (time (jsfmt (-> buf :str str)))]
+      ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
+      (if (-> res :err empty?) 
+        (-> buf
+            (apply-line-changes
+              (time (parse-diff (str (res :out)))))
+            save-undo)
+        (do
+          (println "Format Error:" (res :err))
+          (assoc buf :message (res :err)))))  ;use old buf if formatter fails
+    buf))
+
+(defonce ^:private listener
+  (listen :write-buffer
+          (fn [buf]
+            (format-buffer buf))))

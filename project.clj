@@ -4,6 +4,7 @@
   :license {:name "MIT License"
             :url ""}
   :dependencies [[org.clojure/clojure "1.8.0"]
+                 [cljfmt "0.3.0"]
                  [compojure "1.3.4"]
                  [hiccup "1.0.5"]
                  [ring/ring-json "0.3.1"]
