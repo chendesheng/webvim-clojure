@@ -52,8 +52,8 @@
 (defn- format-buffer[buf]
   ;use temp file
   (if (-> buf :language :id (= ::javascript))
-    ;(let [res (time (js-beautify (-> buf :str str) (buf :name)))]
-    (let [res (time (jsfmt (-> buf :str str)))]
+    (let [res (time (js-beautify (-> buf :str str) (buf :name)))]
+    ;(let [res (time (jsfmt (-> buf :str str)))]
       ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
       (if (-> res :err empty?) 
         (-> buf
