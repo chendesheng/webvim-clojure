@@ -27,15 +27,25 @@
   (or (fs/hidden? f)
       (not (not-any? #(re-test #"^\..+" %) (fs/split f)))))
 
+(defn- file-seq-bfs
+  ([pred files]
+   (if (empty? files)
+     nil
+     (concat files
+             (lazy-seq
+               (file-seq-bfs
+                 pred
+                 (reduce (fn[res dir]
+                           (concat res (lazy-seq 
+                                         (filter pred (.listFiles dir))))) nil (filter #(.isDirectory %) files)))))))
+  ([pred]
+   (file-seq-bfs pred [fs/*cwd*])))
+
 (defn- get-files []
-  ;https://clojuredocs.org/clojure.core/tree-seq
-  (let [dir? #(.isDirectory %)]
-    (map (comp shorten-path str)
-         (filter (comp not hidden?)
-                 (tree-seq (fn [f]
-                             (and (dir? f)
-                                  (not (hidden? f)))) #(.listFiles %) fs/*cwd*)))))
-    
+  (map str (file-seq-bfs (comp not hidden?)))) 
+
+;(pprint (take 20 (get-files)))
+
 (defn- set-line-buffer [buf s]
   (-> buf
       (assoc-in [:line-buffer :str] (rope s))
