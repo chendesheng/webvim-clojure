@@ -131,7 +131,7 @@
          (= (buf :filepath) (-> buf :save-point second)))))
 
 (defn- write-to-disk [buf]
-  (let [tmp (buf :str)
+  (let [tmp (-> buf :str str)
         s (if (buf :CRLF?) (.replace tmp "\n" "\r\n") tmp)
         f (buf :filepath)]
     (if (not (fs/exists? f))
