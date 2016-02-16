@@ -13,16 +13,38 @@
 
 (defn- new-autocompl [buf
                       {uncomplete-word :uncomplete-word
-                       fn-words :fn-words}]
+                       fn-words :fn-words
+                       async :async}]
   (if (-> buf :autocompl nil?) 
     (let [w (uncomplete-word buf)]
       (if (nil? w) buf
+        (if async
+          (let[[start-words & rest-words] (partition-all 5 (fn-words w))
+               autocompl (assoc buf :autocompl
+                                {:words start-words
+                                 :suggestions nil
+                                 :index 0})]
+            (future
+              (let [abuf (@buffer-list (buf :id))]
+                (doseq [words rest-words]
+                  (Thread/sleep 10)
+                  (send abuf
+                        (fn[buf words]
+                          (let [words (concat (-> buf :autocompl :words) words)]
+                            (-> buf
+                                (update-in [:autocompl]
+                                           (fn[autocompl]
+                                             (assoc autocompl
+                                                    :words words
+                                                    :suggestions (fuzzy-suggest w words))))
+                                webvim.core.ui/send-buf!))) words))))
+            autocompl)
           (assoc buf :autocompl
-               ;remove current word
-               ;words is fixed during auto complete
+                 ;remove current word
+                 ;words is fixed during auto complete
                  {:words (fn-words w)
                   :suggestions nil
-                  :index 0})))
+                  :index 0}))))
     buf))
 
 (defn- fuzzy-suggest [w words]
@@ -114,6 +136,7 @@
                       :move-down "<c-n>"
                       :uncomplete-word buffer-uncomplete-word
                       :replace-suggestion buffer-replace-suggestion
+                      :async false
                       :fn-words (fn [w] (keys (autocompl-remove-word @autocompl-words w)))
                       :limit-number 0}))
 

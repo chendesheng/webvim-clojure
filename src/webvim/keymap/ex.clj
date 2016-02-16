@@ -22,28 +22,20 @@
         webvim.keymap.compile
         webvim.keymap.action))
 
-;cache
-;TODO: monitor disk file change
-(def ^:private all-files (atom nil))
-
 (defn- hidden? [f]
   ;(pprint (fs/split f))
   (or (fs/hidden? f)
       (not (not-any? #(re-test #"^\..+" %) (fs/split f)))))
 
 (defn- get-files []
-  (if (nil? @all-files)
-    ;https://clojuredocs.org/clojure.core/tree-seq
-    (let [dir? #(.isDirectory %)]
-      (reset! all-files 
-              (map (comp shorten-path str)
-                   (filter (comp not hidden?)
-                           (tree-seq (fn [f]
-                                       (and (dir? f)
-                                            (not (hidden? f)))) #(.listFiles %) fs/*cwd*)))))
+  ;https://clojuredocs.org/clojure.core/tree-seq
+  (let [dir? #(.isDirectory %)]
+    (map (comp shorten-path str)
+         (filter (comp not hidden?)
+                 (tree-seq (fn [f]
+                             (and (dir? f)
+                                  (not (hidden? f)))) #(.listFiles %) fs/*cwd*)))))
     
-    @all-files))
-
 (defn- set-line-buffer [buf s]
   (-> buf
       (assoc-in [:line-buffer :str] (rope s))
@@ -185,7 +177,7 @@
       ;(println "dir:2" dir)
         (if (fs/directory? dir)
           (do
-            (alter-var-root (var fs/*cwd*) (constantly dir))
+            (alter-var-root (var fs/*cwd*) (constantly (fs/file dir)))
             (assoc buf :message (str "Set working directory to: " fs/*cwd*)))
           (assoc buf :message "Path is not a directory or not exists.")))))
 
