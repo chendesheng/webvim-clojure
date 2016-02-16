@@ -311,6 +311,7 @@
    :move-down "<tab>"
    :uncomplete-word ex-uncomplete-word
    :replace-suggestion ex-replace-suggestion
+   :async true
    :fn-words (fn [w] (get-files))
    :limit-number 20})
 
