@@ -90,8 +90,12 @@ function $exAutocomplHeight(bufid) {
 }
 
 function $remove(ele) {
-    if (!ele || !ele.parentNode) return;
-    ele.parentNode.removeChild(ele);
+    if (typeof ele.remove === 'function') {
+        ele.remove();
+    } else {
+        if (!ele || !ele.parentNode) return;
+        ele.parentNode.removeChild(ele);
+    }
 }
 
 function $lineNumber(bufid, linenum) {
@@ -157,7 +161,7 @@ function removeClass(ele, cls) {
 
 function $empty(ele) {
     while (ele.firstChild) {
-        ele.firstChild.remove();
+        $remove(ele.firstChild)
     }
 }
 
@@ -167,7 +171,7 @@ function removeUnused($p, usedIds) {
         var prev = i;
         i = i.nextSibling;
         if (!usedIds[prev.id]) {
-            prev.remove();
+            $remove(prev);
         }
     }
 }

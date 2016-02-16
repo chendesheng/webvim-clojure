@@ -36,7 +36,7 @@ function renderGutter(buf, from, visibleLines) {
     } else {
         for (var i = 0; i < -times; i++) {
             if ($g.firstChild) {
-                $g.firstChild.remove();
+                $remove($g.firstChild);
             }
         }
     }

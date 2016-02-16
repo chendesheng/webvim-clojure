@@ -18,7 +18,7 @@ window.onload = function() { //use window.onload, not sure if stylesheet is load
     d.textContent = 'M';
     document.body.appendChild(d);
     lineHeight = d.offsetHeight;
-    d.remove();
+    document.body.removeChild(d);
 
     keyboardInit();
     viewport.height = Math.floor((window.innerHeight - lineHeight * 1.5) / lineHeight);
