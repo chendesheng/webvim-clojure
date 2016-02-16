@@ -191,7 +191,9 @@
         re-start (re-pattern (str "(?m)(?<=[" filename-black-list "]|^)[^" filename-black-list "]"))
         [_ end] (pos-re+ r pos re-end)
         [start _] (pos-re- r pos re-start)
-        [[_ uri linenum]] (re-seq #"([^:]+)(:\d+)?" (str (subr r start end)))]
+        driver (let[driver (subr r (- start 2) start)]
+                 (if (re-test #"[a-zA-Z]:" driver) driver ""))
+        [[_ uri _ linenum]] (re-seq #"(([a-zA-Z]:)?[^:]+)(:\d+)?" (str driver (subr r start end)))]
     [uri linenum]))
 
 (defn goto-file [buf]
