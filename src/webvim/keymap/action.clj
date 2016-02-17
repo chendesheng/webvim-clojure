@@ -306,16 +306,22 @@
               (jump-push buf)
               (assoc buf :nextid newid))))))
   ([buf file linenum new-file?]
-   (let [newbuf (edit-file buf file new-file?)
-         nextid (newbuf :nextid)]
-     (if (nil? nextid) newbuf
-       (let [anextbuf (@buffer-list nextid)]
-         (send anextbuf (fn [buf row]
-                          (if (<= row 0) buf
-                            (-> buf
-                                (move-to-line (dec row))
-                                update-x))) (parse-int linenum))
-         newbuf)))))
+    (let [newbuf (edit-file buf file new-file?)
+          nextid (newbuf :nextid)
+          row (parse-int linenum)]
+      (if (nil? nextid)
+        (if (<= row 0) buf
+            (-> buf
+                jump-push
+                (move-to-line (dec row))
+                update-x))
+        (let [anextbuf (@buffer-list nextid)]
+          (send anextbuf (fn [buf row]
+                           (if (<= row 0) buf
+                               (-> buf
+                                   (move-to-line (dec row))
+                                   update-x))) row)
+          newbuf)))))
 
 (defn goto-buf [buf anextbuf]
   (if (nil? anextbuf) buf
