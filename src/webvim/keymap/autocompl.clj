@@ -39,6 +39,7 @@
           (let[all-words (partition-all 200 (fn-words w))
                autocompl (assoc buf :autocompl
                                 {:words nil
+                                 :w w
                                  :suggestions nil
                                  :index 0})]
             (future
@@ -51,30 +52,31 @@
                   ;(pprint (-> words first nil?))
                   ;(pprint (first words))
                   ;stop generate words when :autocompl is nil
-                  (if (and (-> @abuf :autocompl nil? not))
-                    (do
-                      (let [suggestions (vec (take limit-number
-                                                   (fuzzy-suggest (uncomplete-word @abuf) words)))]
-                        ;(pprint suggestions)
-                        (send abuf
-                              (fn[buf words suggestions]
-                                (if (-> buf :autocompl nil?)
-                                  buf
-                                  (-> buf
-                                      (update-in [:autocompl]
-                                                 (fn[autocompl]
-                                                   (assoc autocompl
-                                                          :words words
-                                                          :suggestions suggestions)))
-                                      webvim.core.ui/send-buf!))) words suggestions))
-                      (if (-> rest-words nil? not)
-                        (recur (concat words (first rest-words))
-                               (next rest-words))))))))
+                  (let [suggestions (vec (take limit-number
+                                               (fuzzy-suggest (-> @abuf :autocompl :w) words)))]
+                    ;(pprint suggestions)
+                    (send abuf
+                          (fn[buf words suggestions]
+                            (if (-> buf :autocompl nil?)
+                              buf
+                              (-> buf
+                                  (update-in [:autocompl]
+                                             (fn[autocompl]
+                                               (assoc autocompl
+                                                      :words words
+                                                      :suggestions suggestions)))
+                                  webvim.core.ui/send-buf!))) words suggestions))
+                  (if (and
+                        (-> @abuf :autocompl nil? not)
+                        (-> rest-words nil? not))
+                    (recur (concat words (first rest-words))
+                           (next rest-words))))))
             autocompl)
           (assoc buf :autocompl
                  ;remove current word
                  ;words is fixed during auto complete
                  {:words (fn-words w)
+                  :w w
                   :suggestions nil
                   :index 0}))))
     buf))
@@ -89,6 +91,7 @@
         ;(println "suggestions" suggestions)
         (-> buf 
             (assoc-in [:autocompl :index] 0)
+            (assoc-in [:autocompl :w] w)
             (assoc-in [:autocompl :suggestions]
                       (if (pos? limit-number)
                         (vec (take limit-number suggestions))
@@ -121,15 +124,12 @@
                   (fn [buf keycode]
                     (-> buf
                         (handler keycode)
-                        (new-autocompl provider)
                         (autocompl-move provider dec)))))
       (wrap-key (provider :move-down) 
                 (fn [handler]
                   (fn [buf keycode]
-                    (println "move-down")
                     (-> buf
                         (handler keycode)
-                        (new-autocompl provider)
                         (autocompl-move provider inc)))))
       (wrap-key :leave
                 (fn [handler]
@@ -137,17 +137,22 @@
                     (-> buf
                         (assoc :autocompl nil)
                         (handler keycode)))))
+      (wrap-key :before
+                (fn [handler]
+                  (fn [buf keycode]
+                    (if ((provider :start-autocompl?) buf keycode)
+                      (-> buf
+                          (handler keycode)
+                          (new-autocompl provider))
+                      (handler buf keycode)))))
       (wrap-key :after
                 (fn [handler]
                   (fn [buf keycode]
                     ;continue checking until there is no suggestions
-                    (if (or (-> buf :autocompl nil?)
-                            (= keycode (provider :move-up))
-                            (= keycode (provider :move-down)))
-                      (handler buf keycode)
                       (-> buf
                           (handler keycode)
-                          (autocompl-suggest provider))))))))
+                          (autocompl-suggest provider))
+                      (handler buf keycode))))))
 
 (defn- on-insert-mode-keymap [keymap]
   (extends-autocompl keymap
@@ -157,7 +162,10 @@
                       :replace-suggestion buffer-replace-suggestion
                       :async false
                       :fn-words (fn [w] (keys (autocompl-remove-word @autocompl-words w)))
-                      :limit-number 0}))
+                      :limit-number 0
+                      :start-autocompl? (fn[buf keycode]
+                                          (or (= keycode "<c-p>")
+                                              (= keycode "<c-n>")))}))
 
 (defn- on-ex-mode-keymap [keymap]
   (extends-autocompl keymap ex-autocompl-provider))

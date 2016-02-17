@@ -10,6 +10,7 @@
         webvim.lang.sql
         webvim.lang.go
         webvim.lang.csharp
+        webvim.lang.html
         webvim.core.buffer
         webvim.core.register
         webvim.core.keys

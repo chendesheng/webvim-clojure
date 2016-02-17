@@ -42,7 +42,7 @@
    (file-seq-bfs pred [fs/*cwd*])))
 
 (defn- get-files []
-  (map str (file-seq-bfs (comp not hidden?)))) 
+  (map (comp shorten-path str) (file-seq-bfs (comp not hidden?)))) 
 
 ;(pprint (take 20 (get-files)))
 
@@ -313,7 +313,10 @@
    :replace-suggestion ex-replace-suggestion
    :async true
    :fn-words (fn [w] (get-files))
-   :limit-number 20})
+   :limit-number 20
+   :start-autocompl? (fn[buf keycode]
+                       (or (= keycode "<s-tab>")
+                           (= keycode "<tab>")))})
 
 (defn init-ex-mode-keymap []
   (let [cmds (ex-commands)]
