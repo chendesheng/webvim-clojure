@@ -191,23 +191,16 @@
         re-start (re-pattern (str "(?m)(?<=[" filename-black-list "]|^)[^" filename-black-list "]"))
         [_ end] (pos-re+ r pos re-end)
         [start _] (pos-re- r pos re-start)
-        driver (let[driver (subr r (- start 2) start)]
+        driver (let [driver (subr r (- start 2) start)]
                  (if (re-test #"[a-zA-Z]:" driver) driver ""))
         [[_ uri _ linenum]] (re-seq #"(([a-zA-Z]:)?[^:]+)(:\d+)?" (str driver (subr r start end)))]
     [uri linenum]))
 
 (defn goto-file [buf]
-  (let [[uri linenum] (path-under-cursor buf)
-        newbuf (edit-file buf uri false)
-        nextid (newbuf :nextid)]
-    (if (nil? nextid) newbuf
-        (let [anextbuf (@buffer-list nextid)]
-          (send anextbuf (fn [buf row]
-                           (if (<= row 0) buf
-                               (-> buf
-                                   (move-to-line (dec row))
-                                   update-x))) (parse-int linenum))
-          newbuf))))
+  (let [[uri linenum] (path-under-cursor buf)]
+    (if (nil? linenum)
+      (edit-file buf uri false)
+      (edit-file buf uri linenum false))))
 
 (defn- dont-cross-line [f]
   (fn [buf keycode]

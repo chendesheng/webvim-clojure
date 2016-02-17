@@ -204,8 +204,11 @@
 (defn cmd-nohl [buf _ _] 
   (assoc buf :highlights []))
 
-(defn cmd-edit [buf excmd file]
-  (edit-file buf file true))
+(defn cmd-edit [buf excmd args]
+  (let [[[_ file _ linenum]] (re-seq #"(\S+)(\s+(\d+))?" args)]
+    (if (nil? linenum)
+      (edit-file buf file true)
+      (edit-file buf file (parse-int linenum) true))))
 
 (def ^:private commands-history (atom (parallel-universe)))
 

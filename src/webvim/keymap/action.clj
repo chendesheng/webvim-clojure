@@ -281,29 +281,41 @@
               (send-buf! newbuf))))
     @abuf))
 
-(defn edit-file [buf file new-file?]
-  (if (or (empty? file) (path= file (:filepath buf)))
-    buf
-    (let [buf-exists (some #(if (path= file (% :filepath)) %)
-                           (->> @buffer-list vals (map deref)))
-          file (expand-home file)
-          newbuf (if (nil? buf-exists)
-                   (if (or new-file? (fs/exists? file))
-                     (if (fs/directory? file)
-                       (edit-dir file)
-                       (-> file str new-file deref))
-                     nil)
-                   buf-exists)]
-      (if (or (nil? newbuf) (= (buf :id) (newbuf :id))) buf
-          (let [newid (newbuf :id)]
-            (change-active-buffer (buf :id) newid)
-            (jump-push buf)
-            (assoc buf :nextid newid))))))
-
 (defn move-to-line [buf row]
   (-> buf
       (lines-row row)
       line-start))
+
+(defn edit-file
+  ([buf file new-file?]
+    (if (or (empty? file) (path= file (:filepath buf)))
+      buf
+      (let [buf-exists (some #(if (path= file (% :filepath)) %)
+                             (->> @buffer-list vals (map deref)))
+            file (expand-home file)
+            newbuf (if (nil? buf-exists)
+                     (if (or new-file? (fs/exists? file))
+                       (if (fs/directory? file)
+                         (edit-dir file)
+                         (-> file str new-file deref))
+                       nil)
+                     buf-exists)]
+        (if (or (nil? newbuf) (= (buf :id) (newbuf :id))) buf
+            (let [newid (newbuf :id)]
+              (change-active-buffer (buf :id) newid)
+              (jump-push buf)
+              (assoc buf :nextid newid))))))
+  ([buf file linenum new-file?]
+   (let [newbuf (edit-file buf file new-file?)
+         nextid (newbuf :nextid)]
+     (if (nil? nextid) newbuf
+       (let [anextbuf (@buffer-list nextid)]
+         (send anextbuf (fn [buf row]
+                          (if (<= row 0) buf
+                            (-> buf
+                                (move-to-line (dec row))
+                                update-x))) (parse-int linenum))
+         newbuf)))))
 
 (defn goto-buf [buf anextbuf]
   (if (nil? anextbuf) buf
