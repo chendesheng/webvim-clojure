@@ -29,17 +29,17 @@
 
 (defn- file-seq-bfs
   ([pred files]
-   (if (empty? files)
-     nil
-     (concat files
-             (lazy-seq
-               (file-seq-bfs
-                 pred
-                 (reduce (fn[res dir]
-                           (concat res (lazy-seq 
-                                         (filter pred (.listFiles dir))))) nil (filter #(.isDirectory %) files)))))))
+    (if (empty? files)
+      nil
+      (concat files
+              (lazy-seq
+                (file-seq-bfs
+                  pred
+                  (reduce (fn [res dir]
+                            (concat res (lazy-seq 
+                                          (filter pred (.listFiles dir))))) nil (filter #(.isDirectory %) files)))))))
   ([pred]
-   (file-seq-bfs pred [fs/*cwd*])))
+    (file-seq-bfs pred [fs/*cwd*])))
 
 (defn- get-files []
   (map (comp shorten-path str) (file-seq-bfs (comp not hidden?)))) 
@@ -304,7 +304,7 @@
                                  :pos (count news)})))))
 
 (defn- ex-uncomplete-word [{{r :str} :line-buffer :as buf}]
-  (let [[[_ w]] (re-seq #"^e\s(.*)" (-> buf :line-buffer :str str))] w))
+  (let [[[_ w]] (re-seq #"^e\s(\S*)" (-> buf :line-buffer :str str))] w))
 
 (def ex-autocompl-provider
   {:move-up "<s-tab>"
@@ -314,9 +314,11 @@
    :async true
    :fn-words (fn [w] (get-files))
    :limit-number 20
-   :start-autocompl? (fn[buf keycode]
-                       (or (= keycode "<s-tab>")
-                           (= keycode "<tab>")))})
+   :start-autocompl? (fn [buf keycode]
+                       (->> buf
+                            :line-buffer
+                            :str
+                            (re-test #"^e\s\S+")))})
 
 (defn init-ex-mode-keymap []
   (let [cmds (ex-commands)]

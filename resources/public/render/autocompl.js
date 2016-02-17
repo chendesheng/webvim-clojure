@@ -70,17 +70,19 @@ function renderAutocompl(buf) {
         buf.suggestions = suggestions;
     }
 
-    if (suggestions == null || suggestions.length < 1) {
-        //This should not happen, server problem
+    if (
+        /*This should never happen, server problem*/
+        suggestions == null ||
+        suggestions.length < 1 ||
+        /*no choice*/
+        suggestions.length == 1 ||
+        /*selected the only choice:*/
+        (suggestions.length == 2 &&
+            (autocompl.index == 1 || suggestions[0] == suggestions[1]))
+    ) {
         $hideAutocompl(bufid);
         return;
     }
-
-    if (suggestions.length <= 2) {
-        $hideAutocompl(bufid);
-        return;
-    }
-
 
     var selectedIndex = autocompl.index;
     var lastScrollTop;

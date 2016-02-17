@@ -35,50 +35,50 @@
   (if (-> buf :autocompl nil?) 
     (let [w (uncomplete-word buf)]
       (if (nil? w) buf
-        (if async
-          (let[all-words (partition-all 200 (fn-words w))
-               autocompl (assoc buf :autocompl
-                                {:words nil
-                                 :w w
-                                 :suggestions nil
-                                 :index 0})]
-            (future
-              (println "future")
-              (let [abuf (@buffer-list (buf :id))]
-                (loop [words (first all-words)
-                       rest-words (next all-words)]
+          (if async
+            (let [all-words (partition-all 200 (fn-words w))
+                  autocompl (assoc buf :autocompl
+                                   {:words nil
+                                    :w w
+                                    :suggestions nil
+                                    :index 0})]
+              (future
+                (println "future")
+                (let [abuf (@buffer-list (buf :id))]
+                  (loop [words (first all-words)
+                         rest-words (next all-words)]
                   ;(println (empty? rest-words))
                   ;(pprint (empty? words))
                   ;(pprint (-> words first nil?))
                   ;(pprint (first words))
                   ;stop generate words when :autocompl is nil
-                  (let [suggestions (vec (take limit-number
-                                               (fuzzy-suggest (-> @abuf :autocompl :w) words)))]
+                    (let [suggestions (vec (take limit-number
+                                                 (fuzzy-suggest (-> @abuf :autocompl :w) words)))]
                     ;(pprint suggestions)
-                    (send abuf
-                          (fn[buf words suggestions]
-                            (if (-> buf :autocompl nil?)
-                              buf
-                              (-> buf
-                                  (update-in [:autocompl]
-                                             (fn[autocompl]
-                                               (assoc autocompl
-                                                      :words words
-                                                      :suggestions suggestions)))
-                                  webvim.core.ui/send-buf!))) words suggestions))
-                  (if (and
-                        (-> @abuf :autocompl nil? not)
-                        (-> rest-words nil? not))
-                    (recur (concat words (first rest-words))
-                           (next rest-words))))))
-            autocompl)
-          (assoc buf :autocompl
+                      (send abuf
+                            (fn [buf words suggestions]
+                              (if (-> buf :autocompl nil?)
+                                buf
+                                (-> buf
+                                    (update-in [:autocompl]
+                                               (fn [autocompl]
+                                                 (assoc autocompl
+                                                        :words words
+                                                        :suggestions suggestions)))
+                                    webvim.core.ui/send-buf!))) words suggestions))
+                    (if (and
+                          (-> @abuf :autocompl nil? not)
+                          (-> rest-words nil? not))
+                      (recur (concat words (first rest-words))
+                             (next rest-words))))))
+              autocompl)
+            (assoc buf :autocompl
                  ;remove current word
                  ;words is fixed during auto complete
-                 {:words (fn-words w)
-                  :w w
-                  :suggestions nil
-                  :index 0}))))
+                   {:words (fn-words w)
+                    :w w
+                    :suggestions nil
+                    :index 0}))))
     buf))
 
 (defn- autocompl-suggest [{{words :words :as autocompl} :autocompl :as buf}
@@ -149,10 +149,13 @@
                 (fn [handler]
                   (fn [buf keycode]
                     ;continue checking until there is no suggestions
+                    (if (or (-> buf :autocompl nil?)
+                            (= keycode (provider :move-up))
+                            (= keycode (provider :move-down)))
+                      (handler buf keycode)
                       (-> buf
                           (handler keycode)
-                          (autocompl-suggest provider))
-                      (handler buf keycode))))))
+                          (autocompl-suggest provider))))))))
 
 (defn- on-insert-mode-keymap [keymap]
   (extends-autocompl keymap
@@ -163,7 +166,7 @@
                       :async false
                       :fn-words (fn [w] (keys (autocompl-remove-word @autocompl-words w)))
                       :limit-number 0
-                      :start-autocompl? (fn[buf keycode]
+                      :start-autocompl? (fn [buf keycode]
                                           (or (= keycode "<c-p>")
                                               (= keycode "<c-n>")))}))
 
