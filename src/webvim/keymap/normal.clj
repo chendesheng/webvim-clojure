@@ -194,7 +194,7 @@
         driver (let [driver (subr r (- start 2) start)]
                  (if (re-test #"[a-zA-Z]:" driver) driver ""))
         [[_ uri _ linenum]] (re-seq #"(([a-zA-Z]:)?[^:]+)(:\d+)?" (str driver (subr r start end)))]
-    [uri linenum]))
+    [uri (parse-int linenum)]))
 
 (defn goto-file [buf]
   (let [[uri linenum] (path-under-cursor buf)]
