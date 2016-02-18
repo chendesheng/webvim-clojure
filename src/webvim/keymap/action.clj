@@ -308,7 +308,7 @@
   ([buf file linenum new-file?]
     (let [newbuf (edit-file buf file new-file?)
           nextid (newbuf :nextid)
-          row (parse-int linenum)]
+          row (dec linenum)]
       (if (nil? nextid)
         (if (<= row 0) buf
             (-> buf
@@ -319,7 +319,7 @@
           (send anextbuf (fn [buf row]
                            (if (<= row 0) buf
                                (-> buf
-                                   (move-to-line (dec row))
+                                   (move-to-line row)
                                    update-x))) row)
           newbuf)))))
 
