@@ -26,10 +26,11 @@
     (assoc after :autocompl
            (-> autocompl
                (dissoc-if-equal (:autocompl before) :suggestions)
-               (dissoc :words)
-               (dissoc :uncomplete-word)
-               (dissoc :replace)
-               (dissoc :limit-number)))))
+               (dissoc :words
+                       :w
+                       :uncomplete-word
+                       :replace
+                       :limit-number)))))
 
 (defn- line-editor [buf]
   (if (nil? (buf :line-buffer))
@@ -37,10 +38,11 @@
     (let [{s :str
            prefix :prefix
            pos :pos} (-> buf :line-buffer)] 
-      (-> buf
-          (update-in [:line-buffer] dissoc :prefix)
-          (update-in [:line-buffer] assoc :str (str prefix s))
-          (update-in [:line-buffer] assoc :pos (+ pos (count prefix)))))))
+      (update-in buf [:line-buffer] (fn [line-buf]
+                                      (-> line-buf
+                                          (dissoc :prefix)
+                                          (assoc :str (str prefix s)
+                                                 :pos (+ pos (count prefix)))))))))
 
 (defn- remove-visual [buf]
   (if (-> :visual buf nil? not)
