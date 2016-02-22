@@ -104,22 +104,23 @@ function $lineNumber(bufid, linenum) {
 
 window.requestAnimationFrame = window.requestAnimationFrame ||
     function(fn) {
-        setTimeout(fn, 1000 / 60);
+        return setTimeout(fn, 1000 / 60);
     };
 
-function _timerScroll(ele, scrollto) {
-    if (Math.abs(ele.scrollTop - scrollto) < lineHeight) {
+function _timerScroll(ele, scrollto, i) {
+    if (i == 0) {
         ele.scrollTop = scrollto;
     } else {
         ele.scrollTop = (ele.scrollTop + scrollto) / 2;
         window.requestAnimationFrame(function() {
-            _timerScroll(ele, scrollto);
+            console.log(scrollto);
+            _timerScroll(ele, scrollto, --i);
         });
     }
 }
 
 function $animateScroll(ele, scrollto) {
-    _timerScroll(ele, scrollto);
+    _timerScroll(ele, scrollto, 5);
 }
 
 function $tabsize(tabsize) {
