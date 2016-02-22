@@ -113,7 +113,6 @@ function _timerScroll(ele, scrollto, i) {
     } else {
         ele.scrollTop = (ele.scrollTop + scrollto) / 2;
         window.requestAnimationFrame(function() {
-            console.log(scrollto);
             _timerScroll(ele, scrollto, --i);
         });
     }
