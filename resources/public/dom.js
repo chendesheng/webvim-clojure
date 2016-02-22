@@ -102,19 +102,24 @@ function $lineNumber(bufid, linenum) {
     return document.getElementById('line-' + bufid + '-' + linenum);
 }
 
-function _timerScroll(ele, scrollto, i) {
-    if (i > 1) {
-        ele.scrollTop = (ele.scrollTop + scrollto) / 2;
-        setTimeout(function() {
-            _timerScroll(ele, scrollto, i - 1);
-        }, 15); // 1000/15=66.66 frames per second
-    } else {
+window.requestAnimationFrame = window.requestAnimationFrame ||
+    function(fn) {
+        setTimeout(fn, 1000 / 60);
+    };
+
+function _timerScroll(ele, scrollto) {
+    if (Math.abs(ele.scrollTop - scrollto) < lineHeight) {
         ele.scrollTop = scrollto;
+    } else {
+        ele.scrollTop = (ele.scrollTop + scrollto) / 2;
+        window.requestAnimationFrame(function() {
+            _timerScroll(ele, scrollto);
+        });
     }
 }
 
 function $animateScroll(ele, scrollto) {
-    _timerScroll(ele, scrollto, 5);
+    _timerScroll(ele, scrollto);
 }
 
 function $tabsize(tabsize) {
