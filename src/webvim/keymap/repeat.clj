@@ -21,27 +21,23 @@
     (update-in buf [:context] dissoc :repeat-prefix)
     buf))
 
-(defn- on-normal-mode-keymap [keymap]
-  (-> keymap
-      (wrap-key "0" (fn [handler]
-                      (fn [buf keycode]
-                        (if (-> buf :context :repeat-prefix nil? not)
-                          (append-repeat-prefix buf "0")
-                          (handler buf keycode)))))
-      (wrap-key :else (fn [handler]
-                        (fn [buf keycode]
-                          (if (re-test #"^[0-9]$" keycode)
-                            (-> buf
-                                (handler keycode)
-                                (append-repeat-prefix keycode))
-                            (handler buf keycode)))))
-      (wrap-key :after (fn [handler]
-                         (fn [buf keycode]
-                           (-> buf
-                               (handler keycode)
-                               (reset-repeat-prefix keycode)))))))
-
-(defonce ^:private listener1
-  (listen :normal-mode-keymap
-          (fn [keymap]
-            (on-normal-mode-keymap keymap))))
+(listen :normal-mode-keymap
+        (fn [keymap]
+          (-> keymap
+              (wrap-key "0" (fn [handler]
+                              (fn [buf keycode]
+                                (if (-> buf :context :repeat-prefix nil? not)
+                                  (append-repeat-prefix buf "0")
+                                  (handler buf keycode)))))
+              (wrap-key :else (fn [handler]
+                                (fn [buf keycode]
+                                  (if (re-test #"^[0-9]$" keycode)
+                                    (-> buf
+                                        (handler keycode)
+                                        (append-repeat-prefix keycode))
+                                    (handler buf keycode)))))
+              (wrap-key :after (fn [handler]
+                                 (fn [buf keycode]
+                                   (-> buf
+                                       (handler keycode)
+                                       (reset-repeat-prefix keycode))))))))

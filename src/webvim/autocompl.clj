@@ -52,16 +52,15 @@
 (defn autocompl-remove-word [words w]
   (remove-words words {w 1}))
 
-(defonce ^:private listen-new-buffer
-  (listen
-    :new-buffer
-    (fn [buf]
-      (println "autocompl new-buffer")
-      (send autocompl-words
-            (fn [words]
-              (merge-words words
-                           (autocompl-parse (buf :language) (buf :str)))))
-      buf)))
+(listen
+  :new-buffer
+  (fn [buf]
+    (println "autocompl new-buffer")
+    (send autocompl-words
+          (fn [words]
+            (merge-words words
+                         (autocompl-parse (buf :language) (buf :str)))))
+    buf))
 
 (defn expand-ends-word [lang s a b]
   (let [re-left (re-pattern (str "(?<=[" (not-word-chars lang) "])"))
@@ -115,15 +114,14 @@
                     lang (subr
                            news (expand-ends-word lang news a newb)))))))))
 
-(defonce ^:private listen-change-buffer 
-  (listen
-    :change-buffer
-    (fn [{lang :language
-          news :str
-          :as buf}
-         {olds :str
-          :as oldbuf} c]
-      (when-not (= news olds)
-        (autocompl-update
-          lang news olds c))
-      buf)))
+(listen
+  :change-buffer
+  (fn [{lang :language
+        news :str
+        :as buf}
+       {olds :str
+        :as oldbuf} c]
+    (when-not (= news olds)
+      (autocompl-update
+        lang news olds c))
+    buf))

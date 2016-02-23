@@ -52,7 +52,6 @@
           (assoc buf :message (res :err)))))  ;use old buf if formatter fails
     buf))
 
-(defonce ^:private listener
-  (listen :write-buffer
-          (fn [buf]
-            (format-buffer buf))))
+(listen :write-buffer
+        (fn [buf]
+          (format-buffer buf)))

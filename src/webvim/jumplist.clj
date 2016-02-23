@@ -112,8 +112,7 @@
     buf))
 
 ;keep track positions when buffer changed
-(defonce ^:private listen-change-buffer 
-  (listen
-    :change-buffer
-    (fn [buf oldbuf c]
-      (on-buffer-change buf oldbuf c))))
+(listen
+  :change-buffer
+  (fn [buf oldbuf c]
+    (on-buffer-change buf oldbuf c)))

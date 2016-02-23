@@ -371,14 +371,13 @@
             :else replace-char-keycode}}) :visual-mode-keymap))
 
 ;keep track visual ranges when buffer changed
-(defonce ^:private listen-change-buffer 
-  (listen
-    :change-buffer
-    (fn [buf _ c]
-      (let [cpos (c :pos)
-            delta (- (-> c :to count) (c :len))]
-        (if (nil? (buf :last-visual)) buf
-            (update-in buf [:last-visual :range]
-                       (fn [[a b :as rg]]
-                         [(if (< a cpos) a (+ a delta))
-                          (if (< b cpos) b (+ b delta))])))))))
+(listen
+  :change-buffer
+  (fn [buf _ c]
+    (let [cpos (c :pos)
+          delta (- (-> c :to count) (c :len))]
+      (if (nil? (buf :last-visual)) buf
+          (update-in buf [:last-visual :range]
+                     (fn [[a b :as rg]]
+                       [(if (< a cpos) a (+ a delta))
+                        (if (< b cpos) b (+ b delta))]))))))

@@ -24,48 +24,36 @@
       (registers-put! "." {:keys keys :str (string/join keys)}))
     (dissoc buf :dot-repeat-keys)))
 
-(defn- on-before-handle-key [buf keycode]
-  (update-in buf [:dot-repeat-keys] conj keycode))
+(listen
+  :before-handle-key
+  (fn [buf keycode]
+    (update-in buf [:dot-repeat-keys] conj keycode)))
 
-(defn- on-normal-mode-keymap [keymap]
-  (-> keymap
-      (wrap-key 
-        :after
-        (fn [handler]
-          (fn [buf keycode]
-            (if (= (buf :mode) insert-mode)
-              (handler buf keycode)
-              (-> buf
-                  save-dot-repeat
-                  (handler keycode))))))
-      (assoc "." dot-repeat)))
+(listen
+  :normal-mode-keymap
+  (fn [keymap]
+    (-> keymap
+        (wrap-key 
+          :after
+          (fn [handler]
+            (fn [buf keycode]
+              (if (= (buf :mode) insert-mode)
+                (handler buf keycode)
+                (-> buf
+                    save-dot-repeat
+                    (handler keycode))))))
+        (assoc "." dot-repeat))))
 
-(defn- on-insert-mode-keymap [keymap]
-  (wrap-key
-    keymap :leave
-    (fn [handler]
-      (fn [buf keycode]
-        (-> buf
-            save-dot-repeat
-            (handler keycode))))))
-
-(defonce ^:private listener1
-  (listen
-    :before-handle-key
-    (fn [buf keycode]
-      (on-before-handle-key buf keycode))))
-
-(defonce ^:private listener2
-  (listen
-    :normal-mode-keymap
-    (fn [keymap]
-      (on-normal-mode-keymap keymap))))
-
-(defonce ^:private listener3
-  (listen
-    :insert-mode-keymap
-    (fn [keymap]
-      (on-insert-mode-keymap keymap))))
+(listen
+  :insert-mode-keymap
+  (fn [keymap]
+    (wrap-key
+      keymap :leave
+      (fn [handler]
+        (fn [buf keycode]
+          (-> buf
+              save-dot-repeat
+              (handler keycode)))))))
 
 
 

@@ -157,44 +157,32 @@
                           (handler keycode)
                           (autocompl-suggest provider))))))))
 
-(defn- on-insert-mode-keymap [keymap]
-  (extends-autocompl keymap
-                     {:move-up "<c-p>"
-                      :move-down "<c-n>"
-                      :uncomplete-word buffer-uncomplete-word
-                      :replace-suggestion buffer-replace-suggestion
-                      :async false
-                      :fn-words (fn [w] (keys (autocompl-remove-word @autocompl-words w)))
-                      :limit-number 0
-                      :start-autocompl? (fn [buf keycode]
-                                          (or (= keycode "<c-p>")
-                                              (= keycode "<c-n>")))}))
+(listen
+  :insert-mode-keymap
+  (fn [keymap]
+    (extends-autocompl keymap
+                       {:move-up "<c-p>"
+                        :move-down "<c-n>"
+                        :uncomplete-word buffer-uncomplete-word
+                        :replace-suggestion buffer-replace-suggestion
+                        :async false
+                        :fn-words (fn [w] (keys (autocompl-remove-word @autocompl-words w)))
+                        :limit-number 0
+                        :start-autocompl? (fn [buf keycode]
+                                            (or (= keycode "<c-p>")
+                                                (= keycode "<c-n>")))})))
 
-(defn- on-ex-mode-keymap [keymap]
-  (extends-autocompl keymap ex-autocompl-provider))
+(listen
+  :temp-normal-mode-keymap
+  (fn [keymap]
+    (wrap-key keymap :enter
+              (fn [handler]
+                (fn [buf keycode]
+                  (-> buf
+                      (assoc :autocompl nil)
+                      (handler keycode)))))))
 
-(defn- on-temp-normal-mode-keymap [keymap]
-  (wrap-key keymap :enter
-            (fn [handler]
-              (fn [buf keycode]
-                (-> buf
-                    (assoc :autocompl nil)
-                    (handler keycode))))))
-
-(defonce ^:private listener1
-  (listen
-    :insert-mode-keymap
-    (fn [keymap]
-      (on-insert-mode-keymap keymap))))
-
-(defonce ^:private listener2
-  (listen
-    :temp-normal-mode-keymap
-    (fn [keymap]
-      (on-temp-normal-mode-keymap keymap))))
-
-(defonce ^:private listener3
-  (listen
-    :ex-mode-keymap
-    (fn [keymap]
-      (on-ex-mode-keymap keymap))))
+(listen
+  :ex-mode-keymap
+  (fn [keymap]
+    (extends-autocompl keymap ex-autocompl-provider)))

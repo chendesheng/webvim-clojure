@@ -37,7 +37,6 @@
             save-undo)))
     buf))
 
-(defonce ^:private listener
-  (listen :write-buffer
-          (fn [buf]
-            (format-buffer buf))))
+(listen :write-buffer
+        (fn [buf]
+          (format-buffer buf)))
