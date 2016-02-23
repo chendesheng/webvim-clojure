@@ -194,13 +194,13 @@
         driver (let [driver (subr r (- start 2) start)]
                  (if (re-test #"[a-zA-Z]:" driver) driver ""))
         [[_ uri _ linenum]] (re-seq #"(([a-zA-Z]:)?[^:]+)(:\d+)?" (str driver (subr r start end)))]
-    [uri (parse-int linenum)]))
+    [uri linenum]))
 
 (defn goto-file [buf]
   (let [[uri linenum] (path-under-cursor buf)]
     (if (nil? linenum)
       (edit-file buf uri false)
-      (edit-file buf uri linenum false))))
+      (edit-file buf uri (parse-int linenum) false))))
 
 (defn- dont-cross-line [f]
   (fn [buf keycode]
