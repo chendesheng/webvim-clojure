@@ -12,6 +12,7 @@
         webvim.lang.csharp
         webvim.lang.html
         webvim.core.buffer
+        webvim.core.event
         webvim.core.register
         webvim.core.keys
         webvim.core.utils
@@ -102,7 +103,9 @@
                 (if-not (nil? anextbuf)
                   (send anextbuf
                         (fn [buf]
-                          (send-buf! buf)))))
+                          (-> buf
+                              (fire-event :switch-buffer)
+                              send-buf!)))))
               (dissoc buf :nextid))))
       (catch Exception e
         (println e)
@@ -113,6 +116,17 @@
           (-> buf
               (append-output-panel (str sw) true)
               (dissoc :nextid)))))))
+
+(comment
+  (listen :switch-buffer
+          (fn [buf]
+            (println "switch buffer to:" (buf :name))
+            buf))
+
+  (listen :close-buffer
+          (fn [buf]
+            (println "close buffer:" (buf :name))
+            buf)))
 
 (defn- handle-socket [req]
   {:on-connect (fn [ws]

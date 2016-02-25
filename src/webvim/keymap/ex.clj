@@ -150,7 +150,9 @@
     (if (nil? alternatebuf)
       (registers-put! "#" nil)
       (registers-put! "#" (file-register alternatebuf)))
-    (assoc buf :nextid nextid)))
+    (-> buf
+        (assoc :nextid nextid)
+        (fire-event :close-buffer))))
 
 (defn cmd-eval [buf execmd args]
   (try 
