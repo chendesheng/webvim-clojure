@@ -10,6 +10,7 @@
         webvim.core.line
         webvim.core.buffer
         webvim.core.register
+        webvim.core.diff
         webvim.core.pos
         webvim.core.parallel-universe
         webvim.core.ui
@@ -206,10 +207,29 @@
 (defn cmd-nohl [buf _ _] 
   (assoc buf :highlights []))
 
+(defn- fix-last-newline [s]
+  (if (re-test #"\R$" s) s (str s "\n")))
+
+(defn- buf-reload [buf]
+  (let [f (buf :filepath)
+        res (clojure.java.shell/sh "diff" "-" f "-u" :in (fix-last-newline (-> buf :str str)))]
+    (if (-> res :err empty?) 
+      (let [changes (time (parse-diff (str (res :out))))]
+        (-> buf
+            (apply-line-changes changes)
+            save-undo
+            set-save-point 
+            set-mod-time
+            (assoc :message (format "File reloaded, %d change(s)" (count changes)))))
+      (assoc buf :message (res :err)))))  ;use old buf if formatter fails
+
 (defn cmd-edit [buf excmd args]
+  (println "edit")
   (let [[[_ file _ linenum]] (re-seq #"(\S+)(\s+(\d+))?" args)]
     (if (nil? linenum)
-      (edit-file buf file true)
+      (if (and (empty? file) (fs/exists? (buf :filepath)))
+        (buf-reload buf)
+        (edit-file buf file true))
       (edit-file buf file (parse-int linenum) true))))
 
 (def ^:private commands-history (atom (parallel-universe)))
@@ -342,4 +362,12 @@
                (fn [buf keycode]
                  (ex-tab-complete buf cmds))))))
 
+(listen :switch-buffer
+        (fn [buf]
+          (if (and (not= (buf :mod-time) (mod-time buf))
+                   (not (dirty? buf)))
+            (-> buf
+                buf-reload
+                normal-mode-fix-pos)
+            buf)))
 

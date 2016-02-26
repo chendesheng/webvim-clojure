@@ -33,6 +33,14 @@
     (reset! buffer-list (assoc @buffer-list id abuf))
     abuf))
 
+(defn mod-time [buf]
+  (if (-> buf :filepath nil?)
+    0
+    (-> buf :filepath fs/mod-time)))
+
+(defn set-mod-time [buf]
+  (assoc buf :mod-time (mod-time buf)))
+
 (defn create-buf [bufname filepath txt]
   (let [txtLF (.replace txt "\r\n" "\n") ;always use LF in memory
         ;make sure last line ends with line break
@@ -90,6 +98,7 @@
              :tabsize 4
              :expandtab false}]
     (-> buf
+        set-mod-time
         init-file-type
         (fire-event :new-buffer))))
 
@@ -130,6 +139,9 @@
          (identical? (-> buf :history just-now) (-> buf :save-point first))
          (= (buf :filepath) (-> buf :save-point second)))))
 
+(defn set-save-point [buf]
+  (assoc buf :save-point [(-> buf :history just-now) (buf :filepath)]))
+
 (defn- write-to-disk [buf]
   (let [tmp (-> buf :str str)
         s (if (buf :CRLF?) (.replace tmp "\n" "\r\n") tmp)
@@ -140,7 +152,7 @@
         (-> f fs/file fs/create)))
     (spit f s)
     (-> buf
-        (assoc :save-point [(-> buf :history just-now) f])
+        set-save-point
         (assoc :message (format "\"%s\" %dL, %dC written" (shorten-path f) (buf :linescnt) (count s))))))
 
 ;TODO make write atomic
@@ -149,13 +161,15 @@
   [buf]
   (try 
     (if (dirty? buf)
-      (-> buf
-          (fire-event :write-buffer)
-          write-to-disk)
+      (if (not= (buf :mod-time) (mod-time buf))
+        (assoc buf :message "Error: The file has been changed since reading it.")
+        (-> buf
+            (fire-event :write-buffer)
+            write-to-disk
+            set-mod-time))
       (assoc buf :message "No changes to write"))
     (catch Exception e 
       ;(println (.getMessage e))
       (.printStackTrace e)
       (let [err (str "caught exception: " (.getMessage e))]
         (assoc buf :message err)))))
-
