@@ -91,6 +91,7 @@
 (defn cmd-buffer [buf execmd file]
   (let [matches (find-buffer @buffer-list file)
         cnt (count matches)
+
         equals (filter #(= (% :name) file) matches)]
     (cond
       (= (count equals) 1)
@@ -221,7 +222,19 @@
             set-save-point 
             set-mod-time
             (assoc :message (format "File reloaded, %d change(s)" (count changes)))))
-      (assoc buf :message (res :err)))))  ;use old buf if formatter fails
+      (assoc buf :message (res :err)))))
+
+(defn cmd-diff [buf _ _]
+  (let [f (buf :filepath)
+        ;TODO: use Java diff library instead of shell command
+        res (clojure.java.shell/sh "diff" "-" f "-u" :in (fix-last-newline (-> buf :str str)))]
+    (if (-> res :err empty?) 
+      (let [diff (-> res :out str)]
+        (if (string/blank? diff)
+          (assoc buf :message "no changes")
+          (append-output-panel buf
+                               (str "diff - " f "\n" diff) true)))
+      (assoc buf :message (res :err)))))
 
 (defn cmd-edit [buf excmd args]
   (println "edit")
@@ -282,7 +295,8 @@
          ["jumps" cmd-jumps]
          ["cd" cmd-cd]
          [#"^(\d+)$" cmd-move-to-line]
-         ["ls" cmd-ls]]]
+         ["ls" cmd-ls]
+         ["diff" cmd-diff]]]
     (fire-event cmds :init-ex-commands)))
 
 (defn- execute [buf cmds]
