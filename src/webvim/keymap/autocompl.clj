@@ -12,24 +12,11 @@
         webvim.keymap.ex
         webvim.autocompl))
 
-(defn- fuzzy-suggest [w words]
-  (if (empty? w) nil
-      (reduce #(conj %1 (last %2)) []
-              (sort-by (juxt first second str)
-                       (reduce 
-                         (fn [suggestions word]
-                           (let [indexes (fuzzy-match word w)]
-                             (if (empty? indexes)
-                               suggestions
-                               (conj suggestions [(- (last indexes) 
-                                                     (first indexes)) 
-                                                  (first indexes) word])))) 
-                         [[0 0 w]] words)))))
-
 (defn- new-autocompl [buf
                       {uncomplete-word :uncomplete-word
                        limit-number :limit-number
                        fn-words :fn-words
+                       fn-suggest :fn-suggest
                        async :async}]
   (println "new-autocompl")
   (if (-> buf :autocompl nil?) 
@@ -53,7 +40,7 @@
                   ;(pprint (first words))
                   ;stop generate words when :autocompl is nil
                     (let [suggestions (vec (take limit-number
-                                                 (fuzzy-suggest (-> @abuf :autocompl :w) words)))]
+                                                 (fn-suggest (-> @abuf :autocompl :w) words)))]
                     ;(pprint suggestions)
                       (send abuf
                             (fn [buf words suggestions]
@@ -83,11 +70,12 @@
 
 (defn- autocompl-suggest [{{words :words :as autocompl} :autocompl :as buf}
                           {limit-number :limit-number
-                           uncomplete-word :uncomplete-word}]
+                           uncomplete-word :uncomplete-word
+                           fn-suggest :fn-suggest}]
   (let [w (uncomplete-word buf)]
-    (if (empty? w)
+    (if (nil? w)
       (assoc buf :autocompl nil) ;stop if no uncomplete word
-      (let [suggestions (fuzzy-suggest w words)]
+      (let [suggestions (fn-suggest w words)]
         ;(println "suggestions" suggestions)
         (-> buf 
             (assoc-in [:autocompl :index] 0)
@@ -108,7 +96,7 @@
             cnt (count suggestions)
             i (if (>= i cnt) (dec cnt) i)
             w (suggestions i)]
-        (if (or (zero? cnt) (empty? w))
+        (if (zero? cnt)
           buf
           (let [newi (mod (+ (f i) cnt) cnt)
                 neww (suggestions newi)]
@@ -164,6 +152,7 @@
                            :async false
                            :fn-words (fn [buf w]
                                        (keys (autocompl-remove-word @autocompl-words w)))
+                           :fn-suggest fuzzy-suggest
                            :limit-number 0
                            :start-autocompl? (fn [buf keycode]
                                                (or (= keycode "<c-p>")

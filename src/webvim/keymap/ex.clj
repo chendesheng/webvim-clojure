@@ -339,7 +339,7 @@
                                  :pos (count news)})))))
 
 (defn- ex-uncomplete-word [{{r :str} :line-buffer :as buf}]
-  (let [[[_ w]] (re-seq #"^e\s(\S*)" (-> buf :line-buffer :str str))] w))
+  (let [[[_ w]] (re-seq #"^e\s(\S+)" (-> buf :line-buffer :str str))] w))
 
 (def ex-autocompl-provider
   {:move-up "<s-tab>"
@@ -348,6 +348,7 @@
    :replace-suggestion ex-replace-suggestion
    :async true
    :fn-words (fn [buf w] (get-files))
+   :fn-suggest fuzzy-suggest
    :limit-number 20
    :start-autocompl? (fn [buf keycode]
                        (->> buf

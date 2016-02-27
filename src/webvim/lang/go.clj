@@ -6,7 +6,9 @@
         webvim.core.diff
         webvim.core.line
         webvim.core.utils
+        webvim.fuzzy
         clojure.pprint
+        webvim.autocompl
         webvim.indent))
 
 (println "load go language")
@@ -48,17 +50,24 @@
                                    "autocomplete" path (str pos)
                                    :in stdin)
         [offset suggestions] (-> res :out (json/parse-string true))]
+    (pprint (map :name suggestions))
     (map :name suggestions)))
 
 (defn- golang-autocompl [provider]
   (println "golang-autocompl")
   (assoc provider
-         ;:start-autocompl? (fn [buf keycode]
-         ;                    (println "golang-autocompl:" keycode)
-         ;                    (= keycode "."))
-         :uncomplete-word (fn [_] "")
+         :start-autocompl? (fn [buf keycode]
+                             (println "golang-autocompl:" keycode)
+                             (= keycode "."))
+         :uncomplete-word (fn [buf] (or (buffer-uncomplete-word buf) ""))
+         :fn-suggest (fn [w words]
+                       (if (empty? w) (cons "" words)
+                           (fuzzy-suggest w words)))
          :fn-words (fn [buf w]
-                     (gocode-autocompl (-> buf :str str) (buf :filepath) (-> buf :pos)))))
+                     (let [buf (buf-insert buf ".")]
+                       (gocode-autocompl (-> buf :str str)
+                                         (buf :filepath)
+                                         (-> buf :pos))))))
 
 (listen :new-autocompl-provider (fn [provider buf]
                                   (if (golang? buf)

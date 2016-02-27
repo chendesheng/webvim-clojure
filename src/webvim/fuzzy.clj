@@ -29,3 +29,17 @@
           rindexes
           indexes)))))
 
+(defn fuzzy-suggest [w words]
+  (if (empty? w) nil
+      (reduce #(conj %1 (last %2)) []
+              (sort-by (juxt first second str)
+                       (reduce 
+                         (fn [suggestions word]
+                           (let [indexes (fuzzy-match word w)]
+                             (if (empty? indexes)
+                               suggestions
+                               (conj suggestions [(- (last indexes) 
+                                                     (first indexes)) 
+                                                  (first indexes) word])))) 
+                         [[0 0 w]] words)))))
+

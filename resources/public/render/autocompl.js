@@ -5,7 +5,11 @@ function $hideAutocompl(bufid) {
 }
 
 function autocomplItem(subject, word) {
-    if (subject.length == 0) return word;
+    if (subject.length == 0) {
+        var ele = document.createElement('PRE');
+        ele.appendChild(document.createTextNode(word));
+        return ele;
+    }
 
     var j = 0;
     for (var i = 0; i < subject.length; i++) {
