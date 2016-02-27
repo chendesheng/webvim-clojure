@@ -324,8 +324,9 @@
                    (replace-char buf a (inc b) ch)) buf (not-empty-range ranges))]
     (buf-set-pos newbuf (first firstline))))
 
-(defn init-visual-mode-keymap [motion-keymap]
+(defn init-visual-mode-keymap [motion-keymap buf]
   (fire-event
+    :visual-mode-keymap
     (merge 
       motion-keymap 
       (init-pair-keymap)
@@ -368,7 +369,7 @@
             "U" (visual-change-case clojure.string/upper-case)}
        "r" {"<esc>" nop
             "<cr>" nop
-            :else replace-char-keycode}}) :visual-mode-keymap))
+            :else replace-char-keycode}}) buf))
 
 ;keep track visual ranges when buffer changed
 (listen

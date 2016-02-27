@@ -57,7 +57,7 @@
                              :mode insert-mode
                              :submode 0)))))
 
-(defn init-insert-mode-keymap [normal-mode-keymap]
+(defn init-insert-mode-keymap [normal-mode-keymap buf]
   {"<c-r>" {"<esc>" nop
             :else (fn [buf keycode]
                     (-> buf
@@ -65,8 +65,9 @@
                         char+))}
    "<esc>" nop
    "<c-o>" (fire-event
+             :temp-normal-mode-keymap
              (temp-normal-mode-keymap normal-mode-keymap)             
-             :temp-normal-mode-keymap)
+             buf)
    :else insert-mode-default 
    :continue #(not (= "<esc>" %2))
    :leave (fn [buf keycode]

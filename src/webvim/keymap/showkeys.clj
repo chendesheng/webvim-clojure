@@ -20,7 +20,7 @@
 
 (listen
   :normal-mode-keymap
-  (fn [keymap]
+  (fn [keymap _]
     (-> keymap
         (wrap-key :else
                   (fn [handler]

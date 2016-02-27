@@ -31,7 +31,7 @@
 
 (listen
   :normal-mode-keymap
-  (fn [keymap]
+  (fn [keymap _]
     (-> keymap
         (wrap-key 
           :after
@@ -46,7 +46,7 @@
 
 (listen
   :insert-mode-keymap
-  (fn [keymap]
+  (fn [keymap _]
     (wrap-key
       keymap :leave
       (fn [handler]

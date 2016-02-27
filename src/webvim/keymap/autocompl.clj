@@ -157,24 +157,30 @@
                           (handler keycode)
                           (autocompl-suggest provider))))))))
 
+(defonce default-provider {:move-up "<c-p>"
+                                    :move-down "<c-n>"
+                                    :uncomplete-word buffer-uncomplete-word
+                                    :replace-suggestion buffer-replace-suggestion
+                                    :async false
+                                    :fn-words (fn [w] (keys (autocompl-remove-word @autocompl-words w)))
+                                    :limit-number 0
+                                    :start-autocompl? (fn [buf keycode]
+                                                        (or (= keycode "<c-p>")
+                                                            (= keycode "<c-n>")))})
+
+(listen
+  :new-buffer
+  (fn [buf]
+    (assoc buf :autocompl-provider default-provider)))
+
 (listen
   :insert-mode-keymap
-  (fn [keymap]
-    (extends-autocompl keymap
-                       {:move-up "<c-p>"
-                        :move-down "<c-n>"
-                        :uncomplete-word buffer-uncomplete-word
-                        :replace-suggestion buffer-replace-suggestion
-                        :async false
-                        :fn-words (fn [w] (keys (autocompl-remove-word @autocompl-words w)))
-                        :limit-number 0
-                        :start-autocompl? (fn [buf keycode]
-                                            (or (= keycode "<c-p>")
-                                                (= keycode "<c-n>")))})))
+  (fn [keymap buf]
+    (extends-autocompl keymap (or (:autocompl-provider buf) default-provider))))
 
 (listen
   :temp-normal-mode-keymap
-  (fn [keymap]
+  (fn [keymap _]
     (wrap-key keymap :enter
               (fn [handler]
                 (fn [buf keycode]
@@ -184,5 +190,5 @@
 
 (listen
   :ex-mode-keymap
-  (fn [keymap]
+  (fn [keymap _]
     (extends-autocompl keymap ex-autocompl-provider)))

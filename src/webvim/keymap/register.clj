@@ -55,16 +55,16 @@
 
 (listen
   :normal-mode-keymap
-  (fn [keymap]
+  (fn [keymap _]
     (on-normal-mode-keymap keymap)))
 
 (listen
   :insert-mode-keymap
-  (fn [keymap]
+  (fn [keymap _]
     (update-in keymap ["<c-r>"] assoc "=" (expression-keymap true))))
 
 (listen
   :visual-mode-keymap
-  (fn [keymap]
+  (fn [keymap _]
     (on-normal-mode-keymap keymap)))
 

@@ -22,7 +22,7 @@
     buf))
 
 (listen :normal-mode-keymap
-        (fn [keymap]
+        (fn [keymap _]
           (-> keymap
               (wrap-key "0" (fn [handler]
                               (fn [buf keycode]

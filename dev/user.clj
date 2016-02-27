@@ -36,7 +36,7 @@
     (apply cache-resource r)))
 
 (defn restart []
-  (let [tmp (init-keymap-tree)
+  (let [tmp (init-keymap-tree nil)
         keymaps (assoc tmp :keymap (tmp :normal-mode-keymap))]
     (send ui-agent (fn [ui] (assoc ui :keymaps tmp)))
     (doseq [abuf (vals @buffer-list)]

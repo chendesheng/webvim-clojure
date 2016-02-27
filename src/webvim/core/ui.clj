@@ -55,7 +55,7 @@
               :normal-mode-keymap :insert-mode-keymap :ex-mode-keymap
               :pending-undo :saved-undo :registers :linescnt :keys
               :save-point :ext :last-visual :nextid :dot-repeat-keys
-              :last-indents :mod-time)
+              :last-indents :mod-time :autocompl-provider)
       (dissoc-empty [:changes])
       remove-visual
       (dissoc-nil :keys)
