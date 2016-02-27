@@ -351,10 +351,13 @@
    :fn-suggest fuzzy-suggest
    :limit-number 20
    :start-autocompl? (fn [buf keycode]
-                       (->> buf
-                            :line-buffer
-                            :str
-                            (re-test #"^e\s\S+")))})
+                       (if (-> buf :line-buffer nil?)
+                         buf
+                         (->> buf
+                              :line-buffer
+                              :str
+                              (re-test #"^e\s\S+"))))
+   :continue-autocompl? (fn [_ _] true)})
 
 (defn init-ex-mode-keymap []
   (let [cmds (ex-commands)]

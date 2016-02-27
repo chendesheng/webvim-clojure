@@ -104,59 +104,56 @@
                 (assoc-in [:autocompl :index] newi)
                 (replace-suggestion neww w))))))))
 
+(defn- start-autocompl [buf keycode
+                        {start-autocompl? :start-autocompl?
+                         continue-autocompl? :continue-autocompl?
+                         :as provider}]
+  (if (-> buf :autocompl nil?)
+    (if (start-autocompl? buf keycode)
+      (new-autocompl buf provider)
+      buf)
+    (if (continue-autocompl? buf keycode)
+      buf
+      (recur (assoc buf :autocompl nil) keycode provider))))
 
 (defn- extends-autocompl [keymap provider]
   (-> keymap
-      (wrap-key (provider :move-up)
-                (fn [handler]
-                  (fn [buf keycode]
-                    (-> buf
-                        (handler keycode)
-                        (autocompl-move provider dec)))))
-      (wrap-key (provider :move-down) 
-                (fn [handler]
-                  (fn [buf keycode]
-                    (-> buf
-                        (handler keycode)
-                        (autocompl-move provider inc)))))
       (wrap-key :leave
                 (fn [handler]
                   (fn [buf keycode]
                     (-> buf
                         (assoc :autocompl nil)
                         (handler keycode)))))
-      (wrap-key :before
-                (fn [handler]
-                  (fn [buf keycode]
-                    (if ((provider :start-autocompl?) buf keycode)
-                      (-> buf
-                          (handler keycode)
-                          (new-autocompl provider))
-                      (handler buf keycode)))))
+      ;do autocompl after insert char to buffer
       (wrap-key :after
                 (fn [handler]
                   (fn [buf keycode]
-                    ;continue checking until there is no suggestions
-                    (if (or (-> buf :autocompl nil?)
+                    (let [buf (start-autocompl buf keycode provider)]
+                      (if (-> buf :autocompl nil?)
+                        (handler buf keycode)
+                        (let [buf (handler buf keycode)]
+                          (cond
                             (= keycode (provider :move-up))
-                            (= keycode (provider :move-down)))
-                      (handler buf keycode)
-                      (-> buf
-                          (handler keycode)
-                          (autocompl-suggest provider))))))))
+                            (autocompl-move buf provider dec)
+                            (= keycode (provider :move-down))
+                            (autocompl-move buf provider inc)
+                            :else
+                            (autocompl-suggest buf provider))))))))))
 
-(defonce default-provider {:move-up "<c-p>"
-                           :move-down "<c-n>"
-                           :uncomplete-word buffer-uncomplete-word
-                           :replace-suggestion buffer-replace-suggestion
-                           :async false
-                           :fn-words (fn [buf w]
-                                       (keys (autocompl-remove-word @autocompl-words w)))
-                           :fn-suggest fuzzy-suggest
-                           :limit-number 0
-                           :start-autocompl? (fn [buf keycode]
-                                               (or (= keycode "<c-p>")
-                                                   (= keycode "<c-n>")))})
+(def default-provider {:move-up "<c-p>"
+                       :move-down "<c-n>"
+                       :uncomplete-word buffer-uncomplete-word
+                       :replace-suggestion buffer-replace-suggestion
+                       :async false
+                       :fn-words (fn [buf w]
+                                   (keys (autocompl-remove-word @autocompl-words w)))
+                       :fn-suggest fuzzy-suggest
+                       :limit-number 0
+                       :start-autocompl? (fn [buf keycode]
+                                           (or (= keycode "<c-p>")
+                                               (= keycode "<c-n>")))
+                       :continue-autocompl? (fn [_ keycode] 
+                                              (not= keycode "<esc>"))})
 
 (listen
   :new-buffer
