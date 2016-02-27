@@ -25,7 +25,7 @@
                              buf)
         ex-mode-keymap (fire-event
                          :ex-mode-keymap
-                         (init-ex-mode-keymap)
+                         (init-ex-mode-keymap buf)
                          buf)]
     {:normal-mode-keymap normal-mode-keymap
      :insert-mode-keymap insert-mode-keymap

@@ -80,7 +80,7 @@
 
 (defn add-init-ex-commands-event []
   (listen :init-ex-commands
-          (fn [cmds]
+          (fn [cmds _]
             (conj cmds 
                   ["reload" cmd-reload]
                   ["print" cmd-print]

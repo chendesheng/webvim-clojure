@@ -62,7 +62,7 @@
           (conj matches buf))))
     [] buffers))
 
-(defn- exec-shell-commands [buf panel cmds]
+(defn exec-shell-commands [buf panel cmds]
   (exec-async cmds (fn [line]
                      (append-panel buf panel line false)))
   (append-panel buf panel (reduce (fn [s arg]
@@ -274,7 +274,7 @@
                 (@jump-list :before))) "\n")
     true))
 
-(defn- ex-commands []
+(defn- ex-commands [buf]
   (let [cmds 
         [["write" cmd-write]
          ["nohlsearch" cmd-nohl]
@@ -293,7 +293,7 @@
          [#"^(\d+)$" cmd-move-to-line]
          ["ls" cmd-ls]
          ["diff" cmd-diff]]]
-    (fire-event cmds :init-ex-commands)))
+    (fire-event :init-ex-commands cmds buf)))
 
 (defn- execute [buf cmds]
   (let [[_ excmd args] (re-find #"^\s*([^\s]+)\s*(.*)\s*$"
@@ -359,8 +359,8 @@
                               (re-test #"^e\s\S+"))))
    :continue-autocompl? (fn [_ _] true)})
 
-(defn init-ex-mode-keymap []
-  (let [cmds (ex-commands)]
+(defn init-ex-mode-keymap [buf]
+  (let [cmds (ex-commands buf)]
     (-> (init-linebuf-keymap commands-history)
         (wrap-key :leave
                   (fn [handler]

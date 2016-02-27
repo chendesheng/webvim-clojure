@@ -1,5 +1,6 @@
 (ns webvim.lang.go
-  (:require [cheshire.core :as json])
+  (:require [cheshire.core :as json]
+            [me.raynes.fs :as fs])
   (:use webvim.core.lang
         webvim.core.event
         webvim.core.rope
@@ -8,7 +9,10 @@
         webvim.core.utils
         webvim.core.pos
         webvim.fuzzy
+        webvim.exec
         webvim.autocompl
+        webvim.keymap.action
+        webvim.keymap.ex
         clojure.pprint
         webvim.indent))
 
@@ -51,7 +55,7 @@
                                    "autocomplete" path (str pos)
                                    :in stdin)
         [offset suggestions] (-> res :out (json/parse-string true))]
-    (pprint (map :name suggestions))
+    ;(pprint (map :name suggestions))
     (map :name suggestions)))
 
 (defn- golang-autocompl [provider]
@@ -97,12 +101,43 @@
                                        (buf :pos)))
          :limit-number 0))
 
-(listen :new-autocompl-provider (fn [provider buf]
-                                  (if (golang? buf)
-                                    (golang-autocompl provider)
-                                    provider)))
+(listen :new-autocompl-provider
+        (fn [provider buf]
+          (if (golang? buf)
+            (golang-autocompl provider)
+            provider)))
 
-(listen :write-buffer (fn [buf]
-                        (if (golang? buf)
-                          (format-buffer buf)
-                          buf)))
+(listen :write-buffer
+        (fn [buf]
+          (if (golang? buf)
+            (format-buffer buf)
+            buf)))
+
+(defn- directory [path]
+  (if (fs/directory? path)
+    path
+    (subs path 0 (.lastIndexOf path java.io.File/separator))))
+
+(defn project-path [filepath]
+  (println GOPATH)
+  (println filepath)
+  (let [parent (.toLowerCase (str (fs/file GOPATH "src") java.io.File/separator))
+        filepath (.toLowerCase filepath)]
+    (if (.startsWith filepath parent)
+      (subs (directory filepath) (count parent))
+      nil)))
+
+(defn cmd-go [buf execmd args]
+  (let [args (vec (clojure.string/split args #"\s+"))
+        args1 (if (= (count args) 1)
+                (conj args (project-path (buf :filepath)))
+                args)]
+    (exec-shell-commands buf (output-panel)
+                         (into ["go"] args1))))
+
+(listen :init-ex-commands
+        (fn [cmds buf]
+          (if (golang? buf)
+            (conj cmds 
+                  ["go" cmd-go])
+            cmds)))
