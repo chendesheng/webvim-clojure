@@ -45,8 +45,8 @@
 (def GOROOT (System/getenv "GOROOT"))
 
 (defn- gocode-autocompl [stdin path pos]
-  (println path)
-  (println pos)
+  ;(println path)
+  ;(println pos)
   (let [res (clojure.java.shell/sh "gocode" "-f=json"
                                    "autocomplete" path (str pos)
                                    :in stdin)
@@ -76,9 +76,9 @@
                             (let [w (buffer-uncomplete-word buf)
                                   r (buf :str)
                                   pos (buf :pos)]
-                              (println "golang uncomplete-word")
-                              (println w)
-                              (println "[" (char-at r pos) "]")
+                              ;(println "golang uncomplete-word")
+                              ;(println w)
+                              ;(println "[" (char-at r pos) "]")
                               (if (nil? w)
                                 (let [pos (dec pos)]
                                           ;return empty if last not-word-char is "."

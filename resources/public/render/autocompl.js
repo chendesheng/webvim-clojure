@@ -11,17 +11,20 @@ function autocomplItem(subject, word) {
         return ele;
     }
 
+    var lowercaseWord = word.toLowerCase();
+    subject = subject.toLowerCase();
+
     var j = 0;
     for (var i = 0; i < subject.length; i++) {
         var ch = subject[i];
-        j = word.indexOf(ch, j) + 1;
+        j = lowercaseWord.indexOf(ch, j) + 1;
     }
 
     var splits = [j - 1];
     j--;
     for (var i = subject.length - 2; i >= 0; i--) {
         var ch = subject[i];
-        j = word.substring(0, j).lastIndexOf(ch);
+        j = lowercaseWord.substring(0, j).lastIndexOf(ch);
         splits.unshift(j)
     }
     splits.unshift(-1);
