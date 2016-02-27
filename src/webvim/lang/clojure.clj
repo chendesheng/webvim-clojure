@@ -96,18 +96,15 @@
   [lang r pos]
   (clojure-indent r pos))
 
-(defn- fix-last-newline [s]
-  (if (re-test #"\R$" s) s (str s "\n")))
-
 (defn- cljfmt-diff [s name]
   (println "cljfmt-diff")
   (let [news (cljfmt/reformat-string s {:indents (assoc cljfmt/default-indents #".*" [[:block 0]])})
         tmpfile (str (fs/temp-file "" name))]
-    (spit tmpfile (fix-last-newline s))
+    (spit tmpfile s)
     ;TODO: (fs/delete tmpfile)
     (clojure.java.shell/sh 
       "diff" tmpfile "-" "-u"
-      :in (fix-last-newline news))))
+      :in news)))
 
 (defn- format-buffer [buf]
   ;use temp file

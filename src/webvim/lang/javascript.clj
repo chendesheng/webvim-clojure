@@ -25,20 +25,17 @@
   [lang keycode]
   (= keycode "}"))
 
-(defn- fix-last-newline [s]
-  (if (re-test #"\R$" s) s (str s "\n")))
-
 (defn- js-beautify [s name]
   (println "js-beautify")
   (let [res (clojure.java.shell/sh "js-beautify" :in s)]
     (if (-> res :exit zero? not)
       res
       (let [tmpfile (str (fs/temp-file "" name))]
-        (spit tmpfile (fix-last-newline s))
+        (spit tmpfile s)
         ;TODO: (fs/delete tmpfile)
         (clojure.java.shell/sh 
           "diff" tmpfile "-" "-u"
-          :in (fix-last-newline (res :out)))))))
+          :in (res :out))))))
 
 (defn- jsfmt [s]
   (println "jsfmt")

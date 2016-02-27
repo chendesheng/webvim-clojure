@@ -91,7 +91,6 @@
 (defn cmd-buffer [buf execmd file]
   (let [matches (find-buffer @buffer-list file)
         cnt (count matches)
-
         equals (filter #(= (% :name) file) matches)]
     (cond
       (= (count equals) 1)
@@ -208,12 +207,9 @@
 (defn cmd-nohl [buf _ _] 
   (assoc buf :highlights []))
 
-(defn- fix-last-newline [s]
-  (if (re-test #"\R$" s) s (str s "\n")))
-
 (defn- buf-reload [buf]
   (let [f (buf :filepath)
-        res (clojure.java.shell/sh "diff" "-" f "-u" :in (fix-last-newline (-> buf :str str)))]
+        res (clojure.java.shell/sh "diff" "-" f "-u" :in (-> buf :str str))]
     (if (-> res :err empty?) 
       (let [changes (time (parse-diff (str (res :out))))]
         (-> buf
@@ -227,7 +223,7 @@
 (defn cmd-diff [buf _ _]
   (let [f (buf :filepath)
         ;TODO: use Java diff library instead of shell command
-        res (clojure.java.shell/sh "diff" "-" f "-u" :in (fix-last-newline (-> buf :str str)))]
+        res (clojure.java.shell/sh "diff" "-" f " -u" :in (-> buf :str str))]
     (if (-> res :err empty?) 
       (let [diff (-> res :out str)]
         (if (string/blank? diff)
@@ -384,4 +380,3 @@
                 buf-reload
                 normal-mode-fix-pos)
             buf)))
-
