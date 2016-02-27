@@ -36,7 +36,7 @@
     (let [w (uncomplete-word buf)]
       (if (nil? w) buf
           (if async
-            (let [all-words (partition-all 200 (fn-words w))
+            (let [all-words (partition-all 200 (fn-words buf w))
                   autocompl (assoc buf :autocompl
                                    {:words nil
                                     :w w
@@ -75,7 +75,7 @@
             (assoc buf :autocompl
                  ;remove current word
                  ;words is fixed during auto complete
-                   {:words (fn-words w)
+                   {:words (fn-words buf w)
                     :w w
                     :suggestions nil
                     :index 0}))))
@@ -158,15 +158,16 @@
                           (autocompl-suggest provider))))))))
 
 (defonce default-provider {:move-up "<c-p>"
-                                    :move-down "<c-n>"
-                                    :uncomplete-word buffer-uncomplete-word
-                                    :replace-suggestion buffer-replace-suggestion
-                                    :async false
-                                    :fn-words (fn [w] (keys (autocompl-remove-word @autocompl-words w)))
-                                    :limit-number 0
-                                    :start-autocompl? (fn [buf keycode]
-                                                        (or (= keycode "<c-p>")
-                                                            (= keycode "<c-n>")))})
+                           :move-down "<c-n>"
+                           :uncomplete-word buffer-uncomplete-word
+                           :replace-suggestion buffer-replace-suggestion
+                           :async false
+                           :fn-words (fn [buf w]
+                                       (keys (autocompl-remove-word @autocompl-words w)))
+                           :limit-number 0
+                           :start-autocompl? (fn [buf keycode]
+                                               (or (= keycode "<c-p>")
+                                                   (= keycode "<c-n>")))})
 
 (listen
   :new-buffer
@@ -176,7 +177,8 @@
 (listen
   :insert-mode-keymap
   (fn [keymap buf]
-    (extends-autocompl keymap (or (:autocompl-provider buf) default-provider))))
+    (extends-autocompl keymap
+                       (fire-event :new-autocompl-provider default-provider buf))))
 
 (listen
   :temp-normal-mode-keymap

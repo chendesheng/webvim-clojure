@@ -347,7 +347,7 @@
    :uncomplete-word ex-uncomplete-word
    :replace-suggestion ex-replace-suggestion
    :async true
-   :fn-words (fn [w] (get-files))
+   :fn-words (fn [buf w] (get-files))
    :limit-number 20
    :start-autocompl? (fn [buf keycode]
                        (->> buf

@@ -1,4 +1,5 @@
 (ns webvim.lang.go
+  (:require [cheshire.core :as json])
   (:use webvim.core.lang
         webvim.core.event
         webvim.core.rope
@@ -26,17 +27,45 @@
   [lang keycode]
   (= keycode "}"))
 
-(defn- format-buffer [buf]
-  (if (-> buf :language :id (= ::go))
-    (let [res (clojure.java.shell/sh "goimports" "-d" :in (str (buf :str)))]
-      (println "gofmt")
-      (if (-> res :exit zero? not)
-        (assoc buf :message (res :err))
-        (-> buf
-            (apply-line-changes (parse-diff (str (res :out))))
-            save-undo)))
-    buf))
+(defn- golang? [buf]
+  (-> buf :language :id (= ::go)))
 
-(listen :write-buffer
-        (fn [buf]
-          (format-buffer buf)))
+(defn- format-buffer [buf]
+  (let [res (clojure.java.shell/sh "goimports" "-d" :in (str (buf :str)))]
+    (if (-> res :exit zero? not)
+      (assoc buf :message (res :err))
+      (-> buf
+          (apply-line-changes (parse-diff (str (res :out))))
+          save-undo))))
+
+(def GOPATH (System/getenv "GOPATH"))
+(def GOROOT (System/getenv "GOROOT"))
+
+(defn- gocode-autocompl [stdin path pos]
+  (println path)
+  (println pos)
+  (let [res (clojure.java.shell/sh "gocode" "-f=json"
+                                   "autocomplete" path (str pos)
+                                   :in stdin)
+        [offset suggestions] (-> res :out (json/parse-string true))]
+    (map :name suggestions)))
+
+(defn- golang-autocompl [provider]
+  (println "golang-autocompl")
+  (assoc provider
+         ;:start-autocompl? (fn [buf keycode]
+         ;                    (println "golang-autocompl:" keycode)
+         ;                    (= keycode "."))
+         :uncomplete-word (fn [_] "")
+         :fn-words (fn [buf w]
+                     (gocode-autocompl (-> buf :str str) (buf :filepath) (-> buf :pos)))))
+
+(listen :new-autocompl-provider (fn [provider buf]
+                                  (if (golang? buf)
+                                    (golang-autocompl provider)
+                                    provider)))
+
+(listen :write-buffer (fn [buf]
+                        (if (golang? buf)
+                          (format-buffer buf)
+                          buf)))
