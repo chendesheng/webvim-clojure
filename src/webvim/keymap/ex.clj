@@ -229,7 +229,7 @@
         (if (string/blank? diff)
           (assoc buf :message "no changes")
           (append-output-panel buf
-                               (str "diff - " f "\n" diff) true)))
+                               (str "diff - " f "-u" "\n" diff) true)))
       (assoc buf :message (res :err)))))
 
 (defn cmd-edit [buf excmd args]
