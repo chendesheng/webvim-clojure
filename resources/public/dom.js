@@ -152,13 +152,17 @@ function insertAfter(p, newElement, targetElement) {
 }
 
 function addClass(ele, cls) {
-    if (ele.className.indexOf(cls) < 0) {
+    if (ele.classList) {
+        ele.classList.add(cls);
+    } else if (ele.className.indexOf(cls) < 0) {
         ele.className += ' ' + cls;
     }
 }
 
 function removeClass(ele, cls) {
-    if (ele.className.indexOf(cls) >= 0) {
+    if (ele.classList) {
+        ele.classList.remove(cls);
+    } else if (ele.className.indexOf(cls) >= 0) {
         ele.className = ele.className.replace(cls, '');
     }
 }

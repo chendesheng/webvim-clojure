@@ -55,8 +55,7 @@
                                    "autocomplete" path (str pos)
                                    :in stdin)
         [offset suggestions] (-> res :out (json/parse-string true))]
-    ;(pprint (map :name suggestions))
-    (map :name suggestions)))
+    suggestions))
 
 (defn- golang-autocompl [provider]
   (assoc provider
@@ -93,7 +92,7 @@
                                 w)))
          :fn-suggest (fn [w words]
                        (if (= w "")
-                         (cons "" words)
+                         (cons {:name ""} words)
                          (fuzzy-suggest w words)))
          :fn-words (fn [buf w]
                      (gocode-autocompl (-> buf :str str)

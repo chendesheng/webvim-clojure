@@ -49,10 +49,21 @@ function appendAutocomplItems(bufid, suggestions, $a, selectedIndex) {
     var subject = suggestions[0];
     suggestions.each(function(word, i) {
         if (i > 0) {
-            var ele = autocomplItem(subject, word);
+            var ele = autocomplItem(subject.name, word.name);
+            if (word.type) {
+                var eletyp = document.createElement('SPAN');
+                eletyp.className = 'info'; //can't use "type" here conflict with class
+                eletyp.textContent = word.type;
+                eletyp.title = word.type;
+                ele.appendChild(eletyp);
+            }
+            if (word.class) {
+                addClass(ele, 'with-class');
+                addClass(ele, word.class);
+            }
             $a.appendChild(ele);
             if (i == selectedIndex) {
-                ele.className = 'highlight';
+                addClass(ele, 'highlight');
                 ele.id = 'autocompl-' + bufid + '-highlight';
             }
         }
@@ -107,7 +118,7 @@ function renderAutocompl(buf) {
 
         var h = $cursor(bufid).offsetHeight + 3;
         var currentWord = suggestions[selectedIndex];
-        var res = getScreenXYByPos(buf, buf.cursor - currentWord.length);
+        var res = getScreenXYByPos(buf, buf.cursor - currentWord.name.length);
         if (!res.e) return;
 
         $a.style.left = res.left + $content(bufid).scrollLeft - 10 + 'px';

@@ -146,7 +146,6 @@ pre {
     box-shadow: 0 2px 8px 1px #000;
     max-height: 12em;
     /*10+0.2*10*/
-    max-width: 60ch;
     overflow: auto;
     z-index: 100;
 }
@@ -164,6 +163,54 @@ pre {
 .autocompl .highlight {
     background: #007ACC;
     color: #fff;
+}
+
+.autocompl .info {
+    float: right;
+    padding-left: 2ch;
+    font-size: smaller;
+    font-style: italic;
+    overflow: hidden;
+}
+
+.autocompl .with-class:before {
+    display: block;
+    float: right;
+    font-size: smaller;
+    font-style: italic;
+    padding-left: 2ch;
+}
+
+.autocompl .with-class.file:before {
+    content: 'φ';
+}
+
+.autocompl .with-class.dir:before {
+    content: 'δ';
+}
+
+.autocompl .with-class.package:before {
+    content: 'p';
+}
+
+.autocompl .with-class.var:before {
+    content: 'v';
+}
+
+.autocompl .with-class.const:before {
+    content: 'c';
+}
+
+.autocompl .with-class.func:before {
+    content: 'f';
+}
+
+.autocompl .with-class.type:before {
+    content: 't';
+}
+
+.autocompl .with-class.PANIC:before {
+    content: 'P';
 }
 
 .ex-autocompl {

@@ -39,16 +39,16 @@
 
 (defn fuzzy-suggest [w words]
   (if (empty? w) nil
-      (cons w
+      (cons {:name w}
             (reduce #(conj %1 (last %2)) []
                     (sort-by (juxt first second str)
                              (reduce 
-                               (fn [suggestions word]
+                               (fn [suggestions {word :name :as item}]
                                  (let [indexes (fuzzy-match word w true)]
                                    (if (empty? indexes)
                                      suggestions
                                      (conj suggestions [(- (last indexes) 
                                                            (first indexes)) 
-                                                        (first indexes) word])))) 
+                                                        (first indexes) item])))) 
                                [] words))))))
 

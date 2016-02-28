@@ -43,7 +43,7 @@
     (file-seq-bfs pred [fs/*cwd*])))
 
 (defn- get-files []
-  (map (comp shorten-path str) (file-seq-bfs (comp not hidden?)))) 
+  (map (comp (fn [f] {:name f :class (if (fs/directory? f) "dir" "file")}) shorten-path str) (file-seq-bfs (comp not hidden?)))) 
 
 ;(pprint (take 20 (get-files)))
 
@@ -331,7 +331,7 @@
                        (assoc linebuf :str (rope news) :pos (count news))))))
     buf))
 
-(defn- ex-replace-suggestion [buf w _]
+(defn- ex-replace-suggestion [buf w]
   (let [news (str "e " w)]
     (update-in buf [:line-buffer]
                (fn [linebuf]
@@ -345,7 +345,8 @@
   {:move-up "<s-tab>"
    :move-down "<tab>"
    :uncomplete-word ex-uncomplete-word
-   :replace-suggestion ex-replace-suggestion
+   :replace-suggestion (fn [buf w _]
+                         (ex-replace-suggestion buf (w :name)))
    :async true
    :fn-words (fn [buf w] (get-files))
    :fn-suggest fuzzy-suggest
