@@ -54,7 +54,6 @@ function appendAutocomplItems(bufid, suggestions, $a, selectedIndex) {
                 var eletyp = document.createElement('SPAN');
                 eletyp.className = 'info'; //can't use "type" here conflict with class
                 eletyp.textContent = word.type;
-                eletyp.title = word.type;
                 ele.appendChild(eletyp);
             }
             if (word.class) {

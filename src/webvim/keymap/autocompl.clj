@@ -23,7 +23,7 @@
     (let [w (uncomplete-word buf)]
       (if (nil? w) buf
           (if async
-            (let [all-words (partition-all 200 (fn-words buf w))
+            (let [all-words (partition-all limit-number (fn-words buf w))
                   autocompl (assoc buf :autocompl
                                    {:words nil
                                     :w w
@@ -150,7 +150,7 @@
                                              (buffer-replace-suggestion buf (item :name) (olditem :name)))
                        :async false
                        :fn-words (fn [buf w]
-                                   (map (fn[w]
+                                   (map (fn [w]
                                           {:name w}) (keys (autocompl-remove-word @autocompl-words w))))
                        :fn-suggest fuzzy-suggest
                        :limit-number 0
