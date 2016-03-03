@@ -129,10 +129,14 @@
 (defn cmd-go [buf execmd args]
   (let [args (vec (clojure.string/split args #"\s+"))
         args1 (if (= (count args) 1)
-                (conj args (project-path (buf :filepath)))
-                args)]
-    (exec-shell-commands buf (output-panel)
-                         (into ["go"] args1))))
+                (if (-> args first (= "run"))
+                  (conj args (buf :filepath))
+                  (conj args (project-path (buf :filepath))))
+                args)
+        res (apply clojure.java.shell/sh (concat ["go"] args1 [:dir fs/*cwd*]))]
+    (-> buf
+        (append-output-panel (res :out) false)
+        (append-output-panel (res :err) true))))
 
 (listen :init-ex-commands
         (fn [cmds buf]
