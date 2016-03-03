@@ -114,15 +114,11 @@ function renderViewport(aheadlines, scrolling) {
 var __renderTimer;
 
 function onscrollRender() {
-    if (__renderTimer) clearTimeout(__renderTimer);
+    if (__renderTimer) window.cancelAnimationFrame(__renderTimer);
 
-    if (buffers.active.linecnt > 3000) {
-        __renderTimer = setTimeout(function() {
-            renderViewport(15, true);
-        }, 10);
-    } else {
+    __renderTimer = window.requestAnimationFrame(function() {
         renderViewport(10, true);
-    }
+    });
 }
 
 function scrollToCursor(buf, instant) {

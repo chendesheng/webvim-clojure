@@ -70,8 +70,8 @@ function render(buf) {
     var newbuf = !!buf.str;
     mergeToLocal(buf);
 
-    setTimeout(function() {
+    window.requestAnimationFrame(function() {
         renderViewport();
         scrollToCursor(buffers.active, newbuf);
-    }, 0);
+    });
 }
