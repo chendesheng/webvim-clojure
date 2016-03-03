@@ -50,7 +50,7 @@
 
 ;FIXME: This is too hacky
 (defn- cmd-reload [buf execmd args]
-  (let [[[_ _ _ nm]] (re-seq #"(?i)^(src|dev)(/|\\)(.+)\.clj" (-> buf :filepath shorten-path)) 
+  (let [[[_ _ _ nm]] (re-seq #"(?i)webvim[/\\](src|dev)(/|\\)(.+)\.clj" (buf :filepath)) 
         ret (if (empty? nm)
               "Can't get right namespace"
               (let [code (str "(use '" (-> nm
