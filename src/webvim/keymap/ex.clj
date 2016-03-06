@@ -366,10 +366,11 @@
         (wrap-key :leave
                   (fn [handler]
                     (fn [buf keycode]
-                      (-> buf
-                          (handler keycode)
-                          normal-mode-fix-pos
-                          set-normal-mode))))
+                      (let [newbuf (-> buf
+                                       (handler keycode)
+                                       normal-mode-fix-pos
+                                       set-normal-mode)]
+                        (buf-update-highlight-bracket-pair newbuf (newbuf :pos))))))
         (assoc "<cr>"
                (fn [buf keycode]
                  (execute buf cmds))
