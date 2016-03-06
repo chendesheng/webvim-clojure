@@ -54,14 +54,16 @@
   ({"v" visual-range "V" visual-line "<c-v>" visual-block} keycode))
 
 (defn- visual-mode-continue? [buf keycode]
-  (let [typ (-> buf :context :visual-mode-type)
-        newtyp (keycode2type keycode)]
-    (if (nil? newtyp)
-      (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<c-r>" "<esc>" "<" ">" "r" "g"} keycode))
-      (not (= typ newtyp)))))
+  (if (-> buf :context :cancel-visual-mode?)
+    false
+    (let [typ (-> buf :context :last-visual-type)
+          newtyp (keycode2type keycode)]
+      (if (nil? newtyp)
+        (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<c-r>" "<esc>" "<" ">" "r"} keycode))
+        (not (= typ newtyp))))))
 
 (defn- change-visual-mode-type [buf keycode]
-  (let [typ (-> buf :context :visual-mode-type)
+  (let [typ (-> buf :context :last-visual-type)
         newtyp (keycode2type keycode)]
     (if (= typ newtyp) buf
         (-> buf
@@ -246,7 +248,10 @@
 
 (defmulti visual-keymap-I (fn [buf keycode] (-> buf :visual :type)))
 (defmethod visual-keymap-I visual-range [buf keycode]
-  buf)
+  (let [fnmotion (fn [buf]
+                   (let [[pos _] (pos-line (buf :str) (-> buf :visual :range sort2 first))]
+                     (buf-set-pos buf pos)))]
+    ((start-insert-mode fnmotion identity) buf keycode)))
 (defmethod visual-keymap-I visual-line [buf keycode]
   (visual-line-repeat-change buf false))
 (defmethod visual-keymap-I visual-block [buf keycode]
@@ -254,7 +259,14 @@
 
 (defmulti visual-keymap-A (fn [buf keycode] (-> buf :visual :type)))
 (defmethod visual-keymap-A visual-range [buf keycode]
-  buf)
+  (let [[a b] (-> buf :visual :range)
+        r (buf :str)
+        fnmotion (if (> a b)
+                   char+
+                   (fn [buf]
+                     (let [[pos _] (pos-line r (max a b))]
+                       (buf-set-pos buf pos))))]
+    ((start-insert-mode fnmotion identity) buf keycode)))
 (defmethod visual-keymap-A visual-line [buf keycode]
   (visual-line-repeat-change buf true))
 (defmethod visual-keymap-A visual-block [buf keycode]
@@ -277,11 +289,15 @@
             newbuf (reduce
                      (fn [buf [a b]]
                        ((change-case f) buf [a (inc b)])) buf (not-empty-range ranges))]
-        (buf-set-pos newbuf (first firstline)))
+        (-> newbuf
+            (buf-set-pos (first firstline))
+            ;leave visual mode
+            (assoc-in [:context :cancel-visual-mode?] true)))
       (let [[a b :as rg] (range-prefix buf true)]
         (-> buf
             (buf-set-pos (pos-line-start (buf :str) a))
-            ((change-case f) rg))))))
+            ((change-case f) rg)
+            (assoc-in [:context :cancel-visual-mode?] true))))))
 
 (defn- replace-char [buf a b ch]
   (buf-replace buf a b
@@ -327,7 +343,7 @@
 (defn init-visual-mode-keymap [motion-keymap buf]
   (fire-event
     :visual-mode-keymap
-    (merge 
+    (deep-merge 
       motion-keymap 
       (init-pair-keymap)
       {:enter (fn [buf keycode]
@@ -339,19 +355,23 @@
        :continue visual-mode-continue?
        :before (fn [buf keycode] 
                  (-> buf
-                     (assoc-in [:context :visual-mode-type]
+                     (assoc-in [:context :last-visual-type]
                                (-> buf :visual :type))
+                     (assoc-in [:context :cancel-visual-mode?] false)
                      (assoc-in [:context :range] nil)))
        :after (fn [buf keycode]
                 (if (contains? #{"u" "<c-r>"} keycode)
                   (update-x-if-not-jk buf keycode)
-                  (-> buf
-                      visual-select
-                      set-visual-ranges
-                      (update-x-if-not-jk keycode))))
+                  (let [newbuf (-> buf
+                                   visual-select
+                                   set-visual-ranges
+                                   (update-x-if-not-jk keycode))]
+                    (buf-update-highlight-bracket-pair newbuf (newbuf :pos)))))
        "z" {"z" (wrap-keycode cursor-center-viewport)}
        "=" (wrap-keycode #(indent-range % true))
        "o" swap-visual-start-end
+       "<c-i>" nop
+       "<c-o>" nop
        "u" (wrap-keycode undo)
        "<c-r>" (wrap-keycode redo)
        "V" change-visual-mode-type
