@@ -378,6 +378,13 @@
                (fn [buf keycode]
                  (ex-tab-complete buf cmds))))))
 
+(defn wrap-command [cmds cmd f]
+  (map
+    (fn [[key fncmd :as item]]
+      (if (= key cmd)
+        [key (f fncmd)]
+        item)) cmds))
+
 (listen :switch-buffer
         (fn [buf]
           (if (and (not= (buf :mod-time) (mod-time buf))

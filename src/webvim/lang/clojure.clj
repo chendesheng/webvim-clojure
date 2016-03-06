@@ -7,6 +7,10 @@
         webvim.core.line
         webvim.core.lang
         webvim.core.diff
+        webvim.core.buffer
+        webvim.core.ui
+        webvim.keymap.ex
+        webvim.keymap.action
         webvim.indent
         webvim.core.utils))
 
@@ -108,9 +112,8 @@
 
 (defn- format-buffer [buf]
   ;use temp file
-  (if (-> buf :language :id (= ::clojure))
+  (if (dirty? buf)
     (let [res (time (cljfmt-diff (-> buf :str str) (buf :name)))]
-      ;(let [res (time (jsfmt (-> buf :str str)))]
       ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
       (if (-> res :err empty?) 
         (-> buf
@@ -122,6 +125,26 @@
           (assoc buf :message (res :err)))))  ;use old buf if formatter fails
     buf))
 
-(listen :write-buffer
-        (fn [buf]
-          (format-buffer buf)))
+(defn async-ex-cmd [buf fncmd cmd args]
+  (let [abuf (@buffer-list (buf :id))]
+    (-> abuf
+        (send (fn [buf cmd args]
+                (let [newbuf (-> buf
+                                 format-buffer
+                                 (fncmd cmd args))]
+                  (-> newbuf
+                      (buf-update-highlight-bracket-pair (newbuf :pos))
+                      send-buf!))) cmd args))
+    buf))
+
+(listen :init-ex-commands
+        (fn [cmds buf]
+          (if (-> buf :language :id (= ::clojure))
+            (wrap-command
+              cmds
+              "write" (fn [fncmd]
+                        (fn [buf cmd args]
+                          (-> buf
+                              (async-ex-cmd fncmd cmd args)
+                              (assoc :message "formatting...")))))
+            cmds)))
