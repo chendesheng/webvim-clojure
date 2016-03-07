@@ -269,11 +269,11 @@
                                         (cons (fs/parent path) (fs/list-dir path))))]
     (send abuf
           (fn [buf]
-            (let [newbuf (-> buf
-                             (buf-replace 0 (-> buf :str count) (str files "\n"))
-                             buf-start
-                             save-undo)]
-              (send-buf! newbuf))))
+            (-> buf
+                (buf-replace 0 (-> buf :str count) (str files "\n"))
+                buf-start
+                save-undo
+                send-buf!)))
     @abuf))
 
 (defn move-to-line [buf row]
@@ -341,13 +341,13 @@
 (defn append-panel [buf apanel s goto?]
   (send apanel
         (fn [buf]
-          (let [newbuf (-> buf
-                           (buf-append s "\n")
-                           buf-end
-                           line-start
-                           save-undo
-                           cursor-center-viewport)]
-            (send-buf! newbuf))))
+          (-> buf
+              (buf-append s "\n")
+              buf-end
+              line-start
+              save-undo
+              cursor-center-viewport
+              send-buf!)))
   (if goto? (goto-buf buf apanel) buf))
 
 (defn append-output-panel [buf s goto?]

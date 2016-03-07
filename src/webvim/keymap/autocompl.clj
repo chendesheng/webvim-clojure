@@ -5,6 +5,7 @@
         webvim.core.event
         webvim.core.rope
         webvim.core.line
+        webvim.core.ui
         webvim.core.pos
         webvim.core.lang
         webvim.core.utils
@@ -52,7 +53,7 @@
                                                  (assoc autocompl
                                                         :words words
                                                         :suggestions suggestions)))
-                                    webvim.core.ui/send-buf!))) words suggestions))
+                                    send-buf!))) words suggestions))
                     (if (and
                           (-> @abuf :autocompl nil? not)
                           (-> rest-words nil? not))
