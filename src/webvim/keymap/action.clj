@@ -33,10 +33,13 @@
 (defn file-register [buf]
   {:id (buf :id) :str (or (buf :filepath) (buf :name))})
 
-(defn buf-update-highlight-bracket-pair [buf pos]
-  (let [mpos (pos-match-bracket (buf :str) pos)]
-    (assoc buf :brackets 
-           (if (nil? mpos) [] [pos mpos]))))
+(defn buf-update-highlight-bracket-pair
+  ([buf pos]
+    (let [mpos (pos-match-bracket (buf :str) pos)]
+      (assoc buf :brackets 
+             (if (nil? mpos) [] [pos mpos]))))
+  ([buf]
+    (buf-update-highlight-bracket-pair buf (buf :pos))))
 
 (defn- add-highlight [buf rg]
   (let [highlights (buf :highlights)]
@@ -474,4 +477,21 @@
         a (or (last (pos-re- r (dec b) re-start)) 0)]
     (subr r a b)))
 
+(defmacro async [buf & body]
+  `(let [abuf# (@buffer-list (~buf :id))]
+     (-> abuf#
+         (send (fn [~'buf]
+                 (let [buf# ~@body]
+                   (send-buf! buf#)))))
+     ~buf))
+
+(defmacro with-catch [buf & body]
+  `(try
+     (do ~@body)
+     (catch Exception e#
+       (assoc ~buf :message (str e#)))))
+
+(defmacro async-with-catch [buf & body]
+  `(async ~buf
+          (with-catch ~buf ~@body)))
 

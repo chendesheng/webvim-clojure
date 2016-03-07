@@ -125,26 +125,18 @@
           (assoc buf :message (res :err)))))  ;use old buf if formatter fails
     buf))
 
-(defn async-ex-cmd [buf fncmd cmd args]
-  (let [abuf (@buffer-list (buf :id))]
-    (-> abuf
-        (send (fn [buf cmd args]
-                (let [newbuf (-> buf
-                                 format-buffer
-                                 (fncmd cmd args))]
-                  (-> newbuf
-                      (buf-update-highlight-bracket-pair (newbuf :pos))
-                      send-buf!))) cmd args))
-    buf))
-
 (listen :init-ex-commands
         (fn [cmds buf]
           (if (-> buf :language :id (= ::clojure))
             (wrap-command
               cmds
-              "write" (fn [fncmd]
+              "write" (fn [fnwrite]
                         (fn [buf cmd args]
                           (-> buf
-                              (async-ex-cmd fncmd cmd args)
-                              (assoc :message "formatting...")))))
+                              (assoc :message "formatting...")
+                              (async-with-catch
+                                (-> buf
+                                    format-buffer
+                                    (fnwrite cmd args)
+                                    buf-update-highlight-bracket-pair))))))
             cmds)))
