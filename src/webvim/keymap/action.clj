@@ -448,7 +448,8 @@
   (contains? #{:enter :leave :before :after :else} key))
 
 (defn wrap-key [keymap key f]
-  (assoc keymap key (f (or (keymap key) nop))))
+  (update keymap key (fn [handler]
+                       (f (or handler nop)))))
 
 (defn wrap-keycode [f]
   (fn [buf keycode]
