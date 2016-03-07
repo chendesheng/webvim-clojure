@@ -144,12 +144,12 @@
                        :move-down "<c-n>"
                        :uncomplete-word buffer-uncomplete-word
                        :replace-suggestion (fn [buf item olditem]
-                                             (println "replace")
-                                             (pprint item)
-                                             (pprint olditem)
+                                             ;(println "replace")
+                                             ;(pprint item)
+                                             ;(pprint olditem)
                                              (buffer-replace-suggestion buf (item :name) (olditem :name)))
                        :async false
-                       :fn-words (fn [buf w]
+                       :fn-words (fn [_ w]
                                    (map (fn [w]
                                           {:name w}) (keys (autocompl-remove-word @autocompl-words w))))
                        :fn-suggest fuzzy-suggest
