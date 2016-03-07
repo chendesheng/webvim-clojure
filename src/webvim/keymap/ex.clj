@@ -369,8 +369,7 @@
                       (-> buf
                           (handler keycode)
                           normal-mode-fix-pos
-                          set-normal-mode
-                          buf-match-bracket))))
+                          set-normal-mode))))
         (assoc "<cr>"
                (fn [buf keycode]
                  (execute buf cmds))

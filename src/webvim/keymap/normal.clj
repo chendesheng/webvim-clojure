@@ -149,8 +149,7 @@
       (-> newbuf
           (update-x-if-not-jk keycode)
           (update-in [:context] dissoc :range)
-          save-undo
-          buf-match-bracket))))
+          save-undo))))
 
 (defn- start-insert-mode-with-keycode [fnmotion fnedit]
   (fn [buf keycode]

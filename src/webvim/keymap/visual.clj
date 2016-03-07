@@ -365,8 +365,7 @@
                   (-> buf
                       visual-select
                       set-visual-ranges
-                      (update-x-if-not-jk keycode)
-                      buf-match-bracket)))
+                      (update-x-if-not-jk keycode))))
        "z" {"z" (wrap-keycode cursor-center-viewport)}
        "=" (wrap-keycode #(indent-range % true))
        "o" swap-visual-start-end
