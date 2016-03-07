@@ -138,5 +138,5 @@
                                 (-> buf
                                     format-buffer
                                     (fnwrite cmd args)
-                                    buf-update-highlight-bracket-pair))))))
+                                    buf-match-bracket))))))
             cmds)))

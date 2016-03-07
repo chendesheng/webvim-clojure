@@ -362,11 +362,11 @@
        :after (fn [buf keycode]
                 (if (contains? #{"u" "<c-r>"} keycode)
                   (update-x-if-not-jk buf keycode)
-                  (let [newbuf (-> buf
-                                   visual-select
-                                   set-visual-ranges
-                                   (update-x-if-not-jk keycode))]
-                    (buf-update-highlight-bracket-pair newbuf (newbuf :pos)))))
+                  (-> buf
+                      visual-select
+                      set-visual-ranges
+                      (update-x-if-not-jk keycode)
+                      buf-match-bracket)))
        "z" {"z" (wrap-keycode cursor-center-viewport)}
        "=" (wrap-keycode #(indent-range % true))
        "o" swap-visual-start-end

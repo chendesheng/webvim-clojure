@@ -33,14 +33,6 @@
 (defn file-register [buf]
   {:id (buf :id) :str (or (buf :filepath) (buf :name))})
 
-(defn buf-update-highlight-bracket-pair
-  ([buf pos]
-    (let [mpos (pos-match-bracket (buf :str) pos)]
-      (assoc buf :brackets 
-             (if (nil? mpos) [] [pos mpos]))))
-  ([buf]
-    (buf-update-highlight-bracket-pair buf (buf :pos))))
-
 (defn- add-highlight [buf rg]
   (let [highlights (buf :highlights)]
     (if (empty? (filter (fn [[a b]]
@@ -495,3 +487,13 @@
   `(async ~buf
           (with-catch ~buf ~@body)))
 
+(defn buf-match-bracket
+  ([buf pos]
+    (-> buf
+        (assoc :brackets [])
+        (async
+          (let [mpos (pos-match-bracket (buf :str) pos)]
+            (assoc buf :brackets 
+                   (if (nil? mpos) [] [pos mpos]))))))
+  ([buf]
+    (buf-match-bracket buf (buf :pos))))

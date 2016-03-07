@@ -19,7 +19,7 @@
 (defn- insert-mode-default [buf keycode]
   (let [pos (buf :pos)
         buf1 (insert-keycode buf keycode)
-        buf2 (buf-update-highlight-bracket-pair buf1 (-> buf1 :pos dec))]
+        buf2 (buf-match-bracket buf1 (-> buf1 :pos dec))]
     (if (or (indent-trigger? (buf :language) keycode) (= keycode "<cr>"))
       (buf-indent-current-line buf2)
       buf2)))

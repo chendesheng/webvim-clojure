@@ -150,8 +150,7 @@
           (update-x-if-not-jk keycode)
           (update-in [:context] dissoc :range)
           save-undo
-          ;TODO make bracket match async
-          (buf-update-highlight-bracket-pair (newbuf :pos))))))
+          buf-match-bracket))))
 
 (defn- start-insert-mode-with-keycode [fnmotion fnedit]
   (fn [buf keycode]
