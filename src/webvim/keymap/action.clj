@@ -340,14 +340,17 @@
 
 (defn append-panel [buf apanel s goto?]
   (send apanel
-        (fn [buf]
-          (-> buf
-              (buf-append s "\n")
-              buf-end
-              line-start
-              save-undo
-              cursor-center-viewport
-              send-buf!)))
+        (fn [buf goto?]
+          (let [pos (-> buf :str count dec)
+                fn-set-pos (if goto? buf-set-pos constantly)]
+            (-> buf
+                (buf-append s "\n")
+                buf-end
+                line-start
+                save-undo
+                (fn-set-pos pos)
+                cursor-center-viewport
+                send-buf!))) goto?)
   (if goto? (goto-buf buf apanel) buf))
 
 (defn append-output-panel [buf s goto?]
