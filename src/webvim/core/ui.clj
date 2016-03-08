@@ -105,7 +105,11 @@
     buf))
 
 (defonce ui-agent (agent {:viewport {:w 0 :h 0}
-                          :render! (fn [a b] a)}))
+                          :render! (fn [a b] a)} :error-handler (fn [ui err]
+                                                                  (println "ui agent fail:")
+                                                                  (println ":bufid " (-> ui :buf :id))
+                                                                  (println ":filepath " (-> ui :buf :filepath))
+                                                                  (println err))))
 
 (defn- bound-scroll-top
   "Change scroll top make cursor inside viewport"

@@ -12,7 +12,9 @@
 (println "load autocompl language")
 
 ;Keep reference count of each word: {"w1" 1 "w2" 3}
-(defonce autocompl-words (agent {}))
+(defonce autocompl-words (agent {}
+                                :error-handler
+                                (fn [_ err] (println err))))
 
 (defn- not-word-chars [lang]
   (-> lang word-re :not-word-chars))

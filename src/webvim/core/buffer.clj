@@ -29,7 +29,12 @@
   "Generate buffer id (increase from 1) and add to buffer-list"
   [buf]
   (let [id (swap! gen-buf-id inc)
-        abuf (agent (assoc buf :id id))]
+        abuf (agent (assoc buf :id id)
+                    :error-handler (fn [ui err]
+                                     (println "buffer agent failed:")
+                                     (println ":id " (buf :id))
+                                     (println ":filepath " (buf :filepath))
+                                     (println err)))]
     (reset! buffer-list (assoc @buffer-list id abuf))
     abuf))
 
