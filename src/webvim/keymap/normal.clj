@@ -61,9 +61,11 @@
         r (buf :str)
         [a b] (pos-re+ r pos #"\r?\n.*?(?=(\r|\n|\S))")]
     (if (nil? a) buf
-        (-> buf
-            (buf-replace a b " ")
-            (buf-set-pos a)))))
+        (let [sep (if (or (>= b (count r))
+                          (= (char-at r b) \))) "" " ")]
+          (-> buf
+              (buf-replace a b sep)
+              (buf-set-pos a))))))
 
 (defn- pos-info [buf]
   (let [{y :y
