@@ -36,11 +36,10 @@
     (apply cache-resource r)))
 
 (defn restart []
-  (let [tmp (init-keymap-tree nil)
-        keymaps (assoc tmp :keymap (tmp :normal-mode-keymap))]
-    (send ui-agent (fn [ui] (assoc ui :keymaps tmp)))
-    (doseq [abuf (vals @buffer-list)]
-      (send abuf (fn [buf]
+  (doseq [abuf (vals @buffer-list)]
+    (send abuf (fn [buf]
+                 (let [tmp (init-keymap-tree buf)
+                       keymaps (assoc tmp :keymap (tmp :normal-mode-keymap))]
                    (merge buf keymaps)))))
   (future
     (Thread/sleep 10) ;wait some time so restart happens after flush states to client
