@@ -1,3 +1,16 @@
+/*
+about z-index:
+    selection -1
+    code 0
+    search highlight 1
+    cursor 1
+    matched bracket 1
+    cursor ongoing key 2
+    autocompl 2
+    gutter 2
+    status bar 2
+*/
+
 body {
     font-family: 'Ubuntu Mono', 'Source Code Pro for Powerline', 'Source Code Pro', 'Courier New';
     padding: 0;
@@ -58,7 +71,7 @@ html,
     -ms-user-select: none;
     -moz-user-select: none;
     -o-user-select: none;
-    z-index: 100;
+    z-index: 2;
 }
 
 .line-num {
@@ -83,14 +96,14 @@ pre {
 .cursor {
     position: absolute;
     color: white;
-    z-index: 99;
+    z-index: 1;
     white-space: pre;
     height: 1.2em;
     line-height: 1.2em;
 }
 
 .cursor.ongoing-key {
-    z-index: 1000;
+    z-index: 2;
 }
 
 .status-bar .cursor {
@@ -113,7 +126,7 @@ pre {
     padding: 0 10px 0 10px;
     overflow: auto;
     background: #007ACC;
-    z-index: 100;
+    z-index: 2;
 }
 
 .status-bar .buf-name {
@@ -147,7 +160,7 @@ pre {
     max-height: 12em;
     /*10+0.2*10*/
     overflow: auto;
-    z-index: 100;
+    z-index: 2;
 }
 
 .autocompl pre {
@@ -236,7 +249,7 @@ pre {
     background: #007acc;
     opacity: 0.3;
     width: 9.57px;
-    z-index: 1000;
+    z-index: 1;
 }
 
 .lines {
