@@ -12,6 +12,7 @@
         webvim.lang.csharp
         webvim.lang.html
         webvim.core.buffer
+        webvim.core.rope
         webvim.core.event
         webvim.core.register
         webvim.core.keys
@@ -91,6 +92,27 @@
             rest)]
     [(Integer. id) keycode]))
 
+(defn- pretty-trace
+  "convert error trace to file path with line number"
+  [err]
+  (let [st (-> err .getStackTrace seq)]
+    (map (fn [line]
+           (let [class (.getClassName line)
+                ;method (.getMethodName line)
+                 file (.getFileName line)
+                 linenum (.getLineNumber line)
+                 appendsrc (fn[name]
+                             (if (re-test #"^webvim" name)
+                               (str "src/" name)
+                               name))]
+             (str (-> class
+                      (clojure.string/replace #"\$.*" "")
+                      ;FIXME: handle class name doesn't contains dot 
+                      (clojure.string/replace #"[.][^.]*$" "")
+                      (clojure.string/replace "." "/")
+                      (clojure.string/replace "_" "-")
+                      appendsrc) "/" file ":" linenum))) st)))
+
 (defn- change-buffer! [buf keycodes]
   (time
     (try
@@ -114,13 +136,11 @@
                               send-buf!)))))
               (dissoc buf :nextid))))
       (catch Exception e
-        (println e)
-        (.printStackTrace e)
-        (let [sw (java.io.StringWriter.)
-              pw (java.io.PrintWriter. sw)]
-          (.printStackTrace e pw)
+        (let [output (str (.getMessage e) "\n"
+                          "stack trace:\n\t"
+                          (clojure.string/join "\n\t" (pretty-trace e)) "\n")]
           (-> buf
-              (append-output-panel (str sw) true)
+              (append-output-panel output true)
               (dissoc :nextid)))))))
 
 (comment
