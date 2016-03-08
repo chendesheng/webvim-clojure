@@ -101,7 +101,7 @@
                 ;method (.getMethodName line)
                  file (.getFileName line)
                  linenum (.getLineNumber line)
-                 appendsrc (fn[name]
+                 appendsrc (fn [name]
                              (if (re-test #"^webvim" name)
                                (str "src/" name)
                                name))]
@@ -136,7 +136,7 @@
                               send-buf!)))))
               (dissoc buf :nextid))))
       (catch Exception e
-        (let [output (str (.getMessage e) "\n"
+        (let [output (str e "\n"
                           "stack trace:\n\t"
                           (clojure.string/join "\n\t" (pretty-trace e)) "\n")]
           (-> buf
