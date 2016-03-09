@@ -34,6 +34,9 @@
      :punctuation-chars (str "^" word-chars space-chars)
      :not-punctuation-chars (str word-chars space-chars)}))
 
+(defn- clojure? [buf]
+  (-> buf :language :id (= ::clojure)))
+
 (defn- indent-tab-size [^String s] 
   (or (contains?
         #{"try" "catch" "ns" "if" "if-not" "nil?" "fn" "let" "cond" "loop" "doseq" "for" "condp" "do"} s)
@@ -125,9 +128,28 @@
           (assoc buf :message (res :err)))))  ;use old buf if formatter fails
     buf))
 
+(defn- print-eval [buf code]
+  (append-output-panel 
+    buf
+    (format ":eval %s\n %s" code
+            (with-out-str
+              (->> code read-string eval str)))
+    true))
+
+(listen :normal-mode-keymap
+        (fn [keymap buf]
+          (if (clojure? buf)
+            (wrap-key keymap
+                      "K" (fn [handler]
+                            (fn [buf keycode]
+                              (print-eval buf
+                                          (str "(clojure.repl/doc " (current-word buf) ")"))
+                              buf)))
+            keymap)))
+
 (listen :init-ex-commands
         (fn [cmds buf]
-          (if (-> buf :language :id (= ::clojure))
+          (if (clojure? buf)
             (wrap-command
               cmds
               "write" (fn [fnwrite]
