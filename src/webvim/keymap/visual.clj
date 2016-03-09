@@ -126,20 +126,20 @@
     (-> buf
         set-insert-mode
         (assoc :keymap 
-               (assoc (buf :insert-mode-keymap)
-                      :leave (fn [buf keycode]
-                               (let [leave (or (-> buf :insert-mode-keymap :leave) nop)
-                                     newpos (buf :pos)
-                                     s (if (> newpos pos)
-                                         (subr (buf :str) pos newpos)
-                                         nil)]
-                                 (if (or (nil? s) (>= (indexr s <br>) 0))
-                                   (leave buf keycode) ;only insert is allowed and it must not cross line
-                                   (let [cnt (count s)
-                                         poses (map #(+ % cnt) poses)]
-                                     (-> buf
-                                         (repeat-insert poses s)
-                                         (leave keycode)))))))))))
+               (wrap-key (buf :insert-mode-keymap)
+                         :leave (fn [handler]
+                                  (fn [buf keycode]
+                                    (let [newpos (buf :pos)
+                                          s (if (> newpos pos)
+                                              (subr (buf :str) pos newpos)
+                                              nil)]
+                                      (if (or (nil? s) (>= (indexr s <br>) 0))
+                                        (handler buf keycode) ;only insert is allowed and it must not cross line
+                                        (let [cnt (count s)
+                                              poses (map #(+ % cnt) poses)]
+                                          (-> buf
+                                              (repeat-insert poses s)
+                                              (handler keycode))))))))))))
 
 (defn- visual-line-repeat-set-pos [{r :str :as buf} pos append?]
   (let [[[a b]] (pos-lines-seq+ r pos)
@@ -152,22 +152,24 @@
       (assoc-in [:context :lasty] y)))
 
 (defn- visual-line-repeat-change [buf append?]
-  (let [keymap (assoc (buf :insert-mode-keymap)
-                      :after (fn [buf keycode]
+  (let [keymap (-> (buf :insert-mode-keymap)
+                   (wrap-key 
+                     :after (fn [handler]
+                              (fn [buf keycode]
                                ;(println "I after:" keycode)
                                ;(println "repeat-lines:" (-> buf :context :repeat-lines))
-                               (let [after (or (-> buf :insert-mode-keymap :after) nop)]
-                                 (-> buf
-                                     (after keycode)
-                                     (update-in [:context :keys] conj keycode))))
-                      :leave (fn [buf keycode]
+                                (-> buf
+                                    (handler keycode)
+                                    (update-in [:context :keys] conj keycode)))))
+                   (wrap-key
+                     :leave (fn [handler]
+                              (fn [buf keycode]
                                ;(println "repeat-lines:2" (-> buf :context :repeat-lines))
-                               (let [leave (or (-> buf :insert-mode-keymap :leave) nop)]
-                                 (-> buf
-                                     (visual-line-repeat append?)
-                                     (visual-line-repeat-set-pos (-> buf :context :lastpos) append?)
-                                     (update-in [:context] dissoc :keys :repeat-lines :lastpos :lasty)
-                                     (leave keycode)))))
+                                (-> buf
+                                    (visual-line-repeat append?)
+                                    (visual-line-repeat-set-pos (-> buf :context :lastpos) append?)
+                                    (update-in [:context] dissoc :keys :repeat-lines :lastpos :lasty)
+                                    (handler keycode))))))
         [a b] (-> buf :visual :range)]
     (-> buf
         (assoc-in [:context :repeat-lines] (visual-line-repeat-info buf))
