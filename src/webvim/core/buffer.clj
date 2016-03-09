@@ -8,6 +8,7 @@
         webvim.core.pos
         webvim.core.lang
         webvim.core.utils
+        webvim.core.line
         webvim.core.parallel-universe
         webvim.core.event))
 
@@ -127,10 +128,16 @@
                   (if (fs/exists? f)
                     (debomify (slurp f)) "")))))
 
-(defn new-file [^String f]
-  (-> f
-      open-file
-      buffer-list-save!))
+(defn new-file 
+  ([^String f]
+   (-> f
+       open-file
+       buffer-list-save!))
+  ([^String f y]
+   (-> f
+       open-file
+       (lines-row y)
+       buffer-list-save!)))
 
 (defn printable-filepath [buf]
   (let [{nm :name

@@ -20,6 +20,7 @@
         webvim.keymap
         webvim.keymap.action
         webvim.core.ui
+        webvim.persistent
         (compojure handler [core :only (GET POST defroutes)])
         (hiccup [page :only (html5)])
         ring.middleware.resource
@@ -173,8 +174,10 @@
 (defonce ^:private web-server (atom nil))
 
 ;start app with init file and webserver configs
-(defn start [file options]
+(defn start [file recover-buffers? options]
   (if-not (empty? file) (start-file file))
+  (if recover-buffers? (recover-buffers))
+  (start-track)
   (send ui-agent (fn [ui]
                    ;(println "render" (ui :render!))
                    (assoc ui :render! write-client!)))
@@ -190,4 +193,5 @@
 (defn -main [& args]
   (start
     "/tmp/webvim/welcome.txt"
+    true
     {:port 8080 :join? true}))

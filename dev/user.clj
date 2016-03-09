@@ -44,7 +44,7 @@
   (future
     (Thread/sleep 10) ;wait some time so restart happens after flush states to client
     (stop)
-    (start nil {:port 8080 :join? false}))
+    (start nil false {:port 8080 :join? false}))
   "ok")
 
 ;FIXME: This is too hacky
@@ -113,4 +113,5 @@
     (add-init-ex-commands-event)
     (start
       "testfile.clj"
+      true
       {:port 8080 :join? false})))
