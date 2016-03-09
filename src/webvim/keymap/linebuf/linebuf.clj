@@ -114,7 +114,7 @@
     (linebuf-delete buf -1)))
 
 (defn- linebuf-put [buf keycode]
-  (let [txt ((registers-get keycode) :str)]
+  (let [txt (:str (registers-get keycode))]
     (if (string? txt)
       (linebuf-insert buf (-> txt rope first-line .trimEnd str))
       buf)))
