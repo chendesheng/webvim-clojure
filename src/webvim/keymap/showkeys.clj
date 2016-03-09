@@ -14,7 +14,7 @@
                  (if (and (= (buf :mode) normal-mode)
                           (or (= (-> buf :visual :type) no-visual)
                               (= keycode "\"")
-                              (= (last showkeys) "\""))
+                              (and (= (last showkeys) "\"") (not= keycode "<esc>")))
                           (-> buf :line-buffer nil?))
                    (conj showkeys keycode))))))
 
