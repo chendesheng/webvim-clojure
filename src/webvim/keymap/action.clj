@@ -342,7 +342,7 @@
   (send apanel
         (fn [buf goto?]
           (let [pos (-> buf :str count dec)
-                fn-set-pos (if goto? buf-set-pos constantly)]
+                fn-set-pos (if goto? buf-set-pos (fn [buf pos] buf))]
             (-> buf
                 (buf-append s "\n")
                 buf-end
