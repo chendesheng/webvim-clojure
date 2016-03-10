@@ -4,7 +4,10 @@
             [me.raynes.fs :as fs]))
 
 ;use agent to avoid race condition
-(defonce ^:private save-buffer-agent (agent {} :error-handler (fn [_ e] (println e))))
+(defonce ^:private save-buffer-agent (agent {} :error-handler
+                                            (fn [_ err]
+                                              (println "save-buffer-agent failed:")
+                                              (println err))))
 
 (defonce ^:private buffers-edn "buffers.edn")
 (defonce ^:private config-dir (fs/file (fs/home) ".webvim"))
@@ -12,12 +15,13 @@
 (defn- save-buffers! [buffers]
   (println "save-buffers!")
   (send save-buffer-agent
-        (fs/mkdir config-dir)
-        (spit (fs/file config-dir buffers-edn)
-              (prn-str (map (fn [buf]
-                              (select-keys buf [:filepath :y]))
-                            (filter #(-> % :filepath nil? not)
-                                    (map deref (vals buffers))))))))
+        (fn [_]
+          (fs/mkdir config-dir)
+          (spit (fs/file config-dir buffers-edn)
+                (prn-str (map (fn [buf]
+                                (select-keys buf [:filepath :y]))
+                              (filter #(-> % :filepath nil? not)
+                                      (map deref (vals buffers)))))))))
 
 (defn- read-buffers []
   (try
@@ -27,10 +31,10 @@
     (catch Exception e
       (print e))))
 
-(defn recover-buffers[]
+(defn recover-buffers []
   (doseq [{filepath :filepath
            y :y} (read-buffers)]
-    (if (empty? (filter (fn[buf]
+    (if (empty? (filter (fn [buf]
                           (= (buf :filepath) filepath))
                         (map deref (vals @buffer-list))))
       (new-file filepath y))))

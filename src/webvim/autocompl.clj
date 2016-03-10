@@ -14,7 +14,9 @@
 ;Keep reference count of each word: {"w1" 1 "w2" 3}
 (defonce autocompl-words (agent {}
                                 :error-handler
-                                (fn [_ err] (println err))))
+                                (fn [_ err]
+                                  (println "autocompl-words agent failed:")
+                                  (println err))))
 
 (defn- not-word-chars [lang]
   (-> lang word-re :not-word-chars))
