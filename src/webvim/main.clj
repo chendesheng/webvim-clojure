@@ -141,6 +141,7 @@
                           "stack trace:\n\t"
                           (clojure.string/join "\n\t" (pretty-trace e)) "\n")]
           (-> buf
+              keycode-cancel
               (append-output-panel output true)
               (dissoc :nextid)))))))
 

@@ -68,11 +68,18 @@
          :mode insert-mode
          :keymap (buf :insert-mode-keymap)))
 
+(defn- fire-change-to-normal-mode-event [buf]
+  (if (not= (buf :mode) normal-mode)
+    (fire-event buf :before-change-to-normal-mode)
+    buf))
+
 (defn set-normal-mode [buf]
   ;(println "set-normal-mode:")
-  (assoc buf
-         :mode normal-mode
-         :keymap (buf :normal-mode-keymap)))
+  (-> buf
+      fire-change-to-normal-mode-event
+      (assoc 
+        :mode normal-mode
+        :keymap (buf :normal-mode-keymap))))
 
 (defn buf-yank
   ([buf a b linewise? delete?]
@@ -189,6 +196,15 @@
             (buf-insert pos s)
             (buf-set-pos newpos))))))
 
+(defn keycode-cancel [buf]
+  (-> buf
+      set-normal-mode
+      (dissoc :context :keys :line-buffer)
+      (assoc :visual {:type 0 :range [0 0]})
+      (assoc :message "")
+      (assoc :autocompl nil)
+      (assoc :showkeys [])))
+
 (defn- fire-before-handle-key [buf keycode]
   (fire-event :before-handle-key buf keycode)) 
 
@@ -196,19 +212,21 @@
   (fire-event :after-handle-key buf keycode)) 
 
 (defn apply-keycode [buf keycode]
-  (let [keymap (compile-keymap (buf :keymap))
-        allkeycode (conj (buf :keys) keycode)
-        func (or (keymap (clojure.string/join allkeycode))
-                 (keymap (clojure.string/join (conj (buf :keys) ":else")))
-                 (if (-> buf :keys empty? not)
-                   (or
-                     (keymap (clojure.string/join (conj (pop (buf :keys)) ":else" keycode))) ;last :else can be map too
-                     (keymap (clojure.string/join (conj (pop (buf :keys)) ":else:else")))))
-                 nop)]
-    (-> buf
-        (fire-before-handle-key keycode)
-        (func keycode)
-        (fire-after-handle-key keycode))))
+  (if (= keycode "<c-c>")
+    (keycode-cancel buf)
+    (let [keymap (compile-keymap (buf :keymap))
+          allkeycode (conj (buf :keys) keycode)
+          func (or (keymap (clojure.string/join allkeycode))
+                   (keymap (clojure.string/join (conj (buf :keys) ":else")))
+                   (if (-> buf :keys empty? not)
+                     (or
+                       (keymap (clojure.string/join (conj (pop (buf :keys)) ":else" keycode))) ;last :else can be map too
+                       (keymap (clojure.string/join (conj (pop (buf :keys)) ":else:else")))))
+                   nop)]
+      (-> buf
+          (fire-before-handle-key keycode)
+          (func keycode)
+          (fire-after-handle-key keycode)))))
 
 (defn apply-keycodes [buf keycodes]
   (reduce apply-keycode buf keycodes))

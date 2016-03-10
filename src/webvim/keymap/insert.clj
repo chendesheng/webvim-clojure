@@ -45,12 +45,13 @@
                         ;FIXME: Vim's <c-o> breaks history and dot repeat.
                         ;I think keep them seems a better chioce.
              :enter (fn [buf keycode]
-                      (-> buf
-                          cancel-last-indents
-                          update-x
-                          normal-mode-fix-pos
-                          (assoc :mode normal-mode
-                                 :submode temp-normal-mode)))
+                      (let [buf (fire-event buf :before-change-to-normal-mode)]
+                        (-> buf
+                            ;cancel-last-indents
+                            ;update-x
+                            ;normal-mode-fix-pos
+                            (assoc :mode normal-mode
+                                   :submode temp-normal-mode))))
              :leave (fn [buf keycode]
                       (assoc buf
                              :mode insert-mode
@@ -71,10 +72,16 @@
    :continue #(not (= "<esc>" %2))
    :leave (fn [buf keycode]
             (-> buf
-                cancel-last-indents
+                ;cancel-last-indents
                 char-
-                update-x
-                save-undo
-                normal-mode-fix-pos
-                set-normal-mode))})
+                ;update-x
+                ;normal-mode-fix-pos
+                set-normal-mode
+                save-undo))})
 
+(listen :before-change-to-normal-mode
+        (fn [buf]
+          (-> buf
+              cancel-last-indents
+              update-x
+              normal-mode-fix-pos)))
