@@ -129,3 +129,11 @@
       (autocompl-update
         lang news olds c))
     buf))
+
+(listen
+  :close-buffer
+  (fn [buf]
+    (send autocompl-words
+          (fn [words]
+            (remove-words words (autocompl-parse (buf :language) (buf :str)))))
+    buf))
