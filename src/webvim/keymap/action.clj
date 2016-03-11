@@ -200,10 +200,10 @@
   (-> buf
       set-normal-mode
       (dissoc :context :keys :line-buffer)
-      (assoc :visual {:type 0 :range [0 0]})
-      (assoc :message "")
-      (assoc :autocompl nil)
-      (assoc :showkeys [])))
+      (assoc :visual {:type 0 :range [0 0]}
+             :message ""
+             :autocompl nil
+             :showkeys nil)))
 
 (defn- fire-before-handle-key [buf keycode]
   (fire-event :before-handle-key buf keycode)) 
