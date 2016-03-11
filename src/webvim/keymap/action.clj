@@ -303,7 +303,8 @@
   ([buf file new-file?]
     (if (or (empty? file) (path= file (:filepath buf)))
       buf
-      (let [buf-exists (some #(if (path= file (% :filepath)) %)
+      (let [buf-exists (some #(if (and (-> % :filepath nil? not)
+                                       (path= file (% :filepath))) %)
                              (->> @buffer-list vals (map deref)))
             file (expand-home file)
             newbuf (if (nil? buf-exists)
