@@ -43,7 +43,10 @@
     (file-seq-bfs pred [fs/*cwd*])))
 
 (defn- get-files []
-  (map (comp (fn [f] {:name f :class (if (fs/directory? f) "dir" "file")}) shorten-path str) (file-seq-bfs (comp not hidden?)))) 
+  (map (comp (fn [f] {:name f :class (cond
+                                       (fs/directory? f) "dir"
+                                       (fs/executable? f) "exe"
+                                       :else "file")}) shorten-path str) (file-seq-bfs (comp not hidden?)))) 
 
 ;(pprint (take 20 (get-files)))
 

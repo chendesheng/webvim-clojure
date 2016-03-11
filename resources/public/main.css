@@ -203,6 +203,10 @@ pre {
     content: 'δ';
 }
 
+.autocompl .with-class.exe:before {
+    content: 'ε';
+}
+
 .autocompl .with-class.package:before {
     content: 'p';
 }
