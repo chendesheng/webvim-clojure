@@ -288,8 +288,8 @@
         visual-mode-keymap (init-visual-mode-keymap motion-keymap buf)
         pair-keymap (init-pair-keymap)
         motion-keymap-fix-w (-> motion-keymap
-                                (assoc "w" (dont-cross-line (motion-keymap "w")))
-                                (assoc "W" (dont-cross-line (motion-keymap "W"))))
+                                (wrap-key "w" (fn [handler] (dont-cross-line handler)))
+                                (wrap-key "W" (fn [handler] (dont-cross-line handler))))
         motion-keymap-fix-cw (-> motion-keymap
                                  ;vim's "cw" is identical to "ce", but "dw"/"yw" is not equal to "de"/"ye"
                                  (assoc "w" (dont-cross-line cw-move))
