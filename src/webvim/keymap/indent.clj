@@ -1,0 +1,69 @@
+(ns webvim.keymap.indent
+  (:require [webvim.keymap.action :refer [repeat-prefix-value]]
+            [webvim.keymap.motion :refer [init-motion-keymap-fix-cw init-motion-keymap-for-operators]]
+            [webvim.keymap.objects :refer [init-pair-keymap]]
+            [webvim.keymap.action :refer [range-prefix]]
+            [webvim.keymap.operator :refer [wrap-operator inclusive? setup-range]]
+            [webvim.indent :refer [buf-indent-current-line buf-indent-lines]]
+            [webvim.core.rope :refer [buf-set-pos buf-replace subr re-test buf-insert rblank? char-at buf-delete]]
+            [webvim.core.line :refer [line-start line-end pos-line pos-lines-seq+]]
+            [webvim.core.pos :refer [char- pos-re-seq+]]
+            [webvim.core.utils :refer [repeat-chars nop]]
+            [webvim.core.event :refer [listen]]))
+
+(defn- indent-range [buf inclusive?]
+  (let [[a b] (range-prefix buf inclusive?)]
+    (-> buf
+        (buf-indent-lines [a (dec b)]))))
+
+(defn- indent-more [buf [a b]]
+  (reduce
+    (fn [buf [a b]]
+      (buf-insert buf a "\t"))
+    buf
+    (filter 
+      (fn [rg]
+        (-> buf :str (subr rg) rblank? not))
+      (reverse (pos-lines-seq+ (buf :str) a (dec b))))))
+
+(defn- count-leading-space [line]
+  (let [[[a b]] (pos-re-seq+ line 0 #"^ *")]
+    (- b a)))
+
+(defn- indent-less [buf [a b]]
+  (reduce
+    (fn [{r :str pos :pos :as buf} [a b]]
+      (let [line (subr r a b)]
+          ;(println "spaces:" (count-leading-space line))
+        (cond
+          (= (char-at line 0) \tab)
+          (buf-delete buf a (inc a))
+          :else
+          (buf-delete buf a (+ a (min (buf :tabsize) (count-leading-space line)))))))
+    buf
+    (reverse (pos-lines-seq+ (buf :str) a (dec b)))))
+
+
+(listen :normal-mode-keymap
+        (fn [keymap _]
+          (let [motion-keymap (init-motion-keymap-for-operators)
+                text-objects-keymap (init-pair-keymap)]
+            (assoc keymap
+                   "=" (merge
+                         motion-keymap
+                         text-objects-keymap
+                         {"=" nop
+                          :after (fn [buf keycode]
+                                   (if (contains? #{"=" "j" "k"} keycode)
+                                     (buf-indent-current-line buf)
+                                     (-> buf
+                                         setup-range
+                                         (indent-range true))))})
+                   ">" (merge
+                         motion-keymap
+                         text-objects-keymap
+                         {:after (wrap-operator indent-more)})
+                   "<" (merge
+                         motion-keymap
+                         text-objects-keymap
+                         {:after (wrap-operator indent-less)})))))

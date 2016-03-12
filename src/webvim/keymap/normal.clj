@@ -9,6 +9,7 @@
         webvim.keymap.ex
         webvim.keymap.objects
         webvim.keymap.visual
+        webvim.keymap.indent
         webvim.core.buffer
         webvim.core.rope
         webvim.core.line
@@ -203,13 +204,6 @@
       (edit-file buf uri false)
       (edit-file buf uri (parse-int linenum) false))))
 
-(defn- dont-cross-line [f]
-  (fn [buf keycode]
-    (let [newbuf (f buf keycode)
-          newpos (min (newbuf :pos) 
-                      (pos-line-end (buf :str) (buf :pos)))]
-      (buf-set-pos newbuf newpos))))
-
 (defn- operator [f]
   (fn [buf keycode]
     (let [buf (setup-range buf)
@@ -245,13 +239,8 @@
   (let [motion-keymap (init-motion-keymap)
         visual-mode-keymap (init-visual-mode-keymap motion-keymap buf)
         pair-keymap (init-pair-keymap)
-        motion-keymap-fix-w (-> motion-keymap
-                                (wrap-key "w" (fn [handler] (dont-cross-line handler)))
-                                (wrap-key "W" (fn [handler] (dont-cross-line handler))))
-        motion-keymap-fix-cw (-> motion-keymap
-                                 ;vim's "cw" is identical to "ce", but "dw"/"yw" is not equal to "de"/"ye"
-                                 (assoc "w" (dont-cross-line cw-move))
-                                 (assoc "W" (dont-cross-line cW-move)))]
+        motion-keymap-fix-w (init-motion-keymap-for-operators)
+        motion-keymap-fix-cw (init-motion-keymap-fix-cw)]
     (deep-merge
       motion-keymap
       {"i" (start-insert-mode identity identity)
@@ -318,16 +307,6 @@
              pair-keymap
              {"y" nop
               :after yank})
-       "=" (merge
-             motion-keymap-fix-w
-             pair-keymap
-             {"=" nop
-              :after (fn [buf keycode]
-                       (if (contains? #{"=" "j" "k"} keycode)
-                         (buf-indent-current-line buf)
-                         (-> buf
-                             setup-range
-                             (indent-range true))))})
        "D" delete-to-line-end
        "C" (start-insert-mode identity change-to-line-end)
        "Y" yank
@@ -345,14 +324,6 @@
                      (if (nil? reg)
                        (assoc buf :message "No alternative file")
                        (goto-buf buf (get-buffer-from-reg reg)))))
-       ">" (merge
-             motion-keymap-fix-w
-             pair-keymap
-             {:after (operator indent-more)})
-       "<" (merge
-             motion-keymap-fix-w
-             pair-keymap
-             {:after (operator indent-less)})
        :continue (fn [buf keycode]
                    (= (buf :mode) normal-mode))
        :before (fn [buf keycode]

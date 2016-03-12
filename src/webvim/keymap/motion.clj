@@ -261,45 +261,65 @@
                   (+ (buf :scroll-top)
                      (-> @ui-agent :viewport :h dec (* percentFromTop) Math/ceil)))))
 
-(defn init-motion-keymap []
-  {"h" (wrap-keycode char-)
-   "l" (wrap-keycode char+)
-   "k" (wrap-keycode #(lines-n % -1))
-   "j" (wrap-keycode #(lines-n % 1))
-   "g" {"g" (wrap-keycode (comp buf-start jump-push))
-        "d" (wrap-keycode (comp same-word-first jump-push))
-        "e" word-end-
-        "E" WORD-end-}
-   "G" (fn [buf keycode]
-         (if (-> buf :context :repeat-prefix nil? not)
-           (lines-row buf (dec (repeat-prefix-value buf)))
-           (-> buf buf-end line-start)))
-   "H" (viewport-position 0)
-   "M" (viewport-position 0.5)
-   "L" (viewport-position 1)
-   "w" word+
-   "W" WORD+
-   "b" word-
-   "B" WORD-
-   "e" word-end+
-   "E" WORD-end+
-   "0" (wrap-keycode line-first)
-   "^" (wrap-keycode line-start)
-   "$" (wrap-keycode line-end)
-   "f" {:else move-to-char+}
-   "F" {:else move-to-char-}
-   "t" {:else move-before-char+}
-   "T" {:else move-before-char-}
-   ";" repeat-move-by-char+
-   "," repeat-move-by-char-
-   "/" (increment-search-keymap true)
-   "?" (increment-search-keymap false)
-   "*" (same-word true)
-   "#" (same-word false)
-   "n" repeat-search+
-   "N" repeat-search-
-   "}" paragraph+
-   "{" paragraph-
-   "%" move-to-matched-brackets
-   "<c-u>" (cursor-move-viewport -0.5) 
-   "<c-d>" (cursor-move-viewport 0.5)})
+(def init-motion-keymap
+  (clojure.core/memoize 
+    (fn []
+      {"h" (wrap-keycode char-)
+       "l" (wrap-keycode char+)
+       "k" (wrap-keycode #(lines-n % -1))
+       "j" (wrap-keycode #(lines-n % 1))
+       "g" {"g" (wrap-keycode (comp buf-start jump-push))
+            "d" (wrap-keycode (comp same-word-first jump-push))
+            "e" word-end-
+            "E" WORD-end-}
+       "G" (fn [buf keycode]
+             (if (-> buf :context :repeat-prefix nil? not)
+               (lines-row buf (dec (repeat-prefix-value buf)))
+               (-> buf buf-end line-start)))
+       "H" (viewport-position 0)
+       "M" (viewport-position 0.5)
+       "L" (viewport-position 1)
+       "w" word+
+       "W" WORD+
+       "b" word-
+       "B" WORD-
+       "e" word-end+
+       "E" WORD-end+
+       "0" (wrap-keycode line-first)
+       "^" (wrap-keycode line-start)
+       "$" (wrap-keycode line-end)
+       "f" {:else move-to-char+}
+       "F" {:else move-to-char-}
+       "t" {:else move-before-char+}
+       "T" {:else move-before-char-}
+       ";" repeat-move-by-char+
+       "," repeat-move-by-char-
+       "/" (increment-search-keymap true)
+       "?" (increment-search-keymap false)
+       "*" (same-word true)
+       "#" (same-word false)
+       "n" repeat-search+
+       "N" repeat-search-
+       "}" paragraph+
+       "{" paragraph-
+       "%" move-to-matched-brackets
+       "<c-u>" (cursor-move-viewport -0.5) 
+       "<c-d>" (cursor-move-viewport 0.5)})))
+
+(defn- dont-cross-line [f]
+  (fn [buf keycode]
+    (let [newbuf (f buf keycode)
+          newpos (min (newbuf :pos) 
+                      (pos-line-end (buf :str) (buf :pos)))]
+      (buf-set-pos newbuf newpos))))
+
+(defn init-motion-keymap-for-operators []
+  (-> (init-motion-keymap)
+      (wrap-key "w" (fn [handler] (dont-cross-line handler)))
+      (wrap-key "W" (fn [handler] (dont-cross-line handler)))))
+
+(defn init-motion-keymap-fix-cw []
+  (-> (init-motion-keymap)
+          ;vim's "cw" is identical to "ce", but "dw"/"yw" is not equal to "de"/"ye"
+      (assoc "w" (dont-cross-line cw-move))
+      (assoc "W" (dont-cross-line cW-move))))
