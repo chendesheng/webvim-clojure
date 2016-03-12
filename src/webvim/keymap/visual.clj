@@ -59,7 +59,7 @@
     (let [typ (-> buf :context :last-visual-type)
           newtyp (keycode2type keycode)]
       (if (nil? newtyp)
-        (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<c-r>" "<esc>" "<" ">" "r"} keycode))
+        (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<esc>" "<" ">" "r"} keycode))
         (not (= typ newtyp))))))
 
 (defn- change-visual-mode-type [buf keycode]
@@ -362,18 +362,15 @@
                      (assoc-in [:context :cancel-visual-mode?] false)
                      (assoc-in [:context :range] nil)))
        :after (fn [buf keycode]
-                (if (contains? #{"u" "<c-r>"} keycode)
-                  (update-x-if-not-jk buf keycode)
-                  (-> buf
-                      visual-select
-                      set-visual-ranges
-                      (update-x-if-not-jk keycode))))
+                (-> buf
+                    visual-select
+                    set-visual-ranges
+                    (update-x-if-not-jk keycode)))
        "z" {"z" (wrap-keycode cursor-center-viewport)}
-       "=" (wrap-keycode #(indent-range % true))
        "o" swap-visual-start-end
        "<c-i>" nop
        "<c-o>" nop
-       "<c-r>" (wrap-keycode redo)
+       "<c-r>" nop
        "V" change-visual-mode-type
        "v" change-visual-mode-type
        "<c-v>" change-visual-mode-type
@@ -382,6 +379,7 @@
        "y" visual-keymap-y
        "I" visual-keymap-I
        "A" visual-keymap-A
+       "=" (wrap-keycode #(indent-range % true))
        ">" (indent indent-more)
        "<" (indent indent-less)
        "~" (visual-change-case swap-case)
