@@ -373,7 +373,6 @@
        "o" swap-visual-start-end
        "<c-i>" nop
        "<c-o>" nop
-       "u" (wrap-keycode undo)
        "<c-r>" (wrap-keycode redo)
        "V" change-visual-mode-type
        "v" change-visual-mode-type
@@ -386,8 +385,8 @@
        ">" (indent indent-more)
        "<" (indent indent-less)
        "~" (visual-change-case swap-case)
-       "g" {"u" (visual-change-case clojure.string/lower-case)
-            "U" (visual-change-case clojure.string/upper-case)}
+       "u" (visual-change-case clojure.string/lower-case)
+       "U" (visual-change-case clojure.string/upper-case)
        "r" {"<esc>" nop
             "<cr>" nop
             :else replace-char-keycode}}) buf))
