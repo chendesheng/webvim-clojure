@@ -141,7 +141,7 @@
           (buf-set-pos b)
           (assoc-in [:context :range] rg)))))
 
-(defn- pair-keymap [around?]
+(defn- objects-keymap [around?]
   (merge (reduce-kv
            (fn [keymap lch rch]
              (-> keymap
@@ -159,6 +159,6 @@
           "w" (pair-current-word around?)
           "W" (pair-current-WORD around?)}))
 
-(defn init-pair-keymap []
-  {"a" (pair-keymap true)
-   "i" (pair-keymap false)})
+(defn init-objects-keymap []
+  {"a" (objects-keymap true)
+   "i" (objects-keymap false)})

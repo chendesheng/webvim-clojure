@@ -1,7 +1,6 @@
 (ns webvim.keymap.indent
   (:require [webvim.keymap.action :refer [repeat-prefix-value]]
             [webvim.keymap.motion :refer [init-motion-keymap-fix-cw init-motion-keymap-for-operators]]
-            [webvim.keymap.objects :refer [init-pair-keymap]]
             [webvim.keymap.action :refer [range-prefix]]
             [webvim.keymap.operator :refer [wrap-operator inclusive? setup-range]]
             [webvim.indent :refer [buf-indent-current-line buf-indent-lines]]
@@ -34,24 +33,18 @@
   (reduce
     (fn [{r :str pos :pos :as buf} [a b]]
       (let [line (subr r a b)]
-          ;(println "spaces:" (count-leading-space line))
-        (cond
-          (= (char-at line 0) \tab)
+        (if (= (char-at line 0) \tab)
           (buf-delete buf a (inc a))
-          :else
           (buf-delete buf a (+ a (min (buf :tabsize) (count-leading-space line)))))))
     buf
     (reverse (pos-lines-seq+ (buf :str) a (dec b)))))
 
-
 (listen :normal-mode-keymap
         (fn [keymap _]
-          (let [motion-keymap (init-motion-keymap-for-operators)
-                text-objects-keymap (init-pair-keymap)]
+          (let [motion-keymap (init-motion-keymap-for-operators)]
             (assoc keymap
                    "=" (merge
                          motion-keymap
-                         text-objects-keymap
                          {"=" nop
                           :after (fn [buf keycode]
                                    (if (contains? #{"=" "j" "k"} keycode)
@@ -61,9 +54,7 @@
                                          (indent-range true))))})
                    ">" (merge
                          motion-keymap
-                         text-objects-keymap
                          {:after (wrap-operator indent-more)})
                    "<" (merge
                          motion-keymap
-                         text-objects-keymap
                          {:after (wrap-operator indent-less)})))))

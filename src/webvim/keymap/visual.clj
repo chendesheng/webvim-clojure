@@ -347,7 +347,7 @@
     :visual-mode-keymap
     (deep-merge 
       motion-keymap 
-      (init-pair-keymap)
+      (init-objects-keymap)
       {:enter (fn [buf keycode]
                 (let [pos (buf :pos)]
                   (set-visual-mode buf 

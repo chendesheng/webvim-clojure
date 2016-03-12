@@ -7,7 +7,6 @@
         webvim.keymap.insert
         webvim.keymap.addsub
         webvim.keymap.ex
-        webvim.keymap.objects
         webvim.keymap.visual
         webvim.keymap.indent
         webvim.core.buffer
@@ -238,7 +237,6 @@
 (defn init-normal-mode-keymap [buf]
   (let [motion-keymap (init-motion-keymap)
         visual-mode-keymap (init-visual-mode-keymap motion-keymap buf)
-        pair-keymap (init-pair-keymap)
         motion-keymap-fix-w (init-motion-keymap-for-operators)
         motion-keymap-fix-cw (init-motion-keymap-fix-cw)]
     (deep-merge
@@ -263,7 +261,6 @@
        "<f1>" (wrap-keycode #(goto-buf % (output-panel false)))
        "~" (merge
              motion-keymap-fix-w
-             pair-keymap
              {:after (operator (change-case swap-case))})
        "g" {"v" (assoc
                   visual-mode-keymap
@@ -276,11 +273,9 @@
             "f" (wrap-keycode goto-file)
             "u" (merge
                   motion-keymap-fix-w
-                  pair-keymap
                   {:after (operator (change-case clojure.string/lower-case))})
             "U" (merge
                   motion-keymap-fix-w
-                  pair-keymap
                   {:after (operator (change-case clojure.string/upper-case))})}
        "v" visual-mode-keymap
        "V" visual-mode-keymap
@@ -288,12 +283,10 @@
        "z" {"z" (wrap-keycode cursor-center-viewport)}
        "d" (merge
              motion-keymap-fix-w
-             pair-keymap
              {"d" nop
               :after delete})
        "c" (merge
              motion-keymap-fix-cw
-             pair-keymap
              {"c" (start-insert-mode identity delete-line)
               :after (fn [buf keycode]
                        (if (or (= keycode "c")
@@ -304,7 +297,6 @@
                          ((start-insert-mode-with-keycode nop change-by-motion) buf keycode)))})
        "y" (merge
              motion-keymap-fix-w
-             pair-keymap
              {"y" nop
               :after yank})
        "D" delete-to-line-end
