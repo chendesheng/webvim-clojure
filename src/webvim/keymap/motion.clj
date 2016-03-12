@@ -261,7 +261,7 @@
                   (+ (buf :scroll-top)
                      (-> @ui-agent :viewport :h dec (* percentFromTop) Math/ceil)))))
 
-(defn- init-motion-keymap []
+(defn init-motion-keymap []
   {"h" (wrap-keycode char-)
    "l" (wrap-keycode char+)
    "k" (wrap-keycode #(lines-n % -1))
@@ -311,15 +311,17 @@
                       (pos-line-end (buf :str) (buf :pos)))]
       (buf-set-pos newbuf newpos))))
 
-(defn init-motion-keymap-for-operators []
+(defn init-motion-keymap-with-objects []
   (-> (init-motion-keymap)
-      (merge (init-objects-keymap))
+      (merge (init-objects-keymap))))
+
+(defn init-motion-keymap-for-operators []
+  (-> (init-motion-keymap-with-objects) 
       (wrap-key "w" (fn [handler] (dont-cross-line handler)))
       (wrap-key "W" (fn [handler] (dont-cross-line handler)))))
 
+;vim's "cw" is identical to "ce", but "dw"/"yw" is not equal to "de"/"ye"
 (defn init-motion-keymap-fix-cw []
-  (-> (init-motion-keymap)
-      ;vim's "cw" is identical to "ce", but "dw"/"yw" is not equal to "de"/"ye"
-      (merge (init-objects-keymap))
+  (-> (init-motion-keymap-with-objects) 
       (assoc "w" (dont-cross-line cw-move))
       (assoc "W" (dont-cross-line cW-move))))

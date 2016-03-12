@@ -1,10 +1,9 @@
 (ns webvim.keymap.visual
-  (:require [clojure.string :as string])
+  (:require [clojure.string :as string]
+            [webvim.keymap.indent :refer [wrap-keymap-indent-visual]])
   (:use webvim.keymap.action
-        webvim.keymap.motion
         webvim.keymap.insert
         webvim.keymap.ex
-        webvim.keymap.objects
         webvim.core.buffer
         webvim.core.rope
         webvim.core.line
@@ -274,13 +273,6 @@
 (defmethod visual-keymap-A visual-block [buf keycode]
   (start-insert-and-repeat buf true))
 
-(defn- indent [f]
-  (fn [buf keycode]
-    (let [[a b :as rg] (range-prefix buf true)]
-      (-> buf
-          (buf-set-pos (pos-line-start (buf :str) a))
-          (f rg)))))
-
 (defn- visual-change-case [f]
   (fn [buf keycode]
     (if (= (-> buf :visual :type) visual-block)
@@ -342,52 +334,52 @@
                    (replace-char buf a (inc b) ch)) buf (not-empty-range ranges))]
     (buf-set-pos newbuf (first firstline))))
 
-(defn init-visual-mode-keymap [motion-keymap buf]
-  (fire-event
-    :visual-mode-keymap
-    (deep-merge 
-      motion-keymap 
-      (init-objects-keymap)
-      {:enter (fn [buf keycode]
-                (let [pos (buf :pos)]
-                  (set-visual-mode buf 
-                                   {:type (keycode2type keycode)
-                                    :range [pos pos]})))
-       :leave (fn [buf keycode] (clear-visual buf))
-       :continue visual-mode-continue?
-       :before (fn [buf keycode] 
-                 (-> buf
-                     (assoc-in [:context :last-visual-type]
-                               (-> buf :visual :type))
-                     (assoc-in [:context :cancel-visual-mode?] false)
-                     (assoc-in [:context :range] nil)))
-       :after (fn [buf keycode]
-                (-> buf
-                    visual-select
-                    set-visual-ranges
-                    (update-x-if-not-jk keycode)))
-       "z" {"z" (wrap-keycode cursor-center-viewport)}
-       "o" swap-visual-start-end
-       "<c-i>" nop
-       "<c-o>" nop
-       "<c-r>" nop
-       "V" change-visual-mode-type
-       "v" change-visual-mode-type
-       "<c-v>" change-visual-mode-type
-       "d" visual-keymap-d
-       "c" visual-keymap-c
-       "y" visual-keymap-y
-       "I" visual-keymap-I
-       "A" visual-keymap-A
-       "=" (wrap-keycode #(indent-range % true))
-       ">" (indent indent-more)
-       "<" (indent indent-less)
-       "~" (visual-change-case swap-case)
-       "u" (visual-change-case clojure.string/lower-case)
-       "U" (visual-change-case clojure.string/upper-case)
-       "r" {"<esc>" nop
-            "<cr>" nop
-            :else replace-char-keycode}}) buf))
+(defn- init-visual-mode-keymap [motion-keymap buf]
+  (deep-merge 
+    motion-keymap 
+    {:enter (fn [buf keycode]
+              (let [pos (buf :pos)]
+                (set-visual-mode buf 
+                                 {:type (keycode2type keycode)
+                                  :range [pos pos]})))
+     :leave (fn [buf keycode] (clear-visual buf))
+     :continue visual-mode-continue?
+     :before (fn [buf keycode] 
+               (-> buf
+                   (assoc-in [:context :last-visual-type]
+                             (-> buf :visual :type))
+                   (assoc-in [:context :cancel-visual-mode?] false)
+                   (assoc-in [:context :range] nil)))
+     :after (fn [buf keycode]
+              (-> buf
+                  visual-select
+                  set-visual-ranges
+                  (update-x-if-not-jk keycode)))
+     "z" {"z" (wrap-keycode cursor-center-viewport)}
+     "o" swap-visual-start-end
+     "<c-i>" nop
+     "<c-o>" nop
+     "<c-r>" nop
+     "V" change-visual-mode-type
+     "v" change-visual-mode-type
+     "<c-v>" change-visual-mode-type
+     "d" visual-keymap-d
+     "c" visual-keymap-c
+     "y" visual-keymap-y
+     "I" visual-keymap-I
+     "A" visual-keymap-A
+     "~" (visual-change-case swap-case)
+     "u" (visual-change-case clojure.string/lower-case)
+     "U" (visual-change-case clojure.string/upper-case)
+     "r" {"<esc>" nop
+          "<cr>" nop
+          :else replace-char-keycode}}))
+
+(defn init-visual-mode-keymap-with-operators [motion-keymap buf]
+  (fire-event :visual-mode-keymap
+              (-> motion-keymap 
+                  (init-visual-mode-keymap buf)
+                  wrap-keymap-indent-visual) buf))
 
 ;keep track visual ranges when buffer changed
 (listen

@@ -5,7 +5,7 @@
             [webvim.keymap.operator :refer [wrap-operator inclusive? setup-range]]
             [webvim.indent :refer [buf-indent-current-line buf-indent-lines]]
             [webvim.core.rope :refer [buf-set-pos buf-replace subr re-test buf-insert rblank? char-at buf-delete]]
-            [webvim.core.line :refer [line-start line-end pos-line pos-lines-seq+]]
+            [webvim.core.line :refer [line-start line-end pos-line pos-lines-seq+ pos-line-start]]
             [webvim.core.pos :refer [char- pos-re-seq+]]
             [webvim.core.utils :refer [repeat-chars nop]]
             [webvim.core.event :refer [listen]]))
@@ -39,22 +39,34 @@
     buf
     (reverse (pos-lines-seq+ (buf :str) a (dec b)))))
 
-(listen :normal-mode-keymap
-        (fn [keymap _]
-          (let [motion-keymap (init-motion-keymap-for-operators)]
-            (assoc keymap
-                   "=" (merge
-                         motion-keymap
-                         {"=" nop
-                          :after (fn [buf keycode]
-                                   (if (contains? #{"=" "j" "k"} keycode)
-                                     (buf-indent-current-line buf)
-                                     (-> buf
-                                         setup-range
-                                         (indent-range true))))})
-                   ">" (merge
-                         motion-keymap
-                         {:after (wrap-operator indent-more)})
-                   "<" (merge
-                         motion-keymap
-                         {:after (wrap-operator indent-less)})))))
+(defn wrap-keymap-indent [keymap]
+  (let [motion-keymap (init-motion-keymap-for-operators)]
+    (assoc keymap
+           "=" (merge
+                 motion-keymap
+                 {"=" nop
+                  :after (fn [buf keycode]
+                           (if (contains? #{"=" "j" "k"} keycode)
+                             (buf-indent-current-line buf)
+                             (-> buf
+                                 setup-range
+                                 (indent-range true))))})
+           ">" (merge
+                 motion-keymap
+                 {:after (wrap-operator indent-more)})
+           "<" (merge
+                 motion-keymap
+                 {:after (wrap-operator indent-less)}))))
+
+(defn- indent [f]
+  (fn [buf keycode]
+    (let [[a b :as rg] (range-prefix buf true)]
+      (-> buf
+          (buf-set-pos (pos-line-start (buf :str) a))
+          (f rg)))))
+
+(defn wrap-keymap-indent-visual [keymap]
+  (assoc keymap
+         "=" (fn [buf keycode] (indent-range buf true))
+         ">" (indent indent-more)
+         "<" (indent indent-less)))

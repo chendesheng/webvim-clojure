@@ -8,7 +8,6 @@
         webvim.keymap.addsub
         webvim.keymap.ex
         webvim.keymap.visual
-        webvim.keymap.indent
         webvim.core.buffer
         webvim.core.rope
         webvim.core.line
@@ -236,91 +235,93 @@
 
 (defn init-normal-mode-keymap [buf]
   (let [motion-keymap (init-motion-keymap)
-        visual-mode-keymap (init-visual-mode-keymap motion-keymap buf)
+        visual-mode-keymap (init-visual-mode-keymap-with-operators
+                             (init-motion-keymap-with-objects) buf)
         motion-keymap-fix-w (init-motion-keymap-for-operators)
         motion-keymap-fix-cw (init-motion-keymap-fix-cw)]
-    (deep-merge
-      motion-keymap
-      {"i" (start-insert-mode identity identity)
-       "a" (start-insert-mode char+ identity)
-       "A" (start-insert-mode line-end identity)
-       "I" (start-insert-mode line-start identity)
-       "s" (start-insert-mode identity delete-char)
-       "S" (start-insert-mode identity delete-line)
-       "o" (start-insert-mode identity insert-new-line)
-       "O" (start-insert-mode identity insert-new-line-before)
-       ":" start-ex-mode
-       "r" {"<esc>" nop
-            :else replace-char-keycode}
-       "u" (wrap-keycode undo)
-       "<c-r>" (wrap-keycode redo)
-       "<c-o>" (move-to-jumplist jump-prev)
-       "<c-i>" (move-to-jumplist jump-next)
-       "<c-g>" (wrap-keycode pos-info)
-       "<esc>" (wrap-keycode set-normal-mode)
-       "<f1>" (wrap-keycode #(goto-buf % (output-panel false)))
-       "~" (merge
-             motion-keymap-fix-w
-             {:after (operator (change-case swap-case))})
-       "g" {"v" (assoc
-                  visual-mode-keymap
-                  :enter
-                  (fn [buf keycode]
-                    (let [visual (buf :last-visual)]
-                      (-> buf
-                          (set-visual-mode visual)
-                          (buf-set-pos (-> visual :range first))))))
-            "f" (wrap-keycode goto-file)
-            "u" (merge
-                  motion-keymap-fix-w
-                  {:after (operator (change-case clojure.string/lower-case))})
-            "U" (merge
-                  motion-keymap-fix-w
-                  {:after (operator (change-case clojure.string/upper-case))})}
-       "v" visual-mode-keymap
-       "V" visual-mode-keymap
-       "<c-v>" visual-mode-keymap
-       "z" {"z" (wrap-keycode cursor-center-viewport)}
-       "d" (merge
-             motion-keymap-fix-w
-             {"d" nop
-              :after delete})
-       "c" (merge
-             motion-keymap-fix-cw
-             {"c" (start-insert-mode identity delete-line)
-              :after (fn [buf keycode]
-                       (if (or (= keycode "c")
-                               (and
-                                 (= (-> buf :context :lastbuf :pos) (buf :pos))
-                                 (-> buf :context :range empty?)))
-                         buf
-                         ((start-insert-mode-with-keycode nop change-by-motion) buf keycode)))})
-       "y" (merge
-             motion-keymap-fix-w
-             {"y" nop
-              :after yank})
-       "D" delete-to-line-end
-       "C" (start-insert-mode identity change-to-line-end)
-       "Y" yank
-       "x" (wrap-keycode delete-char)
-       "p" (fn [buf keycode]
-             (let [append? (if (-> buf :context :register registers-get :linewise?)
-                             true 
-                             (not= (char-at (buf :str) (buf :pos)) \newline))]
+    (-> (deep-merge
+          motion-keymap
+          {"i" (start-insert-mode identity identity)
+           "a" (start-insert-mode char+ identity)
+           "A" (start-insert-mode line-end identity)
+           "I" (start-insert-mode line-start identity)
+           "s" (start-insert-mode identity delete-char)
+           "S" (start-insert-mode identity delete-line)
+           "o" (start-insert-mode identity insert-new-line)
+           "O" (start-insert-mode identity insert-new-line-before)
+           ":" start-ex-mode
+           "r" {"<esc>" nop
+                :else replace-char-keycode}
+           "u" (wrap-keycode undo)
+           "<c-r>" (wrap-keycode redo)
+           "<c-o>" (move-to-jumplist jump-prev)
+           "<c-i>" (move-to-jumplist jump-next)
+           "<c-g>" (wrap-keycode pos-info)
+           "<esc>" (wrap-keycode set-normal-mode)
+           "<f1>" (wrap-keycode #(goto-buf % (output-panel false)))
+           "~" (merge
+                 motion-keymap-fix-w
+                 {:after (operator (change-case swap-case))})
+           "g" {"v" (assoc
+                      visual-mode-keymap
+                      :enter
+                      (fn [buf keycode]
+                        (let [visual (buf :last-visual)]
+                          (-> buf
+                              (set-visual-mode visual)
+                              (buf-set-pos (-> visual :range first))))))
+                "f" (wrap-keycode goto-file)
+                "u" (merge
+                      motion-keymap-fix-w
+                      {:after (operator (change-case clojure.string/lower-case))})
+                "U" (merge
+                      motion-keymap-fix-w
+                      {:after (operator (change-case clojure.string/upper-case))})}
+           "v" visual-mode-keymap
+           "V" visual-mode-keymap
+           "<c-v>" visual-mode-keymap
+           "z" {"z" (wrap-keycode cursor-center-viewport)}
+           "d" (merge
+                 motion-keymap-fix-w
+                 {"d" nop
+                  :after delete})
+           "c" (merge
+                 motion-keymap-fix-cw
+                 {"c" (start-insert-mode identity delete-line)
+                  :after (fn [buf keycode]
+                           (if (or (= keycode "c")
+                                   (and
+                                     (= (-> buf :context :lastbuf :pos) (buf :pos))
+                                     (-> buf :context :range empty?)))
+                             buf
+                             ((start-insert-mode-with-keycode nop change-by-motion) buf keycode)))})
+           "y" (merge
+                 motion-keymap-fix-w
+                 {"y" nop
+                  :after yank})
+           "D" delete-to-line-end
+           "C" (start-insert-mode identity change-to-line-end)
+           "Y" yank
+           "x" (wrap-keycode delete-char)
+           "p" (fn [buf keycode]
+                 (let [append? (if (-> buf :context :register registers-get :linewise?)
+                                 true 
+                                 (not= (char-at (buf :str) (buf :pos)) \newline))]
                ;(println "append?" append?)
-               (put-from-register buf (-> buf :context :register) append?)))
-       "P" (wrap-keycode #(put-from-register % (-> % :context :register) false))
-       "J" join-line
-       "<c-s-6>" (fn [buf keycode]
-                   (let [reg (registers-get "#")]
-                     (if (nil? reg)
-                       (assoc buf :message "No alternative file")
-                       (goto-buf buf (get-buffer-from-reg reg)))))
-       :continue (fn [buf keycode]
-                   (= (buf :mode) normal-mode))
-       :before (fn [buf keycode]
-                 (-> buf
-                     (assoc-in [:context :lastbuf] buf)
-                     (assoc-in [:context :range] nil)))
-       :after normal-mode-after})))
+                   (put-from-register buf (-> buf :context :register) append?)))
+           "P" (wrap-keycode #(put-from-register % (-> % :context :register) false))
+           "J" join-line
+           "<c-s-6>" (fn [buf keycode]
+                       (let [reg (registers-get "#")]
+                         (if (nil? reg)
+                           (assoc buf :message "No alternative file")
+                           (goto-buf buf (get-buffer-from-reg reg)))))
+           :continue (fn [buf keycode]
+                       (= (buf :mode) normal-mode))
+           :before (fn [buf keycode]
+                     (-> buf
+                         (assoc-in [:context :lastbuf] buf)
+                         (assoc-in [:context :range] nil)))
+           :after normal-mode-after})
+        wrap-keymap-indent)))
 
