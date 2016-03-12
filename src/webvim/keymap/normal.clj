@@ -8,6 +8,8 @@
         webvim.keymap.addsub
         webvim.keymap.ex
         webvim.keymap.visual
+        webvim.keymap.indent
+        webvim.keymap.case
         webvim.core.buffer
         webvim.core.rope
         webvim.core.line
@@ -259,9 +261,6 @@
            "<c-g>" (wrap-keycode pos-info)
            "<esc>" (wrap-keycode set-normal-mode)
            "<f1>" (wrap-keycode #(goto-buf % (output-panel false)))
-           "~" (merge
-                 motion-keymap-fix-w
-                 {:after (operator (change-case swap-case))})
            "g" {"v" (assoc
                       visual-mode-keymap
                       :enter
@@ -270,13 +269,7 @@
                           (-> buf
                               (set-visual-mode visual)
                               (buf-set-pos (-> visual :range first))))))
-                "f" (wrap-keycode goto-file)
-                "u" (merge
-                      motion-keymap-fix-w
-                      {:after (operator (change-case clojure.string/lower-case))})
-                "U" (merge
-                      motion-keymap-fix-w
-                      {:after (operator (change-case clojure.string/upper-case))})}
+                "f" (wrap-keycode goto-file)}
            "v" visual-mode-keymap
            "V" visual-mode-keymap
            "<c-v>" visual-mode-keymap
@@ -323,5 +316,6 @@
                          (assoc-in [:context :lastbuf] buf)
                          (assoc-in [:context :range] nil)))
            :after normal-mode-after})
-        wrap-keymap-indent)))
+        wrap-keymap-indent
+        wrap-keymap-case)))
 

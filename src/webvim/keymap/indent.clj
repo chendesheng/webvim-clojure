@@ -7,8 +7,7 @@
             [webvim.core.rope :refer [buf-set-pos buf-replace subr re-test buf-insert rblank? char-at buf-delete]]
             [webvim.core.line :refer [line-start line-end pos-line pos-lines-seq+ pos-line-start]]
             [webvim.core.pos :refer [char- pos-re-seq+]]
-            [webvim.core.utils :refer [repeat-chars nop]]
-            [webvim.core.event :refer [listen]]))
+            [webvim.core.utils :refer [repeat-chars nop]]))
 
 (defn- indent-range [buf inclusive?]
   (let [[a b] (range-prefix buf inclusive?)]

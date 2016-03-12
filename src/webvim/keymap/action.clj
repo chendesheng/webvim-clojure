@@ -8,7 +8,6 @@
         webvim.core.pos
         webvim.core.register
         webvim.core.event
-        webvim.indent
         webvim.fuzzy
         webvim.core.lang
         webvim.core.utils
@@ -150,11 +149,6 @@
 (defn yank-range [buf inclusive? linewise?]
   (let [[a b] (range-prefix buf inclusive?)]
     (buf-yank buf a b linewise?)))
-
-(defn indent-range [buf inclusive?]
-  (let [[a b] (range-prefix buf inclusive?)]
-    (-> buf
-        (buf-indent-lines [a (dec b)]))))
 
 (defn- put-blockwise [buf s append?]
   (let [{r :str pos :pos tabsize :tabsize} buf
@@ -415,53 +409,6 @@
   (-> buf
       (assoc :visual visual)
       set-visual-ranges))
-
-(defn indent-more [buf [a b]]
-  (reduce
-    (fn [buf [a b]]
-      (buf-insert buf a "\t"))
-    buf
-    (filter 
-      (fn [rg]
-        (-> buf :str (subr rg) rblank? not))
-      (reverse (pos-lines-seq+ (buf :str) a (dec b))))))
-
-(defn- count-leading-space [line]
-  (let [[[a b]] (pos-re-seq+ line 0 #"^ *")]
-    (- b a)))
-
-(defn indent-less [buf [a b]]
-  (reduce
-    (fn [{r :str pos :pos :as buf} [a b]]
-      (let [line (subr r a b)]
-          ;(println "spaces:" (count-leading-space line))
-        (cond
-          (= (char-at line 0) \tab)
-          (buf-delete buf a (inc a))
-          :else
-          (buf-delete buf a (+ a (min (buf :tabsize) (count-leading-space line)))))))
-    buf
-    (reverse (pos-lines-seq+ (buf :str) a (dec b)))))
-
-(defn change-case [f]
-  (fn [buf [a b]]
-    buf [a b] 
-    (-> buf
-        (buf-replace a b
-                     (-> buf
-                         :str
-                         (subr a b)
-                         str
-                         f))
-        (buf-set-pos a))))
-
-(defn swap-case [^String s]
-  (clojure.string/join
-    (map (fn [ch]
-           (cond
-             (Character/isUpperCase ch) (Character/toLowerCase ch)
-             (Character/isLowerCase ch) (Character/toUpperCase ch)
-             :else ch)) s)))
 
 (defn append-repeat-prefix [buf digit-str]
   (update-in buf [:context :repeat-prefix] #(str % digit-str)))

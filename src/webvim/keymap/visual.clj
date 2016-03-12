@@ -1,6 +1,7 @@
 (ns webvim.keymap.visual
   (:require [clojure.string :as string]
-            [webvim.keymap.indent :refer [wrap-keymap-indent-visual]])
+            [webvim.keymap.indent :refer [wrap-keymap-indent-visual]]
+            [webvim.keymap.case :refer [wrap-keymap-case-visual]])
   (:use webvim.keymap.action
         webvim.keymap.insert
         webvim.keymap.ex
@@ -273,26 +274,6 @@
 (defmethod visual-keymap-A visual-block [buf keycode]
   (start-insert-and-repeat buf true))
 
-(defn- visual-change-case [f]
-  (fn [buf keycode]
-    (if (= (-> buf :visual :type) visual-block)
-      (let [ranges (-> buf :visual :ranges)
-            firstline (last ranges) ;ranges in reverse order
-            r (buf :str)
-            pos (buf :pos)
-            newbuf (reduce
-                     (fn [buf [a b]]
-                       ((change-case f) buf [a (inc b)])) buf (not-empty-range ranges))]
-        (-> newbuf
-            (buf-set-pos (first firstline))
-            ;leave visual mode
-            (assoc-in [:context :cancel-visual-mode?] true)))
-      (let [[a b :as rg] (range-prefix buf true)]
-        (-> buf
-            (buf-set-pos (pos-line-start (buf :str) a))
-            ((change-case f) rg)
-            (assoc-in [:context :cancel-visual-mode?] true))))))
-
 (defn- replace-char [buf a b ch]
   (buf-replace buf a b
                (-> buf :str (subr a b) str
@@ -368,18 +349,22 @@
      "y" visual-keymap-y
      "I" visual-keymap-I
      "A" visual-keymap-A
-     "~" (visual-change-case swap-case)
-     "u" (visual-change-case clojure.string/lower-case)
-     "U" (visual-change-case clojure.string/upper-case)
      "r" {"<esc>" nop
           "<cr>" nop
           :else replace-char-keycode}}))
+
+(defn init-visual-mode-keymap-for-operators [motion-keymap buf]
+  (let [keymap (init-visual-mode-keymap motion-keymap buf)]
+    {"v" keymap
+     "V" keymap
+     "<c-v>" keymap}))
 
 (defn init-visual-mode-keymap-with-operators [motion-keymap buf]
   (fire-event :visual-mode-keymap
               (-> motion-keymap 
                   (init-visual-mode-keymap buf)
-                  wrap-keymap-indent-visual) buf))
+                  wrap-keymap-indent-visual
+                  wrap-keymap-case-visual) buf))
 
 ;keep track visual ranges when buffer changed
 (listen
