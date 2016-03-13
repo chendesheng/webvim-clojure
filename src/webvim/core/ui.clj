@@ -49,12 +49,29 @@
     :visual-line 2
     :visual-block 3} type))
 
+(defn- buf-mode [mode]
+  (println "mode" mode)
+  ({:normal-mode 0
+    :insert-mode 1
+    :ex-mode 2} mode))
+
+(defn- buf-submode[mode]
+  (println "submode" mode)
+  ({:none 0
+    :temp-normal-mode 1} mode))
+
 (defn- update-visual [buf]
   (if (-> :visual buf nil? not)
     (update-in buf [:visual] (fn [visual]
                                (-> visual
                                    (dissoc :range)
                                    (assoc :type (visual-type (visual :type)))))) buf))
+
+(defn- update-mode [buf]
+  (let [buf (if (-> buf :mode nil? not)
+              (update buf :mode buf-mode) buf)]
+    (if (-> buf :submode nil? not)
+      (update buf :submode buf-submode) buf)))
 
 (defn- remove-fields [buf]
   (-> buf 
@@ -66,6 +83,7 @@
               :last-indents :mod-time :autocompl-provider)
       (dissoc-empty [:changes])
       update-visual
+      update-mode
       (dissoc-nil :keys)
       line-editor))
 

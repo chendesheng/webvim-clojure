@@ -1,7 +1,7 @@
 (ns webvim.keymap.operator
   (:require 
     [clojure.string :as str]
-    [webvim.mode :refer [insert-mode set-insert-mode]]
+    [webvim.mode :refer [set-insert-mode]]
     [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete]]
     [webvim.core.line :refer [pos-line pos-line-last pos-line-end make-linewise-range]]
     [webvim.visual :refer [visual-block-lines]]

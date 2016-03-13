@@ -1,6 +1,6 @@
 (ns webvim.keymap.insert
   (:require [webvim.keymap.put :refer [wrap-keymap-put-insert]]
-            [webvim.mode :refer [set-normal-mode temp-normal-mode normal-mode insert-mode]])
+            [webvim.mode :refer [set-normal-mode]])
   (:use webvim.keymap.compile
         webvim.core.buffer
         webvim.core.event
@@ -51,12 +51,12 @@
                         (-> buf
                             ;cancel-last-indents
                             ;update-x
-                            (assoc :mode normal-mode
-                                   :submode temp-normal-mode))))
+                            (assoc :mode :normal-mode
+                                   :submode :temp-normal-mode))))
              :leave (fn [buf keycode]
                       (assoc buf
-                             :mode insert-mode
-                             :submode 0)))))
+                             :mode :insert-mode
+                             :submode :none)))))
 
 (defn init-insert-mode-keymap [normal-mode-keymap buf]
   (let [keymap {"<esc>" nop

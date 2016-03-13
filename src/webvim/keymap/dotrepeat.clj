@@ -1,7 +1,6 @@
 (ns webvim.keymap.dotrepeat
   (:require [me.raynes.fs :as fs]
-            [clojure.string :as string]
-            [webvim.mode :refer [insert-mode]])
+            [clojure.string :as string])
   (:use clojure.pprint
         webvim.keymap.compile
         webvim.core.ui
@@ -38,7 +37,7 @@
           :after
           (fn [handler]
             (fn [buf keycode]
-              (if (= (buf :mode) insert-mode)
+              (if (= (buf :mode) :insert-mode)
                 (handler buf keycode)
                 (-> buf
                     save-dot-repeat

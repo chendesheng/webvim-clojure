@@ -11,7 +11,7 @@
             [webvim.keymap.jump :refer [wrap-keymap-jump]]
             [webvim.keymap.change :refer [wrap-keymap-change]]
             [webvim.keymap.visual :refer [wrap-keymap-visual update-x-if-not-jk]]
-            [webvim.mode :refer [set-normal-mode ex-mode insert-mode normal-mode]]
+            [webvim.mode :refer [set-normal-mode]]
             [webvim.keymap.motion :refer [init-motion-keymap init-motion-keymap-with-objects]]
             [webvim.core.pos :refer [char-]]
             [webvim.core.event :refer [listen]]
@@ -32,7 +32,7 @@
       (char- buf) buf)))
 
 (defn- normal-mode-after [buf keycode]
-  (let [insert-mode? (= (buf :mode) insert-mode)
+  (let [insert-mode? (= (buf :mode) :insert-mode)
         lastbuf (-> buf :context :lastbuf)
         save-undo (if insert-mode? identity save-undo)
         fix-pos (if insert-mode? identity normal-mode-fix-pos)]
@@ -50,7 +50,7 @@
         (enter keycode)
         (assoc 
           :keymap (buf :ex-mode-keymap)
-          :mode ex-mode))))
+          :mode :ex-mode))))
 
 (defn init-normal-mode-keymap [buf]
   (-> (init-motion-keymap) 
@@ -61,7 +61,7 @@
          "<c-g>" (wrap-keycode buf-pos-info)
          "<esc>" (wrap-keycode set-normal-mode)
          :continue (fn [buf keycode]
-                     (= (buf :mode) normal-mode))
+                     (= (buf :mode) :normal-mode))
          :before (fn [buf keycode]
                    (-> buf
                        (assoc-in [:context :lastbuf] buf)

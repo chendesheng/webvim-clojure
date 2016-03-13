@@ -123,7 +123,7 @@
             nextid (buf :nextid)]
         ;TODO: add event here
         (if (or (not= (oldbuf :str) (buf :str)) (not= (oldbuf :pos) (buf :pos)))
-          (if (= (buf :mode) webvim.mode/insert-mode)
+          (if (= (buf :mode) :insert-mode)
             (buf-match-bracket buf (-> buf :pos dec))
             (buf-match-bracket buf)))
         (if (nil? nextid) buf
