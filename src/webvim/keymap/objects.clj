@@ -1,7 +1,6 @@
 (ns webvim.keymap.objects
   (:use webvim.keymap.action
         webvim.keymap.macro
-        webvim.keymap.motion
         webvim.keymap.insert
         webvim.keymap.ex
         webvim.core.buffer

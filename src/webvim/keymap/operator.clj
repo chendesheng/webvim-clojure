@@ -28,3 +28,7 @@
           rg (range-prefix buf (inclusive? keycode))]
       (f buf rg))))
 
+(defn not-empty-range [ranges]
+  (filter (fn [[a b]]
+            (< a (inc b))) ranges))
+

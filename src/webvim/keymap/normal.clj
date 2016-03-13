@@ -10,6 +10,7 @@
         webvim.keymap.visual
         webvim.keymap.indent
         webvim.keymap.case
+        webvim.keymap.replace
         webvim.core.buffer
         webvim.core.rope
         webvim.core.line
@@ -127,21 +128,6 @@
         setup-range
         (yank-range (inclusive? keycode) false))))
 
-(defmethod replace-char-keycode :no-visual [buf keycode]
-  (let [ch (keycode-to-char keycode)
-        pos (buf :pos)]
-    (cond
-      (= ch "\n")
-      (-> buf
-          (buf-replace pos (inc pos) ch)
-          (buf-set-pos (inc pos))
-          buf-indent-current-line)
-      (= (count ch) 1)
-      (-> buf
-          (buf-replace pos (inc pos) ch)
-          (buf-set-pos pos))
-      :else buf)))
-
 (defn- normal-mode-after [buf keycode]
   (let [insert-mode? (= (buf :mode) insert-mode)
         lastbuf (-> buf :context :lastbuf)
@@ -252,8 +238,6 @@
            "o" (start-insert-mode identity insert-new-line)
            "O" (start-insert-mode identity insert-new-line-before)
            ":" start-ex-mode
-           "r" {"<esc>" nop
-                :else replace-char-keycode}
            "u" (wrap-keycode undo)
            "<c-r>" (wrap-keycode redo)
            "<c-o>" (move-to-jumplist jump-prev)
@@ -317,5 +301,6 @@
                          (assoc-in [:context :range] nil)))
            :after normal-mode-after})
         wrap-keymap-indent
+        wrap-keymap-replace
         wrap-keymap-case)))
 

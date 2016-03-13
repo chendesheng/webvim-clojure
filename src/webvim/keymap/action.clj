@@ -27,7 +27,7 @@
 (def no-visual 0)
 (def visual-range 1)
 (def visual-line 2)
-(def visual-block 3) ;TODO
+(def visual-block 3)
 
 (defn file-register [buf]
   {:id (buf :id) :str (or (buf :filepath) (buf :name))})

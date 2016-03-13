@@ -1,11 +1,11 @@
 (ns webvim.keymap.case
   (:require [clojure.string :as str]
-            [webvim.keymap.action :refer [repeat-prefix-value]]
+            [webvim.keymap.action :refer [repeat-prefix-value visual-block]]
             [webvim.keymap.motion :refer [init-motion-keymap-fix-cw init-motion-keymap-for-operators]]
             [webvim.keymap.action :refer [range-prefix]]
-            [webvim.core.rope :refer [subr]]
-            [webvim.keymap.operator :refer [wrap-operator inclusive? setup-range]]
-            [webvim.core.rope :refer [buf-set-pos buf-replace]]))
+            [webvim.core.line :refer [pos-line-start]]
+            [webvim.keymap.operator :refer [wrap-operator inclusive? setup-range not-empty-range]]
+            [webvim.core.rope :refer [buf-set-pos buf-replace subr]]))
 
 (defn- change-case [f]
   (fn [buf [a b]]
@@ -18,6 +18,7 @@
                          str
                          f))
         (buf-set-pos a))))
+
 
 (defn swap-case [^String s]
   (str/join

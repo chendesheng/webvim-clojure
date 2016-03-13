@@ -1,7 +1,8 @@
 (ns webvim.keymap.visual
   (:require [clojure.string :as string]
             [webvim.keymap.indent :refer [wrap-keymap-indent-visual]]
-            [webvim.keymap.case :refer [wrap-keymap-case-visual]])
+            [webvim.keymap.case :refer [wrap-keymap-case-visual]]
+            [webvim.keymap.replace :refer [wrap-keymap-replace-visual]])
   (:use webvim.keymap.action
         webvim.keymap.insert
         webvim.keymap.ex
@@ -274,47 +275,6 @@
 (defmethod visual-keymap-A visual-block [buf keycode]
   (start-insert-and-repeat buf true))
 
-(defn- replace-char [buf a b ch]
-  (buf-replace buf a b
-               (-> buf :str (subr a b) str
-                   (.replaceAll "[^\r\n]" ch))))
-
-(defmulti replace-char-keycode
-  (fn [buf keycode]
-    (if (not= (count (keycode-to-char keycode)) 1)
-      :nop
-      (cond
-        (= no-visual (-> buf :visual :type))
-        :no-visual
-        (= visual-block (-> buf :visual :type))
-        :visual-block
-        :else
-        :not-visual-block))))
-
-(defmethod replace-char-keycode :nop [buf keycode]
-  buf)
-
-(defmethod replace-char-keycode :not-visual-block [buf keycode]
-  (let [ch (keycode-to-char keycode)
-        r (buf :str)
-        pos (buf :pos)
-        [a b :as rg] (range-prefix buf true)]
-    (-> buf
-        (replace-char a b ch) 
-        (buf-set-pos a))))
-
-(defmethod replace-char-keycode :visual-block [buf keycode]
-  (let [ranges (-> buf :visual :ranges)
-        firstline (last ranges) ;ranges in reverse order
-        ch (keycode-to-char keycode)
-        r (buf :str)
-        pos (buf :pos)
-        _ (println "ranges:" (not-empty-range ranges))
-        newbuf (reduce
-                 (fn [buf [a b]]
-                   (replace-char buf a (inc b) ch)) buf (not-empty-range ranges))]
-    (buf-set-pos newbuf (first firstline))))
-
 (defn- init-visual-mode-keymap [motion-keymap buf]
   (deep-merge 
     motion-keymap 
@@ -348,10 +308,7 @@
      "c" visual-keymap-c
      "y" visual-keymap-y
      "I" visual-keymap-I
-     "A" visual-keymap-A
-     "r" {"<esc>" nop
-          "<cr>" nop
-          :else replace-char-keycode}}))
+     "A" visual-keymap-A}))
 
 (defn init-visual-mode-keymap-for-operators [motion-keymap buf]
   (let [keymap (init-visual-mode-keymap motion-keymap buf)]
@@ -364,6 +321,7 @@
               (-> motion-keymap 
                   (init-visual-mode-keymap buf)
                   wrap-keymap-indent-visual
+                  wrap-keymap-replace-visual
                   wrap-keymap-case-visual) buf))
 
 ;keep track visual ranges when buffer changed
