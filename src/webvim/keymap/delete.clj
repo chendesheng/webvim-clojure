@@ -3,9 +3,9 @@
     [webvim.core.utils :refer [nop]]
     [webvim.core.rope :refer [buf-set-pos buf-delete]]
     [webvim.core.line :refer [line-end line-start]]
-    [webvim.keymap.action :refer [range-prefix]]
+    [webvim.keymap.action :refer [range-prefix wrap-keycode]]
     [webvim.visual :refer [visual-range visual-line visual-block]]
-    [webvim.keymap.operator :refer [buf-yank setup-range-line-end setup-range-line setup-range inclusive? visual-block-delete]]
+    [webvim.keymap.operator :refer [buf-yank setup-range-line-end setup-range-line setup-range inclusive? visual-block-delete delete-char]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]))
 
 (defn- delete-range [buf inclusive? linewise?]
@@ -43,6 +43,7 @@
   (let [motion-keymap (init-motion-keymap-for-operators)]
     (assoc keymap
            "D" delete-to-line-end
+           "x" (wrap-keycode delete-char)
            "d" (merge
                  motion-keymap
                  {"d" nop

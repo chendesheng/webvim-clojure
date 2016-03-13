@@ -88,3 +88,9 @@
         b (pos-line-end (buf :str) a)]
     (assoc-in buf [:context :range] [a b])))
 
+(defn delete-char [buf]
+  (let [pos (buf :pos)
+        [a b] [pos (inc pos)]]
+    (buf-yank buf a b false true)
+    (buf-delete buf a b)))
+

@@ -229,7 +229,6 @@
                              buf
                              ((start-insert-mode-with-keycode nop change-by-motion) buf keycode)))})
            "C" (start-insert-mode identity change-to-line-end)
-           "x" (wrap-keycode delete-char)
            "p" (fn [buf keycode]
                  (let [append? (if (-> buf :context :register registers-get :linewise?)
                                  true 
