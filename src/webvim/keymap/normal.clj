@@ -10,18 +10,16 @@
             [webvim.keymap.put :refer [wrap-keymap-put]]
             [webvim.keymap.jump :refer [wrap-keymap-jump]]
             [webvim.keymap.change :refer [wrap-keymap-change]]
-            [webvim.visual :refer [set-visual-mode]]
+            [webvim.keymap.visual :refer [wrap-keymap-visual update-x-if-not-jk]]
             [webvim.mode :refer [set-normal-mode ex-mode insert-mode normal-mode]]
             [webvim.keymap.motion :refer [init-motion-keymap init-motion-keymap-with-objects]]
             [webvim.core.pos :refer [char-]]
             [webvim.core.event :refer [listen]]
+            [webvim.keymap.compile :refer [wrap-keycode]]
             [webvim.keymap.replace :refer [wrap-keymap-replace]])
   (:use clojure.pprint
-        webvim.keymap.compile
-        webvim.keymap.macro
         webvim.keymap.insert
         webvim.keymap.ex
-        webvim.keymap.visual
         webvim.core.buffer
         webvim.core.rope
         webvim.core.utils))
@@ -55,45 +53,32 @@
           :mode ex-mode))))
 
 (defn init-normal-mode-keymap [buf]
-  (let [motion-keymap (init-motion-keymap)
-        visual-mode-keymap (init-visual-mode-keymap-with-operators
-                             (init-motion-keymap-with-objects) buf)]
-    (-> (deep-merge
-          motion-keymap
-          {":" start-ex-mode
-           "u" (wrap-keycode undo)
-           "<c-r>" (wrap-keycode redo)
-           "<c-g>" (wrap-keycode buf-pos-info)
-           "<esc>" (wrap-keycode set-normal-mode)
-           "g" {"v" (assoc
-                      visual-mode-keymap
-                      :enter
-                      (fn [buf keycode]
-                        (let [visual (buf :last-visual)]
-                          (-> buf
-                              (set-visual-mode visual)
-                              (buf-set-pos (-> visual :range first))))))}
-           "v" visual-mode-keymap
-           "V" visual-mode-keymap
-           "<c-v>" visual-mode-keymap
-           :continue (fn [buf keycode]
-                       (= (buf :mode) normal-mode))
-           :before (fn [buf keycode]
-                     (-> buf
-                         (assoc-in [:context :lastbuf] buf)
-                         (assoc-in [:context :range] nil)))
-           :after normal-mode-after})
-        wrap-keymap-addsub
-        wrap-keymap-indent
-        wrap-keymap-replace
-        wrap-keymap-scrolling
-        wrap-keymap-yank
-        wrap-keymap-delete
-        wrap-keymap-join
-        wrap-keymap-put
-        wrap-keymap-jump
-        wrap-keymap-change
-        wrap-keymap-case)))
+  (-> (init-motion-keymap) 
+      (merge
+        {":" start-ex-mode
+         "u" (wrap-keycode undo)
+         "<c-r>" (wrap-keycode redo)
+         "<c-g>" (wrap-keycode buf-pos-info)
+         "<esc>" (wrap-keycode set-normal-mode)
+         :continue (fn [buf keycode]
+                     (= (buf :mode) normal-mode))
+         :before (fn [buf keycode]
+                   (-> buf
+                       (assoc-in [:context :lastbuf] buf)
+                       (assoc-in [:context :range] nil)))
+         :after normal-mode-after})
+      (wrap-keymap-visual buf)
+      wrap-keymap-addsub
+      wrap-keymap-indent
+      wrap-keymap-replace
+      wrap-keymap-scrolling
+      wrap-keymap-yank
+      wrap-keymap-delete
+      wrap-keymap-join
+      wrap-keymap-put
+      wrap-keymap-jump
+      wrap-keymap-change
+      wrap-keymap-case))
 
 (listen :before-change-to-normal-mode
         normal-mode-fix-pos)

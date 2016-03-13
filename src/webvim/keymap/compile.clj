@@ -80,7 +80,7 @@
   (-> buf
       set-normal-mode
       (dissoc :context :keys :line-buffer)
-      (assoc :visual {:type 0 :range [0 0]}
+      (assoc :visual {:type :no-visual :range [0 0]}
              :message ""
              :autocompl nil
              :showkeys nil)))

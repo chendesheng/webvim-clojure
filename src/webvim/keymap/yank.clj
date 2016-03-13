@@ -1,6 +1,6 @@
 (ns webvim.keymap.yank
   (:require
-    [webvim.visual :refer [visual-block-lines visual-range visual-line visual-block]]
+    [webvim.visual :refer [visual-block-lines]]
     [webvim.core.utils :refer [nop]]
     [webvim.core.rope :refer [buf-set-pos]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
@@ -13,11 +13,11 @@
     buf))
 
 (defmulti visual-keymap-y (fn [buf keycode] (-> buf :visual :type)))
-(defmethod visual-keymap-y visual-range [buf keycode]
+(defmethod visual-keymap-y :visual-range [buf keycode]
   (yank-range buf true false))
-(defmethod visual-keymap-y visual-line [buf keycode]
+(defmethod visual-keymap-y :visual-line [buf keycode]
   (yank-range buf true true))
-(defmethod visual-keymap-y visual-block [buf keycode]
+(defmethod visual-keymap-y :visual-block [buf keycode]
   (visual-block-yank buf))
 
 (defn- yank [buf keycode]

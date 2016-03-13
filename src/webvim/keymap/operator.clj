@@ -4,7 +4,7 @@
     [webvim.mode :refer [insert-mode set-insert-mode]]
     [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete]]
     [webvim.core.line :refer [pos-line pos-line-last pos-line-end make-linewise-range]]
-    [webvim.visual :refer [visual-block-lines visual-range visual-line visual-block]]
+    [webvim.visual :refer [visual-block-lines]]
     [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
     [webvim.core.utils :refer [make-range]]))
 
@@ -32,11 +32,11 @@
 ;collect range argument, TODO: add linewise
 (defn range-prefix [{{tp :type rg :range} :visual :as buf} inclusive?]
   (cond
-    (= tp visual-range)
+    (= tp :visual-range)
     (make-range rg inclusive?)
-    (= tp visual-line)
+    (= tp :visual-line)
     (make-linewise-range rg buf)
-    (= tp visual-block)
+    (= tp :visual-block)
     (throw (Exception. "TODO: visual-block"))
     (-> buf :context :range nil? not)
     (-> buf :context :range (make-range inclusive?))

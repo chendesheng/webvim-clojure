@@ -5,7 +5,6 @@
     [webvim.keymap.operator :refer [buf-yank range-prefix setup-range setup-range-line-end inclusive? not-empty-range visual-block-delete]]
     [webvim.indent :refer [buf-indent-current-line]]
     [webvim.mode :refer [set-insert-mode]]
-    [webvim.visual :refer [visual-range visual-line visual-block]]
     [webvim.core.utils :refer [nop sort2]]
     [webvim.core.rope :refer [buf-replace buf-delete buf-insert buf-set-pos subr indexr]]
     [webvim.core.pos :refer [char+ buf-start]]
@@ -80,9 +79,9 @@
 
 (defn- repeat-ranges [{{tp :type rg :range} :visual r :str tabsize :tabsize :as buf}]
   (cond
-    (= tp visual-line) (rest (map (fn [[a b]] [a (dec b)])
+    (= tp :visual-line) (rest (map (fn [[a b]] [a (dec b)])
                                   (pos-lines-seq+ r (sort2 rg))))
-    (= tp visual-block) (rest (map (fn [[a b]] [a (inc b)])
+    (= tp :visual-block) (rest (map (fn [[a b]] [a (inc b)])
                                    (expand-block-ranges r rg tabsize)))
     :else '()))
 
@@ -163,28 +162,28 @@
 
 
 (defmulti visual-keymap-c (fn [buf keycode] (-> buf :visual :type)))
-(defmethod visual-keymap-c visual-range [buf keycode]
+(defmethod visual-keymap-c :visual-range [buf keycode]
   ((change-visual false) buf keycode))
-(defmethod visual-keymap-c visual-line [buf keycode]
+(defmethod visual-keymap-c :visual-line [buf keycode]
   ((change-visual true) buf keycode))
-(defmethod visual-keymap-c visual-block [buf keycode]
+(defmethod visual-keymap-c :visual-block [buf keycode]
   (-> buf
       visual-block-delete
       (start-insert-and-repeat false)))
 
 (defmulti visual-keymap-I (fn [buf keycode] (-> buf :visual :type)))
-(defmethod visual-keymap-I visual-range [buf keycode]
+(defmethod visual-keymap-I :visual-range [buf keycode]
   (let [fnmotion (fn [buf]
                    (let [[pos _] (pos-line (buf :str) (-> buf :visual :range sort2 first))]
                      (buf-set-pos buf pos)))]
     ((start-insert-mode fnmotion identity) buf keycode)))
-(defmethod visual-keymap-I visual-line [buf keycode]
+(defmethod visual-keymap-I :visual-line [buf keycode]
   (visual-line-repeat-change buf false))
-(defmethod visual-keymap-I visual-block [buf keycode]
+(defmethod visual-keymap-I :visual-block [buf keycode]
   (start-insert-and-repeat buf false))
 
 (defmulti visual-keymap-A (fn [buf keycode] (-> buf :visual :type)))
-(defmethod visual-keymap-A visual-range [buf keycode]
+(defmethod visual-keymap-A :visual-range [buf keycode]
   (let [[a b] (-> buf :visual :range)
         r (buf :str)
         fnmotion (if (> a b)
@@ -193,9 +192,9 @@
                      (let [[pos _] (pos-line r (max a b))]
                        (buf-set-pos buf pos))))]
     ((start-insert-mode fnmotion identity) buf keycode)))
-(defmethod visual-keymap-A visual-line [buf keycode]
+(defmethod visual-keymap-A :visual-line [buf keycode]
   (visual-line-repeat-change buf true))
-(defmethod visual-keymap-A visual-block [buf keycode]
+(defmethod visual-keymap-A :visual-block [buf keycode]
   (start-insert-and-repeat buf true))
 
 (defn- delete-char [buf]

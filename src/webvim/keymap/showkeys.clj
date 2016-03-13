@@ -1,6 +1,5 @@
 (ns webvim.keymap.showkeys
   (:require
-    [webvim.visual :refer [no-visual]]
     [webvim.mode :refer [normal-mode]])
   (:use clojure.pprint
         webvim.keymap.compile
@@ -15,7 +14,7 @@
     (update-in buf [:showkeys]
                (fn [showkeys]
                  (if (and (= (buf :mode) normal-mode)
-                          (or (= (-> buf :visual :type) no-visual)
+                          (or (= (-> buf :visual :type) :no-visual)
                               (= keycode "\"")
                               (and (= (last showkeys) "\"") (not= keycode "<esc>")))
                           (-> buf :line-buffer nil?))

@@ -43,9 +43,18 @@
                                           (assoc :str (str prefix s)
                                                  :pos (+ pos (count prefix)))))))))
 
-(defn- remove-visual [buf]
+(defn- visual-type [type]
+  ({:no-visual 0
+    :visual-range 1
+    :visual-line 2
+    :visual-block 3} type))
+
+(defn- update-visual [buf]
   (if (-> :visual buf nil? not)
-    (update-in buf [:visual] dissoc :range) buf))
+    (update-in buf [:visual] (fn [visual]
+                               (-> visual
+                                   (dissoc :range)
+                                   (assoc :type (visual-type (visual :type)))))) buf))
 
 (defn- remove-fields [buf]
   (-> buf 
@@ -56,7 +65,7 @@
               :save-point :ext :last-visual :nextid :dot-repeat-keys
               :last-indents :mod-time :autocompl-provider)
       (dissoc-empty [:changes])
-      remove-visual
+      update-visual
       (dissoc-nil :keys)
       line-editor))
 

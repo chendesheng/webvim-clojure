@@ -4,19 +4,13 @@
     [webvim.core.line :refer [make-linewise-range expand-block-ranges pos-line-last]]
     [webvim.core.utils :refer [sort2]]))
 
-;0 means no visual
-(def no-visual 0)
-(def visual-range 1)
-(def visual-line 2)
-(def visual-block 3)
-
 (defn set-visual-ranges [{{tp :type rg :range} :visual :as buf}]
   ;(println "set-visual-ranges:" tp rg)
   (assoc-in buf [:visual :ranges]
             (condp = tp
-              visual-range (list (sort2 rg))
-              visual-line (list (make-linewise-range rg buf))
-              visual-block (into '() (expand-block-ranges (buf :str) rg (buf :tabsize)))
+              :visual-range (list (sort2 rg))
+              :visual-line (list (make-linewise-range rg buf))
+              :visual-block (into '() (expand-block-ranges (buf :str) rg (buf :tabsize)))
               nil)))
 
 (defn visual-block-lines [buf]

@@ -1,7 +1,6 @@
 (ns webvim.keymap.replace
   (:require [webvim.core.utils :refer [keycode-to-char nop]]
             [webvim.core.rope :refer [buf-set-pos subr buf-replace]]
-            [webvim.visual :refer [no-visual]]
             [webvim.indent :refer [buf-indent-current-line]]
             [webvim.keymap.operator :refer [not-empty-range range-prefix]]))
 
@@ -15,9 +14,9 @@
     (if (not= (count (keycode-to-char keycode)) 1)
       :nop
       (cond
-        (= 0 (-> buf :visual :type))
+        (= :no-visual (-> buf :visual :type))
         :no-visual
-        (= 3 (-> buf :visual :type))
+        (= :visual-block (-> buf :visual :type))
         :visual-block
         :else
         :not-visual-block))))

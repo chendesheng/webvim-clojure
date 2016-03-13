@@ -6,7 +6,8 @@
             [webvim.keymap.yank :refer [wrap-keymap-yank-visual]]
             [webvim.keymap.delete :refer [wrap-keymap-delete-visual]]
             [webvim.keymap.change :refer [wrap-keymap-change-visual]]
-            [webvim.visual :refer [visual-line visual-range visual-block set-visual-ranges set-visual-mode]]
+            [webvim.visual :refer [set-visual-ranges set-visual-mode]]
+            [webvim.keymap.motion :refer [init-motion-keymap-with-objects]]
             [webvim.keymap.scrolling :refer [wrap-keymap-scrolling-visual]])
   (:use webvim.keymap.insert
         webvim.keymap.ex
@@ -28,7 +29,7 @@
 (defn- clear-visual [buf]
   (-> buf
       (assoc :last-visual (-> buf :visual (dissoc :ranges))) ;keep last visual
-      (assoc :visual {:type 0 :range [0 0]})))
+      (assoc :visual {:type :no-visual :range [0 0]})))
 
 (defn- visual-select [buf]
   (let [[a b :as rg] (-> buf :context :range)]
@@ -46,14 +47,14 @@
 
 ;type/mode    | keycode | next
 ;-------------|---------|-------
-;normal       |  v      | visual-range
-;normal       |  V      | visual-line
-;visual-range |  V      | visual-line
-;visual-range |  v      | normal
-;visual-line  |  v      | visual-range
-;visual-line  |  V      | normal
+;normal       |  v      | :visual-range
+;normal       |  V      | :visual-line
+;:visual-range |  V      | :visual-line
+;:visual-range |  v      | normal
+;:visual-line  |  v      | :visual-range
+;:visual-line  |  V      | normal
 (defn- keycode2type [keycode]
-  ({"v" visual-range "V" visual-line "<c-v>" visual-block} keycode))
+  ({"v" :visual-range "V" :visual-line "<c-v>" :visual-block} keycode))
 
 (defn- visual-mode-continue? [buf keycode]
   (if (-> buf :context :cancel-visual-mode?)
@@ -103,10 +104,6 @@
                   visual-select
                   set-visual-ranges
                   (update-x-if-not-jk keycode)))
-     "o" swap-visual-start-end
-     "<c-i>" nop
-     "<c-o>" nop
-     "<c-r>" nop
      "V" change-visual-mode-type
      "v" change-visual-mode-type
      "<c-v>" change-visual-mode-type}))
@@ -117,9 +114,13 @@
      "V" keymap
      "<c-v>" keymap}))
 
-(defn init-visual-mode-keymap-with-operators [motion-keymap buf]
+(defn- init-visual-mode-keymap-with-operators [motion-keymap buf]
   (fire-event :visual-mode-keymap
               (-> motion-keymap 
+                  (assoc "o" swap-visual-start-end
+                         "<c-i>" nop
+                         "<c-o>" nop
+                         "<c-r>" nop)
                   (init-visual-mode-keymap buf)
                   wrap-keymap-indent-visual
                   wrap-keymap-replace-visual
@@ -128,6 +129,23 @@
                   wrap-keymap-delete-visual
                   wrap-keymap-case-visual
                   wrap-keymap-change-visual) buf))
+
+(defn wrap-keymap-visual [keymap buf]
+  (let [motion-keymap (init-motion-keymap-with-objects)
+        visual-mode-keymap (init-visual-mode-keymap-with-operators motion-keymap buf)]
+    (-> keymap
+        (assoc "v" visual-mode-keymap
+               "V" visual-mode-keymap
+               "<c-v>" visual-mode-keymap)
+        (update-in ["g"]
+                   assoc "v" (assoc
+                               visual-mode-keymap
+                               :enter
+                               (fn [buf keycode]
+                                 (let [visual (buf :last-visual)]
+                                   (-> buf
+                                       (set-visual-mode visual)
+                                       (buf-set-pos (-> visual :range first))))))))))
 
 ;keep track visual ranges when buffer changed
 (listen
