@@ -146,3 +146,9 @@
 
 (defn first-line [r]
   (subr r (-> r pos-lines-seq+ first)))
+
+(defn move-to-line [buf row]
+  (-> buf
+      (lines-row row)
+      line-start))
+

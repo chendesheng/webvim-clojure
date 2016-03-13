@@ -69,12 +69,6 @@
 (defn apply-keycodes [buf keycodes]
   (reduce apply-keycode buf keycodes))
 
-(defn move-to-line [buf row]
-  (-> buf
-      (lines-row row)
-      line-start))
-
-
 (defn normal-mode-fix-pos
   "prevent cursor on top of EOL in normal mode"
   [buf]

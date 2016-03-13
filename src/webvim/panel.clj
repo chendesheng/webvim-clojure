@@ -7,17 +7,12 @@
                                 output-panel-name grep-panel-name find-panel-name 
                                 directory-panel-name change-active-buffer new-file]]
     [webvim.core.rope :refer [buf-insert buf-set-pos save-undo buf-replace subr]]
-    [webvim.core.line :refer [line-start pos-line-first lines-row]]
+    [webvim.core.line :refer [line-start pos-line-first lines-row move-to-line]]
     [webvim.core.pos :refer [buf-end buf-start]]
     [webvim.core.utils :refer [shorten-path visual-size]]
     [webvim.core.ui :refer [send-buf!]]
     [webvim.scrolling :refer [cursor-center-viewport]]
     [webvim.jumplist :refer [jump-push]]))
-
-(defn- move-to-line [buf row]
-  (-> buf
-      (lines-row row)
-      line-start))
 
 (defn- path= [f1 f2]
   (try
