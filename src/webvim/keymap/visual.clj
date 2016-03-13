@@ -6,7 +6,7 @@
             [webvim.keymap.yank :refer [wrap-keymap-yank-visual]]
             [webvim.keymap.delete :refer [wrap-keymap-delete-visual]]
             [webvim.keymap.change :refer [wrap-keymap-change-visual]]
-            [webvim.visual :refer [visual-line visual-range visual-block]]
+            [webvim.visual :refer [visual-line visual-range visual-block set-visual-ranges set-visual-mode]]
             [webvim.keymap.scrolling :refer [wrap-keymap-scrolling-visual]])
   (:use webvim.keymap.action
         webvim.keymap.insert
@@ -30,9 +30,6 @@
   (-> buf
       (assoc :last-visual (-> buf :visual (dissoc :ranges))) ;keep last visual
       (assoc :visual {:type 0 :range [0 0]})))
-
-;(:visual (set-visual-ranges (@webvim.core.ui/ui-agent :buf)))
-;(make-linewise-range [82 82] (@webvim.core.ui/ui-agent :buf))
 
 (defn- visual-select [buf]
   (let [[a b :as rg] (-> buf :context :range)]

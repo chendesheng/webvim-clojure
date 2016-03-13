@@ -10,6 +10,7 @@
             [webvim.keymap.put :refer [wrap-keymap-put]]
             [webvim.keymap.jump :refer [wrap-keymap-jump]]
             [webvim.keymap.change :refer [wrap-keymap-change]]
+            [webvim.visual :refer [set-visual-mode]]
             [webvim.mode :refer [set-normal-mode ex-mode insert-mode normal-mode]]
             [webvim.keymap.motion :refer [init-motion-keymap init-motion-keymap-with-objects]]
             [webvim.keymap.replace :refer [wrap-keymap-replace]])

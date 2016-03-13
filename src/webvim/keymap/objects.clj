@@ -1,19 +1,9 @@
 (ns webvim.keymap.objects
-  (:use webvim.keymap.action
-        webvim.keymap.macro
-        webvim.keymap.insert
-        webvim.keymap.ex
-        webvim.core.buffer
-        webvim.core.rope
+  (:use webvim.core.rope
         webvim.core.line
         webvim.core.pos
-        webvim.core.register
-        webvim.core.event
         webvim.core.lang
-        webvim.indent
-        webvim.core.utils
-        webvim.jumplist
-        webvim.autocompl))
+        webvim.core.utils))
 
 (defn- unbalanced-bracket+ [r pos re rch]
   (let [[a _] (pos-re+ r pos re)]

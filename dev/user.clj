@@ -89,6 +89,9 @@
   (let [dir? #(.isDirectory %)]
     (tree-seq dir? #(.listFiles %) fs/*cwd*)))
 
+(defn rename [from to]
+  (fs/rename from to))
+
 (defn format-all-js []
   (doseq [f (filter (fn [f]
                       (clojure.string/ends-with? f ".css")) (get-files))]
@@ -106,15 +109,15 @@
     (println f)
     (format-clj-file (str f))))
 
-(defn reset-buffers[]
+(defn reset-buffers []
   (let [buffers @buffer-list
         _ (reset! buffer-list {})]
     (doseq [abuf (vals buffers)]
-      (let[{filepath :filepath y :y} @abuf
-           buf @(new-file filepath y)]
+      (let [{filepath :filepath y :y} @abuf
+            buf @(new-file filepath y)]
         (if (= filepath (-> @ui-agent :buf :filepath))
           (do
-            (send ui-agent (fn[ui] (dissoc ui :buf)))
+            (send ui-agent (fn [ui] (dissoc ui :buf)))
             (registers-put! "%" {:str filepath :id (buf :id)})
             (registers-put! "#" nil)
             (send-buf! buf)))))))

@@ -14,6 +14,36 @@
         webvim.jumplist
         webvim.core.utils))
 
+(defn- add-highlight [buf rg]
+  (let [highlights (buf :highlights)]
+    (if (empty? (filter (fn [[a b]]
+                          (and (= a (rg 0)) (= b (rg 1)))) highlights))
+      (update-in buf [:highlights] conj rg) buf)))
+
+(defn re-forward-highlight [buf re]
+  (let [pos (buf :pos)
+        r (buf :str)
+        rg (or
+             (pos-re+ r (inc pos) re)
+             (pos-re+ r 0 re))] ;TODO: use region reduce duplicate work
+    (if (nil? rg) buf
+        (let [[a b] rg]
+          (-> buf
+              (buf-set-pos a)
+              (add-highlight [a (dec b)]))))))
+
+(defn re-backward-highlight [buf re]
+  (let [pos (buf :pos)
+        r (buf :str)
+        rg (or
+             (pos-re- r (dec pos) re)
+             (pos-re- r (-> r count dec) re))]
+    (if (nil? rg) buf
+        (let [[a b] rg]
+          (-> buf
+              (buf-set-pos a)
+              (add-highlight [a (dec b)]))))))
+
 (defn highlight-all-matches [buf re]
   ;(println "highlight-all-matches:" (buf :message))
   (let [r (buf :str)]

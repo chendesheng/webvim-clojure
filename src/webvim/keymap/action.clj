@@ -19,46 +19,6 @@
         webvim.core.ui
         clojure.pprint))
 
-(defn- add-highlight [buf rg]
-  (let [highlights (buf :highlights)]
-    (if (empty? (filter (fn [[a b]]
-                          (and (= a (rg 0)) (= b (rg 1)))) highlights))
-      (update-in buf [:highlights] conj rg) buf)))
-
-(defn re-forward-highlight [buf re]
-  (let [pos (buf :pos)
-        r (buf :str)
-        rg (or
-             (pos-re+ r (inc pos) re)
-             (pos-re+ r 0 re))] ;TODO: use region reduce duplicate work
-    (if (nil? rg) buf
-        (let [[a b] rg]
-          (-> buf
-              (buf-set-pos a)
-              (add-highlight [a (dec b)]))))))
-
-(defn re-backward-highlight [buf re]
-  (let [pos (buf :pos)
-        r (buf :str)
-        rg (or
-             (pos-re- r (dec pos) re)
-             (pos-re- r (-> r count dec) re))]
-    (if (nil? rg) buf
-        (let [[a b] rg]
-          (-> buf
-              (buf-set-pos a)
-              (add-highlight [a (dec b)]))))))
-
-(defn buf-yank
-  ([buf a b linewise? delete?]
-    (let [s (buf-subr buf a b)]
-      ((if delete?
-         registers-delete-to!
-         registers-yank-to!) (-> buf :context :register) {:str s :linewise? linewise?})
-      (update-in buf [:context] dissoc :register)))
-  ([buf a b linewise?]
-    (buf-yank buf a b linewise? false)))
-
 (defn update-x [buf]
   (let [pos (buf :pos)
         r (buf :str)]
@@ -73,8 +33,6 @@
     (if-not (or (= (:pos lastbuf) (:pos buf))
                 (contains? #{"j" "k" "<c-d>" "<c-u>"} keycode))
       (update-x buf) buf)))
-
-;one server only serve one window at one time
 
 (defn keycode-cancel [buf]
   (-> buf
@@ -111,16 +69,10 @@
 (defn apply-keycodes [buf keycodes]
   (reduce apply-keycode buf keycodes))
 
-(defn buf-info [buf]
-  (if (and (empty? (buf :str))
-           (not (fs/exists? (buf :filepath))))
-    (assoc buf :message (str "[New File] " (-> buf :filepath shorten-path)))
-    (assoc buf :message (str "\"" (-> buf :filepath shorten-path) "\""))))
-
 (defn- expand-home [f]
   (str (fs/expand-home f)))
 
-(defn path= [f1 f2]
+(defn- path= [f1 f2]
   (try
     (= (str (fs/normalized f1))
        (str (fs/normalized f2)))
@@ -128,7 +80,7 @@
       (println ex)
       false)))
 
-(defn get-panel [create? name]
+(defn- get-panel [create? name]
   (or (some (fn [[_ abuf]]
               (if (= (@abuf :name) name) abuf nil))
             @buffer-list)
@@ -226,7 +178,7 @@
                 (jump-push buf)
                 (assoc buf :nextid nextid))))))
 
-(defn buf-append [buf & strs]
+(defn- buf-append [buf & strs]
   (buf-insert 
     buf
     (-> buf :str count)
@@ -269,20 +221,6 @@
         (dissoc :keys)
         (apply-keycodes keycodes)
         (assoc :keys keys))))
-
-(defn set-visual-ranges [{{tp :type rg :range} :visual :as buf}]
-  ;(println "set-visual-ranges:" tp rg)
-  (assoc-in buf [:visual :ranges]
-            (condp = tp
-              visual-range (list (sort2 rg))
-              visual-line (list (make-linewise-range rg buf))
-              visual-block (into '() (expand-block-ranges (buf :str) rg (buf :tabsize)))
-              nil)))
-
-(defn set-visual-mode [buf visual]
-  (-> buf
-      (assoc :visual visual)
-      set-visual-ranges))
 
 (defn append-repeat-prefix [buf digit-str]
   (update-in buf [:context :repeat-prefix] #(str % digit-str)))

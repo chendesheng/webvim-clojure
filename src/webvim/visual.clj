@@ -27,3 +27,7 @@
                     b (min eol (inc b))]
                 (conj items [(-> buf :str (subr a b)) a b]))) [] (-> buf :visual :ranges))))
 
+(defn set-visual-mode [buf visual]
+  (-> buf
+      (assoc :visual visual)
+      set-visual-ranges))
