@@ -50,13 +50,13 @@
     :visual-block 3} type))
 
 (defn- buf-mode [mode]
-  (println "mode" mode)
+  ;(println "mode" mode)
   ({:normal-mode 0
     :insert-mode 1
     :ex-mode 2} mode))
 
-(defn- buf-submode[mode]
-  (println "submode" mode)
+(defn- buf-submode [mode]
+  ;(println "submode" mode)
   ({:none 0
     :temp-normal-mode 1} mode))
 

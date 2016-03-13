@@ -87,34 +87,36 @@
       (assoc :visual visual)
       set-visual-ranges))
 
-(defn- init-visual-mode-keymap [motion-keymap buf]
-  (deep-merge 
+(defn- init-visual-mode-keymap [motion-keymap]
+  (assoc 
     motion-keymap 
-    {:enter (fn [buf keycode]
-              (let [pos (buf :pos)]
-                (set-visual-mode buf 
-                                 {:type (keycode2type keycode)
-                                  :range [pos pos]})))
-     :leave (fn [buf keycode] (clear-visual buf))
-     :continue visual-mode-continue?
-     :before (fn [buf keycode] 
-               (update-in buf [:context]
-                          (fn [context]
-                            (-> context
-                                (assoc :last-visual-type (-> buf :visual :type)
-                                       :cancel-visual-mode? false)
-                                (dissoc :range)))))
-     :after (fn [buf keycode]
-              (-> buf
-                  visual-select
-                  set-visual-ranges
-                  (update-x-if-not-jk keycode)))
-     "V" change-visual-mode-type
-     "v" change-visual-mode-type
-     "<c-v>" change-visual-mode-type}))
+    :enter (fn [buf keycode]
+             (let [pos (buf :pos)]
+               (set-visual-mode buf 
+                                {:type (keycode2type keycode)
+                                 :range [pos pos]})))
+    :leave (fn [buf keycode] (clear-visual buf))
+    :continue visual-mode-continue?
+    :before (fn [buf keycode] 
+              (update-in buf [:context]
+                         (fn [context]
+                           (-> context
+                               (assoc :last-visual-type (-> buf :visual :type)
+                                      :cancel-visual-mode? false)
+                               (dissoc :range)))))
+    :after (fn [buf keycode]
+             (-> buf
+                 visual-select
+                 set-visual-ranges
+                 (update-x-if-not-jk keycode)))
+    "V" change-visual-mode-type
+    "v" change-visual-mode-type
+    "<c-v>" change-visual-mode-type))
 
-(defn init-visual-mode-keymap-for-operators [motion-keymap buf]
-  (let [keymap (init-visual-mode-keymap motion-keymap buf)]
+(defn init-visual-mode-keymap-for-operators [motion-keymap]
+  (let [keymap (-> motion-keymap
+                   init-visual-mode-keymap
+                   (assoc :continue (constantly false)))]
     {"v" keymap
      "V" keymap
      "<c-v>" keymap}))
@@ -122,11 +124,11 @@
 (defn- init-visual-mode-keymap-with-operators [motion-keymap buf]
   (fire-event :visual-mode-keymap
               (-> motion-keymap 
+                  init-visual-mode-keymap
                   (assoc "o" swap-visual-start-end
                          "<c-i>" nop
                          "<c-o>" nop
                          "<c-r>" nop)
-                  (init-visual-mode-keymap buf)
                   wrap-keymap-indent-visual
                   wrap-keymap-replace-visual
                   wrap-keymap-scrolling-visual

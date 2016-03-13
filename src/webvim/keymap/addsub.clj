@@ -19,7 +19,7 @@
 
 (defn- inc-dec-number [f]
   (fn [buf keycode]
-    (println "inc-dec-number:" keycode)
+    ;(println "inc-dec-number:" keycode)
     (let [repeat-times (repeat-prefix-value buf)
           f (fn [n] (f n repeat-times))
           pos (buf :pos)
@@ -52,7 +52,7 @@
               char-))))))
 
 (defn wrap-keymap-addsub [keymap]
-  (println "addsub normal-mode-keymap")
+  ;(println "addsub normal-mode-keymap")
   (assoc keymap
          "<c-a>" (inc-dec-number +)
          "<c-x>" (inc-dec-number -)))

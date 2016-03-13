@@ -43,7 +43,7 @@
   (-> normal-mode-keymap
       (dissoc "u" "<c-r>") ;can't make undo/redo in the middle of change
       (assoc :continue (fn [buf keycode]
-                         (= keycode "\""))
+                         (= keycode "\"")) ;FIXME: repeat count prefix???
                         ;FIXME: Vim's <c-o> breaks history and dot repeat.
                         ;I think keep them seems a better chioce.
              :enter (fn [buf keycode]
