@@ -1,5 +1,10 @@
 (ns webvim.keymap.operator
-  (:require [webvim.keymap.action :refer [range-prefix]]))
+  (:require 
+    [clojure.string :as str]
+    [webvim.core.rope :refer [buf-subr]]
+    [webvim.core.line :refer [pos-line pos-line-last]]
+    [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
+    [webvim.keymap.action :refer [range-prefix]]))
 
 (defn setup-range [buf]
   (println "setup-range:" (-> buf :context :range))
@@ -31,4 +36,24 @@
 (defn not-empty-range [ranges]
   (filter (fn [[a b]]
             (< a (inc b))) ranges))
+
+(defn- buf-yank
+  ([buf a b linewise? delete?]
+    (let [s (buf-subr buf a b)]
+      ((if delete?
+         registers-delete-to!
+         registers-yank-to!) (-> buf :context :register) {:str s :linewise? linewise?})
+      (update-in buf [:context] dissoc :register)))
+  ([buf a b linewise?]
+    (buf-yank buf a b linewise? false)))
+
+(defn yank-blockwise [buf items]
+  (registers-put! (buf :register) {:str (str/join "\n" (map first items)) :blockwise? true}))
+
+(defn yank-range [buf inclusive? linewise?]
+  (let [[a b] (range-prefix buf inclusive?)]
+    (buf-yank buf a b linewise?)))
+
+(defn setup-range-line [buf]
+  (assoc-in buf [:context :range] (pos-line (buf :str) (buf :pos))))
 

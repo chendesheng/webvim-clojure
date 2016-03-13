@@ -4,6 +4,7 @@
             [webvim.keymap.indent :refer [wrap-keymap-indent]]
             [webvim.keymap.case :refer [wrap-keymap-case]]
             [webvim.keymap.addsub :refer [wrap-keymap-addsub]]
+            [webvim.keymap.yank :refer [wrap-keymap-yank]]
             [webvim.keymap.replace :refer [wrap-keymap-replace]])
   (:use clojure.pprint
         webvim.keymap.action
@@ -119,15 +120,6 @@
     (-> buf
         setup-range
         (delete-range (inclusive? keycode) false))))
-
-(defn- yank [buf keycode]
-  (if (contains? #{"y" "j" "k" "Y"} keycode)
-    (-> buf
-        setup-range-line
-        (yank-range false true))
-    (-> buf
-        setup-range
-        (yank-range (inclusive? keycode) false))))
 
 (defn- normal-mode-after [buf keycode]
   (let [insert-mode? (= (buf :mode) insert-mode)
@@ -272,13 +264,8 @@
                                      (-> buf :context :range empty?)))
                              buf
                              ((start-insert-mode-with-keycode nop change-by-motion) buf keycode)))})
-           "y" (merge
-                 motion-keymap-fix-w
-                 {"y" nop
-                  :after yank})
            "D" delete-to-line-end
            "C" (start-insert-mode identity change-to-line-end)
-           "Y" yank
            "x" (wrap-keycode delete-char)
            "p" (fn [buf keycode]
                  (let [append? (if (-> buf :context :register registers-get :linewise?)
@@ -304,5 +291,6 @@
         wrap-keymap-indent
         wrap-keymap-replace
         wrap-keymap-scrolling
+        wrap-keymap-yank
         wrap-keymap-case)))
 
