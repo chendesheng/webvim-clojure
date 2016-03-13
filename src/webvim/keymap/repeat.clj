@@ -1,18 +1,7 @@
 (ns webvim.keymap.repeat
-  (:use webvim.core.pos
-        webvim.core.buffer
-        webvim.core.register
-        webvim.core.lang
-        webvim.core.rope
-        webvim.core.line
-        webvim.core.event
-        webvim.core.ui
-        webvim.core.parallel-universe
-        webvim.keymap.linebuf.linebuf
-        webvim.keymap.action
-        webvim.keymap.ex
-        webvim.jumplist
-        webvim.core.utils))
+  (:require [webvim.core.rope :refer [re-test]]
+            [webvim.core.event :refer [listen]]
+            [webvim.keymap.action :refer [wrap-key]]))
 
 (defn- reset-repeat-prefix [buf keycode]
   (if (and
@@ -20,6 +9,9 @@
         (not (re-test #"^[0-9]$" keycode)))
     (update-in buf [:context] dissoc :repeat-prefix)
     buf))
+
+(defn- append-repeat-prefix [buf digit-str]
+  (update-in buf [:context :repeat-prefix] #(str % digit-str)))
 
 (listen :normal-mode-keymap
         (fn [keymap _]

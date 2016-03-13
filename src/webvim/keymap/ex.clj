@@ -1,10 +1,7 @@
 (ns webvim.keymap.ex
   (:require [me.raynes.fs :as fs]
-            [snipsnap.core :as clipboard]
-            [clojure.core.async :as async]
-            [cheshire.core :as json]
-            [ring.adapter.jetty9 :as jetty]
             [webvim.mode :refer [set-normal-mode]]
+            [webvim.panel :refer [append-panel append-output-panel grep-panel find-panel edit-file]]
             [clojure.string :as string])
   (:use clojure.pprint
         webvim.core.rope
@@ -142,6 +139,10 @@
         (change-active-buffer id nextid)
         (jump-push buf)))
     (assoc buf :nextid nextid)))
+
+(defn- get-buffer-from-reg [reg]
+  (if (nil? reg) nil
+      (@buffer-list (reg :id))))
 
 (defn cmd-bdelete [buf execmd args]
   (swap! buffer-list dissoc (buf :id))

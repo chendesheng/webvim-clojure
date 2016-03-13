@@ -1,6 +1,5 @@
 (ns webvim.keymap
   (:use webvim.core.event
-        webvim.core.ui
         webvim.keymap.normal
         webvim.keymap.insert
         webvim.keymap.ex
@@ -9,7 +8,6 @@
         webvim.keymap.repeat
         webvim.keymap.autocompl
         webvim.keymap.register
-        webvim.indent
         webvim.keymap.compile))
 
 (defn init-keymap-tree [buf]

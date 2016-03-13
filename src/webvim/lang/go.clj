@@ -1,6 +1,7 @@
 (ns webvim.lang.go
   (:require [cheshire.core :as json]
-            [me.raynes.fs :as fs])
+            [me.raynes.fs :as fs]
+            [webvim.panel :refer [append-output-panel]])
   (:use webvim.core.lang
         webvim.core.event
         webvim.core.rope

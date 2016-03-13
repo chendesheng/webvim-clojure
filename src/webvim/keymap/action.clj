@@ -4,7 +4,8 @@
             [clojure.string :as string]
             [webvim.mode :refer [set-insert-mode set-normal-mode]]
             [webvim.visual :refer [visual-range visual-line visual-block]]
-            [webvim.scrolling :refer [cursor-center-viewport]])
+            [webvim.scrolling :refer [cursor-center-viewport]]
+            [webvim.keymap.compile :refer [compile-keymap]])
   (:use webvim.core.buffer
         webvim.core.rope
         webvim.core.line
@@ -15,7 +16,6 @@
         webvim.core.lang
         webvim.core.utils
         webvim.jumplist
-        webvim.keymap.compile
         webvim.core.ui
         clojure.pprint))
 
@@ -69,144 +69,11 @@
 (defn apply-keycodes [buf keycodes]
   (reduce apply-keycode buf keycodes))
 
-(defn- expand-home [f]
-  (str (fs/expand-home f)))
-
-(defn- path= [f1 f2]
-  (try
-    (= (str (fs/normalized f1))
-       (str (fs/normalized f2)))
-    (catch Exception ex
-      (println ex)
-      false)))
-
-(defn- get-panel [create? name]
-  (or (some (fn [[_ abuf]]
-              (if (= (@abuf :name) name) abuf nil))
-            @buffer-list)
-      (if create?
-        (-> (open-file name)
-            buffer-list-save!))))
-
-(defn output-panel
-  ([create?]
-    (get-panel create? output-panel-name))
-  ([]
-    (output-panel true)))
-
-(defn grep-panel
-  ([create?]
-    (get-panel create? grep-panel-name))
-  ([]
-    (grep-panel true)))
-
-(defn find-panel
-  ([create?]
-    (get-panel create? find-panel-name))
-  ([]
-    (find-panel true)))
-
-(defn directory-panel
-  ([create?]
-    (get-panel create? directory-panel-name))
-  ([]
-    (directory-panel true)))
-
-(defn- edit-dir [path]
-  (let [abuf (directory-panel)
-        files (clojure.string/join "\n"
-                                   (map (fn [f] (-> f str shorten-path))
-                                        (cons (fs/parent path) (fs/list-dir path))))]
-    (send abuf
-          (fn [buf]
-            (-> buf
-                (buf-replace 0 (-> buf :str count) (str files "\n"))
-                buf-start
-                save-undo
-                send-buf!)))
-    @abuf))
-
 (defn move-to-line [buf row]
   (-> buf
       (lines-row row)
       line-start))
 
-(defn edit-file
-  ([buf file new-file?]
-    (if (or (empty? file) (path= file (:filepath buf)))
-      buf
-      (let [buf-exists (some #(if (and (-> % :filepath nil? not)
-                                       (path= file (% :filepath))) %)
-                             (->> @buffer-list vals (map deref)))
-            file (expand-home file)
-            newbuf (if (nil? buf-exists)
-                     (if (or new-file? (fs/exists? file))
-                       (if (fs/directory? file)
-                         (edit-dir file)
-                         (-> file str new-file deref))
-                       nil)
-                     buf-exists)]
-        (if (or (nil? newbuf) (= (buf :id) (newbuf :id))) buf
-            (let [newid (newbuf :id)]
-              (change-active-buffer (buf :id) newid)
-              (jump-push buf)
-              (assoc buf :nextid newid))))))
-  ([buf file linenum new-file?]
-    (let [newbuf (edit-file buf file new-file?)
-          nextid (newbuf :nextid)
-          row (dec linenum)]
-      (if (nil? nextid)
-        (if (<= row 0) buf
-            (-> buf
-                jump-push
-                (move-to-line (dec row))
-                update-x))
-        (let [anextbuf (@buffer-list nextid)]
-          (send anextbuf (fn [buf row]
-                           (if (<= row 0) buf
-                               (-> buf
-                                   (move-to-line row)
-                                   update-x))) row)
-          newbuf)))))
-
-(defn goto-buf [buf anextbuf]
-  (if (nil? anextbuf) buf
-      (let [nextid (@anextbuf :id)
-            id (buf :id)]
-        (if (= nextid id)  buf
-            (do (change-active-buffer id nextid)
-                (jump-push buf)
-                (assoc buf :nextid nextid))))))
-
-(defn- buf-append [buf & strs]
-  (buf-insert 
-    buf
-    (-> buf :str count)
-    (apply str strs)))
-
-(defn append-panel [buf apanel s goto?]
-  (send apanel
-        (fn [buf goto?]
-          (let [pos (-> buf :str count dec)
-                fn-set-pos (if goto? buf-set-pos (fn [buf pos] buf))]
-            (-> buf
-                (buf-append s "\n")
-                buf-end
-                line-start
-                save-undo
-                (fn-set-pos pos)
-                cursor-center-viewport
-                send-buf!))) goto?)
-  (if goto? (goto-buf buf apanel) buf))
-
-(defn append-output-panel [buf s goto?]
-  (append-panel buf (output-panel) s goto?))
-
-(defn get-buffer-from-reg [reg]
-  (if (nil? reg) nil
-      (let [abuf (@buffer-list (reg :id))]
-        (if (nil? abuf) nil
-            abuf))))
 
 (defn normal-mode-fix-pos
   "prevent cursor on top of EOL in normal mode"
@@ -221,9 +88,6 @@
         (dissoc :keys)
         (apply-keycodes keycodes)
         (assoc :keys keys))))
-
-(defn append-repeat-prefix [buf digit-str]
-  (update-in buf [:context :repeat-prefix] #(str % digit-str)))
 
 (defn special-key? [key]
   (contains? #{:enter :leave :before :after :else} key))

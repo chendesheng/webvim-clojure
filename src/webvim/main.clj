@@ -2,7 +2,8 @@
   (:require [clojure.core.async :as async]
             [ring.util.response :as response]
             [cheshire.core :as json]
-            [ring.adapter.jetty9 :as jetty])
+            [ring.adapter.jetty9 :as jetty]
+            [webvim.panel :refer [append-output-panel]])
   (:use clojure.pprint
         webvim.lang.clojure ;TODO: load language setting dynamically
         webvim.lang.javascript

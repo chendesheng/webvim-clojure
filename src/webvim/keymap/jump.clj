@@ -1,12 +1,17 @@
 (ns webvim.keymap.jump
   (:require
     [webvim.core.buffer :refer [buffer-list change-active-buffer]]
-    [webvim.keymap.action :refer [goto-buf get-buffer-from-reg output-panel wrap-keycode edit-file]]
+    [webvim.keymap.action :refer [wrap-keycode]]
+    [webvim.panel :refer [edit-file output-panel goto-buf]]
     [webvim.core.rope :refer [buf-set-pos subr re-test]]
     [webvim.core.pos :refer [pos-re+ pos-re-]]
     [webvim.core.register :refer [registers-get]]
     [webvim.core.utils :refer [parse-int deep-merge]]
     [webvim.jumplist :refer [jump-prev jump-next]]))
+
+(defn- get-buffer-from-reg [reg]
+  (if (nil? reg) nil
+      (@buffer-list (reg :id))))
 
 (defn- move-to-jumplist
   [fndir]

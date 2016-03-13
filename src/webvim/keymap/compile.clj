@@ -1,6 +1,5 @@
 (ns webvim.keymap.compile
-  (:use webvim.core.utils
-        webvim.core.event))
+  (:require [webvim.core.utils :refer [nop tree-reduce]]))
 
 (defn- save-key [buf keycode]
   (update-in buf [:keys] conj keycode))
