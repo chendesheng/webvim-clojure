@@ -5,6 +5,7 @@
             [webvim.keymap.case :refer [wrap-keymap-case]]
             [webvim.keymap.addsub :refer [wrap-keymap-addsub]]
             [webvim.keymap.yank :refer [wrap-keymap-yank]]
+            [webvim.keymap.delete :refer [wrap-keymap-delete]]
             [webvim.keymap.replace :refer [wrap-keymap-replace]])
   (:use clojure.pprint
         webvim.keymap.action
@@ -111,16 +112,6 @@
         b (pos-line-end (buf :str) a)]
     (assoc-in buf [:context :range] [a b])))
 
-(defn- delete [buf keycode]
-  (if (contains? #{"d" "j" "k"} keycode)
-    (-> buf
-        setup-range-line
-        (delete-range false true)
-        line-start)
-    (-> buf
-        setup-range
-        (delete-range (inclusive? keycode) false))))
-
 (defn- normal-mode-after [buf keycode]
   (let [insert-mode? (= (buf :mode) insert-mode)
         lastbuf (-> buf :context :lastbuf)
@@ -148,11 +139,6 @@
         (assoc 
           :keymap (buf :ex-mode-keymap)
           :mode ex-mode))))
-
-(defn- delete-to-line-end [buf keycode]
-  (-> buf
-      setup-range-line-end
-      (delete-range false false)))
 
 (defn- change-to-line-end [buf]
   (-> buf
@@ -182,12 +168,6 @@
     (if (nil? linenum)
       (edit-file buf uri false)
       (edit-file buf uri (parse-int linenum) false))))
-
-(defn- operator [f]
-  (fn [buf keycode]
-    (let [buf (setup-range buf)
-          rg (range-prefix buf (inclusive? keycode))]
-      (f buf rg))))
 
 (defn- move-to-jumplist
   [fndir]
@@ -250,10 +230,6 @@
            "v" visual-mode-keymap
            "V" visual-mode-keymap
            "<c-v>" visual-mode-keymap
-           "d" (merge
-                 motion-keymap-fix-w
-                 {"d" nop
-                  :after delete})
            "c" (merge
                  motion-keymap-fix-cw
                  {"c" (start-insert-mode identity delete-line)
@@ -264,7 +240,6 @@
                                      (-> buf :context :range empty?)))
                              buf
                              ((start-insert-mode-with-keycode nop change-by-motion) buf keycode)))})
-           "D" delete-to-line-end
            "C" (start-insert-mode identity change-to-line-end)
            "x" (wrap-keycode delete-char)
            "p" (fn [buf keycode]
@@ -292,5 +267,6 @@
         wrap-keymap-replace
         wrap-keymap-scrolling
         wrap-keymap-yank
+        wrap-keymap-delete
         wrap-keymap-case)))
 

@@ -4,6 +4,7 @@
             [webvim.keymap.case :refer [wrap-keymap-case-visual]]
             [webvim.keymap.replace :refer [wrap-keymap-replace-visual]]
             [webvim.keymap.yank :refer [wrap-keymap-yank-visual]]
+            [webvim.keymap.delete :refer [wrap-keymap-delete-visual]]
             [webvim.keymap.scrolling :refer [wrap-keymap-scrolling-visual]])
   (:use webvim.keymap.action
         webvim.keymap.insert
@@ -219,14 +220,6 @@
 (defn- change-visual [linewise?]
   (start-insert-mode identity #(change-range % true linewise?)))
 
-(defmulti visual-keymap-d (fn [buf keycode] (-> buf :visual :type)))
-(defmethod visual-keymap-d visual-range [buf keycode]
-  (delete-range buf true false))
-(defmethod visual-keymap-d visual-line [buf keycode]
-  (delete-range buf true true))
-(defmethod visual-keymap-d visual-block [buf keycode]
-  (visual-block-delete buf))
-
 (defmulti visual-keymap-c (fn [buf keycode] (-> buf :visual :type)))
 (defmethod visual-keymap-c visual-range [buf keycode]
   ((change-visual false) buf keycode))
@@ -292,7 +285,6 @@
      "V" change-visual-mode-type
      "v" change-visual-mode-type
      "<c-v>" change-visual-mode-type
-     "d" visual-keymap-d
      "c" visual-keymap-c
      "I" visual-keymap-I
      "A" visual-keymap-A}))
@@ -311,6 +303,7 @@
                   wrap-keymap-replace-visual
                   wrap-keymap-scrolling-visual
                   wrap-keymap-yank-visual
+                  wrap-keymap-delete-visual
                   wrap-keymap-case-visual) buf))
 
 ;keep track visual ranges when buffer changed

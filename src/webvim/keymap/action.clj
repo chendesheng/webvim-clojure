@@ -139,14 +139,6 @@
 
 ;one server only serve one window at one time
 
-(defn delete-range [buf inclusive? linewise?]
-  (let [[a b] (range-prefix buf inclusive?)]
-    ;(println "delete-range:" a b)
-    (-> buf
-        (buf-yank a b linewise? true)
-        (buf-delete a b)
-        (buf-set-pos a))))
-
 (defn yank-range [buf inclusive? linewise?]
   (let [[a b] (range-prefix buf inclusive?)]
     (buf-yank buf a b linewise?)))
