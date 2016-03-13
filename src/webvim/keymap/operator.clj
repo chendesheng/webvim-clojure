@@ -2,10 +2,11 @@
   (:require 
     [clojure.string :as str]
     [webvim.mode :refer [set-insert-mode]]
+    [webvim.keymap.compile :refer [wrap-key]]
     [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete subr]]
     [webvim.core.line :refer [make-linewise-range expand-block-ranges pos-line-last pos-line pos-line-end]]
     [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
-    [webvim.core.utils :refer [make-range sort2]]))
+    [webvim.core.utils :refer [make-range sort2 nop]]))
 
 (defn setup-range [buf]
   (println "setup-range:" (-> buf :context :range))
@@ -124,3 +125,15 @@
     (buf-yank buf a b false true)
     (buf-delete buf a b)))
 
+;for cv{motion}, dv{motion} etc.
+(defn wrap-temp-visual-mode [visual-keymap f]
+  (let [visual-keymap (wrap-key visual-keymap
+                                :leave (fn [handler]
+                                         (fn [buf keycode]
+                                           (let [f (if (= keycode "<esc>") nop f)]
+                                             (-> buf
+                                                 (f keycode)
+                                                 (handler keycode))))))]
+    {"v" visual-keymap
+     "V" visual-keymap
+     "<c-v>" visual-keymap}))

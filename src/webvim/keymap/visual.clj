@@ -7,7 +7,7 @@
             [webvim.keymap.delete :refer [wrap-keymap-delete-visual]]
             [webvim.keymap.change :refer [wrap-keymap-change-visual]]
             [webvim.keymap.operator :refer [set-visual-ranges]]
-            [webvim.keymap.motion :refer [init-motion-keymap-with-objects]]
+            [webvim.keymap.motion :refer [init-motion-keymap-with-objects init-motion-keymap-fix-cw]]
             [webvim.keymap.scrolling :refer [wrap-keymap-scrolling-visual]])
   (:use webvim.keymap.insert
         webvim.keymap.ex
@@ -113,13 +113,12 @@
     "v" change-visual-mode-type
     "<c-v>" change-visual-mode-type))
 
-(defn init-visual-mode-keymap-for-operators [motion-keymap]
-  (let [keymap (-> motion-keymap
-                   init-visual-mode-keymap
-                   (assoc :continue (constantly false)))]
-    {"v" keymap
-     "V" keymap
-     "<c-v>" keymap}))
+(defn init-visual-mode-keymap-for-operators []
+  (let [motion-keymap (init-motion-keymap-fix-cw)]
+    (-> motion-keymap
+        init-visual-mode-keymap
+        (assoc :continue (fn [_ keycode]
+                           (contains? #{"v" "V" "<c-v>"} keycode))))))
 
 (defn- init-visual-mode-keymap-with-operators [motion-keymap buf]
   (fire-event :visual-mode-keymap

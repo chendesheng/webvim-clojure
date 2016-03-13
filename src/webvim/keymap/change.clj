@@ -2,7 +2,8 @@
   (:require
     [webvim.keymap.compile :refer [replay-keys wrap-key]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
-    [webvim.keymap.operator :refer [buf-yank range-prefix setup-range setup-range-line-end inclusive? not-empty-range visual-block-delete]]
+    [webvim.keymap.operator :refer [buf-yank range-prefix setup-range setup-range-line-end
+                                    inclusive? not-empty-range visual-block-delete wrap-temp-visual-mode]]
     [webvim.indent :refer [buf-indent-current-line]]
     [webvim.mode :refer [set-insert-mode]]
     [webvim.core.utils :refer [nop sort2]]
@@ -80,9 +81,9 @@
 (defn- repeat-ranges [{{tp :type rg :range} :visual r :str tabsize :tabsize :as buf}]
   (cond
     (= tp :visual-line) (rest (map (fn [[a b]] [a (dec b)])
-                                  (pos-lines-seq+ r (sort2 rg))))
+                                   (pos-lines-seq+ r (sort2 rg))))
     (= tp :visual-block) (rest (map (fn [[a b]] [a (inc b)])
-                                   (expand-block-ranges r rg tabsize)))
+                                    (expand-block-ranges r rg tabsize)))
     :else '()))
 
 ;poses must in reverse order
@@ -235,8 +236,9 @@
             (buf-insert "\n"))))))
 
 
-(defn wrap-keymap-change [keymap]
-  (let [motion-keymap (init-motion-keymap-for-operators)]
+(defn wrap-keymap-change [keymap visual-keymap]
+  (let [motion-keymap (init-motion-keymap-for-operators)
+        visual-keymap (wrap-temp-visual-mode visual-keymap visual-keymap-c)]
     (assoc keymap
            "i" (start-insert-mode identity identity)
            "a" (start-insert-mode char+ identity)
@@ -248,6 +250,7 @@
            "O" (start-insert-mode identity insert-new-line-before)
            "c" (merge
                  motion-keymap
+                 visual-keymap
                  {"c" (start-insert-mode identity delete-line)
                   :after (fn [buf keycode]
                            (if (or (= keycode "c")

@@ -10,7 +10,7 @@
             [webvim.keymap.put :refer [wrap-keymap-put]]
             [webvim.keymap.jump :refer [wrap-keymap-jump]]
             [webvim.keymap.change :refer [wrap-keymap-change]]
-            [webvim.keymap.visual :refer [wrap-keymap-visual update-x-if-not-jk]]
+            [webvim.keymap.visual :refer [wrap-keymap-visual update-x-if-not-jk init-visual-mode-keymap-for-operators]]
             [webvim.mode :refer [set-normal-mode]]
             [webvim.keymap.motion :refer [init-motion-keymap init-motion-keymap-with-objects]]
             [webvim.core.pos :refer [char-]]
@@ -53,32 +53,33 @@
           :mode :ex-mode))))
 
 (defn init-normal-mode-keymap [buf]
-  (-> (init-motion-keymap) 
-      (merge
-        {":" start-ex-mode
-         "u" (wrap-keycode undo)
-         "<c-r>" (wrap-keycode redo)
-         "<c-g>" (wrap-keycode buf-pos-info)
-         "<esc>" (wrap-keycode set-normal-mode)
-         :continue (fn [buf keycode]
-                     (= (buf :mode) :normal-mode))
-         :before (fn [buf keycode]
-                   (-> buf
-                       (assoc-in [:context :lastbuf] buf)
-                       (assoc-in [:context :range] nil)))
-         :after normal-mode-after})
-      (wrap-keymap-visual buf)
-      wrap-keymap-addsub
-      wrap-keymap-indent
-      wrap-keymap-replace
-      wrap-keymap-scrolling
-      wrap-keymap-yank
-      wrap-keymap-delete
-      wrap-keymap-join
-      wrap-keymap-put
-      wrap-keymap-jump
-      wrap-keymap-change
-      wrap-keymap-case))
+  (let [visual-keymap (init-visual-mode-keymap-for-operators)]
+    (-> (init-motion-keymap) 
+        (merge
+          {":" start-ex-mode
+           "u" (wrap-keycode undo)
+           "<c-r>" (wrap-keycode redo)
+           "<c-g>" (wrap-keycode buf-pos-info)
+           "<esc>" (wrap-keycode set-normal-mode)
+           :continue (fn [buf keycode]
+                       (= (buf :mode) :normal-mode))
+           :before (fn [buf keycode]
+                     (-> buf
+                         (assoc-in [:context :lastbuf] buf)
+                         (assoc-in [:context :range] nil)))
+           :after normal-mode-after})
+        (wrap-keymap-visual buf)
+        wrap-keymap-addsub
+        wrap-keymap-indent
+        wrap-keymap-replace
+        wrap-keymap-scrolling
+        wrap-keymap-yank
+        wrap-keymap-delete
+        wrap-keymap-join
+        wrap-keymap-put
+        wrap-keymap-jump
+        (wrap-keymap-change visual-keymap)
+        wrap-keymap-case)))
 
 (listen :before-change-to-normal-mode
         normal-mode-fix-pos)
