@@ -1,6 +1,7 @@
 (ns webvim.keymap.dotrepeat
   (:require [me.raynes.fs :as fs]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [webvim.mode :refer [insert-mode]])
   (:use clojure.pprint
         webvim.keymap.action
         webvim.core.ui

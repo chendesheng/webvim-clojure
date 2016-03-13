@@ -4,6 +4,7 @@
             [clojure.core.async :as async]
             [cheshire.core :as json]
             [ring.adapter.jetty9 :as jetty]
+            [webvim.mode :refer [set-normal-mode]]
             [clojure.string :as string])
   (:use clojure.pprint
         webvim.core.rope
@@ -405,5 +406,4 @@
             buf)))
 
 (listen :before-change-to-normal-mode
-        (fn [buf]
-          (normal-mode-fix-pos buf)))
+        normal-mode-fix-pos)

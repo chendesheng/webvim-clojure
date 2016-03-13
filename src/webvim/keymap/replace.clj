@@ -1,9 +1,9 @@
 (ns webvim.keymap.replace
   (:require [webvim.core.utils :refer [keycode-to-char nop]]
             [webvim.core.rope :refer [buf-set-pos subr buf-replace]]
-            [webvim.keymap.action :refer [range-prefix no-visual]]
+            [webvim.visual :refer [no-visual]]
             [webvim.indent :refer [buf-indent-current-line]]
-            [webvim.keymap.operator :refer [not-empty-range]]))
+            [webvim.keymap.operator :refer [not-empty-range range-prefix]]))
 
 (defn- replace-char [buf a b ch]
   (buf-replace buf a b

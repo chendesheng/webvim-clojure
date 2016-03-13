@@ -1,5 +1,6 @@
 (ns webvim.keymap.insert
-  (:require [webvim.keymap.put :refer [wrap-keymap-put-insert]])
+  (:require [webvim.keymap.put :refer [wrap-keymap-put-insert]]
+            [webvim.mode :refer [set-normal-mode temp-normal-mode normal-mode insert-mode]])
   (:use webvim.keymap.action
         webvim.core.buffer
         webvim.core.event
@@ -50,7 +51,6 @@
                         (-> buf
                             ;cancel-last-indents
                             ;update-x
-                            ;normal-mode-fix-pos
                             (assoc :mode normal-mode
                                    :submode temp-normal-mode))))
              :leave (fn [buf keycode]
@@ -78,5 +78,4 @@
         (fn [buf]
           (-> buf
               cancel-last-indents
-              update-x
-              normal-mode-fix-pos)))
+              update-x)))

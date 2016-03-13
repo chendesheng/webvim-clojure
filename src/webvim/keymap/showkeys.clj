@@ -1,4 +1,7 @@
 (ns webvim.keymap.showkeys
+  (:require
+    [webvim.visual :refer [no-visual]]
+    [webvim.mode :refer [normal-mode]])
   (:use clojure.pprint
         webvim.keymap.action
         webvim.core.ui

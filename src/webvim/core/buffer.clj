@@ -146,6 +146,16 @@
     (if (nil? path) nm
         (shorten-path path))))
 
+(defn buf-pos-info [buf]
+  (let [{y :y
+         x :x
+         linescnt :linescnt} buf
+        percent (-> y inc (* 100) (/ linescnt) int)]
+    (assoc buf :message (format "\"%s\" line %d of %d --%d%%-- col %d" 
+                                (printable-filepath buf)
+                                (inc y) linescnt percent (inc x)))))
+
+
 (defn dirty? [buf]
   (not (and 
          (-> buf :pending-undo empty?)

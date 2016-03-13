@@ -2,6 +2,8 @@
 (ns webvim.keymap.action
   (:require [me.raynes.fs :as fs]
             [clojure.string :as string]
+            [webvim.mode :refer [set-insert-mode set-normal-mode]]
+            [webvim.visual :refer [visual-range visual-line visual-block]]
             [webvim.scrolling :refer [cursor-center-viewport]])
   (:use webvim.core.buffer
         webvim.core.rope
@@ -16,19 +18,6 @@
         webvim.keymap.compile
         webvim.core.ui
         clojure.pprint))
-
-(def normal-mode 0)
-(def insert-mode 1)
-(def ex-mode 2)
-
-;submodes
-(def temp-normal-mode 1)
-
-;0 means no visual
-(def no-visual 0)
-(def visual-range 1)
-(def visual-line 2)
-(def visual-block 3)
 
 (defn- add-highlight [buf rg]
   (let [highlights (buf :highlights)]
@@ -60,24 +49,6 @@
               (buf-set-pos a)
               (add-highlight [a (dec b)]))))))
 
-(defn set-insert-mode [buf]
-  (assoc buf
-         :mode insert-mode
-         :keymap (buf :insert-mode-keymap)))
-
-(defn- fire-change-to-normal-mode-event [buf]
-  (if (not= (buf :mode) normal-mode)
-    (fire-event buf :before-change-to-normal-mode)
-    buf))
-
-(defn set-normal-mode [buf]
-  ;(println "set-normal-mode:")
-  (-> buf
-      fire-change-to-normal-mode-event
-      (assoc 
-        :mode normal-mode
-        :keymap (buf :normal-mode-keymap))))
-
 (defn buf-yank
   ([buf a b linewise? delete?]
     (let [s (buf-subr buf a b)]
@@ -87,26 +58,6 @@
       (update-in buf [:context] dissoc :register)))
   ([buf a b linewise?]
     (buf-yank buf a b linewise? false)))
-
-;collect range argument, TODO: add linewise
-(defn range-prefix [{{tp :type rg :range} :visual :as buf} inclusive?]
-  (cond
-    (= tp visual-range)
-    (make-range rg inclusive?)
-    (= tp visual-line)
-    (make-linewise-range rg buf)
-    (= tp visual-block)
-    (throw (Exception. "TODO: visual-block"))
-    (-> buf :context :range nil? not)
-    (-> buf :context :range (make-range inclusive?))
-    :else (throw (Exception. "no range prefix exist"))))
-
-(defn change-range [buf inclusive? linewise?]
-  (let [[a b] (range-prefix buf inclusive?)]
-    (-> buf
-        (buf-yank a b linewise? true)
-        (buf-delete a b)
-        set-insert-mode)))
 
 (defn update-x [buf]
   (let [pos (buf :pos)
@@ -124,10 +75,6 @@
       (update-x buf) buf)))
 
 ;one server only serve one window at one time
-
-(defn yank-range [buf inclusive? linewise?]
-  (let [[a b] (range-prefix buf inclusive?)]
-    (buf-yank buf a b linewise?)))
 
 (defn keycode-cancel [buf]
   (-> buf
@@ -308,13 +255,6 @@
       (let [abuf (@buffer-list (reg :id))]
         (if (nil? abuf) nil
             abuf))))
-
-(defn start-insert-mode [fnmotion fnedit]
-  (fn [buf keycode]
-    (-> buf 
-        fnmotion
-        set-insert-mode
-        fnedit)))
 
 (defn normal-mode-fix-pos
   "prevent cursor on top of EOL in normal mode"

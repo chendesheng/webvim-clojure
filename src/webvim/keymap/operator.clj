@@ -1,11 +1,12 @@
 (ns webvim.keymap.operator
   (:require 
     [clojure.string :as str]
+    [webvim.mode :refer [insert-mode set-insert-mode]]
     [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete]]
-    [webvim.core.line :refer [pos-line pos-line-last pos-line-end]]
-    [webvim.visual :refer [visual-block-lines]]
+    [webvim.core.line :refer [pos-line pos-line-last pos-line-end make-linewise-range]]
+    [webvim.visual :refer [visual-block-lines visual-range visual-line visual-block]]
     [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
-    [webvim.keymap.action :refer [range-prefix]]))
+    [webvim.core.utils :refer [make-range]]))
 
 (defn setup-range [buf]
   (println "setup-range:" (-> buf :context :range))
@@ -27,6 +28,20 @@
     (if (contains? m keycode)
       (m keycode)
       true)))
+
+;collect range argument, TODO: add linewise
+(defn range-prefix [{{tp :type rg :range} :visual :as buf} inclusive?]
+  (cond
+    (= tp visual-range)
+    (make-range rg inclusive?)
+    (= tp visual-line)
+    (make-linewise-range rg buf)
+    (= tp visual-block)
+    (throw (Exception. "TODO: visual-block"))
+    (-> buf :context :range nil? not)
+    (-> buf :context :range (make-range inclusive?))
+    :else (throw (Exception. "no range prefix exist"))))
+
 
 (defn wrap-operator [f]
   (fn [buf keycode]
