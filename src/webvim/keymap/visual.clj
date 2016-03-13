@@ -8,8 +8,7 @@
             [webvim.keymap.change :refer [wrap-keymap-change-visual]]
             [webvim.visual :refer [visual-line visual-range visual-block set-visual-ranges set-visual-mode]]
             [webvim.keymap.scrolling :refer [wrap-keymap-scrolling-visual]])
-  (:use webvim.keymap.action
-        webvim.keymap.insert
+  (:use webvim.keymap.insert
         webvim.keymap.ex
         webvim.core.buffer
         webvim.core.rope
@@ -72,6 +71,15 @@
         (-> buf
             (assoc-in [:visual :type] newtyp)
             set-visual-ranges))))
+
+(defn update-x-if-not-jk
+  "update :x unless it is up down motion"
+  [buf keycode]
+  (let [lastbuf (buf :context :lastbuf)]
+    (if (or (= (:pos lastbuf) (:pos buf))
+            (contains? #{"j" "k" "<c-d>" "<c-u>"} keycode))
+      buf
+      (assoc buf :x (column buf)))))
 
 (defn- init-visual-mode-keymap [motion-keymap buf]
   (deep-merge 

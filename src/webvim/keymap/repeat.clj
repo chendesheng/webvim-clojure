@@ -1,7 +1,7 @@
 (ns webvim.keymap.repeat
   (:require [webvim.core.rope :refer [re-test]]
             [webvim.core.event :refer [listen]]
-            [webvim.keymap.action :refer [wrap-key]]))
+            [webvim.keymap.compile :refer [wrap-key]]))
 
 (defn- reset-repeat-prefix [buf keycode]
   (if (and

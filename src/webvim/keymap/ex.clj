@@ -18,8 +18,7 @@
         webvim.fuzzy
         webvim.exec
         webvim.keymap.linebuf.linebuf
-        webvim.keymap.compile
-        webvim.keymap.action))
+        webvim.keymap.compile))
 
 (defn- hidden? [f]
   ;(pprint (fs/split f))
@@ -400,11 +399,8 @@
 (listen :switch-buffer
         (fn [buf]
           (if (and (not= (buf :mod-time) (mod-time buf))
-                   (not (dirty? buf)))
+                   (not (buf :dirty)))
             (-> buf
-                buf-reload
-                normal-mode-fix-pos)
+                buf-reload)
             buf)))
 
-(listen :before-change-to-normal-mode
-        normal-mode-fix-pos)

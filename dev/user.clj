@@ -14,7 +14,6 @@
         webvim.core.event
         webvim.core.utils
         webvim.keymap
-        webvim.keymap.action
         webvim.main))
 
 (defn print-buf
@@ -92,6 +91,9 @@
 
 (defn rename [from to]
   (fs/rename from to))
+
+(defn delete [f]
+  (fs/delete f))
 
 (defn format-all-js []
   (doseq [f (filter (fn [f]

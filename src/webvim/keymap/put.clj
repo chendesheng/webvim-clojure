@@ -5,7 +5,7 @@
     [webvim.core.line :refer [vertical-line-pos pos-line-start pos-line-first pos-line-last line-start]]
     [webvim.core.pos :refer [char+]]
     [webvim.core.utils :refer [nop]]
-    [webvim.keymap.action :refer [wrap-keycode]]
+    [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.core.register :refer [registers-get]]))
 
 (defn- put-blockwise [buf s append?]

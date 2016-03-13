@@ -1,6 +1,6 @@
 (ns webvim.keymap.change
   (:require
-    [webvim.keymap.action :refer [replay-keys wrap-key]]
+    [webvim.keymap.compile :refer [replay-keys wrap-key]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
     [webvim.keymap.operator :refer [buf-yank range-prefix setup-range setup-range-line-end inclusive? not-empty-range visual-block-delete]]
     [webvim.indent :refer [buf-indent-current-line]]

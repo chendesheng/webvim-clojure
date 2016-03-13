@@ -13,9 +13,11 @@
             [webvim.visual :refer [set-visual-mode]]
             [webvim.mode :refer [set-normal-mode ex-mode insert-mode normal-mode]]
             [webvim.keymap.motion :refer [init-motion-keymap init-motion-keymap-with-objects]]
+            [webvim.core.pos :refer [char-]]
+            [webvim.core.event :refer [listen]]
             [webvim.keymap.replace :refer [wrap-keymap-replace]])
   (:use clojure.pprint
-        webvim.keymap.action
+        webvim.keymap.compile
         webvim.keymap.macro
         webvim.keymap.insert
         webvim.keymap.ex
@@ -23,6 +25,13 @@
         webvim.core.buffer
         webvim.core.rope
         webvim.core.utils))
+
+(defn- normal-mode-fix-pos
+  "prevent cursor on top of EOL in normal mode"
+  [buf]
+  (let [ch (char-at (buf :str) (buf :pos))]
+    (if (= (or ch \newline) \newline)
+      (char- buf) buf)))
 
 (defn- normal-mode-after [buf keycode]
   (let [insert-mode? (= (buf :mode) insert-mode)
@@ -86,3 +95,5 @@
         wrap-keymap-change
         wrap-keymap-case)))
 
+(listen :before-change-to-normal-mode
+        normal-mode-fix-pos)

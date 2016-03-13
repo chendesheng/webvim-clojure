@@ -1,9 +1,11 @@
 (ns webvim.keymap.addsub
-  (:require [webvim.keymap.action :refer [repeat-prefix-value]]
-            [webvim.core.rope :refer [buf-set-pos buf-replace subr re-test]]
+  (:require [webvim.core.rope :refer [buf-set-pos buf-replace subr re-test]]
             [webvim.core.line :refer [line-start line-end pos-line]]
             [webvim.core.pos :refer [char- pos-re-seq+]]
-            [webvim.core.utils :refer [repeat-chars]]))
+            [webvim.core.utils :refer [repeat-chars parse-int]]))
+
+(defn- repeat-prefix-value [buf]
+  (-> buf :context :repeat-prefix (or "1") parse-int))
 
 (defn- padding-zeroes [news olds]
   (let [nega? (.startsWith olds "-")

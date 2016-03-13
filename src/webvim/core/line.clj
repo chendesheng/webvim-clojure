@@ -152,3 +152,10 @@
       (lines-row row)
       line-start))
 
+(defn column [buf]
+  (let [pos (buf :pos)
+        r (buf :str)]
+    (dec (visual-size 
+           (subr r (pos-line-first r pos) (inc pos)) 
+           (buf :tabsize)))))
+

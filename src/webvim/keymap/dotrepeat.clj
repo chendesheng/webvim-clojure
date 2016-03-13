@@ -3,7 +3,7 @@
             [clojure.string :as string]
             [webvim.mode :refer [insert-mode]])
   (:use clojure.pprint
-        webvim.keymap.action
+        webvim.keymap.compile
         webvim.core.ui
         webvim.core.buffer
         webvim.core.register

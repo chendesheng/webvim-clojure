@@ -1,6 +1,5 @@
 (ns webvim.core.ui
-  (:use webvim.core.line
-        webvim.core.buffer))
+  (:use webvim.core.line))
 
 (defn- dissoc-empty [buf ks]
   (if (empty? (get-in buf ks))
@@ -61,13 +60,6 @@
       (dissoc-nil :keys)
       line-editor))
 
-(defn- diff-dirty [after before]
-  (let [a (dirty? after)
-        b (dirty? before)]
-    ;(println "diff-dirty:" a b)
-    (if (= a b) after
-        (assoc after :dirty a))))
-
 (defn- render 
   "Write changes to browser."
   [before after]
@@ -83,7 +75,7 @@
                       remove-fields)
                   :else
                   (-> after
-                      (diff-dirty before)
+                      (dissoc-if-equal before :dirty)
                       (dissoc-if-equal before :line-buffer)
                       (dissoc-if-equal before :autocompl)
                       (remove-autocompl before)

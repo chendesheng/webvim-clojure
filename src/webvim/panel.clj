@@ -7,7 +7,7 @@
                                 output-panel-name grep-panel-name find-panel-name 
                                 directory-panel-name change-active-buffer new-file]]
     [webvim.core.rope :refer [buf-insert buf-set-pos save-undo buf-replace subr]]
-    [webvim.core.line :refer [line-start pos-line-first lines-row move-to-line]]
+    [webvim.core.line :refer [line-start pos-line-first lines-row move-to-line column]]
     [webvim.core.pos :refer [buf-end buf-start]]
     [webvim.core.utils :refer [shorten-path visual-size]]
     [webvim.core.ui :refer [send-buf!]]
@@ -78,11 +78,7 @@
     @abuf))
 
 (defn- update-x [buf]
-  (let [pos (buf :pos)
-        r (buf :str)]
-    (assoc buf :x (dec (visual-size 
-                         (subr r (pos-line-first r pos) (inc pos)) 
-                         (buf :tabsize))))))
+  (assoc buf :x (column buf)))
 
 (defn edit-file
   ([buf file new-file?]

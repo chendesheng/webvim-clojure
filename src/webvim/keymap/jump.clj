@@ -1,7 +1,7 @@
 (ns webvim.keymap.jump
   (:require
     [webvim.core.buffer :refer [buffer-list change-active-buffer]]
-    [webvim.keymap.action :refer [wrap-keycode]]
+    [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.panel :refer [edit-file output-panel goto-buf]]
     [webvim.core.rope :refer [buf-set-pos subr re-test]]
     [webvim.core.pos :refer [pos-re+ pos-re-]]

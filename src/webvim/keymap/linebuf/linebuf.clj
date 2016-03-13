@@ -1,10 +1,12 @@
 (ns webvim.keymap.linebuf.linebuf
+  (:require 
+    [webvim.keymap.objects :refer [current-word]]
+    [webvim.keymap.compile :refer [wrap-key wrap-keycode]])
   (:use webvim.core.rope
         webvim.core.pos
         webvim.core.line
         webvim.core.register
         webvim.core.parallel-universe
-        webvim.keymap.action
         webvim.keymap.linebuf.history
         webvim.core.utils)) 
 

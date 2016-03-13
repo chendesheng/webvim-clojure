@@ -2,7 +2,6 @@
   (:use webvim.core.rope
         webvim.core.pos
         webvim.core.parallel-universe
-        webvim.keymap.action
         webvim.core.utils))
 
 (defn- set-line-buffer [buf s]

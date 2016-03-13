@@ -19,7 +19,7 @@
         webvim.core.keys
         webvim.core.utils
         webvim.keymap
-        webvim.keymap.action
+        webvim.keymap.compile
         webvim.core.ui
         webvim.persistent
         (compojure handler [core :only (GET POST defroutes)])

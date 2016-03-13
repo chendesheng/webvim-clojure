@@ -1,6 +1,7 @@
 (ns webvim.lang.clojure
   (:require [cljfmt.core :as cljfmt]
             [me.raynes.fs :as fs]
+            [webvim.keymap.objects :refer [current-word]]
             [webvim.panel :refer [append-output-panel]])
   (:use webvim.core.event
         webvim.core.rope
@@ -11,8 +12,8 @@
         webvim.core.buffer
         webvim.core.ui
         webvim.keymap.ex
-        webvim.keymap.action
         webvim.indent
+        webvim.keymap.compile
         webvim.core.utils))
 
 (println "load clojure language")
@@ -116,7 +117,7 @@
 
 (defn- format-buffer [buf]
   ;use temp file
-  (if (dirty? buf)
+  (if (buf :dirty)
     (let [res (time (cljfmt-diff (-> buf :str str) (buf :name)))]
       ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
       (if (-> res :err empty?) 

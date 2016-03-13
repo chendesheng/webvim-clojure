@@ -1,3 +1,2 @@
-(ns webvim.keymap.macro
-  (:use webvim.keymap.action))
+(ns webvim.keymap.macro)
 

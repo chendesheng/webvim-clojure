@@ -1,6 +1,5 @@
 (ns webvim.keymap.case
   (:require [clojure.string :as str]
-            [webvim.keymap.action :refer [repeat-prefix-value]]
             [webvim.keymap.motion :refer [init-motion-keymap-fix-cw init-motion-keymap-for-operators]]
             [webvim.visual :refer [visual-block]]
             [webvim.core.line :refer [pos-line-start]]

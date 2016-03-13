@@ -9,7 +9,7 @@
         webvim.core.ui
         webvim.core.parallel-universe
         webvim.keymap.linebuf.linebuf
-        webvim.keymap.action
+        webvim.keymap.compile
         webvim.keymap.ex
         webvim.jumplist
         webvim.core.utils))

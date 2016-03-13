@@ -3,7 +3,7 @@
             [webvim.scrolling :refer [scroll-to viewport-center viewport-inc-lines]]
             [webvim.core.ui :refer [ui-agent]]
             [webvim.core.line :refer [lines-row]]
-            [webvim.keymap.action :refer [wrap-keycode]]))
+            [webvim.keymap.compile :refer [wrap-keycode]]))
 
 (defn- round-to-zero
   "(round-to-zero -9.1) = -9; (round-to-zero 9.1) = 9"

@@ -3,7 +3,7 @@
     [webvim.visual :refer [no-visual]]
     [webvim.mode :refer [normal-mode]])
   (:use clojure.pprint
-        webvim.keymap.action
+        webvim.keymap.compile
         webvim.core.ui
         webvim.core.rope
         webvim.core.buffer

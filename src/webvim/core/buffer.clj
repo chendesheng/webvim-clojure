@@ -2,6 +2,7 @@
   (:require [me.raynes.fs :as fs]
             [clojure.core.async :as async]
             [clojure.java.io :as io]
+            [webvim.core.ui :refer [send-buf!]]
             [webvim.core.register :refer [registers-put!]])
   (:use clojure.pprint
         (clojure [string :only (join split blank? lower-case)])
@@ -156,14 +157,19 @@
                                 (inc y) linescnt percent (inc x)))))
 
 
-(defn dirty? [buf]
+(defn- dirty? [buf]
   (not (and 
          (-> buf :pending-undo empty?)
          (identical? (-> buf :history just-now) (-> buf :save-point first))
          (= (buf :filepath) (-> buf :save-point second)))))
 
 (defn set-save-point [buf]
-  (assoc buf :save-point [(-> buf :history just-now) (buf :filepath)]))
+  (let [buf (assoc buf :save-point [(-> buf :history just-now) (buf :filepath)])]
+    (assoc buf :dirty (dirty? buf))))
+
+(listen :change-buffer
+        (fn[buf _ _]
+          (set-save-point buf)))
 
 (defn- write-to-disk [buf]
   (let [tmp (-> buf :str str)
@@ -211,3 +217,31 @@
                         (file-register
                           (-> @buffer-list (get nextid) deref)))))))
 
+(defmacro async [buf & body]
+  `(let [abuf# (@buffer-list (~buf :id))]
+     (-> abuf#
+         (send (fn [~'buf]
+                 (let [buf# ~@body]
+                   (send-buf! buf#)))))
+     ~buf))
+
+(defmacro with-catch [buf & body]
+  `(try
+     (do ~@body)
+     (catch Exception e#
+       (assoc ~buf :message (str e#)))))
+
+(defmacro async-with-catch [buf & body]
+  `(async ~buf
+          (with-catch ~buf ~@body)))
+
+(defn buf-match-bracket
+  ([buf pos]
+    (-> buf
+        (assoc :brackets [])
+        (async
+          (let [mpos (pos-match-bracket (buf :str) pos)]
+            (assoc buf :brackets 
+                   (if (nil? mpos) [] [pos mpos]))))))
+  ([buf]
+    (buf-match-bracket buf (buf :pos))))

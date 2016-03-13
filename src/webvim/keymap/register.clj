@@ -1,6 +1,6 @@
 (ns webvim.keymap.register
   (:use clojure.pprint
-        webvim.keymap.action
+        webvim.keymap.compile
         webvim.keymap.linebuf.linebuf
         webvim.core.ui
         webvim.core.utils

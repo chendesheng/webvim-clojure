@@ -1,5 +1,8 @@
 (ns webvim.keymap.compile
-  (:require [webvim.core.utils :refer [nop tree-reduce]]))
+  (:require
+    [webvim.mode :refer [set-normal-mode]]
+    [webvim.core.utils :refer [nop tree-reduce]]
+    [webvim.core.event :refer [fire-event]]))
 
 (defn- save-key [buf keycode]
   (update-in buf [:keys] conj keycode))
@@ -67,4 +70,56 @@
         {}
         keymap))))
 
+(defn- fire-before-handle-key [buf keycode]
+  (fire-event :before-handle-key buf keycode)) 
+
+(defn- fire-after-handle-key [buf keycode]
+  (fire-event :after-handle-key buf keycode)) 
+
+(defn keycode-cancel [buf]
+  (-> buf
+      set-normal-mode
+      (dissoc :context :keys :line-buffer)
+      (assoc :visual {:type 0 :range [0 0]}
+             :message ""
+             :autocompl nil
+             :showkeys nil)))
+
+(defn apply-keycode [buf keycode]
+  (if (= keycode "<c-c>")
+    (keycode-cancel buf)
+    (let [keymap (compile-keymap (buf :keymap))
+          allkeycode (conj (buf :keys) keycode)
+          func (or (keymap (clojure.string/join allkeycode))
+                   (keymap (clojure.string/join (conj (buf :keys) ":else")))
+                   (if (-> buf :keys empty? not)
+                     (or
+                       (keymap (clojure.string/join (conj (pop (buf :keys)) ":else" keycode))) ;last :else can be map too
+                       (keymap (clojure.string/join (conj (pop (buf :keys)) ":else:else")))))
+                   nop)]
+      (-> buf
+          (fire-before-handle-key keycode)
+          (func keycode)
+          (fire-after-handle-key keycode)))))
+
+(defn apply-keycodes [buf keycodes]
+  (reduce apply-keycode buf keycodes))
+
+(defn replay-keys [buf keycodes]
+  (let [keys (buf :keys)] 
+    (-> buf
+        (dissoc :keys)
+        (apply-keycodes keycodes)
+        (assoc :keys keys))))
+
+(defn special-key? [key]
+  (contains? #{:enter :leave :before :after :else} key))
+
+(defn wrap-key [keymap key f]
+  (update keymap key (fn [handler]
+                       (f (or handler nop)))))
+
+(defn wrap-keycode [f]
+  (fn [buf keycode]
+    (f buf)))
 

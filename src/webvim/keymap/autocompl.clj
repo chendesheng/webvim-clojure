@@ -1,6 +1,7 @@
 (ns webvim.keymap.autocompl
+  (:require
+    [webvim.keymap.compile :refer [wrap-key]])
   (:use clojure.pprint
-        webvim.keymap.action
         webvim.core.buffer
         webvim.core.event
         webvim.core.rope

@@ -1,7 +1,7 @@
 (ns webvim.keymap.insert
   (:require [webvim.keymap.put :refer [wrap-keymap-put-insert]]
             [webvim.mode :refer [set-normal-mode temp-normal-mode normal-mode insert-mode]])
-  (:use webvim.keymap.action
+  (:use webvim.keymap.compile
         webvim.core.buffer
         webvim.core.event
         webvim.core.rope
@@ -78,4 +78,4 @@
         (fn [buf]
           (-> buf
               cancel-last-indents
-              update-x)))
+              (assoc :x (column buf)))))

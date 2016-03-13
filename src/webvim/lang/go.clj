@@ -12,7 +12,7 @@
         webvim.fuzzy
         webvim.exec
         webvim.autocompl
-        webvim.keymap.action
+        webvim.keymap.compile
         webvim.keymap.ex
         clojure.pprint
         webvim.indent))

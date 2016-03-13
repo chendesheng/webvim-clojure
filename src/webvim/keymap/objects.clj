@@ -86,6 +86,18 @@
       [(inc (or (first (pos-re- r (dec a) re)) -1)) b1]
       [a b1])))
 
+(defn current-word [buf]
+  (let [{pos :pos
+         r :str
+         lang :language} buf
+        {word-chars :word-chars
+         not-word-chars :not-word-chars} (word-re lang)
+        re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
+        re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
+        b (or (last (pos-re+ r pos re-end)) (count r))
+        a (or (last (pos-re- r (dec b) re-start)) 0)]
+    (subr r a b)))
+
 (defn current-word-range [buf around?]
   "return range of word under cursor, both sides are inclusive"
   (let [{pos :pos

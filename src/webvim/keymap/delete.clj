@@ -3,7 +3,7 @@
     [webvim.core.utils :refer [nop]]
     [webvim.core.rope :refer [buf-set-pos buf-delete]]
     [webvim.core.line :refer [line-end line-start]]
-    [webvim.keymap.action :refer [wrap-keycode]]
+    [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.visual :refer [visual-range visual-line visual-block]]
     [webvim.keymap.operator :refer [buf-yank setup-range-line-end setup-range-line setup-range inclusive? visual-block-delete delete-char range-prefix]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]))
