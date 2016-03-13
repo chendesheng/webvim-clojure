@@ -1,10 +1,9 @@
 (ns webvim.keymap.yank
   (:require
-    [webvim.visual :refer [visual-block-lines]]
     [webvim.core.utils :refer [nop]]
     [webvim.core.rope :refer [buf-set-pos]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
-    [webvim.keymap.operator :refer [yank-range yank-blockwise setup-range-line setup-range inclusive?]]))
+    [webvim.keymap.operator :refer [visual-block-lines yank-range yank-blockwise setup-range-line setup-range inclusive?]]))
 
 (defn- visual-block-yank [buf]
   (let [items (visual-block-lines buf)

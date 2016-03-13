@@ -6,7 +6,7 @@
             [webvim.keymap.yank :refer [wrap-keymap-yank-visual]]
             [webvim.keymap.delete :refer [wrap-keymap-delete-visual]]
             [webvim.keymap.change :refer [wrap-keymap-change-visual]]
-            [webvim.visual :refer [set-visual-ranges set-visual-mode]]
+            [webvim.keymap.operator :refer [set-visual-ranges]]
             [webvim.keymap.motion :refer [init-motion-keymap-with-objects]]
             [webvim.keymap.scrolling :refer [wrap-keymap-scrolling-visual]])
   (:use webvim.keymap.insert
@@ -81,6 +81,11 @@
             (contains? #{"j" "k" "<c-d>" "<c-u>"} keycode))
       buf
       (assoc buf :x (column buf)))))
+
+(defn- set-visual-mode [buf visual]
+  (-> buf
+      (assoc :visual visual)
+      set-visual-ranges))
 
 (defn- init-visual-mode-keymap [motion-keymap buf]
   (deep-merge 

@@ -2,11 +2,10 @@
   (:require 
     [clojure.string :as str]
     [webvim.mode :refer [set-insert-mode]]
-    [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete]]
-    [webvim.core.line :refer [pos-line pos-line-last pos-line-end make-linewise-range]]
-    [webvim.visual :refer [visual-block-lines]]
+    [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete subr]]
+    [webvim.core.line :refer [make-linewise-range expand-block-ranges pos-line-last pos-line pos-line-end]]
     [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
-    [webvim.core.utils :refer [make-range]]))
+    [webvim.core.utils :refer [make-range sort2]]))
 
 (defn setup-range [buf]
   (println "setup-range:" (-> buf :context :range))
@@ -41,7 +40,6 @@
     (-> buf :context :range nil? not)
     (-> buf :context :range (make-range inclusive?))
     :else (throw (Exception. "no range prefix exist"))))
-
 
 (defn wrap-operator [f]
   (fn [buf keycode]
@@ -80,6 +78,23 @@
         [(shift-delete a1 a b)
          (shift-delete b1 a b)])
       ranges) ranges))
+
+(defn set-visual-ranges [{{tp :type rg :range} :visual :as buf}]
+  ;(println "set-visual-ranges:" tp rg)
+  (assoc-in buf [:visual :ranges]
+            (condp = tp
+              :visual-range (list (sort2 rg))
+              :visual-line (list (make-linewise-range rg buf))
+              :visual-block (into '() (expand-block-ranges (buf :str) rg (buf :tabsize)))
+              nil)))
+
+(defn visual-block-lines [buf]
+  (let [buf (-> buf
+                set-visual-ranges)]
+    (reduce (fn [items [a b]]
+              (let [eol (dec (pos-line-last (buf :str) a))
+                    b (min eol (inc b))]
+                (conj items [(-> buf :str (subr a b)) a b]))) [] (-> buf :visual :ranges))))
 
 (defn visual-block-delete [buf]
   (let [items (visual-block-lines buf)
