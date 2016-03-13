@@ -6,6 +6,7 @@
             [webvim.keymap.addsub :refer [wrap-keymap-addsub]]
             [webvim.keymap.yank :refer [wrap-keymap-yank]]
             [webvim.keymap.delete :refer [wrap-keymap-delete]]
+            [webvim.keymap.join :refer [wrap-keymap-join]]
             [webvim.keymap.replace :refer [wrap-keymap-replace]])
   (:use clojure.pprint
         webvim.keymap.action
@@ -59,19 +60,6 @@
         (-> buf
             (buf-set-pos (- a 1))
             (buf-insert <br>))))))
-
-(defn- join-line
-  "join current line and next line"
-  [buf keycode]
-  (let [pos (buf :pos)
-        r (buf :str)
-        [a b] (pos-re+ r pos #"\r?\n.*?(?=(\r|\n|\S))")]
-    (if (nil? a) buf
-        (let [sep (if (or (>= b (count r))
-                          (= (char-at r b) \))) "" " ")]
-          (-> buf
-              (buf-replace a b sep)
-              (buf-set-pos a))))))
 
 (defn- pos-info [buf]
   (let [{y :y
@@ -249,7 +237,6 @@
                ;(println "append?" append?)
                    (put-from-register buf (-> buf :context :register) append?)))
            "P" (wrap-keycode #(put-from-register % (-> % :context :register) false))
-           "J" join-line
            "<c-s-6>" (fn [buf keycode]
                        (let [reg (registers-get "#")]
                          (if (nil? reg)
@@ -268,5 +255,6 @@
         wrap-keymap-scrolling
         wrap-keymap-yank
         wrap-keymap-delete
+        wrap-keymap-join
         wrap-keymap-case)))
 
