@@ -3,8 +3,7 @@
             [webvim.core.rope :refer [buf-set-pos buf-replace subr re-test]]
             [webvim.core.line :refer [line-start line-end pos-line]]
             [webvim.core.pos :refer [char- pos-re-seq+]]
-            [webvim.core.utils :refer [repeat-chars]]
-            [webvim.core.event :refer [listen]]))
+            [webvim.core.utils :refer [repeat-chars]]))
 
 (defn- padding-zeroes [news olds]
   (let [nega? (.startsWith olds "-")
@@ -50,9 +49,8 @@
               (buf-replace a b news)
               char-))))))
 
-(listen :normal-mode-keymap
-        (fn [keymap _]
-          (println "addsub normal-mode-keymap")
-          (assoc keymap
-                 "<c-a>" (inc-dec-number +)
-                 "<c-x>" (inc-dec-number -))))
+(defn wrap-keymap-addsub [keymap]
+  (println "addsub normal-mode-keymap")
+  (assoc keymap
+         "<c-a>" (inc-dec-number +)
+         "<c-x>" (inc-dec-number -)))

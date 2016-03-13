@@ -185,31 +185,6 @@
         (re-forward-highlight re)
         (highlight-all-matches re))))
 
-(defn- round-to-zero
-  "(round-to-zero -9.1) = -9; (round-to-zero 9.1) = 9"
-  [i]
-  (if (> i 0)
-    (int i)
-    (- (int (- i)))))
-
-(defn- negzero [n]
-  (if (neg? n) 0 n))
-
-(defn- cursor-move-viewport
-  "Jump cursor by viewport height, deps to window's :viewport"
-  [factor]
-  (fn [buf keycode]
-    (let [h (-> @ui-agent :viewport :h)
-          d (round-to-zero (* h factor))
-          scroll-top (buf :scroll-top)
-          row (-> buf :y)
-          vrow (- row scroll-top)
-          newrow (bound-range (+ row d) 0 (buf :linescnt))
-          newst (-> newrow (- vrow) negzero)]
-      (-> buf
-          (assoc :scroll-top newst)
-          (lines-row newrow)))))
-
 ;TODO: only highlight diff parts
 ;(defonce listen-change-buffer
 ;  (fn [newt oldt c]
@@ -300,9 +275,7 @@
    "N" repeat-search-
    "}" paragraph+
    "{" paragraph-
-   "%" move-to-matched-brackets
-   "<c-u>" (cursor-move-viewport -0.5) 
-   "<c-d>" (cursor-move-viewport 0.5)})
+   "%" move-to-matched-brackets})
 
 (defn- dont-cross-line [f]
   (fn [buf keycode]

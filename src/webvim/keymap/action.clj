@@ -1,7 +1,8 @@
 ;common actions
 (ns webvim.keymap.action
   (:require [me.raynes.fs :as fs]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [webvim.scrolling :refer [cursor-center-viewport]])
   (:use webvim.core.buffer
         webvim.core.rope
         webvim.core.line
@@ -345,11 +346,6 @@
     buf
     (-> buf :str count)
     (apply str strs)))
-
-(defn cursor-center-viewport [buf]
-  (assoc buf :scroll-top
-         (-> buf :y
-             (- (int (/ (-> @ui-agent :viewport :h) 2))))))
 
 (defn append-panel [buf apanel s goto?]
   (send apanel

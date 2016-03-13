@@ -2,7 +2,8 @@
   (:require [clojure.string :as string]
             [webvim.keymap.indent :refer [wrap-keymap-indent-visual]]
             [webvim.keymap.case :refer [wrap-keymap-case-visual]]
-            [webvim.keymap.replace :refer [wrap-keymap-replace-visual]])
+            [webvim.keymap.replace :refer [wrap-keymap-replace-visual]]
+            [webvim.keymap.scrolling :refer [wrap-keymap-scrolling-visual]])
   (:use webvim.keymap.action
         webvim.keymap.insert
         webvim.keymap.ex
@@ -286,17 +287,17 @@
      :leave (fn [buf keycode] (clear-visual buf))
      :continue visual-mode-continue?
      :before (fn [buf keycode] 
-               (-> buf
-                   (assoc-in [:context :last-visual-type]
-                             (-> buf :visual :type))
-                   (assoc-in [:context :cancel-visual-mode?] false)
-                   (assoc-in [:context :range] nil)))
+               (update-in buf [:context]
+                          (fn [context]
+                            (-> context
+                                (assoc :last-visual-type (-> buf :visual :type)
+                                       :cancel-visual-mode? false)
+                                (dissoc :range)))))
      :after (fn [buf keycode]
               (-> buf
                   visual-select
                   set-visual-ranges
                   (update-x-if-not-jk keycode)))
-     "z" {"z" (wrap-keycode cursor-center-viewport)}
      "o" swap-visual-start-end
      "<c-i>" nop
      "<c-o>" nop
@@ -322,6 +323,7 @@
                   (init-visual-mode-keymap buf)
                   wrap-keymap-indent-visual
                   wrap-keymap-replace-visual
+                  wrap-keymap-scrolling-visual
                   wrap-keymap-case-visual) buf))
 
 ;keep track visual ranges when buffer changed

@@ -1,16 +1,17 @@
 (ns webvim.keymap.normal
-  (:require [clojure.string :as string])
+  (:require [clojure.string :as string]
+            [webvim.keymap.scrolling :refer [wrap-keymap-scrolling]]
+            [webvim.keymap.indent :refer [wrap-keymap-indent]]
+            [webvim.keymap.case :refer [wrap-keymap-case]]
+            [webvim.keymap.addsub :refer [wrap-keymap-addsub]]
+            [webvim.keymap.replace :refer [wrap-keymap-replace]])
   (:use clojure.pprint
         webvim.keymap.action
         webvim.keymap.macro
         webvim.keymap.motion
         webvim.keymap.insert
-        webvim.keymap.addsub
         webvim.keymap.ex
         webvim.keymap.visual
-        webvim.keymap.indent
-        webvim.keymap.case
-        webvim.keymap.replace
         webvim.core.buffer
         webvim.core.rope
         webvim.core.line
@@ -257,7 +258,6 @@
            "v" visual-mode-keymap
            "V" visual-mode-keymap
            "<c-v>" visual-mode-keymap
-           "z" {"z" (wrap-keycode cursor-center-viewport)}
            "d" (merge
                  motion-keymap-fix-w
                  {"d" nop
@@ -300,7 +300,9 @@
                          (assoc-in [:context :lastbuf] buf)
                          (assoc-in [:context :range] nil)))
            :after normal-mode-after})
+        wrap-keymap-addsub
         wrap-keymap-indent
         wrap-keymap-replace
+        wrap-keymap-scrolling
         wrap-keymap-case)))
 
