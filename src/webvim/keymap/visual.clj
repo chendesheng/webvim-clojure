@@ -1,5 +1,5 @@
 (ns webvim.keymap.visual
-  (:require [clojure.string :as string]
+  (:require [clojure.string :as str]
             [webvim.keymap.indent :refer [wrap-keymap-indent-visual]]
             [webvim.keymap.case :refer [wrap-keymap-case-visual]]
             [webvim.keymap.replace :refer [wrap-keymap-replace-visual]]
@@ -206,7 +206,7 @@
       ranges) ranges))
 
 (defn- yank-blockwise [buf items]
-  (registers-put! (buf :register) {:str (string/join <br> (map first items)) :blockwise? true}))
+  (registers-put! (buf :register) {:str (str/join <br> (map first items)) :blockwise? true}))
 
 (defn- visual-block-delete [buf]
   (let [items (visual-block-lines buf)

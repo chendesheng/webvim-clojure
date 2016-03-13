@@ -7,6 +7,7 @@
             [webvim.keymap.yank :refer [wrap-keymap-yank]]
             [webvim.keymap.delete :refer [wrap-keymap-delete]]
             [webvim.keymap.join :refer [wrap-keymap-join]]
+            [webvim.keymap.put :refer [wrap-keymap-put]]
             [webvim.keymap.replace :refer [wrap-keymap-replace]])
   (:use clojure.pprint
         webvim.keymap.action
@@ -229,13 +230,6 @@
                              buf
                              ((start-insert-mode-with-keycode nop change-by-motion) buf keycode)))})
            "C" (start-insert-mode identity change-to-line-end)
-           "p" (fn [buf keycode]
-                 (let [append? (if (-> buf :context :register registers-get :linewise?)
-                                 true 
-                                 (not= (char-at (buf :str) (buf :pos)) \newline))]
-               ;(println "append?" append?)
-                   (put-from-register buf (-> buf :context :register) append?)))
-           "P" (wrap-keycode #(put-from-register % (-> % :context :register) false))
            "<c-s-6>" (fn [buf keycode]
                        (let [reg (registers-get "#")]
                          (if (nil? reg)
@@ -255,5 +249,6 @@
         wrap-keymap-yank
         wrap-keymap-delete
         wrap-keymap-join
+        wrap-keymap-put
         wrap-keymap-case)))
 

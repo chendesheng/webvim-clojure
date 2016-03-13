@@ -143,46 +143,6 @@
   (let [[a b] (range-prefix buf inclusive?)]
     (buf-yank buf a b linewise?)))
 
-(defn- put-blockwise [buf s append?]
-  (let [{r :str pos :pos tabsize :tabsize} buf
-        lines (string/split-lines s)
-        h (count lines)
-        newpos (if append? (-> lines first count (+ pos)) pos)
-        buf (reduce (fn [buf [pos r]]
-                      (if (neg? pos) buf
-                          (buf-insert buf pos r)))
-                    buf
-                    (reverse (map
-                               vector
-                               (vertical-line-pos r (if append? (inc pos) pos) h tabsize true)
-                               lines)))]
-    (buf-set-pos buf newpos)))
-
-(defn- put-linewise [buf s append?]
-  (let [{r :str pos :pos} buf
-        newpos (if append?
-                 (pos-line-last r pos)
-                 (pos-line-first r pos))]
-    (-> buf
-        (buf-insert newpos s)
-        (buf-set-pos newpos)
-        line-start)))
-
-(defn put-from-register [buf reg append?]
-  (let [{s :str res :result linewise? :linewise? blockwise? :blockwise?} (registers-get reg)]
-    (cond
-      linewise?
-      (put-linewise buf s append?)
-      blockwise?
-      (put-blockwise buf s append?)
-      :else
-      (let [pos (if append? (inc (buf :pos)) (buf :pos))
-            s (if (= reg "=") res s) 
-            newpos (-> pos (+ (count s)) dec)]
-        (-> buf
-            (buf-insert pos s)
-            (buf-set-pos newpos))))))
-
 (defn keycode-cancel [buf]
   (-> buf
       set-normal-mode

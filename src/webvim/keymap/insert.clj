@@ -1,4 +1,5 @@
 (ns webvim.keymap.insert
+  (:require [webvim.keymap.put :refer [wrap-keymap-put-insert]])
   (:use webvim.keymap.action
         webvim.core.buffer
         webvim.core.event
@@ -58,26 +59,20 @@
                              :submode 0)))))
 
 (defn init-insert-mode-keymap [normal-mode-keymap buf]
-  {"<c-r>" {"<esc>" nop
-            :else (fn [buf keycode]
-                    (-> buf
-                        (put-from-register keycode false)
-                        char+))}
-   "<esc>" nop
-   "<c-o>" (fire-event
-             :temp-normal-mode-keymap
-             (temp-normal-mode-keymap normal-mode-keymap)             
-             buf)
-   :else insert-mode-default 
-   :continue #(not (= "<esc>" %2))
-   :leave (fn [buf keycode]
-            (-> buf
-                ;cancel-last-indents
-                char-
-                ;update-x
-                ;normal-mode-fix-pos
-                set-normal-mode
-                save-undo))})
+  (let [keymap {"<esc>" nop
+                "<c-o>" (fire-event
+                          :temp-normal-mode-keymap
+                          (temp-normal-mode-keymap normal-mode-keymap)             
+                          buf)
+                :else insert-mode-default 
+                :continue #(not (= "<esc>" %2))
+                :leave (fn [buf keycode]
+                         (-> buf
+                             char-
+                             set-normal-mode
+                             save-undo))}]
+    (-> keymap
+        wrap-keymap-put-insert)))
 
 (listen :before-change-to-normal-mode
         (fn [buf]
