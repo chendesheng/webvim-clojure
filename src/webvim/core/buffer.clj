@@ -156,7 +156,8 @@
                                 (inc y) linescnt percent (inc x)))))
 
 
-(defn- dirty? [buf]
+;FIXME: make :dirty correct
+(defn dirty? [buf]
   (not (and 
          (-> buf :pending-undo empty?)
          (identical? (-> buf :history just-now) (-> buf :save-point first))
@@ -187,7 +188,7 @@
 ;TODO check disk file change
 (defn write-buffer
   [buf]
-  (try 
+  (try   
     (if (dirty? buf)
       (if (not= (buf :mod-time) (mod-time buf))
         (assoc buf :message "Error: The file has been changed since reading it.")
