@@ -174,13 +174,18 @@
     (catch Exception e
       (assoc buf :message (str e)))))
 
+(defn cmd-eval-shortcut [buf execmd [code]]
+  ;(println "cmd-eval-shortcut" execmd)
+  ;(println "cmd-eval-shortcut" code)
+  (cmd-eval buf "eval" code))
+
 (defn cmd-grep [buf execmd args]
   (exec-shell-commands buf (grep-panel) ["grep" "-rnI" args "."]))
 
 (defn cmd-find [buf execmd args]
   (exec-shell-commands buf (find-panel) ["find" "." "-name" args "-not" "-path" "*/.*"]))
 
-(defn cmd-move-to-line [buf row _]
+(defn cmd-move-to-line [buf cmd [row]]
 ;(println "row:" row)
   (jump-push buf)
   (let [row (bound-range (dec (Integer. row)) 0 (-> buf :linescnt dec))]
@@ -244,7 +249,7 @@
         (edit-file buf file true))
       (edit-file buf file (parse-int linenum) true))))
 
-(def ^:private commands-history (atom (parallel-universe)))
+(defonce ^:private commands-history (atom (parallel-universe)))
 
 (defn cmd-history [buf _ _]
   (let [{before :before after :after} @commands-history
@@ -277,6 +282,7 @@
                 (@jump-list :before))) "\n")
     true))
 
+;TODO: ex command parser
 (defn- ex-commands [buf]
   (let [cmds 
         [["write" cmd-write]
@@ -293,30 +299,33 @@
          ["register" cmd-register]
          ["jumps" cmd-jumps]
          ["cd" cmd-cd]
-         [#"^(\d+)$" cmd-move-to-line]
+         [#"^\d+$" cmd-move-to-line]
+         [#"^\(.*$" cmd-eval-shortcut]
          ["ls" cmd-ls]
          ["diff" cmd-diff]]]
     (fire-event :init-ex-commands cmds buf)))
 
 (defn- execute [buf cmds]
-  (let [[_ excmd args] (re-find #"^\s*([^\s]+)\s*(.*)\s*$"
-                                (-> buf :line-buffer :str str))]
+  (let [r (-> buf :line-buffer :str str)
+        [_ excmd args] (re-find #"^\s*([^\s]+)\s*(.*)\s*$" r)]
     (if (nil? excmd)
       buf
-      (let [handlers (filter fn?
+      (let [handlers (filter seq?
                              (map (fn [[cmd handler]]
                                     ;(println cmd)
                                     (if (string? cmd)
-                                      (if (zero? (.indexOf cmd excmd)) handler nil)
-                                      (let [m (re-find cmd excmd)]
-                                        (if (not (nil? m)) handler nil)))) cmds))]
-        ;(println excmd args)
+                                      (if (zero? (.indexOf cmd excmd)) (list handler cmd args))
+                                      (let [m (re-seq cmd r)]
+                                        (if (not (nil? m)) (list handler cmd m))))) cmds))]
+        ;(println "handlers:")
+        ;(pprint handlers)
         (if (>= (count handlers) 1)
-          (let [buf ((first handlers) buf excmd args)]
-            (registers-put! ":" {:str (-> buf :line-buffer :str str)})
+          (let [[[handler cmd args]] handlers
+                buf (handler buf cmd args)]
+            (registers-put! ":" {:str r})
             buf)
           (-> buf
-              (assoc :message "unknown command")
+              (assoc :message "!!!unknown command!!!")
               (dissoc :line-buffer)))))))
 
 (defn- ex-tab-complete [{{r :str} :line-buffer :as buf} cmds]
