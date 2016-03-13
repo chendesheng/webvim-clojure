@@ -8,6 +8,7 @@
             [webvim.keymap.delete :refer [wrap-keymap-delete]]
             [webvim.keymap.join :refer [wrap-keymap-join]]
             [webvim.keymap.put :refer [wrap-keymap-put]]
+            [webvim.keymap.jump :refer [wrap-keymap-jump]]
             [webvim.keymap.replace :refer [wrap-keymap-replace]])
   (:use clojure.pprint
         webvim.keymap.action
@@ -139,50 +140,6 @@
       setup-range
       (change-range (inclusive? keycode) false)))
 
-(defn- path-under-cursor [buf]
-  (let [r (buf :str)
-        pos (buf :pos)
-        filename-black-list "\\s:?%*|\"'<>"
-        re-end (re-pattern (str "(?m)[^" filename-black-list "](:\\d+)?(?=[" filename-black-list "]|$)"))
-        re-start (re-pattern (str "(?m)(?<=[" filename-black-list "]|^)[^" filename-black-list "]"))
-        [_ end] (pos-re+ r pos re-end)
-        [start _] (pos-re- r pos re-start)
-        driver (let [driver (subr r (- start 2) start)]
-                 (if (re-test #"[a-zA-Z]:" driver) driver ""))
-        [[_ uri _ linenum]] (re-seq #"(([a-zA-Z]:)?[^:]+)(:\d+)?" (str driver (subr r start end)))]
-    [uri linenum]))
-
-(defn goto-file [buf]
-  (let [[uri linenum] (path-under-cursor buf)]
-    (if (nil? linenum)
-      (edit-file buf uri false)
-      (edit-file buf uri (parse-int linenum) false))))
-
-(defn- move-to-jumplist
-  [fndir]
-  (fn [buf keycode]
-    (loop [pos (fndir buf)]  ;TODO: filter lazy seq instead of loop
-      (if (nil? pos)
-        buf ;newest or oldest
-        (let [anewbuf (@buffer-list (pos :id))]
-          (if (nil? anewbuf)
-            ;buffer has been deleted, ignore
-            (recur (fndir buf))
-            ;pos is avaliable
-            (if (< (pos :pos) (count (@anewbuf :str)))
-              (let [id (buf :id)
-                    newid (pos :id)
-                    newpos (pos :pos)]
-                (if (= newid id)
-                  ;update pos inside current buffer
-                  (buf-set-pos buf newpos)
-                  (let []
-                    (change-active-buffer id newid)
-                    ;(swap! buffer-list update-in [newid] #(buf-set-pos % newpos))
-                    (assoc buf :nextid newid))))
-              ;buffer has been modifed and cursor is no longer inside, ignore
-              (recur (fndir buf)))))))))
-
 (defn init-normal-mode-keymap [buf]
   (let [motion-keymap (init-motion-keymap)
         visual-mode-keymap (init-visual-mode-keymap-with-operators
@@ -202,11 +159,8 @@
            ":" start-ex-mode
            "u" (wrap-keycode undo)
            "<c-r>" (wrap-keycode redo)
-           "<c-o>" (move-to-jumplist jump-prev)
-           "<c-i>" (move-to-jumplist jump-next)
            "<c-g>" (wrap-keycode pos-info)
            "<esc>" (wrap-keycode set-normal-mode)
-           "<f1>" (wrap-keycode #(goto-buf % (output-panel false)))
            "g" {"v" (assoc
                       visual-mode-keymap
                       :enter
@@ -214,8 +168,7 @@
                         (let [visual (buf :last-visual)]
                           (-> buf
                               (set-visual-mode visual)
-                              (buf-set-pos (-> visual :range first))))))
-                "f" (wrap-keycode goto-file)}
+                              (buf-set-pos (-> visual :range first))))))}
            "v" visual-mode-keymap
            "V" visual-mode-keymap
            "<c-v>" visual-mode-keymap
@@ -230,11 +183,6 @@
                              buf
                              ((start-insert-mode-with-keycode nop change-by-motion) buf keycode)))})
            "C" (start-insert-mode identity change-to-line-end)
-           "<c-s-6>" (fn [buf keycode]
-                       (let [reg (registers-get "#")]
-                         (if (nil? reg)
-                           (assoc buf :message "No alternative file")
-                           (goto-buf buf (get-buffer-from-reg reg)))))
            :continue (fn [buf keycode]
                        (= (buf :mode) normal-mode))
            :before (fn [buf keycode]
@@ -250,5 +198,6 @@
         wrap-keymap-delete
         wrap-keymap-join
         wrap-keymap-put
+        wrap-keymap-jump
         wrap-keymap-case)))
 

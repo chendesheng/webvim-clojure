@@ -1,7 +1,8 @@
 (ns webvim.core.buffer
   (:require [me.raynes.fs :as fs]
             [clojure.core.async :as async]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [webvim.core.register :refer [registers-put!]])
   (:use clojure.pprint
         (clojure [string :only (join split blank? lower-case)])
         webvim.core.rope
@@ -130,14 +131,14 @@
 
 (defn new-file 
   ([^String f]
-   (-> f
-       open-file
-       buffer-list-save!))
+    (-> f
+        open-file
+        buffer-list-save!))
   ([^String f y]
-   (-> f
-       open-file
-       (lines-row y)
-       buffer-list-save!)))
+    (-> f
+        open-file
+        (lines-row y)
+        buffer-list-save!)))
 
 (defn printable-filepath [buf]
   (let [{nm :name
@@ -185,3 +186,18 @@
       (.printStackTrace e)
       (let [err (str "caught exception: " (.getMessage e))]
         (assoc buf :message err)))))
+
+(defn file-register [buf]
+  {:id (buf :id) :str (or (buf :filepath) (buf :name))})
+
+(defn change-active-buffer [id nextid]
+  (let [path-name #(or (% :filepath) (% :name))]
+    (if (not= id nextid)
+      (do
+        (registers-put! "#" 
+                        (file-register
+                          (-> @buffer-list (get id) deref)))
+        (registers-put! "%"
+                        (file-register
+                          (-> @buffer-list (get nextid) deref)))))))
+

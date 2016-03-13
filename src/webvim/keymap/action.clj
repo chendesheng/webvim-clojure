@@ -30,9 +30,6 @@
 (def visual-line 2)
 (def visual-block 3)
 
-(defn file-register [buf]
-  {:id (buf :id) :str (or (buf :filepath) (buf :name))})
-
 (defn- add-highlight [buf rg]
   (let [highlights (buf :highlights)]
     (if (empty? (filter (fn [[a b]]
@@ -90,17 +87,6 @@
       (update-in buf [:context] dissoc :register)))
   ([buf a b linewise?]
     (buf-yank buf a b linewise? false)))
-
-(defn change-active-buffer [id nextid]
-  (let [path-name #(or (% :filepath) (% :name))]
-    (if (not= id nextid)
-      (do
-        (registers-put! "#" 
-                        (file-register
-                          (-> @buffer-list (get id) deref)))
-        (registers-put! "%"
-                        (file-register
-                          (-> @buffer-list (get nextid) deref)))))))
 
 ;collect range argument, TODO: add linewise
 (defn range-prefix [{{tp :type rg :range} :visual :as buf} inclusive?]
