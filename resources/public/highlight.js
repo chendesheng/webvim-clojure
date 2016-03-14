@@ -238,6 +238,10 @@ function hlcompile(language) {
         mode.lexemesRe = langRe(mode.lexemes || /\b\w+\b/, true);
 
         if (parent) {
+            if (!mode.className) {
+                mode.className = parent.className;
+            }
+
             if (mode.beginKeywords) {
                 mode.begin = '\\b(' + mode.beginKeywords.split(' ').join('|') + ')\\b';
             }
