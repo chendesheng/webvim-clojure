@@ -18,13 +18,20 @@
 
 (println "load clojure language")
 
-(defmethod init-file-type ".clj"
-  [buf]
+(defn- init-clojure-file-type [buf]
   (-> buf
       (assoc-in [:language :id] ::clojure)
       (assoc-in [:language :name] "Clojure")
       (assoc :tabsize 2)
       (assoc :expandtab true)))
+
+(defmethod init-file-type ".clj"
+  [buf]
+  (init-clojure-file-type buf))
+
+(defmethod init-file-type ".edn"
+  [buf]
+  (init-clojure-file-type buf))
 
 (defmethod word-re ::clojure [lang]
   (let [word-chars "a-zA-Z_\\-!.?+*=<>&#\\':0-9/"
