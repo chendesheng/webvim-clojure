@@ -3,9 +3,10 @@
   (:require
     [me.raynes.fs :as fs]
     [clojure.string :as str]
-    [webvim.core.buffer :refer [buffer-list open-file buffer-list-save! 
+    [webvim.core.buffer :refer [buffer-list update-buffer
                                 output-panel-name grep-panel-name find-panel-name 
-                                directory-panel-name change-active-buffer new-file]]
+                                directory-panel-name change-active-buffer new-file
+                                get-buffers]]
     [webvim.core.rope :refer [buf-insert buf-set-pos save-undo buf-replace subr]]
     [webvim.core.line :refer [line-start pos-line-first lines-row move-to-line column]]
     [webvim.core.pos :refer [buf-end buf-start]]
@@ -27,8 +28,7 @@
               (if (= (@abuf :name) name) abuf nil))
             @buffer-list)
       (if create?
-        (-> (open-file name)
-            buffer-list-save!))))
+        (new-file name))))
 
 (defn output-panel
   ([create?]
@@ -68,12 +68,12 @@
                         (map (fn [f] (-> f str shorten-path))
                              (cons (fs/parent path) (fs/list-dir path))))]
     @(send abuf
-          (fn [buf]
-            (-> buf
-                (buf-replace 0 (-> buf :str count) (str files "\n"))
-                buf-start
-                save-undo
-                send-buf!)))))
+           (fn [buf]
+             (-> buf
+                 (buf-replace 0 (-> buf :str count) (str files "\n"))
+                 buf-start
+                 save-undo
+                 send-buf!)))))
 
 (defn- update-x [buf]
   (assoc buf :x (column buf)))
@@ -84,7 +84,7 @@
       buf
       (let [buf-exists (some #(if (and (-> % :filepath nil? not)
                                        (path= file (% :filepath))) %)
-                             (->> @buffer-list vals (map deref)))
+                             (get-buffers))
             file (str (fs/expand-home file))
             newbuf (if (nil? buf-exists)
                      (if (or new-file? (fs/exists? file))
@@ -107,8 +107,10 @@
                 jump-push
                 (move-to-line (dec row))
                 update-x))
-        (let [anextbuf (@buffer-list nextid)]
-          (send anextbuf (fn [buf row]
+        (do
+          (println "goto row:" row)
+          (update-buffer nextid
+                         (fn [buf row]
                            (if (<= row 0) buf
                                (-> buf
                                    (move-to-line row)

@@ -53,10 +53,9 @@
       (assoc-in [:line-buffer :pos] (count s))))
 
 (defn- find-buffer [buffers f]
-  (reduce-kv
-    (fn [matches _ abuf]
-      (let [buf @abuf
-            indexes (fuzzy-match (buf :name) f)]
+  (reduce
+    (fn [matches buf]
+      (let [indexes (fuzzy-match (buf :name) f)]
         (if (empty? indexes)
           matches
           (conj matches buf))))
@@ -89,7 +88,7 @@
       (write-buffer buf))))
 
 (defn cmd-buffer [buf execmd file]
-  (let [matches (find-buffer @buffer-list file)
+  (let [matches (find-buffer (get-buffers) file)
         cnt (count matches)
         equals (filter #(= (% :name) file) matches)]
     (cond
@@ -101,9 +100,9 @@
             (jump-push buf)
             (change-active-buffer id nextid)))
         (assoc buf :nextid nextid))
-      (= 0 (count matches))
+      (= 0 cnt)
       (assoc buf :message "No file match")
-      (= 1 (count matches))
+      (= 1 cnt)
       (let [id (buf :id)
             nextid (-> matches first :id)]
         (if (not= id nextid)
@@ -111,7 +110,7 @@
             (jump-push buf)
             (change-active-buffer id nextid)))
         (assoc buf :nextid nextid))
-      (> (count matches) 1)
+      (> cnt 1)
       ;display matched buffers at most 5 buffers
       (assoc buf :message (str "which one? " (string/join ", " (map :name (take 5 matches))))))))
 

@@ -60,8 +60,8 @@
                             (send ui-agent
                                   (fn [ui]
                                     (update-in ui [:buf] dissoc :showkeys)))
-                            (send (@buffer-list (buf :id))
-                                  (fn [buf]
-                                    (dissoc buf :showkeys)))
+                            (update-buffer (buf :id) 
+                                           (fn [buf]
+                                             (dissoc buf :showkeys)))
                             (update-in buf [:showkeys] conj nil))))))))))
 
