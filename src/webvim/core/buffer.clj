@@ -217,6 +217,15 @@
                         (file-register
                           (-> @buffer-list (get nextid) deref)))))))
 
+(defn get-buffers []
+  (map deref (vals @buffer-list)))
+
+(defn get-buffer-by-filepath [filepath]
+  (first (filter
+           (fn [buf]
+             (= (buf :filepath) filepath)) (get-buffers))))
+
+
 (defmacro async [buf & body]
   `(let [abuf# (@buffer-list (~buf :id))]
      (-> abuf#

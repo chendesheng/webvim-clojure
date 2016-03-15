@@ -1,6 +1,8 @@
 (ns webvim.persistent
   (:require [webvim.core.event :refer [listen]]
-            [webvim.core.buffer :refer [buffer-list new-file]]
+            [webvim.core.ui :refer [ui-agent send-buf!]]
+            [webvim.core.register :refer [registers-put!]]
+            [webvim.core.buffer :refer [new-file get-buffers get-buffer-by-filepath buffer-list]]
             [me.raynes.fs :as fs]))
 
 ;use agent to avoid race condition
@@ -12,16 +14,15 @@
 (defonce ^:private buffers-edn "buffers.edn")
 (defonce ^:private config-dir (fs/file (fs/home) ".webvim"))
 
-(defn- save-buffers! [buffers]
+(defn- save-buffers! [buffers active]
   (println "save-buffers!")
   (send save-buffer-agent
         (fn [_]
           (fs/mkdir config-dir)
           (spit (fs/file config-dir buffers-edn)
-                (prn-str (map (fn [buf]
-                                (select-keys buf [:filepath :y]))
-                              (filter #(-> % :filepath nil? not)
-                                      (map deref (vals buffers)))))))))
+                (prn-str {:buffers (map #(select-keys % [:filepath :y])
+                                        (filter #(-> % :filepath nil? not) buffers))
+                          :active (-> active :filepath)})))))
 
 (defn- read-buffers []
   (try
@@ -32,20 +33,28 @@
       (print e))))
 
 (defn recover-buffers []
-  (doseq [{filepath :filepath
-           y :y} (read-buffers)]
-    (if (empty? (filter (fn [buf]
-                          (= (buf :filepath) filepath))
-                        (map deref (vals @buffer-list))))
-      (new-file filepath y))))
+  (let [{buffers :buffers active :active} (read-buffers)]
+    (doseq [{filepath :filepath y :y} buffers]
+      (if (nil? (get-buffer-by-filepath filepath))
+        (new-file filepath y)))
+    ;recover active buffer
+    (let [buf (get-buffer-by-filepath active)]
+      (if (-> buf nil? not)
+        (do
+          (registers-put! "%" {:str active :id (buf :id)})
+          (send-buf! buf))))))
 
-(listen :write-buffer (fn [buf]
-                        (save-buffers! @buffer-list)
-                        buf))
+(listen :write-buffer
+        (fn [buf]
+          (save-buffers! (get-buffers) (@ui-agent :buf))
+          buf))
 
 (defn start-track []
+  (add-watch ui-agent :save-buffers
+             (fn [_ _ oldui newui]
+               (if (not= (-> oldui :buf :filepath) (-> newui :buf :filepath))
+                 (save-buffers! (get-buffers) (newui :buf)))))
   (add-watch buffer-list :save-buffers
-             (fn [key _ _ buffers]
-               (save-buffers! buffers)))) 
-
+             (fn [_ _ _ buffers]
+               (save-buffers! (map deref buffers) (@ui-agent :buf)))))
 
