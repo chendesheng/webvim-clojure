@@ -227,13 +227,12 @@
       (apply send abuf f args))))
 
 (defn change-active-buffer [id nextid]
-  (let [path-name #(or (% :filepath) (% :name))]
-    (if (not= id nextid)
-      (do
-        (registers-put! "#" 
-                        (file-register (get-buffer-by-id id)))
-        (registers-put! "%"
-                        (file-register (get-buffer-by-id nextid)))))))
+  (if (and (not (nil? nextid)) (not= id nextid))
+    (do
+      (registers-put! "#" 
+                      (file-register (get-buffer-by-id id)))
+      (registers-put! "%"
+                      (file-register (get-buffer-by-id nextid))))))
 
 (defmacro async [buf & body]
   `(let [abuf# (@buffer-list (~buf :id))]

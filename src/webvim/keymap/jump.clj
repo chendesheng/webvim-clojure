@@ -57,11 +57,11 @@
   (-> keymap
       (update-in ["g"] assoc "f" (wrap-keycode goto-file))
       (assoc
-        "<f1>" (wrap-keycode #(goto-buf % @(output-panel false)))
+        "<f1>" (wrap-keycode #(goto-buf % (@(output-panel false) :id)))
         "<c-s-6>" (fn [buf keycode]
                     (let [reg (registers-get "#")]
                       (if (nil? reg)
                         (assoc buf :message "No alternative file")
-                        (goto-buf buf (get-buffer-by-id (:id reg))))))
+                        (goto-buf buf (:id (get-buffer-by-id (:id reg)))))))
         "<c-o>" (move-to-jumplist jump-prev)
         "<c-i>" (move-to-jumplist jump-next))))

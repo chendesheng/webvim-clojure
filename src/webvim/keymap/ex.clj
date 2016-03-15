@@ -1,7 +1,7 @@
 (ns webvim.keymap.ex
   (:require [me.raynes.fs :as fs]
             [webvim.mode :refer [set-normal-mode]]
-            [webvim.panel :refer [append-panel append-output-panel grep-panel find-panel edit-file]]
+            [webvim.panel :refer [append-panel append-output-panel grep-panel find-panel edit-file goto-buf]]
             [clojure.string :as string])
   (:use clojure.pprint
         webvim.core.rope
@@ -61,10 +61,10 @@
           (conj matches buf))))
     [] buffers))
 
-(defn exec-shell-commands [buf panel cmds]
+(defn exec-shell-commands [buf apanel cmds]
   (exec-async cmds (fn [line]
-                     (append-panel buf panel line false)))
-  (append-panel buf panel (reduce (fn [s arg]
+                     (append-panel buf apanel line false)))
+  (append-panel buf apanel (reduce (fn [s arg]
                                     (str s
                                          " "
                                          (if (re-test #"\s" arg)
@@ -93,23 +93,11 @@
         equals (filter #(= (% :name) file) matches)]
     (cond
       (= (count equals) 1)
-      (let [id (buf :id)
-            nextid (-> equals first :id)]
-        (if (not= id nextid)
-          (let []
-            (jump-push buf)
-            (change-active-buffer id nextid)))
-        (assoc buf :nextid nextid))
+      (goto-buf buf (-> equals first :id))
       (= 0 cnt)
       (assoc buf :message "No file match")
       (= 1 cnt)
-      (let [id (buf :id)
-            nextid (-> matches first :id)]
-        (if (not= id nextid)
-          (let []
-            (jump-push buf)
-            (change-active-buffer id nextid)))
-        (assoc buf :nextid nextid))
+      (goto-buf buf (-> matches first :id))
       (> cnt 1)
       ;display matched buffers at most 5 buffers
       (assoc buf :message (str "which one? " (string/join ", " (map :name (take 5 matches))))))))
@@ -117,29 +105,26 @@
 (defn- get-buffers-id []
   (map :id (get-buffers)))
 
+(defn- empty-nil [f]
+  (fn [& args]
+    (if (empty? args)
+      nil
+      (apply f args))))
+
 (defn cmd-bnext [buf execmd args]
   (let [id (buf :id)
         nextid (or
                  ;get next id larger than current
-                 (->> (get-buffers-id) (filter #(> % id)) (apply min))
-                 (first (get-buffers-id)))]
-                 ;(println "nextid:" nextid)
-    (if (not (= nextid id))
-      (do
-        (change-active-buffer id nextid)
-        (jump-push buf)))
-    (assoc buf :nextid nextid)))
+                 (->> (get-buffers-id) (filter #(> % id)) (apply (empty-nil min)))
+                 (apply min (get-buffers-id)))]
+    (goto-buf buf nextid)))
 
 (defn cmd-bprev [buf execmd args]
   (let [id (buf :id)
         nextid (or
-                 (->> (get-buffers-id) (filter #(< % id)) (apply max))
-                 (first (get-buffers-id)))]
-    (if (not (= nextid id))
-      (do
-        (change-active-buffer id nextid)
-        (jump-push buf)))
-    (assoc buf :nextid nextid)))
+                 (->> (get-buffers-id) (filter #(< % id)) (apply (empty-nil max)))
+                 (apply max (get-buffers-id)))]
+    (goto-buf buf nextid)))
 
 (defn- get-buffer-from-reg [reg]
   (if (nil? reg) nil
