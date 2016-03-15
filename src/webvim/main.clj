@@ -126,17 +126,15 @@
           (if (= (buf :mode) :insert-mode)
             (buf-match-bracket buf (-> buf :pos dec))
             (buf-match-bracket buf)))
-        (if (nil? nextid) buf
-            (do
-              (let [anextbuf (@buffer-list nextid)]
-              ;(println "nextid" nextid)
-                (if-not (nil? anextbuf)
-                  (send anextbuf
-                        (fn [buf]
-                          (-> buf
-                              (fire-event :switch-buffer)
-                              send-buf!)))))
-              (dissoc buf :nextid))))
+        (if (nil? nextid)
+          buf
+          (do
+            (update-buffer nextid
+                           (fn [buf]
+                             (-> buf
+                                 (fire-event :switch-buffer)
+                                 send-buf!)))
+            (dissoc buf :nextid))))
       (catch Exception e
         (let [output (str e "\n"
                           "stack trace:\n\t"
@@ -163,7 +161,7 @@
                                   (assoc ui :ws ws)) ws))
    :on-text (fn [ws body]
               (let [[id keycode] (parse-input body)]
-                (send (@buffer-list id) change-buffer! (input-keys keycode))))})
+                (update-buffer id change-buffer! (input-keys keycode))))})
 
 (defn- write-client! [ui diff]
   (let [ws (ui :ws)]

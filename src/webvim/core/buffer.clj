@@ -206,16 +206,8 @@
 (defn file-register [buf]
   {:id (buf :id) :str (or (buf :filepath) (buf :name))})
 
-(defn change-active-buffer [id nextid]
-  (let [path-name #(or (% :filepath) (% :name))]
-    (if (not= id nextid)
-      (do
-        (registers-put! "#" 
-                        (file-register
-                          (-> @buffer-list (get id) deref)))
-        (registers-put! "%"
-                        (file-register
-                          (-> @buffer-list (get nextid) deref)))))))
+(defn get-buffer-by-id[id]
+  (-> @buffer-list (get id) deref))
 
 (defn get-buffers []
   (map deref (vals @buffer-list)))
@@ -225,6 +217,20 @@
            (fn [buf]
              (= (buf :filepath) filepath)) (get-buffers))))
 
+(defn update-buffer [id f & args]
+  (let [abuf (@buffer-list id)]
+    (if (nil? abuf)
+      nil
+      (apply send abuf f args))))
+
+(defn change-active-buffer [id nextid]
+  (let [path-name #(or (% :filepath) (% :name))]
+    (if (not= id nextid)
+      (do
+        (registers-put! "#" 
+                        (file-register (get-buffer-by-id id)))
+        (registers-put! "%"
+                        (file-register (get-buffer-by-id nextid)))))))
 
 (defmacro async [buf & body]
   `(let [abuf# (@buffer-list (~buf :id))]
