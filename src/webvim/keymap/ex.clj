@@ -208,10 +208,9 @@
                        (str ":ls\n"
                             (string/join 
                               "\n" 
-                              (map (fn [abuf]
-                                     (let [buf @abuf]
-                                       (str (buf :id) ":" " " (printable-filepath buf))))
-                                   (vals @buffer-list))) "\n") true))
+                              (map (fn [buf]
+                                     (format "%d: %s" (buf :id) (printable-filepath buf)))
+                                   (sort-by :id (get-buffers)))) "\n") true))
 
 (defn cmd-nohl [buf _ _] 
   (assoc buf :highlights []))
