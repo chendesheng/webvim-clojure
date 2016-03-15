@@ -150,7 +150,7 @@
         alternatebuf (some (fn [buf]
                              (if (not= (buf :id) nextid)
                                buf nil))
-                           (map deref (vals @buffer-list)))]
+                           (get-buffers))]
     (registers-put! "%" (file-register nextbuf))
     (if (nil? alternatebuf)
       (registers-put! "#" nil)

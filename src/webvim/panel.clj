@@ -54,28 +54,26 @@
   ([]
     (directory-panel true)))
 
-(defn goto-buf [buf anextbuf]
-  (if (nil? anextbuf) buf
-      (let [nextid (@anextbuf :id)
-            id (buf :id)]
-        (if (= nextid id)  buf
-            (do (change-active-buffer id nextid)
-                (jump-push buf)
-                (assoc buf :nextid nextid))))))
+(defn goto-buf [buf nextbuf]
+  (let [nextid (:id nextbuf)
+        id (buf :id)]
+    (if (or (nil? nextid) (= nextid id)) buf
+        (do (change-active-buffer id nextid)
+            (jump-push buf)
+            (assoc buf :nextid nextid)))))
 
 (defn- edit-dir [path]
   (let [abuf (directory-panel)
         files (str/join "\n"
                         (map (fn [f] (-> f str shorten-path))
                              (cons (fs/parent path) (fs/list-dir path))))]
-    (send abuf
+    @(send abuf
           (fn [buf]
             (-> buf
                 (buf-replace 0 (-> buf :str count) (str files "\n"))
                 buf-start
                 save-undo
-                send-buf!)))
-    @abuf))
+                send-buf!)))))
 
 (defn- update-x [buf]
   (assoc buf :x (column buf)))
@@ -92,8 +90,7 @@
                      (if (or new-file? (fs/exists? file))
                        (if (fs/directory? file)
                          (edit-dir file)
-                         (-> file str new-file deref))
-                       nil)
+                         (-> file str new-file deref)))
                      buf-exists)]
         (if (or (nil? newbuf) (= (buf :id) (newbuf :id))) buf
             (let [newid (newbuf :id)]
@@ -137,7 +134,7 @@
                 (fn-set-pos pos)
                 cursor-center-viewport
                 send-buf!))) goto?)
-  (if goto? (goto-buf buf apanel) buf))
+  (if goto? (goto-buf buf @apanel) buf))
 
 (defn append-output-panel [buf s goto?]
   (append-panel buf (output-panel) s goto?))

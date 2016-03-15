@@ -206,8 +206,11 @@
 (defn file-register [buf]
   {:id (buf :id) :str (or (buf :filepath) (buf :name))})
 
-(defn get-buffer-by-id[id]
-  (-> @buffer-list (get id) deref))
+(defn get-buffer-by-id [id]
+  (let [abuf (@buffer-list id)]
+    (if (nil? abuf)
+      nil
+      @abuf)))
 
 (defn get-buffers []
   (map deref (vals @buffer-list)))

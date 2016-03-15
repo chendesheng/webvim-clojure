@@ -1,6 +1,6 @@
 (ns webvim.keymap.jump
   (:require
-    [webvim.core.buffer :refer [buffer-list change-active-buffer]]
+    [webvim.core.buffer :refer [change-active-buffer get-buffer-by-id]]
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.panel :refer [edit-file output-panel goto-buf]]
     [webvim.core.rope :refer [buf-set-pos subr re-test]]
@@ -9,22 +9,18 @@
     [webvim.core.utils :refer [parse-int deep-merge]]
     [webvim.jumplist :refer [jump-prev jump-next]]))
 
-(defn- get-buffer-from-reg [reg]
-  (if (nil? reg) nil
-      (@buffer-list (reg :id))))
-
 (defn- move-to-jumplist
   [fndir]
   (fn [buf keycode]
     (loop [pos (fndir buf)]  ;TODO: filter lazy seq instead of loop
       (if (nil? pos)
         buf ;newest or oldest
-        (let [anewbuf (@buffer-list (pos :id))]
-          (if (nil? anewbuf)
+        (let [newbuf (get-buffer-by-id (pos :id))]
+          (if (nil? newbuf)
             ;buffer has been deleted, ignore
             (recur (fndir buf))
             ;pos is avaliable
-            (if (< (pos :pos) (count (@anewbuf :str)))
+            (if (< (pos :pos) (count (newbuf :str)))
               (let [id (buf :id)
                     newid (pos :id)
                     newpos (pos :pos)]
@@ -61,11 +57,11 @@
   (-> keymap
       (update-in ["g"] assoc "f" (wrap-keycode goto-file))
       (assoc
-        "<f1>" (wrap-keycode #(goto-buf % (output-panel false)))
+        "<f1>" (wrap-keycode #(goto-buf % @(output-panel false)))
         "<c-s-6>" (fn [buf keycode]
                     (let [reg (registers-get "#")]
                       (if (nil? reg)
                         (assoc buf :message "No alternative file")
-                        (goto-buf buf (get-buffer-from-reg reg)))))
+                        (goto-buf buf (get-buffer-by-id (:id reg))))))
         "<c-o>" (move-to-jumplist jump-prev)
         "<c-i>" (move-to-jumplist jump-next))))
