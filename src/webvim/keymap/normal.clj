@@ -15,6 +15,7 @@
             [webvim.keymap.motion :refer [init-motion-keymap init-motion-keymap-with-objects]]
             [webvim.core.pos :refer [char-]]
             [webvim.core.event :refer [listen]]
+            [webvim.jumplist :refer [motions-push-jumps jump-push]]
             [webvim.keymap.compile :refer [wrap-keycode]]
             [webvim.keymap.replace :refer [wrap-keymap-replace]])
   (:use clojure.pprint
@@ -33,11 +34,10 @@
 
 (defn- normal-mode-after [buf keycode]
   (let [insert-mode? (= (buf :mode) :insert-mode)
-        lastbuf (-> buf :context :lastbuf)
         save-undo (if insert-mode? identity save-undo)
         fix-pos (if insert-mode? identity normal-mode-fix-pos)]
-    ;(if-not (nil? (motions-push-jumps (string/join (buf :keys))))
-    ;  (jump-push lastbuf))
+    (if-not (nil? (motions-push-jumps (string/join (buf :keys))))
+      (jump-push (-> buf :context :lastbuf)))
     (-> buf
         fix-pos
         (update-x-if-not-jk keycode)
