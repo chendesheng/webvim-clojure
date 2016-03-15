@@ -115,12 +115,15 @@
       ;display matched buffers at most 5 buffers
       (assoc buf :message (str "which one? " (string/join ", " (map :name (take 5 matches))))))))
 
+(defn- get-buffers-id []
+  (map :id (get-buffers)))
+
 (defn cmd-bnext [buf execmd args]
   (let [id (buf :id)
         nextid (or
                  ;get next id larger than current
-                 (->> @buffer-list (map #(-> % val deref :id)) (filter #(> % id)) sort first)
-                 (-> @buffer-list first val deref :id))]
+                 (->> (get-buffers-id) (filter #(> % id)) (apply min))
+                 (first (get-buffers-id)))]
                  ;(println "nextid:" nextid)
     (if (not (= nextid id))
       (do
@@ -131,8 +134,8 @@
 (defn cmd-bprev [buf execmd args]
   (let [id (buf :id)
         nextid (or
-                 (->> @buffer-list (map #(-> % val deref :id)) (filter #(> % id)) sort first)
-                 (-> @buffer-list first val deref :id))]
+                 (->> (get-buffers-id) (filter #(< % id)) (apply max))
+                 (first (get-buffers-id)))]
     (if (not (= nextid id))
       (do
         (change-active-buffer id nextid)
