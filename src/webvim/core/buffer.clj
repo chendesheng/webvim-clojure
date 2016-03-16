@@ -162,14 +162,22 @@
     (if (nil? path) nm
         (shorten-path path))))
 
+(defn- column-str [buf]
+  (let [r (buf :str)
+        pos (buf :pos)
+        col (inc (column buf))]
+    (if (= (char-at r pos) \tab)
+      (format "%d-%d" (- col (-> buf :tabsize dec)) col) 
+      (str col))))
+
 (defn buf-pos-info [buf]
   (let [{y :y
          x :x
          linescnt :linescnt} buf
         percent (-> y inc (* 100) (/ linescnt) int)]
-    (assoc buf :message (format "\"%s\" line %d of %d --%d%%-- col %d" 
+    (assoc buf :message (format "\"%s\" line %d of %d --%d%%-- col %s" 
                                 (printable-filepath buf)
-                                (inc y) linescnt percent (inc x)))))
+                                (inc y) linescnt percent (column-str buf)))))
 
 (defn set-save-point [buf]
   (let [buf (assoc buf :save-point [(-> buf :history just-now) (buf :filepath)])]
