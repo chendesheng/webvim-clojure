@@ -1,5 +1,5 @@
 (ns webvim.main
-  (:require [clojure.core.async :as async]
+  (:require [clojure.string :as str]
             [ring.util.response :as response]
             [cheshire.core :as json]
             [ring.adapter.jetty9 :as jetty]
@@ -60,10 +60,7 @@
      [:script {:src "render/watchers.js" :type "text/javascript"}]
      [:link {:href "ubuntu-mono.css" :rel "stylesheet"}]
      [:link {:href "main.css" :rel "stylesheet"}]
-     [:link {:href "monokai.css" :rel "stylesheet"}]
-     ;TODO: use base64 endocde
-     ;[:script {:type "text/json" :id "init-buf"} (json/generate-string (ui-buf))]]
-     ]
+     [:link {:href "monokai.css" :rel "stylesheet"}]]
     [:body]))
 
 (defroutes main-routes
@@ -108,11 +105,11 @@
                                (str "src/" name)
                                name))]
              (str (-> class
-                      (clojure.string/replace #"\$.*" "")
+                      (str/replace #"\$.*" "")
                       ;FIXME: handle class name doesn't contains dot 
-                      (clojure.string/replace #"[.][^.]*$" "")
-                      (clojure.string/replace "." "/")
-                      (clojure.string/replace "_" "-")
+                      (str/replace #"[.][^.]*$" "")
+                      (str/replace "." "/")
+                      (str/replace "_" "-")
                       appendsrc) "/" file ":" linenum))) st)))
 
 (defn- change-buffer! [buf keycodes]
@@ -136,9 +133,8 @@
                                  send-buf!)))
             (dissoc buf :nextid))))
       (catch Exception e
-        (let [output (str e "\n"
-                          "stack trace:\n\t"
-                          (clojure.string/join "\n\t" (pretty-trace e)) "\n")]
+        (let [output (str e "\nstack trace:\n\t"
+                          (str/join "\n\t" (pretty-trace e)) "\n")]
           (-> buf
               keycode-cancel
               (append-output-panel output true)
