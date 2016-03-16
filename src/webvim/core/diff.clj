@@ -36,9 +36,9 @@
               (and (= lasttype " ") (= type " "))
               [(inc linenum) changes change]
               (and (= lasttype "-") (= type "-"))
-              [(inc linenum) changes (update-in change [:len] inc)]
+              [(inc linenum) changes (update change :len inc)]
               (and (= lasttype "+") (= type "+"))
-              [linenum changes (update-in change [:to] str (subs line 1))]
+              [linenum changes (update change :to str (subs line 1))]
               (and (= lasttype " ") (= type "+"))
               [linenum changes {:from linenum :len 0 :to (subs line 1)}]
               (and (= lasttype " ") (= type "-"))
@@ -48,7 +48,7 @@
               (and (= lasttype "-") (= type " "))
               [(inc linenum) (conj changes change) nil]
               (and (= lasttype "+") (= type "-"))
-              [(inc linenum) changes (update-in change :len inc)]
+              [(inc linenum) changes (update change :len inc)]
               (and (= lasttype "+") (= type " "))
               [(inc linenum) (conj changes change) nil])]
         ;(pprint changes)

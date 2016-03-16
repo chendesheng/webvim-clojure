@@ -58,7 +58,7 @@
       ((if delete?
          registers-delete-to!
          registers-yank-to!) (-> buf :context :register) {:str s :linewise? linewise?})
-      (update-in buf [:context] dissoc :register)))
+      (update buf :context dissoc :register)))
   ([buf a b linewise?]
     (buf-yank buf a b linewise? false)))
 

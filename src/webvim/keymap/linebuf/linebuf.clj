@@ -39,12 +39,12 @@
   ;(println a b to)
   (if (> a b) linebuf
       (-> linebuf
-          (update-in [:str] replacer a b to)
+          (update :str replacer a b to)
           (linebuf-update-pos a b to))))
 
 (defn- update-linebuf [buf f]
   (let [linebuf (buf :line-buffer)]
-    (update-in buf [:line-buffer] f)))
+    (update buf :line-buffer f)))
 
 (defn- linebuf-insert [buf r]
   (update-linebuf 

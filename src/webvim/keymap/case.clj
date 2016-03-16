@@ -29,13 +29,13 @@
 (defn wrap-keymap-case [keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)]
     (-> keymap
-        (update-in ["g"] assoc
-                   "u" (merge
-                         motion-keymap
-                         {:after (wrap-operator (change-case clojure.string/lower-case))})
-                   "U" (merge
-                         motion-keymap
-                         {:after (wrap-operator (change-case clojure.string/upper-case))}))
+        (update "g" assoc
+                "u" (merge
+                      motion-keymap
+                      {:after (wrap-operator (change-case clojure.string/lower-case))})
+                "U" (merge
+                      motion-keymap
+                      {:after (wrap-operator (change-case clojure.string/upper-case))}))
         (assoc "~" (merge
                      motion-keymap
                      {:after (wrap-operator (change-case swap-case))})))))

@@ -7,7 +7,7 @@
   (if (and
         (-> buf :context :repeat-prefix nil? not)
         (not (re-test #"^[0-9]$" keycode)))
-    (update-in buf [:context] dissoc :repeat-prefix)
+    (update buf :context dissoc :repeat-prefix)
     buf))
 
 (defn- append-repeat-prefix [buf digit-str]

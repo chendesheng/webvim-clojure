@@ -6,12 +6,12 @@
 
 (defn listen [typ handler]
   (let [id (str *ns*)]
-    (swap! listeners update-in [typ] assoc id handler)))
+    (swap! listeners update typ assoc id handler)))
 
 (defn fire-event
   ([typ b arg]
     (reduce-kv (fn [b k f]
-              (f b arg)) b (@listeners typ)))
+                 (f b arg)) b (@listeners typ)))
   ([b typ]
     (reduce-kv (fn [b k f]
                  (f b)) b (@listeners typ)))

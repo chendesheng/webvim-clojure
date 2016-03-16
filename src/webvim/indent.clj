@@ -57,7 +57,7 @@
         after (line-str (buf :str) pos)]
     ;press 'o' 'O' then '<esc>' cancel auto indent of cursor line.
     (if (and (= (count before) 1) (> (count after) 1) (rblank? after))
-      (update-in buf [:last-indents] conj (pos-line (buf :str) pos))
+      (update buf :last-indents conj (pos-line (buf :str) pos))
       buf)))
 
 (def re-c-statements #"\b(if|while|switch|for|struct)\s*\(.*?\)\s*$")

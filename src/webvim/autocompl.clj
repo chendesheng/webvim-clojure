@@ -35,7 +35,7 @@
             (let [c (m w)]
               (if (nil? c)
                 (assoc m w 1)
-                (update-in m [w] inc)))) {} (filter #(> (count %) 2) (split-words lang txt))))
+                (update m w inc)))) {} (filter #(> (count %) 2) (split-words lang txt))))
 
 (defn- merge-words [m1 m2]
   (reduce-kv (fn [m w c]

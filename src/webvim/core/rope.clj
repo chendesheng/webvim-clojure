@@ -61,8 +61,8 @@
   [r op {dpos :dpos dy :dy}]
   ;(println r)
   (-> r
-      (update-in [:pos] op dpos)
-      (update-in [:y] op dy)))
+      (update :pos op dpos)
+      (update :y op dy)))
 
 ;TODO: keep track of current line number is annoying
 (defn buf-set-pos [buf newpos]
@@ -98,7 +98,7 @@
                (-> buf
                    (rope-op-size - (rope-size (subr from 0 (- pos a))))
                    (rope-op-size + szto)))]
-      (update-in t1 [:linescnt] #(-> % (- (szfrom :dy)) (+ (szto :dy)))))))
+      (update t1 :linescnt #(-> % (- (szfrom :dy)) (+ (szto :dy)))))))
 
 (defn- buf-apply-change [buf c]
   (let [r (buf :str)
@@ -121,7 +121,7 @@
     ;create one if nil
     {:changes (list c) :cursor oldpos}
     ;don't change :cursor
-    (update-in pending [:changes] conj c)))
+    (update pending :changes conj c)))
 
 (defn last-tabstop [r]
   (loop [i 0 it (.reverseIterator r)] 
@@ -161,7 +161,7 @@
               undo (push-pending (newbuf :pending-undo) rc (buf :pos))]
           (-> newbuf
               (assoc :pending-undo undo)
-              (update-in [:changes] conj c)))))
+              (update :changes conj c)))))
   ([buf [a b] to]
     (buf-replace buf a b to)))
 
@@ -293,31 +293,31 @@
         ;(println "text-save-undo:" chs)
           (-> buf
               (assoc :pending-undo nil)
-              (update-in [:history] new-future undo))))))
+              (update :history new-future undo))))))
 
 (defn- apply-undo [buf undo]
   (let [chs (undo :changes)
         [newbuf rchs] (buf-apply-changes buf chs)]
     [(-> newbuf
-         (update-in [:changes] concat chs)
+         (update :changes concat chs)
          (buf-set-pos (undo :cursor))) rchs]))
 
 (defn undo [buf]
   (let [item (just-now (buf :history))]
     (if (nil? item) buf
         (let [[newbuf rchs] (apply-undo buf item)]
-          (update-in newbuf [:history] 
-                     go-back (fn [item] 
-                               (assoc item :changes rchs)))))))
+          (update newbuf :history
+                  go-back (fn [item] 
+                            (assoc item :changes rchs)))))))
 
 ;(undo (active-buffer))
 (defn redo [buf]
   (let [item (next-future (buf :history))]
     (if (nil? item) buf
         (let [[newbuf rchs] (apply-undo buf item)]
-          (update-in newbuf [:history] 
-                     go-future (fn [item] 
-                                 (assoc item :changes rchs)))))))
+          (update newbuf :history 
+                  go-future (fn [item] 
+                              (assoc item :changes rchs)))))))
 
 (defn re-test [re s]
   (cond (nil? re) false

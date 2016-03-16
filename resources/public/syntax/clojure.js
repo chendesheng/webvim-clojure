@@ -26,7 +26,7 @@ function hlclojure(hljs) {
             'sigs reify second ffirst fnext nfirst nnext defmulti defmethod meta with-meta ns in-ns create-ns import ' +
             'refer keys select-keys vals key val rseq name namespace promise into transient persistent! conj! ' +
             'assoc! dissoc! pop! disj! use class type num float double short byte boolean bigint biginteger ' +
-            'bigdec print-method print-dup throw-if printf format load compile get-in update-in pr pr-on newline ' +
+            'bigdec print-method print-dup throw-if printf format load compile get-in update update-in pr pr-on newline ' +
             'flush read slurp read-line subvec with-open memfn time re-find re-groups rand-int rand mod locking ' +
             'assert-valid-fdecl alias resolve ref deref refset swap! reset! set-validator! compare-and-set! alter-meta! ' +
             'reset-meta! commute get-validator alter ref-set ref-history-count ref-min-history ref-max-history ensure sync io! ' +

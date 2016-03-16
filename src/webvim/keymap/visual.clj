@@ -98,12 +98,12 @@
     :leave (fn [buf keycode] (clear-visual buf))
     :continue visual-mode-continue?
     :before (fn [buf keycode] 
-              (update-in buf [:context]
-                         (fn [context]
-                           (-> context
-                               (assoc :last-visual-type (-> buf :visual :type)
-                                      :cancel-visual-mode? false)
-                               (dissoc :range)))))
+              (update buf :context
+                      (fn [context]
+                        (-> context
+                            (assoc :last-visual-type (-> buf :visual :type)
+                                   :cancel-visual-mode? false)
+                            (dissoc :range)))))
     :after (fn [buf keycode]
              (-> buf
                  visual-select
@@ -143,15 +143,15 @@
         (assoc "v" visual-mode-keymap
                "V" visual-mode-keymap
                "<c-v>" visual-mode-keymap)
-        (update-in ["g"]
-                   assoc "v" (assoc
-                               visual-mode-keymap
-                               :enter
-                               (fn [buf keycode]
-                                 (let [visual (buf :last-visual)]
-                                   (-> buf
-                                       (set-visual-mode visual)
-                                       (buf-set-pos (-> visual :range first))))))))))
+        (update "g"
+                assoc "v" (assoc
+                            visual-mode-keymap
+                            :enter
+                            (fn [buf keycode]
+                              (let [visual (buf :last-visual)]
+                                (-> buf
+                                    (set-visual-mode visual)
+                                    (buf-set-pos (-> visual :range first))))))))))
 
 ;keep track visual ranges when buffer changed
 (listen

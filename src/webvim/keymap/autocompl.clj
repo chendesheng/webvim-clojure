@@ -49,11 +49,11 @@
                               (if (-> buf :autocompl nil?)
                                 buf
                                 (-> buf
-                                    (update-in [:autocompl]
-                                               (fn [autocompl]
-                                                 (assoc autocompl
-                                                        :words words
-                                                        :suggestions suggestions)))
+                                    (update :autocompl
+                                            (fn [autocompl]
+                                              (assoc autocompl
+                                                     :words words
+                                                     :suggestions suggestions)))
                                     send-buf!))) words suggestions))
                     (if (and
                           (-> @abuf :autocompl nil? not)

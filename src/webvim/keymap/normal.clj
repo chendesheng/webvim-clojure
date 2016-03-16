@@ -41,7 +41,7 @@
     (-> buf
         fix-pos
         (update-x-if-not-jk keycode)
-        (update-in [:context] dissoc :range)
+        (update :context dissoc :range)
         save-undo)))
 
 (defn- start-ex-mode [buf keycode]

@@ -36,7 +36,7 @@
   (println "restore-current:" (history :current))
   (if (-> history :current nil?)
     buf
-    (update-in buf [:line-buffer] merge (history :current))))
+    (update buf :line-buffer merge (history :current))))
 
 (defn init-history-keymap [ahistory]
   (let [ahistory (or ahistory (atom (parallel-universe)))]

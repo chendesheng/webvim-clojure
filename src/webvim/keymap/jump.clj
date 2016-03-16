@@ -29,7 +29,7 @@
                   (buf-set-pos buf newpos)
                   (let []
                     (change-active-buffer id newid)
-                    ;(swap! buffer-list update-in [newid] #(buf-set-pos % newpos))
+                    ;(swap! buffer-list update newid #(buf-set-pos % newpos))
                     (assoc buf :nextid newid))))
               ;buffer has been modifed and cursor is no longer inside, ignore
               (recur (fndir buf)))))))))
@@ -55,7 +55,7 @@
 
 (defn wrap-keymap-jump [keymap]
   (-> keymap
-      (update-in ["g"] assoc "f" (wrap-keycode goto-file))
+      (update "g" assoc "f" (wrap-keycode goto-file))
       (assoc
         "<f1>" (wrap-keycode #(goto-buf % (@(output-panel false) :id)))
         "<c-s-6>" (fn [buf keycode]

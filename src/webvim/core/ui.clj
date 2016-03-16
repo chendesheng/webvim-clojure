@@ -37,11 +37,11 @@
     (let [{s :str
            prefix :prefix
            pos :pos} (-> buf :line-buffer)] 
-      (update-in buf [:line-buffer] (fn [line-buf]
-                                      (-> line-buf
-                                          (dissoc :prefix)
-                                          (assoc :str (str prefix s)
-                                                 :pos (+ pos (count prefix)))))))))
+      (update buf :line-buffer (fn [line-buf]
+                                 (-> line-buf
+                                     (dissoc :prefix)
+                                     (assoc :str (str prefix s)
+                                            :pos (+ pos (count prefix)))))))))
 
 (defn- visual-type [type]
   ({:no-visual 0
@@ -62,10 +62,10 @@
 
 (defn- update-visual [buf]
   (if (-> :visual buf nil? not)
-    (update-in buf [:visual] (fn [visual]
-                               (-> visual
-                                   (dissoc :range)
-                                   (assoc :type (visual-type (visual :type)))))) buf))
+    (update buf :visual (fn [visual]
+                          (-> visual
+                              (dissoc :range)
+                              (assoc :type (visual-type (visual :type)))))) buf))
 
 (defn- update-mode [buf]
   (let [buf (if (-> buf :mode nil? not)

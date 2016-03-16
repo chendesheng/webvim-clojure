@@ -18,7 +18,7 @@
   (let [highlights (buf :highlights)]
     (if (empty? (filter (fn [[a b]]
                           (and (= a (rg 0)) (= b (rg 1)))) highlights))
-      (update-in buf [:highlights] conj rg) buf)))
+      (update buf :highlights conj rg) buf)))
 
 (defn re-forward-highlight [buf re]
   (let [pos (buf :pos)
@@ -120,7 +120,7 @@
                   (fn [buf keycode]
                     (-> buf
                         (handler keycode)
-                        (update-in [:context] dissoc :lastpos)))))
+                        (update :context dissoc :lastpos)))))
       (wrap-key :after
                 (fn [handler]
                   (increment-search-after forward?)))

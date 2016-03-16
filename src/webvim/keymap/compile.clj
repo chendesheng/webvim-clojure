@@ -5,7 +5,7 @@
     [webvim.core.event :refer [fire-event]]))
 
 (defn- save-key [buf keycode]
-  (update-in buf [:keys] conj keycode))
+  (update buf :keys conj keycode))
 
 (defn- stop [buf keycode]
   false)
@@ -30,10 +30,10 @@
         ;(println "keys:2" (buf1 :keys))
     (if (continue? buf1 keycode)
       (-> buf1
-          (update-in [:keys] pop)
+          (update :keys pop)
           reduced)
       (-> buf1
-          (update-in [:keys] pop)
+          (update :keys pop)
           (leave keycode)))))
 
 (def compile-keymap

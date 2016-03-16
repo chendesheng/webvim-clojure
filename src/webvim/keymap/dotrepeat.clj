@@ -27,7 +27,7 @@
 (listen
   :before-handle-key
   (fn [buf keycode]
-    (update-in buf [:dot-repeat-keys] conj keycode)))
+    (update buf :dot-repeat-keys conj keycode)))
 
 (listen
   :normal-mode-keymap

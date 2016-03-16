@@ -118,7 +118,7 @@
                                 (-> buf
                                     (visual-line-repeat append?)
                                     (visual-line-repeat-set-pos (-> buf :context :lastpos) append?)
-                                    (update-in [:context] dissoc :keys :repeat-lines :lastpos :lasty)
+                                    (update :context dissoc :keys :repeat-lines :lastpos :lasty)
                                     (handler keycode))))))
         [a b] (-> buf :visual :range)]
     (-> buf

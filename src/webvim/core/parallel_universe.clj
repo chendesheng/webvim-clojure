@@ -13,8 +13,8 @@
     (let [event (just-now h)]
       (if (nil? event) h
           (-> h
-              (update-in [:before] pop)
-              (update-in [:after] conj (fnreverse event))))))
+              (update :before pop)
+              (update :after conj (fnreverse event))))))
   ([h]
     (go-back h identity)))
 
@@ -23,14 +23,14 @@
     (let [event (next-future h)]
       (if (nil? event) h
           (-> h
-              (update-in [:after] pop)
-              (update-in [:before] conj (fnreverse event))))))
+              (update :after pop)
+              (update :before conj (fnreverse event))))))
   ([h]
     (go-future h identity)))
 
 (defn new-future [h event] ;in a new parallel universe
   (-> h
-      (update-in [:before] conj event)
+      (update :before conj event)
       (dissoc :after)))
 
 (defn fast-forward [h]
@@ -40,8 +40,8 @@
 
 (defn rewrite-history [h f]
   (-> h
-      (update-in [:before] #(apply list (map f %)))
-      (update-in [:after] #(apply list (map f %)))))
+      (update :before #(apply list (map f %)))
+      (update :after #(apply list (map f %)))))
 
 (defn no-future? [h]
   (-> h :after empty?))

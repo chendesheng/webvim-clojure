@@ -72,7 +72,7 @@
   (GET "/resize/:w/:h" [w h]
     (send ui-agent 
           (fn [ui w h]
-            (update-in ui [:viewport] assoc :w w :h h)) (parse-int w) (parse-int h))))
+            (update ui :viewport assoc :w w :h h)) (parse-int w) (parse-int h))))
 
 (def ^:private app
   (-> (compojure.handler/api main-routes)
@@ -169,7 +169,7 @@
       (jetty/send! ws (-> ui :queue (vconj diff) json/generate-string))
       (dissoc ui :queue)
       (catch Exception e
-        (update-in ui [:queue] vconj diff)))))
+        (update ui :queue vconj diff)))))
 
 (defonce ^:private web-server (atom nil))
 

@@ -65,11 +65,11 @@
   (exec-async cmds (fn [line]
                      (append-panel buf apanel line false)))
   (append-panel buf apanel (reduce (fn [s arg]
-                                    (str s
-                                         " "
-                                         (if (re-test #"\s" arg)
-                                           (str "\"" arg "\"")
-                                           arg))) "" cmds) true))
+                                     (str s
+                                          " "
+                                          (if (re-test #"\s" arg)
+                                            (str "\"" arg "\"")
+                                            arg))) "" cmds) true))
 
 (defn- expand-path [f]
   (if (= (first f) \~)
@@ -325,17 +325,17 @@
                           (.startsWith k s)))
                    (map first cmds)))]
       (if (nil? news) buf
-          (update-in buf [:line-buffer]
-                     (fn [linebuf]
-                       (assoc linebuf :str (rope news) :pos (count news))))))
+          (update buf :line-buffer
+                  (fn [linebuf]
+                    (assoc linebuf :str (rope news) :pos (count news))))))
     buf))
 
 (defn- ex-replace-suggestion [buf w]
   (let [news (str "e " w)]
-    (update-in buf [:line-buffer]
-               (fn [linebuf]
-                 (merge linebuf {:str (rope news)
-                                 :pos (count news)})))))
+    (update buf :line-buffer
+            (fn [linebuf]
+              (merge linebuf {:str (rope news)
+                              :pos (count news)})))))
 
 (defn- ex-uncomplete-word [{{r :str} :line-buffer :as buf}]
   (let [[[_ w]] (re-seq #"^e\s(\S+)" (-> buf :line-buffer :str str))] w))
@@ -386,7 +386,6 @@
         (fn [buf]
           (if (and (not= (buf :mod-time) (mod-time buf))
                    (not (buf :dirty)))
-            (-> buf
-                buf-reload)
+            (buf-reload buf)
             buf)))
 

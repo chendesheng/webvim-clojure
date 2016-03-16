@@ -61,7 +61,7 @@
 (listen
   :insert-mode-keymap
   (fn [keymap _]
-    (update-in keymap ["<c-r>"] assoc "=" (expression-keymap true))))
+    (update keymap "<c-r>" assoc "=" (expression-keymap true))))
 
 (listen
   :visual-mode-keymap
