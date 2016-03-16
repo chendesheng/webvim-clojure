@@ -130,6 +130,7 @@
                            (fn [buf]
                              (-> buf
                                  (fire-event :switch-buffer)
+                                 buf-match-bracket
                                  send-buf!)))
             (dissoc buf :nextid))))
       (catch Exception e
