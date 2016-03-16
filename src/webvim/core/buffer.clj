@@ -1,6 +1,5 @@
 (ns webvim.core.buffer
   (:require [me.raynes.fs :as fs]
-            [clojure.core.async :as async]
             [clojure.java.io :as io]
             [webvim.core.ui :refer [send-buf!]]
             [webvim.core.register :refer [registers-put!]])
@@ -13,6 +12,25 @@
         webvim.core.line
         webvim.core.parallel-universe
         webvim.core.event))
+
+(defmacro async [buf & body]
+  `(let [abuf# (@buffer-list (~buf :id))]
+     (-> abuf#
+         (send (fn [~'buf]
+                 (let [buf# ~@body]
+                   (send-buf! buf#)))))
+     ~buf))
+
+(defmacro with-catch [buf & body]
+  `(try
+     (do ~@body)
+     (catch Exception e#
+       (assoc ~buf :message (str e#)))))
+
+(defmacro async-with-catch [buf & body]
+  `(async ~buf
+          (with-catch ~buf ~@body)))
+
 
 ;generate buffer id and buffer id only
 (defonce gen-buf-id (atom 0))
@@ -80,7 +98,7 @@
              :brackets nil
              ;saved cursor when insert begins, for undo/redo function only
              :last-cursor nil
-             ;first one is recent undo item, second is filepath, if one of these changes then the buffer is dirty
+             ;first one is recent undo item, second is filepath, if either of these changes then the buffer is dirty
              :save-point [nil filepath]
              ;:ranges is a vector of ranges (unordered): [[0 100] [101 200]]. For each range, both ends are inclusive.
              ;:a and :b two ends
@@ -153,21 +171,18 @@
                                 (printable-filepath buf)
                                 (inc y) linescnt percent (inc x)))))
 
-
-;FIXME: make :dirty correct
-(defn dirty? [buf]
-  (not (and 
-         (-> buf :pending-undo empty?)
-         (identical? (-> buf :history just-now) (-> buf :save-point first))
-         (= (buf :filepath) (-> buf :save-point second)))))
-
 (defn set-save-point [buf]
   (let [buf (assoc buf :save-point [(-> buf :history just-now) (buf :filepath)])]
-    (assoc buf :dirty (dirty? buf))))
+    (assoc buf :dirty false)))
 
 (listen :change-buffer
         (fn [buf _ _]
-          (set-save-point buf)))
+          (async buf
+                 (assoc buf :dirty
+                        (or 
+                          (-> buf :pending-undo empty? not)
+                          (not (identical? (-> buf :history just-now) (-> buf :save-point first)))
+                          (not= (buf :filepath) (-> buf :save-point second)))))))
 
 (defn- write-to-disk [buf]
   (let [tmp (-> buf :str str)
@@ -187,7 +202,7 @@
 (defn write-buffer
   [buf]
   (try   
-    (if (dirty? buf)
+    (if (buf :dirty)
       (if (not= (buf :mod-time) (mod-time buf))
         (assoc buf :message "Error: The file has been changed since reading it.")
         (-> buf
@@ -231,24 +246,6 @@
                       (file-register (get-buffer-by-id id)))
       (registers-put! "%"
                       (file-register (get-buffer-by-id nextid))))))
-
-(defmacro async [buf & body]
-  `(let [abuf# (@buffer-list (~buf :id))]
-     (-> abuf#
-         (send (fn [~'buf]
-                 (let [buf# ~@body]
-                   (send-buf! buf#)))))
-     ~buf))
-
-(defmacro with-catch [buf & body]
-  `(try
-     (do ~@body)
-     (catch Exception e#
-       (assoc ~buf :message (str e#)))))
-
-(defmacro async-with-catch [buf & body]
-  `(async ~buf
-          (with-catch ~buf ~@body)))
 
 (defn buf-match-bracket
   ([buf pos]
