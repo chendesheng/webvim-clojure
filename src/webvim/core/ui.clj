@@ -1,4 +1,5 @@
 (ns webvim.core.ui
+  (:require [webvim.core.event :refer [listen]])
   (:use webvim.core.line))
 
 (defn- dissoc-empty [buf ks]
@@ -152,9 +153,14 @@
                       render! (ui :render!)]
                   (-> ui
                       (render! diff) ;I/O
-                      (assoc :buf (-> newbuf 
-                                      (dissoc :changes)))))) newbuf)
+                      (assoc :buf (dissoc newbuf :changes))))) newbuf)
     (assoc newbuf :changes [])))
 
 (defn ui-buf []
   (render nil (@ui-agent :buf)))
+
+(listen :change-buffer
+        (fn [buf oldbuf c]
+          ;changes of current command, only for writing back to client
+          (update buf :changes conj c)))
+

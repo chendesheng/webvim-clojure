@@ -159,9 +159,7 @@
                        (str to))}
               [newbuf rc] (buf-apply-change buf c)
               undo (push-pending (newbuf :pending-undo) rc (buf :pos))]
-          (-> newbuf
-              (assoc :pending-undo undo)
-              (update :changes conj c)))))
+          (assoc newbuf :pending-undo undo))))
   ([buf [a b] to]
     (buf-replace buf a b to)))
 
@@ -298,9 +296,7 @@
 (defn- apply-undo [buf undo]
   (let [chs (undo :changes)
         [newbuf rchs] (buf-apply-changes buf chs)]
-    [(-> newbuf
-         (update :changes concat chs)
-         (buf-set-pos (undo :cursor))) rchs]))
+    [(buf-set-pos newbuf (undo :cursor)) rchs]))
 
 (defn undo [buf]
   (let [item (just-now (buf :history))]
@@ -310,7 +306,6 @@
                   go-back (fn [item] 
                             (assoc item :changes rchs)))))))
 
-;(undo (active-buffer))
 (defn redo [buf]
   (let [item (next-future (buf :history))]
     (if (nil? item) buf

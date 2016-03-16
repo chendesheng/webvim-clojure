@@ -67,8 +67,6 @@
              :y 0    ;num of line breaks from first char
              ;screen scrollTop row number, update after every key press
              :scroll-top 0
-             ;changes of current command, for writing back to client
-             :changes [] 
              ;reverse of changes, 
              ;start record when enter insert mode (save :cursor at start)
              ;stop record when leave insert mode
