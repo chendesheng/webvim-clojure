@@ -65,6 +65,10 @@ function mergeToLocal(buf) {
 
 function render(buf) {
     if (!buf) return;
+    if (typeof buf.id == 'undefined') {
+        buf.id = buffers.active.id;
+    }
+
     $buffer(buf.id);
 
     var newbuf = !!buf.str;

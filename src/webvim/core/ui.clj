@@ -91,38 +91,37 @@
 (defn- render 
   "Write changes to browser."
   [before after]
-  (let [txt (after :str)
-        buf (cond (= before after)
-                  ""
-                  (or (nil? before) (not (= (:id before) (:id after))))
-                  (-> after
-                      (assoc :str (str txt))
-                      (assoc :lang (-> after :language :name))
-                      (dissoc :changes)
-                      (remove-autocompl before)
-                      remove-fields)
-                  :else
-                  (-> after
-                      (dissoc-if-equal before :dirty)
-                      (dissoc-if-equal before :line-buffer)
-                      (dissoc-if-equal before :autocompl)
-                      (remove-autocompl before)
-                      (dissoc-if-equal before :visual)
-                      (dissoc-if-equal before :scroll-top)
-                      (dissoc-if-equal before :mode)
-                      (dissoc-if-equal before :submode)
-                      (dissoc-if-equal before :brackets)
-                      (dissoc-if-equal before :keys)
-                      (dissoc-if-equal before :name)
-                      (dissoc-if-equal before :dirty)
-                      (dissoc-if-equal before :message)
-                      (dissoc-if-equal before :highlights)
-                      (dissoc-if-equal before :tabsize)
-                      (dissoc-if-equal before :pos)
-                      (dissoc-if-equal before :showkeys)
-                      (dissoc :str)
-                      remove-fields))]
-    buf))
+  (cond (= before after)
+        ""
+        (or (nil? before) (not (= (:id before) (:id after))))
+        (-> after
+            (assoc :str (-> after :str str))
+            (assoc :lang (-> after :language :name))
+            (dissoc :changes)
+            (remove-autocompl before)
+            remove-fields)
+        :else
+        (-> after
+            (dissoc-if-equal before :id)
+            (dissoc-if-equal before :dirty)
+            (dissoc-if-equal before :line-buffer)
+            (dissoc-if-equal before :autocompl)
+            (remove-autocompl before)
+            (dissoc-if-equal before :visual)
+            (dissoc-if-equal before :scroll-top)
+            (dissoc-if-equal before :mode)
+            (dissoc-if-equal before :submode)
+            (dissoc-if-equal before :brackets)
+            (dissoc-if-equal before :keys)
+            (dissoc-if-equal before :name)
+            (dissoc-if-equal before :dirty)
+            (dissoc-if-equal before :message)
+            (dissoc-if-equal before :highlights)
+            (dissoc-if-equal before :tabsize)
+            (dissoc-if-equal before :pos)
+            (dissoc-if-equal before :showkeys)
+            (dissoc :str)
+            remove-fields)))
 
 (defonce ui-agent (agent {:viewport {:w 0 :h 0}
                           :render! (fn [a b] a)} :error-handler (fn [ui err]
@@ -150,10 +149,9 @@
     (send-off ui-agent 
               (fn [{buf :buf :as ui} newbuf]
                 (let [diff (render buf newbuf)
-                      render! (ui :render!)]
-                  (-> ui
-                      (render! diff) ;I/O
-                      (assoc :buf (dissoc newbuf :changes))))) newbuf)
+                      ui (assoc ui :buf (dissoc newbuf :changes))]
+                  (if (empty? diff) ui
+                      ((ui :render!) ui diff)))) newbuf)
     (assoc newbuf :changes [])))
 
 (defn ui-buf []
