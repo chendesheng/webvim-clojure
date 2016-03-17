@@ -5,6 +5,18 @@
         webvim.core.lang
         webvim.core.utils))
 
+(defn- set-range [buf [a b]]
+  (if (= a b)
+    buf
+    (let [b (dec b)]
+      (-> buf
+          (buf-set-pos a)
+          (assoc-in [:context :range] [a b])))))
+
+(defn- word-range [around? f]
+  (fn [buf keycode]
+    (set-range buf (f buf around?))))
+
 (defn- unbalanced-bracket+ [r pos re rch]
   (let [[a _] (pos-re+ r pos re)]
     (if (or (nil? a)
@@ -41,39 +53,66 @@
                                  (if (nil? a) nil
                                      [a b])))))]
       (if (nil? rg) buf
-          (let [[_ b :as rg] (if around? rg [(inc a) (dec b)])]
+          (let [[a b :as rg] (if around? rg [(inc a) (dec b)])]
             (-> buf
-                (assoc-in [:context :range] rg)
-                (buf-set-pos b)))))))
+                (buf-set-pos a)
+                (assoc-in [:context :range] rg)))))))
 
 (defn- quotes-range [ch around?]
   (fn [buf keycode]
     (let [{r :str pos :pos} buf
           re (re-pattern (quote-pattern ch))
-          b (first (pos-re+ r pos re))]
-      (println b)
+          b (last (pos-re+ r pos re))]
+      ;(println b)
       (if (nil? b) buf
           (let [a (first (pos-re- r (dec pos) re))]
             (if (nil? a) buf
-                (let [rg (if around? [a b] [(inc a) (dec b)])]
-                  (assoc-in buf [:context :range] rg))))))))
+                (set-range buf (if around? [a b] [(inc a) (dec b)]))))))))
 
-(defn- xml-tag-range [around?]
+(defn- xml-tag-range [r pos]
+  (let [re #"<(?!\!--)/?([^>\s]+)[^>\r\n]*>"
+        open-tag? (fn [a] (not= (char-at r (inc a)) \/))
+        close-tags (filter (fn [[a b]]
+                             (if (and (<= a pos) (< pos b))
+                               (not (open-tag? a))
+                               (< pos b)))
+                           (pos-re-seq+ r (pos-line-first r pos) re))
+        same-tag? (fn [[sa sb] [ea eb]]
+                    (println (str (subr r sa sb)))
+                    (println (str (subr r ea eb)))
+                    (= (second (re-seq re (subr r sa sb)))
+                       (second (re-seq re (subr r ea eb)))))
+        unbalance-tag (fn [tags open-tag? same-tag?]
+                        (loop [[[a _ :as rg] & rest] tags
+                               stack []] 
+                          (cond
+                            (nil? rg) nil
+                            (open-tag? a) (recur rest (conj stack rg))
+                            (empty? stack) rg
+                            (same-tag? (peek stack) rg) (recur rest (pop stack))
+                            :else nil)))
+        close-tag (unbalance-tag close-tags open-tag? same-tag?)]
+    (if-not (nil? close-tag)
+      (let [open-tags (filter
+                        (fn [[a b]]
+                          (if (and (<= a pos) (< pos b))
+                            (open-tag? a)
+                            true))
+                        (pos-re-seq- r pos re))
+            open-tag (unbalance-tag open-tags 
+                                    (complement open-tag?)
+                                    (fn [a b]
+                                      (same-tag? b a)))]
+        (if-not (nil? open-tag)
+          [open-tag close-tag])))))
+
+(defn- xml-tag-range-handler [around?]
   (fn [buf keycode]
-    (let [{r :str pos :pos} buf
-          re #"</[^>]+>"
-          [ba bb :as rgb] (pos-re+ r pos re)]
-      (if (nil? rgb) buf
-          (let [s (subr r [(+ ba 2) (dec bb)])
-                rga (pos-re- r (dec pos) (->> s
-                                              (format "<%s>")
-                                              quote-pattern 
-                                              re-pattern))]
-            (if (nil? rga) buf
-                (let [rg (if around? 
-                           [(first rga) (-> rgb last dec)]
-                           [(-> rga last) (-> rgb first dec)])]
-                  (assoc-in buf [:context :range] rg))))))))
+    (let [[[sa sb] [ea eb] :as matched] (xml-tag-range (buf :str) (buf :pos))]
+      (println matched)
+      (if (nil? matched) buf
+          (set-range buf (if around?
+                           [sa eb] [sb ea]))))))
 
 (defn- expand-around [buf a b]
   (let [{pos :pos
@@ -112,14 +151,6 @@
 (defn current-WORD [buf]
   (subr (buf :str) (current-WORD-range buf false)))
 
-(defn- word-range [around? f]
-  (fn [buf keycode]
-    (let [[a b] (f buf around?)
-          b (dec b)]
-      (-> buf
-          (buf-set-pos a)
-          (assoc-in [:context :range] [a b])))))
-
 (defn- objects-keymap [around?]
   (merge (reduce-kv
            (fn [keymap lch rch]
@@ -134,7 +165,7 @@
                  (assoc ch (quotes-range ch around?))))
            {}
            ["\"" "'" "`"])
-         {"t" (xml-tag-range around?)
+         {"t" (xml-tag-range-handler around?)
           "w" (word-range around? current-word-range)
           "W" (word-range around? current-WORD-range)}))
 
