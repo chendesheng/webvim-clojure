@@ -1,6 +1,6 @@
 (ns webvim.keymap.linebuf.linebuf
   (:require 
-    [webvim.keymap.objects :refer [current-word]]
+    [webvim.keymap.objects :refer [current-word current-WORD]]
     [webvim.keymap.compile :refer [wrap-key wrap-keycode]])
   (:use webvim.core.rope
         webvim.core.pos
@@ -145,6 +145,8 @@
                "<c-r>" {"<esc>" nop
                         "<c-w>" (fn [buf keycode]
                                   (linebuf-insert buf (current-word buf)))
+                        "<c-a>" (fn [buf keycode]
+                                  (linebuf-insert buf (current-WORD buf)))
                         :else linebuf-put}
                "<c-w>" linebuf-<c-w>
                :enter linebuf-enter

@@ -22,7 +22,7 @@
 ;(defn test-right-bracket[]
 ;  (unbalanced-bracket- (rope "(aaa(()()))bbb") 10 (re-pattern (quote-patterns \( \))) \())
 
-(defn- pair-range [lch rch around?]
+(defn- bracket-range [lch rch around?]
   (fn [buf keycode]
     (println lch rch around?)
     (let [{r :str pos :pos} buf
@@ -46,7 +46,7 @@
                 (assoc-in [:context :range] rg)
                 (buf-set-pos b)))))))
 
-(defn- pair-quotes-range [ch around?]
+(defn- quotes-range [ch around?]
   (fn [buf keycode]
     (let [{r :str pos :pos} buf
           re (re-pattern (quote-pattern ch))
@@ -81,84 +81,62 @@
          lang :language} buf
         not-space-chars ((word-re lang) :not-space-chars)
         re (re-pattern (str "[" not-space-chars "]|\\R")) ;Java 8 new '\R' matches all line breaks
-        b1 (dec (or (first (pos-re+ r (inc b) re)) (count r)))]
-    (if (= b b1)
-      [(inc (or (first (pos-re- r (dec a) re)) -1)) b1]
-      [a b1])))
+        b1 (or (first (pos-re+ r b re)) (count r))]
+    [a b1]))
 
-(defn current-word [buf]
+(defn- current-range [buf word-chars not-word-chars around?]
   (let [{pos :pos
-         r :str
-         lang :language} buf
-        {word-chars :word-chars
-         not-word-chars :not-word-chars} (word-re lang)
+         r :str} buf
         re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
         re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
         b (or (last (pos-re+ r pos re-end)) (count r))
         a (or (last (pos-re- r (dec b) re-start)) 0)]
-    (subr r a b)))
-
-(defn current-word-range [buf around?]
-  "return range of word under cursor, both sides are inclusive"
-  (let [{pos :pos
-         r :str
-         lang :language} buf
-        {word-chars :word-chars
-         not-word-chars :not-word-chars} (word-re lang)
-        re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
-        re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
-        b (or (first (pos-re+ r pos re-end)) (count r))
-        a (or (last (pos-re- r b re-start)) 0)]
+    (println a b)
     (if around?
       (expand-around buf a b)
       [a b])))
 
-(defn- pair-current-word [around?]
-  (fn [buf keycode]
-    (let [[_ b :as rg] (current-word-range buf around?)]
-      (-> buf
-          (buf-set-pos b)
-          (assoc-in [:context :range] rg)))))
+(defn- current-word-range [buf around?]
+  (let [{word-chars :word-chars
+         not-word-chars :not-word-chars} (word-re (buf :language))]
+    (current-range buf word-chars not-word-chars around?)))
 
 (defn- current-WORD-range [buf around?]
-  "return range of WORD under cursor, both side is inclusive"
-  (let [{pos :pos
-         r :str
-         lang :language} buf
-        {space-chars :space-chars
-         not-space-chars :not-space-chars} (word-re lang)
-        re-start (re-pattern (str "([" space-chars "](?=[" not-space-chars "]))|((?<=[" space-chars "])$)"))
-        re-end (re-pattern (str "[" not-space-chars "](?=[" space-chars "])"))
-        b (or (first (pos-re+ r pos re-end)) (count r))
-        a (or (last (pos-re- r b re-start)) 0)]
-    (if around?
-      (expand-around buf a b)
-      [a b])))
+  (let [{space-chars :space-chars
+         not-space-chars :not-space-chars} (word-re (buf :language))]
+    (current-range buf not-space-chars space-chars around?)))
 
-(defn- pair-current-WORD [around?]
+(defn current-word [buf]
+  (subr (buf :str) (current-word-range buf false)))
+
+(defn current-WORD [buf]
+  (subr (buf :str) (current-WORD-range buf false)))
+
+(defn- word-range [around? f]
   (fn [buf keycode]
-    (let [[_ b :as rg] (current-WORD-range buf around?)]
+    (let [[a b] (f buf around?)
+          b (dec b)]
       (-> buf
-          (buf-set-pos b)
-          (assoc-in [:context :range] rg)))))
+          (buf-set-pos a)
+          (assoc-in [:context :range] [a b])))))
 
 (defn- objects-keymap [around?]
   (merge (reduce-kv
            (fn [keymap lch rch]
              (-> keymap
-                 (assoc (str lch) (pair-range lch rch around?))
-                 (assoc (str rch) (pair-range lch rch around?))))
+                 (assoc (str lch) (bracket-range lch rch around?))
+                 (assoc (str rch) (bracket-range lch rch around?))))
            {}
            brackets)
          (reduce
            (fn [keymap ch]
              (-> keymap
-                 (assoc ch (pair-quotes-range ch around?))))
+                 (assoc ch (quotes-range ch around?))))
            {}
            ["\"" "'" "`"])
          {"t" (xml-tag-range around?)
-          "w" (pair-current-word around?)
-          "W" (pair-current-WORD around?)}))
+          "w" (word-range around? current-word-range)
+          "W" (word-range around? current-WORD-range)}))
 
 (defn init-objects-keymap []
   {"a" (objects-keymap true)
