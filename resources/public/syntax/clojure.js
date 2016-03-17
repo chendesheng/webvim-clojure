@@ -76,7 +76,7 @@ function hlclojure(hljs) {
     var HINT_COL = hljs.COMMENT('\\^\\{', '\\}');
     var KEY = {
         className: 'symbol',
-        begin: '[:]' + SYMBOL_RE
+        begin: ':+' + SYMBOL_RE
     };
     var LIST = {
         begin: '\\(',
