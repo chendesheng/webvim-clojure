@@ -9,7 +9,7 @@
     [webvim.core.utils :refer [make-range sort2 nop]]))
 
 (defn setup-range [buf]
-  (println "setup-range:" (-> buf :context :range))
+  ;(println "setup-range:" (-> buf :context :range))
   (if (-> buf :context :range nil?)
     (let [pos (buf :pos)
           lastbuf (-> buf :context :lastbuf)

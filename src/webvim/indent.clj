@@ -104,9 +104,9 @@
         line (subr r head)
         lines (filter clang-not-blank-or-comment?
                       (ranges-to-texts r ranges))
-        _ (println (str "[" line "]"))
+        ;_ (println (str "[" line "]"))
         pline (or (first lines) "")
-        _ (println (str "[" pline "]"))
+        ;_ (println (str "[" pline "]"))
         pindent (str (re-subs #"^\s*" pline))
         pbracket? (re-test #"[\{]\s*$" pline)
         bracket? (re-test #"^\s*\}" line)]
