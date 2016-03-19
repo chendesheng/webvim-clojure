@@ -116,6 +116,11 @@ pre {
     margin-left: 1px;
 }
 
+.status-bar .second-cursor {
+    background: #007acc;
+    opacity: 0.3;
+}
+
 .status-bar {
     position: fixed;
     left: 0;

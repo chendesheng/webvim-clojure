@@ -40,18 +40,28 @@
   (if (> a b) linebuf
       (-> linebuf
           (update :str replacer a b to)
-          (linebuf-update-pos a b to))))
+          (linebuf-update-pos a b to)
+          (match-bracket true))))
 
 (defn- update-linebuf [buf f]
   (let [linebuf (buf :line-buffer)]
     (update buf :line-buffer f)))
+
+(defn- match-bracket
+  ([{r :str pos :pos :as linebuf} insert?]
+    (let [pos (if insert? (dec pos) pos)
+          pos2 (pos-match-bracket r pos)]
+      (if (nil? pos2)
+        (assoc linebuf :pos2 nil)
+        (assoc linebuf :pos2 pos2)))))
 
 (defn- linebuf-insert [buf r]
   (update-linebuf 
     buf 
     (fn [linebuf]
       (let [pos (linebuf :pos)]
-        (linebuf-replace linebuf pos pos r)))))
+        (-> linebuf
+            (linebuf-replace pos pos r))))))
 
 (defn- linebuf-delete [buf offset]
   (update-linebuf 
@@ -71,8 +81,10 @@
     (fn [linebuf]
       (let [pos (linebuf :pos)
             r (linebuf :str)
-            newpos (or (fnmove r pos) pos)]
-        (assoc linebuf :pos (bound-range newpos 0 (count r)))))))
+            newpos (bound-range (or (fnmove r pos) pos) 0 (count r))]
+        (-> linebuf
+            (assoc :pos newpos)
+            (match-bracket false))))))
 
 (defn- linebuf-char+ [buf keycode]
   (linebuf-move buf (fn [r pos] (inc pos))))

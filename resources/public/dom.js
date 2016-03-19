@@ -2,7 +2,7 @@ function $newBuffer(bufid) {
     var ele = document.createElement('DIV');
     ele.id = 'buffer-' + bufid;
     ele.className = 'buffer';
-    var tmpl = '<div id="gutter-{id}" class="gutter">' + '</div>' + '<div id="content-{id}" class="content">' + '<div id="cursor-{id}" class="cursor"></div>' + '<div id="selections-{id}" class="selections"></div>' + '<div id="highlights-{id}" class="highlights"></div>' + '<div id="autocompl-{id}" class="autocompl"></div>' + '<div id="cursor-bracket-{id}" class="cursor-bracket"></div>' + '<div id="lines-{id}" class="lines"></div>' + '</div>' + '<div id="status-bar-{id}" class="status-bar">' + '<span id="status-bar-buf-{id}" class="ex"></span>' + '<span id="status-bar-cursor-{id}" class="cursor"></span>' + '<span id="status-bar-keys-{id}" class="ongoing-keys"></span>' + '<span id="status-bar-name-{id}" class="buf-name"></span>' + '</div>' + '<div id="ex-autocompl-{id}" class="autocompl ex-autocompl"></div>';
+    var tmpl = '<div id="gutter-{id}" class="gutter">' + '</div>' + '<div id="content-{id}" class="content">' + '<div id="cursor-{id}" class="cursor"></div>' + '<div id="selections-{id}" class="selections"></div>' + '<div id="highlights-{id}" class="highlights"></div>' + '<div id="autocompl-{id}" class="autocompl"></div>' + '<div id="cursor-bracket-{id}" class="cursor-bracket"></div>' + '<div id="lines-{id}" class="lines"></div>' + '</div>' + '<div id="status-bar-{id}" class="status-bar">' + '<span id="status-bar-buf-{id}" class="ex"></span>' + '<span id="status-bar-cursor-{id}" class="cursor"></span>' + '<span id="status-bar-cursor-second-{id}" class="cursor second-cursor"></span>' + '<span id="status-bar-keys-{id}" class="ongoing-keys"></span>' + '<span id="status-bar-name-{id}" class="buf-name"></span>' + '</div>' + '<div id="ex-autocompl-{id}" class="autocompl ex-autocompl"></div>';
     ele.innerHTML = replaceBinding(tmpl, {
         'id': bufid
     });
@@ -71,6 +71,10 @@ function $statusName(bufid) {
 
 function $statusCursor(bufid) {
     return _$bufid('status-bar-cursor-', bufid);
+}
+
+function $statusCursorSecond(bufid) {
+    return _$bufid('status-bar-cursor-second-', bufid);
 }
 
 function $autocompl(bufid) {

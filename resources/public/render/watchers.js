@@ -12,7 +12,8 @@ watchLocalbufChange('tabsize', function(buf) {
 });
 
 watchLocalbufChange('message', function(buf) {
-    $statusCursor(buf.id).style.cssText = 'display:none';
+    $hide($statusCursor(buf.id));
+    $hide($statusCursorSecond(buf.id));
 
     var ex = $statusBuf(buf.id);
     ex.textContent = buf.message;
@@ -87,29 +88,41 @@ watchLocalbufChange('line-buffer', function(buf) {
     var linebuf = buf['line-buffer'];
     var str = linebuf.str;
     var pos = linebuf.pos;
+    var pos2 = linebuf.pos2;
     var ex = $statusBuf(buf.id);
 
     //cursor
     if (str[str.length - 1] == '\n') {
         ex.textContent = str.substring(0, str.length - 1);
 
-        $statusCursor(buf.id).style.display = 'none';
+        $hide($statusCursor(buf.id));
+        $hide($statusCursorSecond(buf.id));
         buf.focusStatusBar = false;
     } else {
         ex.textContent = str;
         if (pos > str.length || pos == 0) {
-            $statusCursor(buf.id).style.display = 'none';
+            $hide($statusCursor(buf.id));
+            $hide($statusCursorSecond(buf.id));
             buf.focusStatusBar = false;
             return;
         }
 
-        var range = document.createRange();
-        range.setStart(ex.firstChild, pos - 1);
-        range.setEnd(ex.firstChild, pos);
-        var rect = range.getBoundingClientRect();
-        var cursor = $statusCursor(buf.id)
-        cursor.style.display = 'block';
-        cursor.style.left = (rect.left + rect.width) + 'px';
+        function renderCursor($cursor, pos) {
+            var range = document.createRange();
+            range.setStart(ex.firstChild, pos - 1);
+            range.setEnd(ex.firstChild, pos);
+            var rect = range.getBoundingClientRect();
+            $show($cursor);
+            $cursor.style.left = (rect.left + rect.width) + 'px';
+        }
+
+        renderCursor($statusCursor(buf.id), pos);
+        if (pos2) {
+            renderCursor($statusCursorSecond(buf.id), pos2);
+        } else {
+            $hide($statusCursorSecond(buf.id))
+        }
+
         buf.focusStatusBar = true;
     }
 });
@@ -134,7 +147,8 @@ function renderMode(buf) {
     var visualtype = buf.visual.type;
     var text = '';
 
-    $statusCursor(buf.id).style.display = 'none';
+    $hide($statusCursor(buf.id));
+    $hide($statusCursorSecond(buf.id));
 
     if (submode == 0 && visualtype == 0) {
         text = MODES[mode];

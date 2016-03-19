@@ -37,12 +37,14 @@
     buf
     (let [{s :str
            prefix :prefix
-           pos :pos} (-> buf :line-buffer)] 
+           pos :pos
+           pos2 :pos2} (-> buf :line-buffer)] 
       (update buf :line-buffer (fn [line-buf]
                                  (-> line-buf
                                      (dissoc :prefix)
                                      (assoc :str (str prefix s)
-                                            :pos (+ pos (count prefix)))))))))
+                                            :pos (+ pos (count prefix))
+                                            :pos2 (if (nil? pos2) nil (+ pos2 (count prefix))))))))))
 
 (defn- visual-type [type]
   ({:no-visual 0
