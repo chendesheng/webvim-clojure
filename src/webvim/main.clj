@@ -2,8 +2,8 @@
   (:require [clojure.string :as str]
             [ring.util.response :as response]
             [cheshire.core :as json]
-            [ring.adapter.jetty9 :as jetty]
-            [webvim.panel :refer [append-output-panel]])
+            [webvim.panel :refer [append-output-panel]]
+            [org.httpkit.server :refer [run-server with-channel on-receive on-close send!]])
   (:use clojure.pprint
         webvim.lang.clojure ;TODO: load language setting dynamically
         webvim.lang.javascript
@@ -62,20 +62,6 @@
      [:link {:href "main.css" :rel "stylesheet"}]
      [:link {:href "monokai.css" :rel "stylesheet"}]]
     [:body]))
-
-(defroutes main-routes
-  (GET "/buf" [request] (json/generate-string (ui-buf)))
-  (GET "/" [request] (homepage request))
-  (GET "/resize/:w/:h" [w h]
-    (send ui-agent 
-          (fn [ui w h]
-            (update ui :viewport assoc :w w :h h)) (parse-int w) (parse-int h))))
-
-(def ^:private app
-  (-> (compojure.handler/api main-routes)
-      (wrap-json-response)
-      (wrap-resource "public")
-      (wrap-content-type)))
 
 (defn- start-file [f]
   (println "start-file:" f)
@@ -152,23 +138,42 @@
             (println "close buffer:" (buf :name))
             buf)))
 
-(defn- handle-socket [req]
-  {:on-connect (fn [ws]
-                 (send ui-agent (fn [ui ws]
-                                  (assoc ui :ws ws)) ws))
-   :on-text (fn [ws body]
-              (let [[id keycode] (parse-input body)]
-                (update-buffer id change-buffer! (input-keys keycode))))})
 
 (defn- write-client! [ui diff]
   (let [ws (ui :ws)]
     (try
-      (jetty/send! ws (-> ui :queue (vconj diff) json/generate-string))
+      (send! ws (-> ui :queue (vconj diff) json/generate-string))
       (dissoc ui :queue)
       (catch Exception e
         (update ui :queue vconj diff)))))
 
 (defonce ^:private web-server (atom nil))
+
+(defn- handle-socket [request]
+  (with-channel request channel
+                (on-receive channel
+                            (fn [body]
+                              (let [[id keycode] (parse-input body)]
+                                (update-buffer id change-buffer! (input-keys keycode)))))
+                (on-close channel
+                          (fn [status] (println "websocket close")))
+                (send ui-agent (fn [ui ws]
+                                 (assoc ui :ws ws)) channel)))
+
+(defroutes main-routes
+  (GET "/buf" [request] (json/generate-string (ui-buf)))
+  (GET "/" [request] (homepage request))
+  (GET "/socket" [] handle-socket)
+  (GET "/resize/:w/:h" [w h]
+    (send ui-agent 
+          (fn [ui w h]
+            (update ui :viewport assoc :w w :h h)) (parse-int w) (parse-int h))))
+
+(def ^:private app
+  (-> (compojure.handler/api main-routes)
+      (wrap-json-response)
+      (wrap-resource "public")
+      (wrap-content-type)))
 
 ;start app with init file and webserver configs
 (defn start [file recover-buffers? options]
@@ -180,12 +185,11 @@
                    (assoc ui :render! write-client!)))
   (println "start web server:" (options :port))
   (reset! web-server
-          (jetty/run-jetty #'app
-                           (assoc options :websockets {"/socket" handle-socket}))))
+          (run-server #'app options)))
 
 (defn stop []
   (println "stop web server")
-  (jetty/stop-server @web-server))
+  (@web-server))
 
 (defn -main [& args]
   (start

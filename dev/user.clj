@@ -1,7 +1,6 @@
 (ns user
   (:require [me.raynes.fs :as fs]
             [clojure.core.async :as async]
-            [ring.adapter.jetty9 :as jetty]
             [cljfmt.core :as cljfmt]
             [webvim.panel :refer [append-output-panel]]
             [clojure.string :as string])

@@ -189,9 +189,3 @@
                                  (inc cnt) (dec cnt))]
                     (if (zero? newcnt) a (recur brackets newcnt)))))))))))
 
-(defn test-pos-match-bracket []
-  (pos-match-bracket (rope "((\\)))") 0))
-
-;(defn test-bracket? []
-;  (bracket? (rope "((") 1)
-;  (bracket? (rope "\\((") 2))

@@ -12,7 +12,7 @@
                            [org.clojure/core.async "0.2.374"]
                            [info.sunng/ring-jetty9-adapter "0.9.2"]
                            [org.clojars.hozumi/clj-commons-exec "1.2.0"]
-                           [ring "1.4.0"]]
+                           [http-kit "2.1.18"]]
             :source-paths ["src" "src/webvim"]
             :resource-paths ["thirdparty/ropes.jar", "resources"]
             :main webvim.main

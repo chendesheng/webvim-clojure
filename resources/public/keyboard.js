@@ -3,7 +3,7 @@ function escapseKeys(keys) {
 }
 
 function keyboardInit() {
-    var channel = connect("/socket/");
+    var channel = connect("/socket");
 
     function handleKey(key) {
         if (key.length > 1) {
