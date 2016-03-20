@@ -154,22 +154,44 @@
           (swap! mem assoc args ret)
           ret)))))
 
+;FIXME: no regex recursion/balancing groups in java
+(defonce ^:private not-begin-with-slash
+  "(?<!(?<!(?<!(?<!(?<!\\\\)\\\\)\\\\)\\\\)\\\\)")
+
+(defn- bracket? [r pos]
+  (let [bracket (char-at r pos)
+        m (all-brackets bracket)]
+    (cond (nil? m) false
+          (pos? pos)
+          (let [matcher (.matcher r (re-pattern
+                                      (str not-begin-with-slash (quote-pattern bracket))))]
+            (.useTransparentBounds matcher true)
+            (.region matcher pos (inc pos))
+            (.find matcher))
+          :else true)))
+
 (def pos-match-bracket
   "return matched bracket position, nil if not find"
   (memoize-buf
     (fn [r pos]
-      (let [bracket (char-at r pos)
-            m (all-brackets bracket)]
-        (if (nil? m) nil
-            (let [left? (contains? left-brackets bracket)
-                  inc-brackets (if left? left-brackets right-brackets)
-                  re (re-pattern (quote-patterns bracket m))]
-              (loop [[[a _] & brackets] (if left?
-                                          (pos-re-seq+ r pos re)
-                                          (pos-re-seq- r pos re))
-                     cnt 0]
-                (if (nil? a) a
-                    (let [newcnt (if (contains? inc-brackets (char-at r a))
-                                   (inc cnt) (dec cnt))]
-                      (if (zero? newcnt) a (recur brackets newcnt)))))))))))
+      (if (bracket? r pos)
+        (let [bracket (char-at r pos)
+              m (all-brackets bracket)]
+          (let [left? (contains? left-brackets bracket)
+                inc-brackets (if left? left-brackets right-brackets)
+                re (re-pattern (format "%s(%s)" not-begin-with-slash (quote-patterns bracket m)))]
+            (loop [[[a _] & brackets] (if left?
+                                        (pos-re-seq+ r pos re)
+                                        (pos-re-seq- r pos re))
+                   cnt 0]
+              (if (nil? a) a
+                  (let [newcnt (if (contains? inc-brackets (char-at r a))
+                                 (inc cnt) (dec cnt))]
+                    (if (zero? newcnt) a (recur brackets newcnt)))))))))))
 
+(defn test-pos-match-bracket []
+  (pos-match-bracket (rope "((\\)))") 0))
+
+;(defn test-bracket? []
+;  (bracket? (rope "((") 1)
+;  (bracket? (rope "\\((") 2))
