@@ -6,7 +6,7 @@
         webvim.core.rope))
 
 (defn- parse-hunks [diff]
-  (re-seq #"@@ -(\d+),?(\d+)? \+(\d+),?(\d+)? @@([\s\S]*?)(?=$|(?<=\R)@@.*?@@)" diff))
+  (re-seq #"@@ -(\d+),?(\d+)? \+(\d+),?(\d+)? @@([\s\S]*?)(?=$|(?<=\r?\n)@@.*?@@)" diff))
 
 (defn- parse-hunk [from lines]
 ;  (println "parse-hunk")

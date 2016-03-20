@@ -54,6 +54,6 @@
                    (assoc "7" (registers "6"))
                    (assoc "8" (registers "7"))
                    (assoc "9" (registers "8")))))
-      (if (->> v :str (re-seq #"\R") count zero?)
+      (if (->> v :str (re-seq #"\r?\n") count zero?)
         (registers-put! small-delete-reg v)))
     (registers-put! unnamed-reg v)))

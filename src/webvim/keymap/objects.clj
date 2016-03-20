@@ -119,7 +119,7 @@
          r :str
          lang :language} buf
         not-space-chars ((word-re lang) :not-space-chars)
-        re (re-pattern (str "[" not-space-chars "]|\\R")) ;Java 8 new '\R' matches all line breaks
+        re (re-pattern (str "[" not-space-chars "]|\\r?\\n"))
         b1 (or (first (pos-re+ r b re)) (count r))]
     [a b1]))
 
