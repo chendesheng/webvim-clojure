@@ -3,7 +3,7 @@
             [ring.util.response :as response]
             [cheshire.core :as json]
             [webvim.panel :refer [append-output-panel]]
-            [org.httpkit.server :refer [run-server with-channel on-receive on-close send!]])
+            [org.httpkit.server :refer [run-server with-channel on-receive on-close send! close]])
   (:use clojure.pprint
         webvim.lang.clojure ;TODO: load language setting dynamically
         webvim.lang.javascript
@@ -157,6 +157,9 @@
                                 (update-buffer id change-buffer! (input-keys keycode)))))
                 (on-close channel
                           (fn [status] (println "websocket close")))
+                (let [ws (@ui-agent :ws)]
+                  (if-not (nil? ws)
+                    (close ws)))
                 (send ui-agent (fn [ui ws]
                                  (assoc ui :ws ws)) channel)))
 
