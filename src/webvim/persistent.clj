@@ -1,8 +1,9 @@
 (ns webvim.persistent
   (:require [webvim.core.event :refer [listen]]
             [webvim.core.ui :refer [ui-agent send-buf!]]
-            [webvim.core.register :refer [registers-put!]]
-            [webvim.core.buffer :refer [new-file get-buffers get-buffer-by-filepath buffer-list]]
+            [webvim.core.register :refer [registers-put! registers-get]]
+            [webvim.core.buffer :refer [new-file get-buffers get-buffer-by-filepath buffer-list persistent-buffers]]
+            [webvim.core.utils :refer [path=]]
             [me.raynes.fs :as fs]))
 
 ;use agent to avoid race condition
@@ -22,7 +23,8 @@
           (spit (fs/file config-dir buffers-edn)
                 (prn-str {:buffers (map #(select-keys % [:filepath :y])
                                         (filter #(-> % :filepath nil? not) buffers))
-                          :active (-> active :filepath)})))))
+                          :active (-> active :filepath)
+                          :alternative (:str (registers-get "#"))})))))
 
 (defn- read-buffers []
   (try
@@ -33,16 +35,25 @@
       (print e))))
 
 (defn recover-buffers []
-  (let [{buffers :buffers active :active} (read-buffers)]
+  (let [{buffers :buffers active :active alternative :alternative} (read-buffers)]
     (doseq [{filepath :filepath y :y} buffers]
       (if (nil? (get-buffer-by-filepath filepath))
         (new-file filepath y)))
     ;recover active buffer
-    (let [buf (get-buffer-by-filepath active)]
-      (if (-> buf nil? not)
+    (doseq [buf (get-buffers persistent-buffers)]
+      (cond
+        (and (-> active nil? not)
+             (path= (buf :filepath) active))
         (do
           (registers-put! "%" {:str active :id (buf :id)})
-          (send-buf! buf))))))
+          (send-buf! buf))
+        (and (-> alternative nil? not)
+             (path= (buf :filepath) alternative))
+        (registers-put! "#" {:str alternative :id (buf :id)})))
+    (if (nil? (registers-get "%"))
+      (let [buf (first (get-buffers))]
+        (registers-put! "%" {:str (buf :filepath) :id (buf :id)})
+        (send-buf! buf)))))
 
 (listen :write-buffer
         (fn [buf]
@@ -56,5 +67,5 @@
                  (save-buffers! (get-buffers) (newui :buf)))))
   (add-watch buffer-list :save-buffers
              (fn [_ _ _ buffers]
-               (save-buffers! (map deref buffers) (@ui-agent :buf)))))
+               (save-buffers! (map deref (vals buffers)) (@ui-agent :buf)))))
 

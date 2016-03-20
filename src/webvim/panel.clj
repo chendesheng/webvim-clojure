@@ -10,18 +10,10 @@
     [webvim.core.rope :refer [buf-insert buf-set-pos save-undo buf-replace subr]]
     [webvim.core.line :refer [line-start pos-line-first lines-row move-to-line column]]
     [webvim.core.pos :refer [buf-end buf-start]]
-    [webvim.core.utils :refer [shorten-path visual-size]]
+    [webvim.core.utils :refer [shorten-path visual-size path=]]
     [webvim.core.ui :refer [send-buf!]]
     [webvim.scrolling :refer [cursor-center-viewport]]
     [webvim.jumplist :refer [jump-push]]))
-
-(defn- path= [f1 f2]
-  (try
-    (= (str (fs/normalized f1))
-       (str (fs/normalized f2)))
-    (catch Exception ex
-      (println ex)
-      false)))
 
 (defn- get-panel [create? name]
   (or (some (fn [[_ abuf]]

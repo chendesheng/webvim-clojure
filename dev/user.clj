@@ -112,17 +112,24 @@
     (format-clj-file (str f))))
 
 (defn reset-buffers []
-  (let [buffers @buffer-list
-        _ (reset! buffer-list {})]
-    (doseq [abuf (vals buffers)]
-      (let [{filepath :filepath y :y} @abuf
-            buf @(new-file filepath y)]
-        (if (= filepath (-> @ui-agent :buf :filepath))
+  (let [buffers (get-buffers persistent-buffers)]
+    (reset! buffer-list {})
+    (registers-put! "%" nil)
+    (doseq [{filepath :filepath y :y} buffers]
+      (let [buf @(new-file filepath y)]
+        (cond
+          (and (-> @ui-agent :buf :filepath nil? not)
+               (path= filepath (-> @ui-agent :buf :filepath)))
           (do
             (send ui-agent (fn [ui] (dissoc ui :buf)))
             (registers-put! "%" {:str filepath :id (buf :id)})
-            (registers-put! "#" nil)
-            (send-buf! buf)))))))
+            (send-buf! buf))
+          (path= filepath (:str (registers-get "#")))
+          (registers-put! "#" {:str filepath :id (buf :id)}))))
+    (if (nil? (registers-get "%"))
+      (let [buf (first (get-buffers))]
+        (registers-put! "%" {:str (buf :filepath) :id (buf :id)})
+        (send-buf! buf)))))
 
 ;Not sure why agent await blocking everything. Start a java thread works fine.
 (defonce main 

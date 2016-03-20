@@ -1,6 +1,6 @@
 (ns webvim.core.utils
-  (:require [snipsnap.core :as clipboard])
-  (:use [me.raynes.fs :as fs :only (child-of? *cwd*)]))
+  (:require [snipsnap.core :as clipboard]
+            [me.raynes.fs :as fs]))
 
 (defn quote-pattern [ch]
   (java.util.regex.Pattern/quote (str ch)))
@@ -159,6 +159,14 @@
     windows?
     (clojure.java.shell/sh "clip" :in text)
     :else (clipboard/set-text! text)))
+
+(defn path= [f1 f2]
+  (try
+    (= (str (fs/normalized f1))
+       (str (fs/normalized f2)))
+    (catch Exception ex
+      (println ex)
+      false)))
 
 (comment
   (webvim.core.utils/visual-size "\t\ta" 5)

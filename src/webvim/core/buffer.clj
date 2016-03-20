@@ -233,8 +233,14 @@
       nil
       @abuf)))
 
-(defn get-buffers []
-  (map deref (vals @buffer-list)))
+(defn get-buffers 
+  ([]
+    (map deref (vals @buffer-list)))
+  ([f]
+    (filter f (get-buffers))))
+
+(def persistent-buffers #(-> % :filepath nil? not))
+(def temp-buffers #(-> % :filepath nil?))
 
 (defn get-buffer-by-filepath [filepath]
   (first (filter
