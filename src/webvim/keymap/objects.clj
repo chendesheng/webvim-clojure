@@ -80,8 +80,8 @@
         same-tag? (fn [[sa sb] [ea eb]]
                     (println (str (subr r sa sb)))
                     (println (str (subr r ea eb)))
-                    (= (second (re-seq re (subr r sa sb)))
-                       (second (re-seq re (subr r ea eb)))))
+                    (= (-> (re-seq re (subr r sa sb)) first second)
+                       (-> (re-seq re (subr r ea eb)) first second)))
         unbalance-tag (fn [tags open-tag? same-tag?]
                         (loop [[[a _ :as rg] & rest] tags
                                stack []] 
@@ -103,7 +103,8 @@
                                     (complement open-tag?)
                                     (fn [a b]
                                       (same-tag? b a)))]
-        (if-not (nil? open-tag)
+        (if (and (-> open-tag nil? not)
+                 (same-tag? open-tag close-tag))
           [open-tag close-tag])))))
 
 (defn- xml-tag-range-handler [around?]
