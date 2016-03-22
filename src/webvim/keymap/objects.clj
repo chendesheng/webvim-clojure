@@ -70,7 +70,7 @@
                 (set-range buf (if around? [a b] [(inc a) (dec b)]))))))))
 
 (defn- xml-tag-range [r pos]
-  (let [re #"<(?!\!--)/?([^>\s]+)[^>\r\n]*>"
+  (let [re #"<(?!\!--)/?([^<>\s]+)[^<>]*(?<!/)>"
         open-tag? (fn [a] (not= (char-at r (inc a)) \/))
         close-tags (filter (fn [[a b]]
                              (if (and (<= a pos) (< pos b))
