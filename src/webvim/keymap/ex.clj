@@ -155,7 +155,7 @@
       (append-output-panel
         buf
         (str 
-          ":" execmd " " args
+          ":" execmd " " args \newline
           output \newline
           @result \newline)
         true))
