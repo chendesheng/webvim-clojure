@@ -31,11 +31,7 @@
 (defn- autocompl-parse
   "Split to word with length longer than 2."
   [lang txt]
-  (reduce (fn [m w]
-            (let [c (m w)]
-              (if (nil? c)
-                (assoc m w 1)
-                (update m w inc)))) {} (filter #(> (count %) 2) (split-words lang txt))))
+  (frequencies (filter #(> (count %) 2) (split-words lang txt))))
 
 (defn- merge-words [m1 m2]
   (reduce-kv (fn [m w c]
