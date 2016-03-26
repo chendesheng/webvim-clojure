@@ -14,4 +14,5 @@
 (defmethod init-file-type ".htm" [buf] (init buf))
 (defmethod init-file-type ".xml" [buf] (init buf))
 (defmethod init-file-type ".svg" [buf] (init buf))
+(defmethod init-file-type ".aspx" [buf] (init buf))
 
