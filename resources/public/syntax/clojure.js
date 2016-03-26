@@ -41,7 +41,8 @@ function hlclojure(hljs) {
     };
 
     var SYMBOLSTART = 'a-zA-Z_\\-!.?+*=<>&#\'';
-    var SYMBOL_RE = '[' + SYMBOLSTART + '][' + SYMBOLSTART + '0-9/;:]*';
+    var SYMBOLAFTERSTART = SYMBOLSTART + "0-9/;:";
+    var SYMBOL_RE = '[' + SYMBOLSTART + '][' + SYMBOLAFTERSTART + ']*';
     var SIMPLE_NUMBER_RE = '[-+]?\\d+(\\.\\d+)?';
 
     var SYMBOL = {
@@ -102,7 +103,7 @@ function hlclojure(hljs) {
     };
     var DEFAULT_CONTAINS = [LIST, STRING, HINT, HINT_COL, COMMENT, KEY, COLLECTION, CHAR_LITERAL, NUMBER, LITERAL, SYMBOL];
 
-    LIST.contains = [hljs.COMMENT('comment', ''), NAME, BODY];
+    LIST.contains = [hljs.COMMENT('comment(?![' + SYMBOLAFTERSTART + '])', ''), NAME, BODY];
     BODY.contains = DEFAULT_CONTAINS;
     COLLECTION.contains = DEFAULT_CONTAINS;
 
