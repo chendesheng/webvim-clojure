@@ -97,7 +97,7 @@ function hlclojure(hljs) {
         starts: BODY
     };
     var CHAR_LITERAL = {
-        begin: /\\(newline|tab|space|return|formfeed|backspace|u[a-fA-F\d]{4}|o[0-7]{3}|\w)/,
+        begin: /\\(newline|tab|space|return|formfeed|backspace|u[a-fA-F\d]{4}|o[0-7]{3}|[\w\(\)\[\]\{\}`~!@#$%^&*-=+])/,
         className: 'literal'
     };
     var DEFAULT_CONTAINS = [LIST, STRING, HINT, HINT_COL, COMMENT, KEY, COLLECTION, CHAR_LITERAL, NUMBER, LITERAL, SYMBOL];
