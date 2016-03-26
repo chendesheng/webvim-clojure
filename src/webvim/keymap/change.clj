@@ -1,5 +1,6 @@
 (ns webvim.keymap.change
   (:require
+    [clojure.pprint :refer [pprint]]
     [webvim.keymap.compile :refer [replay-keys wrap-key]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
     [webvim.keymap.operator :refer [buf-yank range-prefix setup-range setup-range-line-end
@@ -132,11 +133,11 @@
 ;repeat across ranges
 (defn- start-insert-and-repeat [{{ranges :ranges} :visual :as buf} append?]
   (let [firstline (last ranges) ;ranges in reverse order
-        ranges (drop-last ranges)
+        ranges (drop-last ranges);visual mode range is inclusive
         poses (if append?
                 (map (comp inc second) 
                      (filter (fn [[a b]]
-                               (< a (inc b) (dec (pos-line-last (buf :str) a)))) ranges))
+                               (< a (inc b) (pos-line-last (buf :str) a))) ranges))
                 (map first
                      (not-empty-range ranges)))
         buf (buf-set-pos buf (if append?
@@ -151,8 +152,7 @@
                                   (fn [buf keycode]
                                     (let [newpos (buf :pos)
                                           r (if (> newpos pos)
-                                              (subr (buf :str) pos newpos)
-                                              nil)]
+                                              (subr (buf :str) pos newpos))]
                                       (if (or (nil? r) (>= (indexr r "\n") 0))
                                         (handler buf keycode) ;only insert is allowed and it must not cross line
                                         (let [cnt (count r)
@@ -160,7 +160,6 @@
                                           (-> buf
                                               (repeat-insert poses r)
                                               (handler keycode))))))))))))
-
 
 (defmulti visual-keymap-c (fn [buf keycode] (-> buf :visual :type)))
 (defmethod visual-keymap-c :visual-range [buf keycode]
