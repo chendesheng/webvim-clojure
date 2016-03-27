@@ -2,7 +2,8 @@
   (:require [me.raynes.fs :as fs]
             [clojure.java.io :as io]
             [webvim.core.ui :refer [send-buf!]]
-            [webvim.core.register :refer [registers-put!]])
+            [webvim.core.register :refer [registers-put!]]
+            [webvim.core.editor :refer [*window*]])
   (:use clojure.pprint
         (clojure [string :only (join split blank? lower-case)])
         webvim.core.rope
@@ -13,13 +14,40 @@
         webvim.core.parallel-universe
         webvim.core.event))
 
-(defmacro async [buf & body]
-  `(let [abuf# (@buffer-list (~buf :id))]
-     (-> abuf#
-         (send (fn [~'buf]
-                 (let [buf# ~@body]
-                   (send-buf! buf#)))))
-     ~buf))
+
+(defn- buffer-list []
+  (*window* :buffers))
+
+(defn get-buffer-agent [id]
+  (@(buffer-list) id))
+
+(defn get-buffer-by-id [id]
+  (let [abuf (get-buffer-agent id)]
+    (if (nil? abuf)
+      nil
+      @abuf)))
+
+(defn get-buffer-agent-by-name [name]
+  (some (fn [abuf]
+          (if (= (@abuf :name) name)
+            abuf))
+        (vals @(buffer-list))))
+
+(defn get-buffers 
+  ([]
+    (map deref (vals @(buffer-list))))
+  ([f]
+    (filter f (get-buffers))))
+
+(defn do-buffers[f]
+  (doseq [abuf (vals @buffer-list)]
+    (send abuf f)))
+
+(defn remove-buffer [id]
+  (swap! (buffer-list) dissoc id))
+
+(defn reset-buffers![]
+  (reset! (buffer-list) {}))
 
 (defmacro with-catch [buf & body]
   `(try
@@ -27,16 +55,23 @@
      (catch Exception e#
        (assoc ~buf :message (str e#)))))
 
+(defmacro async [buf & body]
+  `(let [abuf# (get-buffer-agent (~buf :id))]
+     (-> abuf#
+         (send (fn [~'buf]
+                 (let [buf# ~@body]
+                   (send-buf! buf#)))))
+     ~buf))
+
 (defmacro async-with-catch [buf & body]
   `(async ~buf
           (with-catch ~buf ~@body)))
 
 
-;generate buffer id and buffer id only
-(defonce gen-buf-id (atom 0))
-
-;key: buffer id, value: buffer agent
-(defonce buffer-list (atom {}))
+;(listen :create-window
+;        (fn [window]
+;          (assoc window
+;                 :buffers (atom {}))))
 
 (defonce output-panel-name "[Output]")
 (defonce grep-panel-name "[Grep]")
@@ -46,7 +81,10 @@
 ;A panel is just a speical buffer
 (defonce panels #{output-panel-name grep-panel-name find-panel-name directory-panel-name})
 
-(defn buffer-list-save!
+;generate buffer id and buffer id only
+(defonce gen-buf-id (atom 0))
+
+(defn- buffer-list-save!
   "Generate buffer id (increase from 1) and add to buffer-list"
   [buf]
   (let [id (swap! gen-buf-id inc)
@@ -56,7 +94,9 @@
                                      (println ":id " (buf :id))
                                      (println ":filepath " (buf :filepath))
                                      (println err)))]
-    (reset! buffer-list (assoc @buffer-list id abuf))
+    (swap! (buffer-list)
+           (fn [buffers id abuf]
+             (assoc buffers id abuf)) id abuf)
     abuf))
 
 (defn mod-time [buf]
@@ -227,30 +267,6 @@
 (defn file-register [buf]
   {:id (buf :id) :str (or (buf :filepath) (buf :name))})
 
-(defn get-buffer-by-id [id]
-  (let [abuf (@buffer-list id)]
-    (if (nil? abuf)
-      nil
-      @abuf)))
-
-(defn get-buffer-agent [id]
-  (@buffer-list id))
-
-(defn get-buffer-agent-by-name [name]
-  (some (fn [[abuf]]
-          (if (= (@abuf :name) name)
-            abuf))
-        (vals @buffer-list)))
-
-(defn get-buffers 
-  ([]
-    (map deref (vals @buffer-list)))
-  ([f]
-    (filter f (get-buffers))))
-
-(defn remove-buffer [id]
-  (swap! buffer-list dissoc id))
-
 (def persistent-buffers #(-> % :filepath nil? not))
 (def temp-buffers #(-> % :filepath nil?))
 
@@ -260,7 +276,7 @@
              (= (buf :filepath) filepath)) (get-buffers))))
 
 (defn update-buffer [id f & args]
-  (let [abuf (@buffer-list id)]
+  (let [abuf (get-buffer-agent id)]
     (if (nil? abuf)
       nil
       (apply send abuf f args))))
