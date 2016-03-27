@@ -30,13 +30,12 @@
             buf
             (reduce
               (fn [buf [a b]]
-                ;(println "cancel-last-indent:" a b)
                 (let [r (buf :str)
-                      [a1 b1] (pos-line r a)
-                      s (subr r a1 b1)]
+                      [a1 b1] (if (> (count r) a)
+                                (pos-line r a))]
                   (if (and (= a1 a)
                            (<= b1 b)
-                           (rblank? s))
+                           (rblank? (subr r a1 b1)))
                     (buf-delete buf a1 (dec b1)) buf))) buf (buf :last-indents))) :last-indents))
 
 (defn- temp-normal-mode-keymap [normal-mode-keymap]
