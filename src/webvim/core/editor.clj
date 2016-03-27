@@ -4,4 +4,5 @@
 
 
 (defonce *window* {:id (uuid)
-                   :buffers (atom{})})
+                   :buffers (atom {})
+                   :jumplist (atom {})})

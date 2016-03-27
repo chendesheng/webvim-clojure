@@ -266,7 +266,7 @@
            "\n" 
            (map (fn [item]
                   (format "%s:%s" (or (item :filepath) (item :name)) (item :y)))
-                (@jump-list :before))) "\n")
+                (jumplist-before))) "\n")
     true))
 
 ;TODO: ex command parser

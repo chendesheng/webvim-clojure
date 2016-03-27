@@ -1,6 +1,7 @@
 (ns webvim.jumplist
   (:require [clojure.core.async :as async]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [webvim.core.editor :refer [*window*]])
   (:use clojure.pprint
         webvim.core.event
         webvim.core.rope
@@ -8,9 +9,9 @@
 
 ;global list of history positions
 ;1) save position **before** motions 
-;2) cursor always equal to (next-future @jump-list) if next-future is nil use buf position as next-future
+;2) cursor always equal to (next-future @jumplist) if next-future is nil use buf position as next-future
 ;Example: 
-; motion             | @jump-list                       | cursor after motion
+; motion             | @jumplist                        | cursor after motion
 ;--------------------|----------------------------------|--------------------
 ; initial position A | {:before ()      :after ()}      | A 
 ; jump to B          | {:before (A)     :after ()}      | B  
@@ -23,7 +24,11 @@
 ; c+i                | {:before (A)     :after (D')}    | D'
 ; c+i                | {:before (A)     :after (D')}    | D'
 
-(defonce jump-list (atom (parallel-universe)))
+(defn- jumplist []
+  (*window* :jumplist))
+
+(defn jumplist-before []
+  (@(jumplist) :before))
 
 ;jump-push before these motions
 ;ONLY work for single keycode
@@ -55,26 +60,26 @@
 (defn jump-push
   "Add :pos to jump list"
   [buf]
-  (swap! jump-list (fn [jl {id :id pos :pos :as buf}]
-                     (if (and
-                           (= (-> jl just-now :pos) pos)
-                           (= (-> jl just-now :id) id))
-                       jl
-                       (push-current jl buf))) buf)
+  (swap! (jumplist) (fn [jl {id :id pos :pos :as buf}]
+                      (if (and
+                            (= (-> jl just-now :pos) pos)
+                            (= (-> jl just-now :id) id))
+                        jl
+                        (push-current jl buf))) buf)
   buf)
 
 ;TODO: handle not exist buffer
 (defn jump-next
   [buf]
-  (if (no-next? @jump-list) nil
-      (-> jump-list
+  (if (no-next? @(jumplist)) nil
+      (-> (jumplist)
           (swap! go-future)
           next-future)))
 
 (defn jump-prev
   [buf]
-  (if (no-prev? @jump-list) nil
-      (-> jump-list
+  (if (no-prev? @(jumplist)) nil
+      (-> (jumplist)
           (swap! (fn [jl]
                    (if (no-current? jl) 
                      (-> jl
@@ -103,7 +108,7 @@
 (defn- on-buffer-change [buf oldbuf c]
   (let [bufid (buf :id)]
     ;TODO: This could be slow.
-    (swap! jump-list 
+    (swap! (jumplist) 
            rewrite-history
            (fn [{id :id pos :pos y :y :as p}]
              (if (= id bufid)
