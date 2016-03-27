@@ -7,8 +7,8 @@ function connect(path) {
         return ((new Date).getTime() - _lastSentTime) / 1000;
     }
 
-    function _connect() {
-        _conn = new WebSocket(window.location.href.replace(/^http(s?:\/\/[^/]*)(\/.*)?/i, "ws$1") + path);
+    function _connect(query) {
+        _conn = new WebSocket(window.location.href.replace(/^http(s?:\/\/[^/]*)(\/.*)?/i, "ws$1") + path + (query || ''));
         _conn.onmessage = function(message) {
             console.log(message.data);
             JSON.parse(message.data).each(render);
@@ -39,11 +39,7 @@ function connect(path) {
         }
     }
 
-    $.get('/buf', function(resp) {
-        render(JSON.parse(resp));
-    });
-
-    _connect();
+    _connect('?init=true');
 
     return {
         'send': function(key) {

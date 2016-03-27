@@ -161,10 +161,11 @@
                   (if-not (nil? ws)
                     (close ws)))
                 (send ui-agent (fn [ui ws]
-                                 (assoc ui :ws ws)) channel)))
+                                 (assoc ui :ws ws)) channel)
+                (if (contains? (request :query-params) "init")
+                  (send! channel (json/generate-string [(ui-buf)])))))
 
 (defroutes main-routes
-  (GET "/buf" [request] (json/generate-string (ui-buf)))
   (GET "/" [request] (homepage request))
   (GET "/socket" [] handle-socket)
   (GET "/resize/:w/:h" [w h]
