@@ -29,7 +29,6 @@
                   (buf-set-pos buf newpos)
                   (let []
                     (change-active-buffer id newid)
-                    ;(swap! buffer-list update newid #(buf-set-pos % newpos))
                     (assoc buf :nextid newid))))
               ;buffer has been modifed and cursor is no longer inside, ignore
               (recur (fndir buf)))))))))

@@ -2,7 +2,7 @@
   (:require [webvim.core.event :refer [listen]]
             [webvim.core.ui :refer [ui-agent send-buf!]]
             [webvim.core.register :refer [registers-put! registers-get]]
-            [webvim.core.buffer :refer [new-file get-buffers get-buffer-by-filepath buffer-list persistent-buffers]]
+            [webvim.core.buffer :refer [new-file get-buffers get-buffer-by-filepath persistent-buffers]]
             [webvim.core.utils :refer [path=]]
             [me.raynes.fs :as fs]))
 
@@ -61,11 +61,13 @@
           buf))
 
 (defn start-track []
-  (add-watch ui-agent :save-buffers
-             (fn [_ _ oldui newui]
-               (if (not= (-> oldui :buf :filepath) (-> newui :buf :filepath))
-                 (save-buffers! (get-buffers) (newui :buf)))))
-  (add-watch buffer-list :save-buffers
-             (fn [_ _ _ buffers]
-               (save-buffers! (map deref (vals buffers)) (@ui-agent :buf)))))
+  (comment
+    ;FIXME: add back later
+    (add-watch ui-agent :save-buffers
+               (fn [_ _ oldui newui]
+                 (if (not= (-> oldui :buf :filepath) (-> newui :buf :filepath))
+                   (save-buffers! (get-buffers) (newui :buf)))))
+    (add-watch buffer-list :save-buffers
+               (fn [_ _ _ buffers]
+                 (save-buffers! (map deref (vals buffers)) (@ui-agent :buf))))))
 

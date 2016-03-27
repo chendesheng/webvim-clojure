@@ -33,7 +33,7 @@
                                     :index 0})]
               (future
                 (println "future")
-                (let [abuf (@buffer-list (buf :id))]
+                (let [abuf (get-buffer-agent (buf :id))]
                   (loop [words (first all-words)
                          rest-words (next all-words)]
                   ;(println (empty? rest-words))

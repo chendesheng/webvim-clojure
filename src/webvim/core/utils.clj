@@ -171,3 +171,5 @@
 (comment
   (webvim.core.utils/visual-size "\t\ta" 5)
   (webvim.core.utils/visualx-to-charx "\t\t345" 3 4))
+
+(defn uuid [] (str (java.util.UUID/randomUUID)))

@@ -128,10 +128,10 @@
 
 (defn- get-buffer-from-reg [reg]
   (if (nil? reg) nil
-      (@buffer-list (reg :id))))
+      (get-buffer-agent (reg :id))))
 
 (defn cmd-bdelete [buf execmd args]
-  (swap! buffer-list dissoc (buf :id))
+  (remove-buffer (buf :id))
   (let [nextbuf @(or (get-buffer-from-reg (registers-get "#")) (new-file nil))
         nextid (nextbuf :id)
         alternatebuf (some (fn [buf]

@@ -233,11 +233,23 @@
       nil
       @abuf)))
 
+(defn get-buffer-agent [id]
+  (@buffer-list id))
+
+(defn get-buffer-agent-by-name [name]
+  (some (fn [[abuf]]
+          (if (= (@abuf :name) name)
+            abuf))
+        (vals @buffer-list)))
+
 (defn get-buffers 
   ([]
     (map deref (vals @buffer-list)))
   ([f]
     (filter f (get-buffers))))
+
+(defn remove-buffer [id]
+  (swap! buffer-list dissoc id))
 
 (def persistent-buffers #(-> % :filepath nil? not))
 (def temp-buffers #(-> % :filepath nil?))

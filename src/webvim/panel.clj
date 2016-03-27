@@ -3,10 +3,10 @@
   (:require
     [me.raynes.fs :as fs]
     [clojure.string :as str]
-    [webvim.core.buffer :refer [buffer-list update-buffer
+    [webvim.core.buffer :refer [update-buffer
                                 output-panel-name grep-panel-name find-panel-name 
                                 directory-panel-name change-active-buffer new-file
-                                get-buffers]]
+                                get-buffers get-buffer-agent-by-name]]
     [webvim.core.rope :refer [buf-insert buf-set-pos save-undo buf-replace subr]]
     [webvim.core.line :refer [line-start pos-line-first lines-row move-to-line column]]
     [webvim.core.pos :refer [buf-end buf-start]]
@@ -16,9 +16,7 @@
     [webvim.jumplist :refer [jump-push]]))
 
 (defn- get-panel [create? name]
-  (or (some (fn [[_ abuf]]
-              (if (= (@abuf :name) name) abuf nil))
-            @buffer-list)
+  (or (get-buffer-agent-by-name name)
       (if create?
         (new-file name))))
 
