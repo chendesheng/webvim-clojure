@@ -9,6 +9,7 @@
                    :buffers (atom {})
                    :jumplist (atom {})
                    :cwd (atom (str fs/*cwd*))
+                   :registers (atom {})
                    :ui (agent {:viewport {:w 0 :h 0}
                                :render! (fn [a b] a)} :error-handler (fn [ui err]
                                                                        (println "ui agent fail:")

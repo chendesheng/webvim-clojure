@@ -1,4 +1,5 @@
 (ns webvim.core.register
+  (:require [webvim.core.editor :refer [*window*]])
   (:use webvim.core.event
         webvim.core.utils))
 
@@ -15,18 +16,28 @@
   (let [s (clipboard-get)]
     (swap! registers update ch assoc :str s :linewise? (-> s last (= \newline)))))
 
+(defn- window-registers[]
+  (*window* :registers))
+
+(defn- put-window-registers[ch v]
+  (swap! (window-registers) assoc ch v))
+
 (defn registers-get [ch]
   (if (or (= clipboard-reg ch) (= clipboard-reg2 ch))
     (clipboard-upate-reg ch))
-  (@registers ch))
+  (if (contains? #{"%" "#"} ch)
+    (@(window-registers) ch)
+    (@registers ch)))
 
 (defn registers-put! [ch v]
   (if (or (= clipboard-reg ch) (= clipboard-reg2 ch))
     (clipboard-set! (v :str)))
-  (swap! registers assoc ch v))
+  (if (contains? #{"%" "#"} ch)
+    (put-window-registers ch v)
+    (swap! registers assoc ch v)))
 
 (defn map-registers [f]
-  (map f (sort @registers)))
+  (map f (sort (merge @(window-registers) @registers))))
 
 (defn registers-yank-to! [ch v]
   (registers-put! ch v)
