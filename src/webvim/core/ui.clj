@@ -95,7 +95,7 @@
   "Write changes to browser."
   [before after]
   (cond (= before after)
-        ""
+        nil
         (or (nil? before) (not (= (:id before) (:id after))))
         (-> after
             (assoc :str (-> after :str str))
@@ -129,6 +129,20 @@
 (defn- ui-agent []
   (*window* :ui))
 
+(listen
+  :create-window
+  (fn [window]
+    (assoc window
+           :ui
+           (agent
+             {:viewport {:w 0 :h 0} :render! (fn [a b] a)}
+             :error-handler
+             (fn [ui err]
+               (println "ui agent fail:")
+               (println ":bufid " (-> ui :buf :id))
+               (println ":filepath " (-> ui :buf :filepath))
+               (println err))))))
+
 (defn viewport []
   (@(ui-agent) :viewport))
 
@@ -141,7 +155,9 @@
     (send (ui-agent) f a b)))
 
 (defn get-from-ui [key]
-  (@(ui-agent) key))
+  (if (nil? *window*)
+    nil
+    (@(ui-agent) key)))
 
 (defn- bound-scroll-top
   "Change scroll top make cursor inside viewport"

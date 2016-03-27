@@ -68,10 +68,6 @@
           (with-catch ~buf ~@body)))
 
 
-;(listen :create-window
-;        (fn [window]
-;          (assoc window
-;                 :buffers (atom {}))))
 
 (defonce output-panel-name "[Output]")
 (defonce grep-panel-name "[Grep]")
@@ -84,19 +80,21 @@
 ;generate buffer id and buffer id only
 (defonce gen-buf-id (atom 0))
 
+(defn- wrap-agent [buf]
+  (agent buf
+         :error-handler (fn [ui err]
+                          (println "buffer agent failed:")
+                          (println ":id " (buf :id))
+                          (println ":filepath " (buf :filepath))
+                          (println err))))
+
 (defn- buffer-list-save!
   "Generate buffer id (increase from 1) and add to buffer-list"
   [buf]
-  (let [id (swap! gen-buf-id inc)
-        abuf (agent (assoc buf :id id)
-                    :error-handler (fn [ui err]
-                                     (println "buffer agent failed:")
-                                     (println ":id " (buf :id))
-                                     (println ":filepath " (buf :filepath))
-                                     (println err)))]
+  (let [abuf (wrap-agent buf)]
     (swap! (buffer-list)
-           (fn [buffers id abuf]
-             (assoc buffers id abuf)) id abuf)
+           (fn [buffers abuf]
+             (assoc buffers (@abuf :id) abuf)) abuf)
     abuf))
 
 (defn mod-time [buf]
@@ -107,13 +105,14 @@
 (defn set-mod-time [buf]
   (assoc buf :mod-time (mod-time buf)))
 
-(defn create-buf [bufname filepath txt]
+(defn- create-buf [bufname filepath txt]
   (let [txtLF (.replace txt "\r\n" "\n") ;always use LF in memory
         ;make sure last line ends with line break
         r (if (.endsWith txtLF "\n")
             (rope txtLF)
             (.append (rope txtLF) \newline))
-        buf {:name bufname
+        buf {:id (swap! gen-buf-id inc)
+             :name bufname
              ;= nil if it is a special buffer like [New File] or [Quick Fix]
              :filepath filepath 
              :ext (lower-case 
@@ -164,6 +163,18 @@
         set-mod-time
         init-file-type
         (fire-event :new-buffer))))
+
+(listen :create-window
+        (fn [window]
+          (println "buffer create-window")
+          (let [buf (create-buf "[new file]" nil "")
+                areg (window :registers)]
+            (swap! areg (fn [reg]
+                          (assoc reg "%" (buf :name))))
+            (send (window :ui) (fn [ui] (assoc ui :buf buf))) 
+            (assoc window
+                   :buffers
+                   (atom {(buf :id) (wrap-agent buf)})))))
 
 ;http://stackoverflow.com/questions/13789092/length-of-the-first-line-in-an-utf-8-file-with-bom
 ;TODO: use Apache Commons IO: http://commons.apache.org/proper/commons-io/download_io.cgi

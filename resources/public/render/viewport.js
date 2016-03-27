@@ -13,14 +13,14 @@ function setSize(bufid) {
 
 var __updatingViewportSize = false;
 
-function updateViewportSize(fnok) {
+function updateViewportSize(fnok, windowId) {
     var sz = setSize(buffers.active.id);
     if (sz.width != viewport.width || sz.height != viewport.height) {
         viewport.width = sz.width;
         viewport.height = sz.height;
 
         __updatingViewportSize = true;
-        $.get('resize/' + sz.width + '/' + sz.height, function() {
+        $.get('resize/' + windowId + '/' + sz.width + '/' + sz.height, function() {
             __updatingViewportSize = false;
 
             fnok();

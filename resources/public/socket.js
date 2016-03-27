@@ -8,10 +8,13 @@ function connect(path) {
     }
 
     function _connect(query) {
-        _conn = new WebSocket(window.location.href.replace(/^http(s?:\/\/[^/]*)(\/.*)?/i, "ws$1") + path + (query || ''));
+        _conn = new WebSocket(window.location.href.replace(/^http(s?:\/\/[^/]*)(\/.*)?/i, "ws$1") + path + (query || '?windowId='+_windowId));
         _conn.onmessage = function(message) {
             console.log(message.data);
-            JSON.parse(message.data).each(render);
+            JSON.parse(message.data).each(function(buf) {
+                _windowId = buf.windowId || _windowId;
+                render(buf);
+            });
         };
         _conn.onopen = function() {
             _flushBuffer();
@@ -35,11 +38,23 @@ function connect(path) {
                     //reconnect
                     _connect();
                 }
-            });
+            }, _windowId);
         }
     }
 
-    _connect('?init=true');
+    function _getAndClearWindowId() {
+        var windowId = docCookies.getItem('windowId') || false;
+        docCookies.setItem('windowId', '');
+        return windowId || 'false';
+    }
+
+    var _windowId = _getAndClearWindowId();
+
+    window.onbeforeunload = function() {
+        docCookies.setItem('windowId', _windowId);
+    }
+
+    _connect('?init=true&windowId=' + _windowId);
 
     return {
         'send': function(key) {

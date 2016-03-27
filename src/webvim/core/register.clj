@@ -5,6 +5,13 @@
 
 (defonce ^:private registers (atom {}))
 
+(listen
+  :create-window
+  (fn [window]
+    (println "register create-window")
+    (assoc window
+           :registers (atom {}))))
+
 (def ^:private unnamed-reg "\"")
 (def ^:private black-hole-reg "_")
 (def ^:private clipboard-reg "+")

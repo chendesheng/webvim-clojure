@@ -24,6 +24,12 @@
 ; c+i                | {:before (A)     :after (D')}    | D'
 ; c+i                | {:before (A)     :after (D')}    | D'
 
+(listen :create-window
+        (fn [window]
+          (println "jumplist create-window")
+          (assoc window
+                 :jumplist (atom {}))))
+
 (defn- jumplist []
   (*window* :jumplist))
 

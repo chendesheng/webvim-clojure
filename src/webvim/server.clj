@@ -3,6 +3,7 @@
             [ring.util.response :as response]
             [cheshire.core :as json]
             [org.httpkit.server :refer [run-server with-channel on-receive on-close send! close]]
+            [webvim.core.editor :refer [*window* get-or-create-window with-window with-window-id]]
             [webvim.core.ui :refer [update-ui get-from-ui ui-buf]]
             [webvim.core.utils :refer [vconj parse-int]]
             [webvim.core.event :refer [fire-event]])
@@ -20,7 +21,7 @@
 
 (defn- homepage
   [request]
-  (let [js ["jquery.js" "socket.js" "utils.js" "dom.js" "keycode.js" "keymap.js"
+  (let [js ["jquery.js" "cookie.js" "socket.js" "utils.js" "dom.js" "keycode.js" "keymap.js"
             "keyboard.js" "syntax/clojure.js" "syntax/css.js" "syntax/xml.js" 
             "syntax/sql.js" "syntax/go.js" "syntax/cs.js" "syntax/javascript.js" 
             "highlight.js" "main.js" "render/autocompl.js" "render/cursor.js" 
@@ -50,22 +51,35 @@
         (update ui :queue vconj diff)))))
 
 (defn- handle-socket [request]
-  (with-channel request channel
-                (on-receive channel
-                            (fn [body]
-                              (fire-event (parse-input body) :input-keys)))
-                (on-close channel
-                          (fn [status] (println "websocket close")))
-                (let [ws (get-from-ui :ws)]
-                  (if-not (nil? ws)
-                    (close ws)))
-                (update-ui
-                  (fn [ui ws]
-                    (assoc ui
-                           :ws ws
-                           :render! write-client!)) channel)
-                (if (contains? (request :query-params) "init")
-                  (send! channel (json/generate-string [(ui-buf)])))))
+  (let [channels (atom {})]
+    (with-channel
+      request channel
+      (on-receive channel
+                  (fn [body]
+                    (with-window (@channels channel)
+                      (fire-event (parse-input body) :input-keys))))
+      (on-close channel
+                (fn [status] (println "websocket close")))
+      ;setup window context
+      (let [window (get-or-create-window
+                     (-> request :query-params (get "windowId")))]
+        ;(println window)
+        (with-window window
+          ;close last channel
+          (if-let [ws (get-from-ui :ws)]
+            (do
+              (close ws)
+              (swap! channels dissoc ws)))
+          (swap! channels assoc channel window)
+          ;set current channel
+          (update-ui
+            (fn [ui ws]
+              (assoc ui
+                     :ws ws
+                     :render! write-client!)) channel)
+          (if (-> request :query-params (contains? "init"))
+            (send! channel (json/generate-string
+                             [(assoc (ui-buf) :windowId (window :id))]))))))))
 
 (defonce ^:private web-server (atom nil))
 
@@ -76,10 +90,12 @@
 (defroutes main-routes
   (GET "/" [request] (homepage request))
   (GET "/socket" [] handle-socket)
-  (GET "/resize/:w/:h" [w h]
-    (update-ui
-      (fn [ui w h]
-        (update ui :viewport assoc :w w :h h)) (parse-int w) (parse-int h))))
+  ;FIXME: add back later
+  (GET "/resize/:id/:w/:h" [id w h]
+       (with-window-id id
+         (update-ui
+           (fn [ui w h]
+             (update ui :viewport assoc :w w :h h)) (parse-int w) (parse-int h)))))
 
 (def ^:private app
   (-> (compojure.handler/api main-routes)

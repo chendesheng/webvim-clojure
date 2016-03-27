@@ -5,8 +5,8 @@
             [webvim.persistent :refer [recover-buffers start-track]]
             [webvim.core.rope :refer [re-test]]
             [webvim.core.ui :refer [send-buf!]]
-            [webvim.core.register :refer [registers-put!]]
             [webvim.core.buffer :refer [buf-match-bracket update-buffer new-file]]
+            [webvim.core.register :refer [registers-put!]]
             [webvim.keymap.compile :refer [keycode-cancel apply-keycodes]]
             [webvim.core.event :refer [listen fire-event]]
             [webvim.core.keys :refer [input-keys]])
@@ -81,8 +81,9 @@
 
 ;start app with init file and webserver configs
 (defn start [file recover-buffers? options]
-  (if-not (empty? file) (start-file file))
-  (if recover-buffers? (recover-buffers))
+  ;(if-not (empty? file) (start-file file))
+  ;FIXME: add back later 
+  ;(if recover-buffers? (recover-buffers))
   (start-track)
   (println "start web server:" (options :port))
   (server/run options))

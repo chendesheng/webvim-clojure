@@ -5,21 +5,30 @@
 
 (defonce editor (atom {:windows {}}))
 
-(defonce *window* {:id (uuid)
-                   :buffers (atom {})
-                   :jumplist (atom {})
-                   :cwd (atom (str fs/*cwd*))
-                   :registers (atom {})
-                   :ui (agent {:viewport {:w 0 :h 0}
-                               :render! (fn [a b] a)} :error-handler (fn [ui err]
-                                                                       (println "ui agent fail:")
-                                                                       (println ":bufid " (-> ui :buf :id))
-                                                                       (println ":filepath " (-> ui :buf :filepath))
-                                                                       (println err)))})
+(def ^:dynamic *window* nil)
 
 (defn current-working-directory []
   @(*window* :cwd))
 
 (defn update-cwd [s]
-  (alter-var-root (var fs/*cwd*) (constantly (-> s str fs/file)))
   (reset! (*window* :cwd) (str s)))
+
+(defn- create-window[]
+  (fire-event {:id (uuid) 
+               :cwd (atom (str fs/*cwd*))} :create-window))
+
+(defmacro with-window[window & body]
+  `(binding [*window* ~window
+             fs/*cwd* (-> ~window :cwd deref fs/file)] ~@body))
+
+(defmacro with-window-id[window-id & body]
+  `(let [window# (-> @editor :windows (get ~window-id))]
+     (binding [*window* window#
+               fs/*cwd* (-> window# :cwd deref fs/file)] ~@body)))
+
+(defn get-or-create-window[id]
+  (or (-> @editor :windows (get id))
+      (let [window (create-window)]
+        (swap! editor assoc-in [:windows (window :id)] window)
+        window)))
+
