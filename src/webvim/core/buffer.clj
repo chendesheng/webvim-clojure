@@ -39,14 +39,14 @@
   ([f]
     (filter f (get-buffers))))
 
-(defn do-buffers[f]
-  (doseq [abuf (vals @buffer-list)]
+(defn do-buffers [f]
+  (doseq [abuf (vals @(buffer-list))]
     (send abuf f)))
 
 (defn remove-buffer [id]
   (swap! (buffer-list) dissoc id))
 
-(defn reset-buffers![]
+(defn reset-buffers! []
   (reset! (buffer-list) {}))
 
 (defmacro with-catch [buf & body]

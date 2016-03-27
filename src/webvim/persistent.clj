@@ -1,6 +1,6 @@
 (ns webvim.persistent
   (:require [webvim.core.event :refer [listen]]
-            [webvim.core.ui :refer [ui-agent send-buf!]]
+            [webvim.core.ui :refer [send-buf!]]
             [webvim.core.register :refer [registers-put! registers-get]]
             [webvim.core.buffer :refer [new-file get-buffers get-buffer-by-filepath persistent-buffers]]
             [webvim.core.utils :refer [path=]]
@@ -57,7 +57,9 @@
 
 (listen :write-buffer
         (fn [buf]
-          (save-buffers! (get-buffers) (@ui-agent :buf))
+          (comment
+            ;FIXME: add back later
+            (save-buffers! (get-buffers) (@ui-agent :buf)))
           buf))
 
 (defn start-track []

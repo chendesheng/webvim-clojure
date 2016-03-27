@@ -3,7 +3,9 @@
             [clojure.core.async :as async]
             [cljfmt.core :as cljfmt]
             [webvim.panel :refer [append-output-panel]]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [webvim.server :as server]
+            [webvim.main :refer [start]])
   (:use clojure.pprint
         clojure.repl
         webvim.core.buffer
@@ -12,17 +14,15 @@
         webvim.core.register
         webvim.core.event
         webvim.core.utils
-        webvim.keymap
-        webvim.main))
+        webvim.keymap))
 
 (defn print-buf
   ([]
-    (let [buf (-> @ui-agent :buf 
-                  (dissoc :str :history :keymap :normal-mode-keymap 
-                          :insert-mode-keymap :ex-mode-keymap :context))]
+    (let [buf (dissoc (get-from-ui :buf) :str :history :keymap :normal-mode-keymap 
+                      :insert-mode-keymap :ex-mode-keymap :context)]
       (pprint buf)))
   ([& ks]
-    (pprint (-> @ui-agent :buf (get-in ks)))))
+    (pprint  ((get-from-ui :buf) ks))))
 
 (defn- cache-resource [path url]
   (if-not (fs/exists? path)
@@ -35,14 +35,14 @@
     (apply cache-resource r)))
 
 (defn restart []
-  (doseq [abuf (vals @buffer-list)]
-    (send abuf (fn [buf]
-                 (let [tmp (init-keymap-tree buf)
-                       keymaps (assoc tmp :keymap (tmp :normal-mode-keymap))]
-                   (merge buf keymaps)))))
+  (do-buffers
+    (fn [buf]
+      (let [tmp (init-keymap-tree buf)
+            keymaps (assoc tmp :keymap (tmp :normal-mode-keymap))]
+        (merge buf keymaps))))
   (future
     (Thread/sleep 10) ;wait some time so restart happens after flush states to client
-    (stop)
+    (server/stop)
     (start nil false {:port 8080 :join? false}))
   "ok")
 
@@ -113,15 +113,15 @@
 
 (defn reset-buffers []
   (let [buffers (get-buffers persistent-buffers)]
-    (reset! buffer-list {})
+    (reset-buffers!)
     (registers-put! "%" nil)
     (doseq [{filepath :filepath y :y} buffers]
       (let [buf @(new-file filepath y)]
         (cond
-          (and (-> @ui-agent :buf :filepath nil? not)
-               (path= filepath (-> @ui-agent :buf :filepath)))
+          (and (-> (get-from-ui :buf) :filepath nil? not)
+               (path= filepath ((get-from-ui :buf) :filepath)))
           (do
-            (send ui-agent (fn [ui] (dissoc ui :buf)))
+            (update-ui (fn [ui] (dissoc ui :buf)))
             (registers-put! "%" {:str filepath :id (buf :id)})
             (send-buf! buf))
           (path= filepath (:str (registers-get "#")))

@@ -1,7 +1,7 @@
 (ns webvim.keymap.showkeys
+  (:require [webvim.core.ui :refer [update-ui]])
   (:use clojure.pprint
         webvim.keymap.compile
-        webvim.core.ui
         webvim.core.rope
         webvim.core.buffer
         webvim.core.event))
@@ -57,9 +57,9 @@
                           (assoc buf :showkeys nil)
                           :else
                           (do
-                            (send ui-agent
-                                  (fn [ui]
-                                    (update ui :buf dissoc :showkeys)))
+                            (update-ui
+                              (fn [ui]
+                                (update ui :buf dissoc :showkeys)))
                             (update-buffer (buf :id) 
                                            (fn [buf]
                                              (dissoc buf :showkeys)))

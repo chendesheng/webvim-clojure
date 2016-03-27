@@ -1,7 +1,8 @@
 (ns webvim.keymap.motion
   (:require
     [webvim.keymap.objects :refer [current-word]]
-    [webvim.keymap.compile :refer [wrap-keycode wrap-key]])
+    [webvim.keymap.compile :refer [wrap-keycode wrap-key]]
+    [webvim.core.ui :refer [viewport]])
   (:use webvim.core.pos
         webvim.core.buffer
         webvim.core.register
@@ -9,7 +10,6 @@
         webvim.core.rope
         webvim.core.line
         webvim.core.event
-        webvim.core.ui
         webvim.core.parallel-universe
         webvim.keymap.linebuf.linebuf
         webvim.keymap.ex
@@ -236,7 +236,7 @@
   (fn [buf keycode]
     (move-to-line buf 
                   (+ (buf :scroll-top)
-                     (-> @ui-agent :viewport :h dec (* percentFromTop) Math/ceil)))))
+                     (-> (viewport) :h dec (* percentFromTop) Math/ceil)))))
 
 (defn- repeat-prefix-value [buf]
   (-> buf :context :repeat-prefix (or "1") parse-int))

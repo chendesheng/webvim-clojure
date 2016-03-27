@@ -1,10 +1,10 @@
 (ns webvim.scrolling
-  (:require [webvim.core.ui :refer [ui-agent]]))
+  (:require [webvim.core.ui :refer [viewport]]))
 
 (defn scroll-to [f]
   (fn [buf keycode]
     (assoc buf :scroll-top
-           (f (buf :scroll-top) (-> @ui-agent :viewport :h) (buf :y)))))
+           (f (buf :scroll-top) ((viewport) :h) (buf :y)))))
 
 (defn viewport-center [scroll-top height cursor]
   (- cursor (int (/ height 2))))

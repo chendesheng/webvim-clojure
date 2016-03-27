@@ -3,7 +3,7 @@
             [ring.util.response :as response]
             [cheshire.core :as json]
             [org.httpkit.server :refer [run-server with-channel on-receive on-close send! close]]
-            [webvim.core.ui :refer [ui-agent ui-buf]]
+            [webvim.core.ui :refer [update-ui get-from-ui ui-buf]]
             [webvim.core.utils :refer [vconj parse-int]]
             [webvim.core.event :refer [fire-event]])
   (:use (compojure handler [core :only (GET POST defroutes)]) 
@@ -56,13 +56,14 @@
                               (fire-event (parse-input body) :input-keys)))
                 (on-close channel
                           (fn [status] (println "websocket close")))
-                (let [ws (@ui-agent :ws)]
+                (let [ws (get-from-ui :ws)]
                   (if-not (nil? ws)
                     (close ws)))
-                (send ui-agent (fn [ui ws]
-                                 (assoc ui
-                                        :ws ws
-                                        :render! write-client!)) channel)
+                (update-ui
+                  (fn [ui ws]
+                    (assoc ui
+                           :ws ws
+                           :render! write-client!)) channel)
                 (if (contains? (request :query-params) "init")
                   (send! channel (json/generate-string [(ui-buf)])))))
 
@@ -76,9 +77,9 @@
   (GET "/" [request] (homepage request))
   (GET "/socket" [] handle-socket)
   (GET "/resize/:w/:h" [w h]
-    (send ui-agent 
-          (fn [ui w h]
-            (update ui :viewport assoc :w w :h h)) (parse-int w) (parse-int h))))
+    (update-ui
+      (fn [ui w h]
+        (update ui :viewport assoc :w w :h h)) (parse-int w) (parse-int h))))
 
 (def ^:private app
   (-> (compojure.handler/api main-routes)

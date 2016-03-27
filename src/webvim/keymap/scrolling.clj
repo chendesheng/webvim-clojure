@@ -1,7 +1,7 @@
 (ns webvim.keymap.scrolling
   (:require [webvim.core.utils :refer [deep-merge bound-range]]
             [webvim.scrolling :refer [scroll-to viewport-center viewport-inc-lines]]
-            [webvim.core.ui :refer [ui-agent]]
+            [webvim.core.ui :refer [viewport]]
             [webvim.core.line :refer [lines-row]]
             [webvim.keymap.compile :refer [wrap-keycode]]))
 
@@ -19,7 +19,7 @@
   "Jump cursor by viewport height, deps to window's :viewport"
   [factor]
   (fn [buf keycode]
-    (let [h (-> @ui-agent :viewport :h)
+    (let [h ((viewport) :h)
           d (round-to-zero (* h factor))
           scroll-top (buf :scroll-top)
           row (-> buf :y)

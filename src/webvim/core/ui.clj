@@ -1,5 +1,6 @@
 (ns webvim.core.ui
-  (:require [webvim.core.event :refer [listen]])
+  (:require [webvim.core.event :refer [listen]]
+            [webvim.core.editor :refer [*window*]])
   (:use webvim.core.line))
 
 (defn- dissoc-empty [buf ks]
@@ -125,12 +126,22 @@
             (dissoc :str)
             remove-fields)))
 
-(defonce ui-agent (agent {:viewport {:w 0 :h 0}
-                          :render! (fn [a b] a)} :error-handler (fn [ui err]
-                                                                  (println "ui agent fail:")
-                                                                  (println ":bufid " (-> ui :buf :id))
-                                                                  (println ":filepath " (-> ui :buf :filepath))
-                                                                  (println err))))
+(defn- ui-agent []
+  (*window* :ui))
+
+(defn viewport []
+  (@(ui-agent) :viewport))
+
+(defn update-ui
+  ([f]
+    (send (ui-agent) f))
+  ([f a]
+    (send (ui-agent) f a))
+  ([f a b]
+    (send (ui-agent) f a b)))
+
+(defn get-from-ui [key]
+  (@(ui-agent) key))
 
 (defn- bound-scroll-top
   "Change scroll top make cursor inside viewport"
@@ -138,7 +149,7 @@
   (let [st (buf :scroll-top)]
     (assoc buf :scroll-top
            (let [y (buf :y)
-                 h (-> @ui-agent :viewport :h)]
+                 h ((viewport) :h)]
              (cond
                (zero? h) 0
                (< y st) y
@@ -148,7 +159,7 @@
 
 (defn send-buf! [newbuf]
   (let [newbuf (bound-scroll-top newbuf)]
-    (send-off ui-agent 
+    (send-off (ui-agent) 
               (fn [{buf :buf :as ui} newbuf]
                 (let [diff (render buf newbuf)
                       ui (assoc ui :buf (dissoc newbuf :changes))]
@@ -157,7 +168,7 @@
     (assoc newbuf :changes [])))
 
 (defn ui-buf []
-  (render nil (@ui-agent :buf)))
+  (render nil (get-from-ui :buf)))
 
 (listen :change-buffer
         (fn [buf oldbuf c]
