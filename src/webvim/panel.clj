@@ -3,6 +3,7 @@
   (:require
     [me.raynes.fs :as fs]
     [clojure.string :as str]
+    [webvim.core.editor :refer [current-working-directory]]
     [webvim.core.buffer :refer [update-buffer
                                 output-panel-name grep-panel-name find-panel-name 
                                 directory-panel-name change-active-buffer new-file
@@ -54,7 +55,8 @@
 (defn- edit-dir [path]
   (let [abuf (directory-panel)
         files (str/join "\n"
-                        (map (fn [f] (-> f str shorten-path))
+                        (map (fn [f]
+                               (shorten-path (current-working-directory) (str f)))
                              (cons (fs/parent path) (fs/list-dir path))))]
     @(send abuf
            (fn [buf]

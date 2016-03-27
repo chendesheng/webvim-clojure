@@ -92,13 +92,6 @@
 (defn vconj [coll x]
   (conj (or coll []) x))
 
-(defn shorten-path [path]
-  (if (nil? path) nil
-      (let [cwd (str fs/*cwd*)]
-        (if (fs/child-of? cwd path)
-          (subs path (-> cwd str count inc))
-          path))))
-
 (defn crlf? [txt]
   (let [[m] (re-seq #"\r?\n" txt)]
     (= (count m) 2)))
@@ -173,3 +166,10 @@
   (webvim.core.utils/visualx-to-charx "\t\t345" 3 4))
 
 (defn uuid [] (str (java.util.UUID/randomUUID)))
+
+(defn shorten-path [^String cwd ^String path]
+  (if (nil? path) nil
+    (if (fs/child-of? (fs/file cwd) path)
+      (subs path (-> cwd count inc))
+      path)))
+

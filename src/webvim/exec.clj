@@ -1,6 +1,7 @@
 (ns webvim.exec
   (:require [me.raynes.fs :as fs]
-            [clj-commons-exec :as exec])
+            [clj-commons-exec :as exec]
+            [webvim.core.editor :refer [current-working-directory]])
   (:import [org.apache.commons.exec
             ExecuteResultHandler
             LogOutputStream]))
@@ -13,7 +14,7 @@
     (output (format "[%s]\n" e))))
 
 (defn exec-async [args output]
-  (exec/sh args {:dir (str fs/*cwd*)
+  (exec/sh args {:dir (current-working-directory)
                  :result-handler-fn (fn [result in out err opts]
                                       (->MyResultHandler output))
                  :out (proxy [LogOutputStream] nil

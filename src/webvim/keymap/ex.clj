@@ -1,6 +1,7 @@
 (ns webvim.keymap.ex
   (:require [me.raynes.fs :as fs]
             [webvim.mode :refer [set-normal-mode]]
+            [webvim.core.editor :refer [current-working-directory update-cwd]]
             [webvim.panel :refer [append-panel append-output-panel grep-panel find-panel edit-file goto-buf]]
             [clojure.string :as string])
   (:use clojure.pprint
@@ -37,13 +38,16 @@
                             (concat res (lazy-seq 
                                           (filter pred (.listFiles dir))))) nil (filter #(.isDirectory %) files)))))))
   ([pred]
-    (file-seq-bfs pred [fs/*cwd*])))
+    (file-seq-bfs pred [(fs/file (current-working-directory))])))
 
 (defn- get-files []
   (map (comp (fn [f] {:name f :class (cond
                                        (fs/directory? f) "dir"
                                        (fs/executable? f) "exe"
-                                       :else "file")}) shorten-path str) (file-seq-bfs (comp not hidden?)))) 
+                                       :else "file")})
+             (fn [s]
+               (shorten-path (current-working-directory) s))
+             str) (file-seq-bfs (comp not hidden?)))) 
 
 ;(pprint (take 20 (get-files)))
 
@@ -180,14 +184,13 @@
     (move-to-line buf row)))
 
 (defn cmd-cd [buf execmd args]
-  (if (string/blank? args) (assoc buf :message (str fs/*cwd*))
+  (if (string/blank? args) (assoc buf :message (current-working-directory))
       (let [dir (fs/expand-home args)]
-      ;(println "dir:" fs/*cwd*)
       ;(println "dir:2" dir)
         (if (fs/directory? dir)
           (do
-            (alter-var-root (var fs/*cwd*) (constantly (fs/file dir)))
-            (assoc buf :message (str "Set working directory to: " fs/*cwd*)))
+            (update-cwd dir)
+            (assoc buf :message (str "Set working directory to: " (current-working-directory))))
           (assoc buf :message "Path is not a directory or not exists.")))))
 
 (defn cmd-ls [buf execmd args]
