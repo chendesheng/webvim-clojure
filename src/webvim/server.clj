@@ -79,8 +79,7 @@
                      :ws ws
                      :render! write-client!)) channel)
           (if (-> request :query-params (contains? "init"))
-            (send! channel (json/generate-string
-                             [(assoc (ui-buf) :windowId (window :id))]))))))))
+            (send! channel (json/generate-string [(ui-buf)]))))))))
 
 (defonce ^:private web-server (atom nil))
 

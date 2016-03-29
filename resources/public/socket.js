@@ -8,12 +8,21 @@ function connect(path) {
     }
 
     function _connect(query) {
-        _conn = new WebSocket(window.location.href.replace(/^http(s?:\/\/[^/]*)(\/.*)?/i, "ws$1") + path + (query || '?windowId='+_windowId));
+        _conn = new WebSocket(window.location.href.replace(/^http(s?:\/\/[^/]*)(\/.*)?/i, "ws$1") + path + (query || '?windowId=' + _windowId));
         _conn.onmessage = function(message) {
             console.log(message.data);
-            JSON.parse(message.data).each(function(buf) {
-                _windowId = buf.windowId || _windowId;
-                render(buf);
+            JSON.parse(message.data).each(function(item) {
+                var buf, win;
+                if (isArray(item)) {
+                    win = item[0];
+                    buf = item[1];
+                } else {
+                    buf = item;
+                }
+                if (win) {
+                    _windowId = win.id || _windowId;
+                }
+                render(win, buf);
             });
         };
         _conn.onopen = function() {
@@ -38,7 +47,7 @@ function connect(path) {
                     //reconnect
                     _connect();
                 }
-            }, _windowId);
+            });
         }
     }
 

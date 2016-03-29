@@ -91,7 +91,20 @@
       (dissoc-nil :keys)
       line-editor))
 
-(defn- render 
+(defn- ui-agent []
+  (*window* :ui))
+
+(defn- window-data [window]
+  {:id (window :id)
+   :cwd @(window :cwd)})
+
+(defn- diff-window [before after]
+  (if (= before after) nil
+      (-> after
+          (dissoc-if-equal before :id)
+          (dissoc-if-equal before :cwd))))
+
+(defn- diff-buf 
   "Write changes to browser."
   [before after]
   (cond (= before after)
@@ -126,8 +139,12 @@
             (dissoc :str)
             remove-fields)))
 
-(defn- ui-agent []
-  (*window* :ui))
+;FIXME: doesn't feel right to put window object inside buf
+(defn- diff-ui [{buf :buf window :window :as ui} newbuf]
+  (let [diff (diff-buf buf newbuf)
+        diffwin (diff-window window (window-data *window*))]
+    (if (nil? diffwin) diff ;write array back if window object changes
+      [diffwin diff])))
 
 (listen
   :create-window
@@ -135,16 +152,15 @@
     (assoc window
            :ui
            (agent
-             {:viewport {:w 0 :h 0} :render! (fn [a b] a)}
+             {:viewport {:w 0 :h 0}
+              :render! (fn [a b] a)
+              :window (window-data window)}
              :error-handler
              (fn [ui err]
                (println "ui agent fail:")
                (println ":bufid " (-> ui :buf :id))
                (println ":filepath " (-> ui :buf :filepath))
                (println err))))))
-
-(defn viewport []
-  (@(ui-agent) :viewport))
 
 (defn update-ui
   ([f]
@@ -155,9 +171,10 @@
     (send (ui-agent) f a b)))
 
 (defn get-from-ui [key]
-  (if (nil? *window*)
-    nil
-    (@(ui-agent) key)))
+  (@(ui-agent) key))
+
+(defn viewport []
+  (get-from-ui :viewport))
 
 (defn- bound-scroll-top
   "Change scroll top make cursor inside viewport"
@@ -173,18 +190,20 @@
                (neg? (-> y (- h) inc)) 0
                :else (-> y (- h) inc))))))
 
-(defn send-buf! [newbuf]
-  (let [newbuf (bound-scroll-top newbuf)]
+(defn send-buf! [buf]
+  (let [buf (bound-scroll-top buf)]
     (send-off (ui-agent) 
-              (fn [{buf :buf :as ui} newbuf]
-                (let [diff (render buf newbuf)
-                      ui (assoc ui :buf (dissoc newbuf :changes))]
-                  (if (empty? diff) ui
-                      ((ui :render!) ui diff)))) newbuf)
-    (assoc newbuf :changes [])))
+              (fn [ui buf]
+                (let [diff (diff-ui ui buf)
+                      ui (assoc ui :buf (dissoc buf :changes))]
+                  (if (or (nil? diff)
+                          (empty? diff)) ui
+                      ((ui :render!) ui diff)))) buf)
+    (assoc buf :changes [])))
 
 (defn ui-buf []
-  (render nil (get-from-ui :buf)))
+  [(diff-window nil (get-from-ui :window))
+   (diff-buf nil (get-from-ui :buf))])
 
 (listen :change-buffer
         (fn [buf oldbuf c]

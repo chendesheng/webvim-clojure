@@ -191,7 +191,7 @@
         (if (fs/directory? dir)
           (do
             (update-cwd dir)
-            (assoc buf :message (str "Set working directory to: " (str fs/*cwd*))))
+            (assoc buf :message (str "Change working directory to: " (str fs/*cwd*))))
           (assoc buf :message "Path is not a directory or not exists.")))))
 
 (defn cmd-ls [buf execmd args]

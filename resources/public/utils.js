@@ -123,6 +123,12 @@ Array.prototype.reverse = function() {
 };
 
 
+//http://stackoverflow.com/questions/4775722/check-if-object-is-array
+function isArray(arr) {
+    return Object.prototype.toString.call(arr) === '[object Array]';
+}
+
+
 
 function isChinese(c) {
     return /[\ufe30-\uffa0\u4e00-\u9eff\u3000-\u303F]/.test(c);

@@ -32,7 +32,15 @@ function watchLocalbufChange(p, f) {
     localbufWatchers[p] = watchers;
 }
 
-function mergeToLocal(buf) {
+var localWindowWatchers = {};
+
+function watchLocalWindowChange(p, f) {
+    var watchers = localWindowWatchers[p] || [];
+    watchers.push(f);
+    localWindowWatchers[p] = watchers;
+}
+
+function mergeBufferToLocal(buf) {
     var watchers = [];
 
     if (buffers.active == null) {
@@ -45,8 +53,11 @@ function mergeToLocal(buf) {
     }
 
     for (var p in buf) {
-        //TODO: client and server should use same name
-        if (p == 'pos') {
+        if (p == 'window') {
+            var local = buffers.active[p] || {};
+            Object.assign(local, buf[p]);
+            watchers = watchers.concat(localbufWatchers[p] || []);
+        } else if (p == 'pos') {
             buffers.active.cursor = buf.pos;
             watchers = watchers.concat(localbufWatchers.cursor || []);
         } else if (buf.hasOwnProperty(p)) {
@@ -63,19 +74,43 @@ function mergeToLocal(buf) {
     delete buffers.active.changes;
 }
 
-function render(buf) {
-    if (!buf) return;
-    if (typeof buf.id == 'undefined') {
-        buf.id = buffers.active.id;
+function mergeWindowToLocal(win) {
+    var watchers = [];
+
+    buffers.window = buffers.window || {};
+    for (var p in win) {
+        buffers.window[p] = win[p];
+        watchers = watchers.concat(localWindowWatchers[p] || []);
     }
 
-    $buffer(buf.id);
-
-    var newbuf = !!buf.str;
-    mergeToLocal(buf);
-
-    window.requestAnimationFrame(function() {
-        renderViewport();
-        scrollToCursor(buffers.active, newbuf);
+    (watchers || []).forEach(function(f) {
+        f(buffers.window);
     });
+}
+
+function render(win, buf) {
+    if (win) {
+        if (typeof win.id == 'undefined') {
+            win.id = buffers.window.id;
+        }
+        mergeWindowToLocal(win);
+    }
+
+
+    if (buf) {
+        if (typeof buf.id == 'undefined') {
+            buf.id = buffers.active.id;
+        }
+
+        $buffer(buf.id);
+
+
+        var newbuf = !!buf.str;
+        mergeBufferToLocal(buf);
+
+        window.requestAnimationFrame(function() {
+            renderViewport();
+            scrollToCursor(buffers.active, newbuf);
+        });
+    }
 }

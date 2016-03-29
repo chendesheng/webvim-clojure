@@ -79,9 +79,19 @@ watchLocalbufChange('brackets', function(buf) {
     buf.brackets = brackets;
 });
 
+function renderWindowTitle(buf, win) {
+    document.title = buf.name + ' - ' + win.cwd;
+}
+
 watchLocalbufChange('name', function(buf) {
-    document.title = buf.name;
+    renderWindowTitle(buf, buffers.window);
     $statusName(buf.id).textContent = buf.name;
+});
+
+watchLocalWindowChange('cwd', function(win) {
+    if (buffers.active) {
+        renderWindowTitle(buffers.active, win);
+    }
 });
 
 watchLocalbufChange('line-buffer', function(buf) {
