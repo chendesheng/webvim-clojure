@@ -1,7 +1,6 @@
 (ns webvim.lang.go
   (:require [cheshire.core :as json]
             [me.raynes.fs :as fs]
-            [webvim.core.editor :refer [current-working-directory]]
             [webvim.panel :refer [append-output-panel]])
   (:use webvim.core.lang
         webvim.core.event
@@ -135,7 +134,7 @@
                   (conj args (buf :filepath))
                   (conj args (project-path (buf :filepath))))
                 args)
-        res (apply clojure.java.shell/sh (concat ["go"] args1 [:dir (current-working-directory)]))]
+        res (apply clojure.java.shell/sh (concat ["go"] args1 [:dir (str fs/*cwd*)]))]
     (-> buf
         (append-output-panel (res :out) false)
         (append-output-panel (res :err) true))))

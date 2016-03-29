@@ -167,9 +167,9 @@
 
 (defn uuid [] (str (java.util.UUID/randomUUID)))
 
-(defn shorten-path [^String cwd ^String path]
-  (if (nil? path) nil
-    (if (fs/child-of? (fs/file cwd) path)
-      (subs path (-> cwd count inc))
+(defn shorten-path [^String path]
+  (if-not (nil? path)
+    (if (fs/child-of? fs/*cwd* path)
+      (subs path (-> fs/*cwd* str count inc))
       path)))
 

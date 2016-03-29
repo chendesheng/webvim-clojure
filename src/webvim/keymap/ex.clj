@@ -1,7 +1,7 @@
 (ns webvim.keymap.ex
   (:require [me.raynes.fs :as fs]
             [webvim.mode :refer [set-normal-mode]]
-            [webvim.core.editor :refer [current-working-directory update-cwd]]
+            [webvim.core.editor :refer [update-cwd]]
             [webvim.panel :refer [append-panel append-output-panel grep-panel find-panel edit-file goto-buf]]
             [clojure.string :as string])
   (:use clojure.pprint
@@ -38,7 +38,7 @@
                             (concat res (lazy-seq 
                                           (filter pred (.listFiles dir))))) nil (filter #(.isDirectory %) files)))))))
   ([pred]
-    (file-seq-bfs pred [(fs/file (current-working-directory))])))
+    (file-seq-bfs pred [fs/*cwd*])))
 
 (defn- get-files []
   (map (comp (fn [f] {:name f :class (cond
@@ -46,7 +46,7 @@
                                        (fs/executable? f) "exe"
                                        :else "file")})
              (fn [s]
-               (shorten-path (current-working-directory) s))
+               (shorten-path s))
              str) (file-seq-bfs (comp not hidden?)))) 
 
 ;(pprint (take 20 (get-files)))
@@ -66,6 +66,7 @@
     [] buffers))
 
 (defn exec-shell-commands [buf apanel cmds]
+  (println "exec-shell-commands:" cmds)
   (exec-async cmds (fn [line]
                      (append-panel buf apanel line false)))
   (append-panel buf apanel (reduce (fn [s arg]
@@ -184,13 +185,13 @@
     (move-to-line buf row)))
 
 (defn cmd-cd [buf execmd args]
-  (if (string/blank? args) (assoc buf :message (current-working-directory))
+  (if (string/blank? args) (assoc buf :message (str fs/*cwd*))
       (let [dir (fs/expand-home args)]
       ;(println "dir:2" dir)
         (if (fs/directory? dir)
           (do
             (update-cwd dir)
-            (assoc buf :message (str "Set working directory to: " (current-working-directory))))
+            (assoc buf :message (str "Set working directory to: " (str fs/*cwd*))))
           (assoc buf :message "Path is not a directory or not exists.")))))
 
 (defn cmd-ls [buf execmd args]

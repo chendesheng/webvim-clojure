@@ -3,7 +3,7 @@
             [clojure.java.io :as io]
             [webvim.core.ui :refer [send-buf!]]
             [webvim.core.register :refer [registers-put!]]
-            [webvim.core.editor :refer [*window* current-working-directory]])
+            [webvim.core.editor :refer [*window*]])
   (:use clojure.pprint
         (clojure [string :only (join split blank? lower-case)])
         webvim.core.rope
@@ -211,7 +211,7 @@
   (let [{nm :name
          path :filepath} buf]
     (if (nil? path) nm
-        (shorten-path (current-working-directory) path))))
+        (shorten-path path))))
 
 (defn- column-str [buf]
   (let [r (buf :str)
@@ -254,7 +254,7 @@
     (spit f s)
     (-> buf
         set-save-point
-        (assoc :message (format "\"%s\" %dL, %dC written" (shorten-path (current-working-directory) f) (buf :linescnt) (count s))))))
+        (assoc :message (format "\"%s\" %dL, %dC written" (shorten-path f) (buf :linescnt) (count s))))))
 
 ;TODO make write atomic
 ;TODO check disk file change
