@@ -57,14 +57,15 @@
       (on-receive channel
                   (fn [body]
                     (with-window (@channels channel)
-                      (fire-event (parse-input body) :input-keys))))
+                                 (fire-event (parse-input body) :input-keys))))
       (on-close channel
                 (fn [status] (println "websocket close")))
       ;setup window context
       (let [window (get-or-create-window
                      (-> request :query-params (get "windowId")))]
         ;(println window)
-        (with-window window
+        (with-window
+          window
           ;close last channel
           (if-let [ws (get-from-ui :ws)]
             (do
@@ -92,10 +93,10 @@
   (GET "/socket" [] handle-socket)
   ;FIXME: add back later
   (GET "/resize/:id/:w/:h" [id w h]
-       (with-window-id id
-         (update-ui
-           (fn [ui w h]
-             (update ui :viewport assoc :w w :h h)) (parse-int w) (parse-int h)))))
+    (with-window-id id
+                    (update-ui
+                      (fn [ui w h]
+                        (update ui :viewport assoc :w w :h h)) (parse-int w) (parse-int h)))))
 
 (def ^:private app
   (-> (compojure.handler/api main-routes)

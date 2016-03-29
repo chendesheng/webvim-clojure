@@ -73,15 +73,8 @@
         (fn [[id keycode]]
           (update-buffer id change-buffer! (input-keys keycode))))
 
-(defn- start-file [f]
-  (println "start-file:" f)
-  (let [buf @(new-file f)]
-    (registers-put! "%" {:str f :id (buf :id)})
-    (send-buf! buf)))
-
 ;start app with init file and webserver configs
-(defn start [file recover-buffers? options]
-  ;(if-not (empty? file) (start-file file))
+(defn start [recover-buffers? options]
   ;FIXME: add back later 
   ;(if recover-buffers? (recover-buffers))
   (start-track)
@@ -90,6 +83,5 @@
 
 (defn -main [& args]
   (start
-    "/tmp/webvim/welcome.txt"
     true
     {:port 8080 :join? true}))
