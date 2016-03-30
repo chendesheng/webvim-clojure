@@ -25,6 +25,11 @@
     ;(println a b (count indent))
     (buf-replace buf a b indent)))
 
+(defn- indent-size [indent buf]
+  (if (buf :expandtab)
+    (visual-size indent (buf :tabsize))
+    (count indent)))
+
 (defn buf-indent-lines 
   "indent from cursor row to row both inclusive. Only indent not blank line."
   [buf [a b]]
@@ -42,7 +47,7 @@
                        indent (indent-pos lang r a)]
                    [(buf-replace buf a b indent)
                     ;shift after buffer changed pos
-                    (+ delta (- (count indent) (- b a)))])) 
+                    (+ delta (- (indent-size indent buf) (- b a)))])) 
                [buf 0]
                lines)))))
 
