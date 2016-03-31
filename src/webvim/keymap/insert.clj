@@ -58,6 +58,7 @@
                              :submode :none)))))
 
 (defn init-insert-mode-keymap [normal-mode-keymap buf]
+  ;TODO: <c-u> <c-w>
   (let [keymap {"<esc>" nop
                 "<c-o>" (fire-event
                           :temp-normal-mode-keymap

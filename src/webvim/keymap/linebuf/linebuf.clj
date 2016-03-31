@@ -138,6 +138,10 @@
   (let [newpos (or (first (pos-re- r pos #"(?<=\s|^)\S")) pos)]
     (linebuf-delete buf (- newpos pos))))
 
+(defn- linebuf-<c-u>
+  [buf keycode]
+  (linebuf-delete buf (-> buf :pos -)))
+
 (defn init-linebuf-keymap
   ([ahistory]
     (-> (init-history-keymap ahistory)
@@ -161,6 +165,7 @@
                                   (linebuf-insert buf (current-WORD buf)))
                         :else linebuf-put}
                "<c-w>" linebuf-<c-w>
+               "<c-u>" linebuf-<c-u>
                :enter linebuf-enter
                :else linebuf-default
                :continue linebuf-continue)))
