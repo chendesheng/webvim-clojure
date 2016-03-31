@@ -37,11 +37,20 @@
     (@registers ch)))
 
 (defn registers-put! [ch v]
-  (if (or (= clipboard-reg ch) (= clipboard-reg2 ch))
-    (clipboard-set! (v :str)))
-  (if (contains? #{"%" "#"} ch)
+  (cond
+    (contains? #{clipboard-reg clipboard-reg2} ch)
+    (clipboard-set! (v :str))
+    (contains? #{"%" "#"} ch)
     (put-window-registers ch v)
-    (swap! registers assoc ch v)))
+    :else
+    (let [append? (not (nil? (re-seq #"[A-Z]" ch)))
+          ch (.toLowerCase ch)]
+      (swap! registers assoc ch (if append?
+                                  (let [{s :str linewise? :linewise?} v
+                                        {s2 :str linewise2? :linewise?} (registers-get ch)]
+                                    {:str (str s2 (if (and linewise? (not linewise2?)) "\n" "") s)
+                                     :linewise? (or linewise? linewise2?)})
+                                  v)))))
 
 (defn map-registers [f]
   (map f (sort (merge @(window-registers) @registers))))
@@ -53,7 +62,6 @@
     (registers-put! last-yank-reg v)
     (registers-put! unnamed-reg v)))
 
-;TODO: A-Z append
 (defn registers-delete-to! [ch v]
   (registers-put! unnamed-reg v)
   (if (not= ch unnamed-reg)
