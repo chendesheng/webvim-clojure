@@ -23,10 +23,10 @@
   (let [s (clipboard-get)]
     (swap! registers update ch assoc :str s :linewise? (-> s last (= \newline)))))
 
-(defn- window-registers[]
+(defn- window-registers []
   (*window* :registers))
 
-(defn- put-window-registers[ch v]
+(defn- put-window-registers [ch v]
   (swap! (window-registers) assoc ch v))
 
 (defn registers-get [ch]
@@ -55,9 +55,10 @@
 
 ;TODO: A-Z append
 (defn registers-delete-to! [ch v]
-  (registers-put! ch v)
-  (if (and (not= ch black-hole-reg)
-           (= ch unnamed-reg))
+  (registers-put! unnamed-reg v)
+  (if (not= ch unnamed-reg)
+    (registers-put! ch v))
+  (if (not= ch black-hole-reg)
     (do
       ;Register 1: Last deletion. Register 2: Second last deletion. And so on.
       (swap! registers 
@@ -73,5 +74,4 @@
                    (assoc "8" (registers "7"))
                    (assoc "9" (registers "8")))))
       (if (->> v :str (re-seq #"\r?\n") count zero?)
-        (registers-put! small-delete-reg v)))
-    (registers-put! unnamed-reg v)))
+        (registers-put! small-delete-reg v)))))
