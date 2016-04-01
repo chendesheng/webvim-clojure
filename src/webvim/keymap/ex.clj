@@ -69,12 +69,7 @@
   (println "exec-shell-commands:" cmds)
   (exec-async cmds (fn [line]
                      (append-panel buf apanel line false)))
-  (append-panel buf apanel (reduce (fn [s arg]
-                                     (str s
-                                          " "
-                                          (if (re-test #"\s" arg)
-                                            (str "\"" arg "\"")
-                                            arg))) "" cmds) true))
+  (append-panel buf apanel (str \newline (string/join \space cmds)) true))
 
 (defn- expand-path [f]
   (if (= (first f) \~)
