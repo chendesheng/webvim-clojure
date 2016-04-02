@@ -24,7 +24,7 @@
 (defn- hidden? [f]
   ;(pprint (fs/split f))
   (or (fs/hidden? f)
-      (not (not-any? #(re-test #"^\..+" %) (fs/split f)))))
+      (some #(re-test #"^\..+" %) (fs/split f))))
 
 (defn- file-seq-bfs
   ([pred dirs]
@@ -302,7 +302,7 @@
                                     (if (string? cmd)
                                       (if (zero? (.indexOf cmd excmd)) (list handler cmd args))
                                       (let [m (re-seq cmd r)]
-                                        (if (not (nil? m)) (list handler cmd m))))) cmds))]
+                                        (if (some? m) (list handler cmd m))))) cmds))]
         ;(println "handlers:")
         ;(pprint handlers)
         (if (>= (count handlers) 1)

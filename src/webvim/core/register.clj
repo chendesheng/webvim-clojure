@@ -43,7 +43,7 @@
     (contains? #{"%" "#"} ch)
     (put-window-registers ch v)
     :else
-    (let [append? (not (nil? (re-seq #"[A-Z]" ch)))
+    (let [append? (some? (re-seq #"[A-Z]" ch))
           ch (.toLowerCase ch)]
       (swap! registers assoc ch (if append?
                                   (let [{s :str linewise? :linewise?} v

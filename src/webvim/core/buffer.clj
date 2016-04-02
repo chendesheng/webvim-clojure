@@ -293,7 +293,7 @@
       (apply send abuf f args))))
 
 (defn change-active-buffer [id nextid]
-  (if (and (not (nil? nextid)) (not= id nextid))
+  (if (and (some? nextid) (not= id nextid))
     (do
       (registers-put! "#" 
                       (file-register (get-buffer-by-id id)))

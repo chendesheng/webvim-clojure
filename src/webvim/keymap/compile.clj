@@ -11,7 +11,7 @@
   false)
 
 (defn- keycode-func-comp [funcs]
-  (let [funcs (filter #(and (not (nil? %)) (not (= % nop))) funcs)]
+  (let [funcs (filter #(and (some? %) (not (= % nop))) funcs)]
     ;(pprint funcs)
     (if (empty? funcs)
       nil

@@ -16,7 +16,7 @@
     buf))
 
 (defn- dissoc-if-equal [after before k]
-  (if (and (not (nil? before))
+  (if (and (some? before)
            (= (before k) (after k)))
     (dissoc after k)
     after))
@@ -144,7 +144,7 @@
   (let [diff (diff-buf buf newbuf)
         diffwin (diff-window window (window-data *window*))]
     (if (nil? diffwin) diff ;write array back if window object changes
-      [diffwin diff])))
+        [diffwin diff])))
 
 (listen
   :create-window
