@@ -3,6 +3,12 @@ function connect(path) {
     var _conn;
     var _lastSentTime = (new Date).getTime();
 
+    var _windowId = docCookies.getItem('windowId');
+    window.onbeforeunload = function() {
+        docCookies.setItem('windowId', _windowId);
+    }
+    docCookies.setItem('windowId', '');
+
     function _idleSeconds() {
         return ((new Date).getTime() - _lastSentTime) / 1000;
     }
@@ -49,18 +55,6 @@ function connect(path) {
                 }
             });
         }
-    }
-
-    function _getAndClearWindowId() {
-        var windowId = docCookies.getItem('windowId') || false;
-        docCookies.setItem('windowId', '');
-        return windowId || 'false';
-    }
-
-    var _windowId = _getAndClearWindowId();
-
-    window.onbeforeunload = function() {
-        docCookies.setItem('windowId', _windowId);
     }
 
     _connect('?init=true&windowId=' + _windowId);
