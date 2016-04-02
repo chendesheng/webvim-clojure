@@ -101,15 +101,22 @@ function hlclojure(hljs) {
         begin: /\\(newline|tab|space|return|formfeed|backspace|u[a-fA-F\d]{4}|o[0-7]{3}|[\w\(\)\[\]\{\}`~!@#$%^&*-=+])/,
         className: 'literal'
     };
-    var DEFAULT_CONTAINS = [LIST, STRING, HINT, HINT_COL, COMMENT, KEY, COLLECTION, CHAR_LITERAL, NUMBER, LITERAL, SYMBOL];
+    var BLOCK_COMMENT = {
+        begin: '\\(comment(?![' + SYMBOLAFTERSTART + '])',
+        end: '\\)',
+        className: 'comment',
+        descendantClassName: 'comment'
+    };
+    var DEFAULT_CONTAINS = [BLOCK_COMMENT, LIST, STRING, HINT, HINT_COL, COMMENT, KEY, COLLECTION, CHAR_LITERAL, NUMBER, LITERAL, SYMBOL];
 
-    LIST.contains = [hljs.COMMENT('comment(?![' + SYMBOLAFTERSTART + '])', ''), NAME, BODY];
+    LIST.contains = [BLOCK_COMMENT, NAME, BODY];
     BODY.contains = DEFAULT_CONTAINS;
     COLLECTION.contains = DEFAULT_CONTAINS;
+    BLOCK_COMMENT.contains = DEFAULT_CONTAINS;
 
     return {
         aliases: ['clj'],
         illegal: /\S/,
-        contains: [LIST, STRING, HINT, HINT_COL, COMMENT, KEY, COLLECTION, CHAR_LITERAL, NUMBER, LITERAL]
+        contains: [BLOCK_COMMENT, LIST, STRING, HINT, HINT_COL, COMMENT, KEY, COLLECTION, CHAR_LITERAL, NUMBER, LITERAL]
     }
 }

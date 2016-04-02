@@ -122,6 +122,16 @@ Array.prototype.reverse = function() {
     return arr;
 };
 
+//Returns the first logical true value of pred(x) for any x in array, else nil.
+Array.prototype.some = function(pred) {
+    for (var i = this.length - 1; i >= 0; i--) {
+        var item = this[i];
+        if (pred(item)) {
+            return item;
+        }
+    }
+};
+
 
 //http://stackoverflow.com/questions/4775722/check-if-object-is-array
 function isArray(arr) {

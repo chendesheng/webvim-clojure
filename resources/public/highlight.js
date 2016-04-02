@@ -324,10 +324,25 @@ function hlcompile(language) {
 
     var rootCompiled = compile(language);
 
+    function handleDescendantClassName(ctx, className) {
+        var modeDescendantClassName = ctx.modes.some(function(m) {
+            return !!m.descendantClassName
+        });
+
+        if (modeDescendantClassName) {
+            return modeDescendantClassName.descendantClassName;
+        }
+
+        return className;
+    }
+
     function writeOutput(ctx, className, text) {
         if (!text) {
             return;
         }
+
+        className = handleDescendantClassName(ctx, className);
+
         if (typeof className == 'function') {
             className = className(text, ctx);
         }
