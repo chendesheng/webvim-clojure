@@ -159,3 +159,6 @@
            (subr r (pos-line-first r pos) (inc pos)) 
            (buf :tabsize)))))
 
+(defn line-str [r pos]
+  (subr r (pos-line r pos)))
+

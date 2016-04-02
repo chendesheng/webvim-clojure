@@ -167,7 +167,7 @@
 (listen :create-window
         (fn [window]
           (println "buffer create-window")
-          (let [buf (create-buf "[new file]" nil "")
+          (let [buf (create-buf "" nil "")
                 areg (window :registers)]
             (swap! areg (fn [reg]
                           (assoc reg "%" (buf :name))))

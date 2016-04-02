@@ -51,9 +51,6 @@
                [buf 0]
                lines)))))
 
-(defn- line-str [r pos]
-  (subr r (pos-line r pos)))
-
 (defn buf-indent-current-line
   [buf]
   (let [{r :str pos :pos} buf
