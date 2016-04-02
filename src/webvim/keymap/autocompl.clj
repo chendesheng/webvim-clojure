@@ -143,6 +143,11 @@
                             :else
                             (autocompl-suggest buf provider))))))))))
 
+(defn- word-char-under-cursor? [buf]
+  (let [{not-word-chars :not-word-chars} (word-re (buf :language))
+        ch (str (.charAt (buf :str) (buf :pos)))]
+    (not (re-test (re-pattern (str "[" not-word-chars "]")) ch))))
+
 (def default-provider {:move-up "<c-p>"
                        :move-down "<c-n>"
                        :uncomplete-word buffer-uncomplete-word
@@ -155,9 +160,12 @@
                        :fn-words (fn [buf w]
                                    (map (fn [w]
                                           {:name w})
-                                        (keys 
+                                        (keys
                                           (let [cw (str (current-word buf))]
-                                            (if (or (= w cw) (empty? cw))
+                                            ;(println w cw)
+                                            (if (or (not (word-char-under-cursor? buf))
+                                                    (= w cw)
+                                                    (empty? cw))
                                               (autocompl-remove-word @autocompl-words w)
                                               (-> @autocompl-words
                                                   (autocompl-remove-word w)
