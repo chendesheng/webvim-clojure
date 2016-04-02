@@ -52,6 +52,10 @@
 (defn autocompl-remove-word [words w]
   (remove-words words {w 1}))
 
+(defn autocompl-add-word [words w]
+  (update words w (fn [n]
+                    (inc (or n 0)))))
+
 (listen
   :new-buffer
   (fn [buf]

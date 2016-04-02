@@ -12,6 +12,7 @@
         webvim.core.utils
         webvim.fuzzy
         webvim.keymap.ex
+        webvim.keymap.objects
         webvim.autocompl))
 
 (defn- new-autocompl [buf
@@ -151,9 +152,17 @@
                                              ;(pprint olditem)
                                              (buffer-replace-suggestion buf (item :name) (olditem :name)))
                        :async false
-                       :fn-words (fn [_ w]
+                       :fn-words (fn [buf w]
                                    (map (fn [w]
-                                          {:name w}) (keys (autocompl-remove-word @autocompl-words w))))
+                                          {:name w})
+                                        (keys 
+                                          (let [cw (str (current-word buf))]
+                                            (if (or (= w cw) (empty? cw))
+                                              (autocompl-remove-word @autocompl-words w)
+                                              (-> @autocompl-words
+                                                  (autocompl-remove-word w)
+                                                  (autocompl-remove-word cw)
+                                                  (autocompl-add-word (subs cw (count w)))))))))
                        :fn-suggest fuzzy-suggest
                        :limit-number 0
                        :start-autocompl? (fn [buf keycode]
