@@ -183,7 +183,7 @@
 ;For example:
 ;  {:len 0 :to "aa" :pos 0}
 ;means insert "aa" at 0
-;:pos must always be left point of changes
+;:pos must always be start point of changes
 ;
 ;Merge changes (changes can be merged into **one** :pos):
 ;  1) {:len 3 :to "" :pos 0} + {:len 0 :to "bb" :pos 0} =>  {:len 3 :to "bb" :pos 0}
@@ -284,14 +284,12 @@
 ; redo                  | {:changes (c1 c2)   :pending-undo ()        undoes: ((~c2 ~c1)) redoes: ()}
 (defn save-undo [buf]
   (let [pending (buf :pending-undo)]
-    (if (nil? pending) buf
-        (let [chs (merge-changes (pending :changes))
-              undo (assoc pending :changes (reverse chs))]
-        ;(println "text-save-undo:" pending)
-        ;(println "text-save-undo:" chs)
-          (-> buf
-              (assoc :pending-undo nil)
-              (update :history new-future undo))))))
+    (if (empty? pending) buf
+        (-> buf
+            (assoc :pending-undo nil)
+            (update :history
+                    new-future
+                    (update pending :changes merge-changes))))))
 
 (defn- apply-undo [buf undo]
   (let [chs (undo :changes)
