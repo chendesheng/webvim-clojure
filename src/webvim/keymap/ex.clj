@@ -27,18 +27,18 @@
       (not (not-any? #(re-test #"^\..+" %) (fs/split f)))))
 
 (defn- file-seq-bfs
-  ([pred files]
-    (if (empty? files)
+  ([pred dirs]
+    (if (empty? dirs)
       nil
-      (concat files
-              (lazy-seq
-                (file-seq-bfs
-                  pred
-                  (reduce (fn [res dir]
-                            (concat res (lazy-seq 
-                                          (filter pred (.listFiles dir))))) nil (filter #(.isDirectory %) files)))))))
+      (let [[dir & dirs] dirs
+            files (filter pred (.listFiles dir))
+            more-dirs (filter fs/directory? files)]
+        (concat files
+                (lazy-seq
+                  (file-seq-bfs pred
+                                (concat dirs more-dirs)))))))
   ([pred]
-    (file-seq-bfs pred [fs/*cwd*])))
+    (file-seq-bfs pred (list fs/*cwd*))))
 
 (defn- get-files []
   (map (comp (fn [f] {:name f :class (cond
