@@ -5,7 +5,7 @@ function connect(path) {
 
     var _windowId = docCookies.getItem('windowId');
     window.onbeforeunload = function() {
-        docCookies.setItem('windowId', _windowId);
+        docCookies.setItem('windowId', _windowId, Infinity);
     }
     docCookies.setItem('windowId', '');
 
