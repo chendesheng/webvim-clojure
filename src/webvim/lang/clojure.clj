@@ -124,19 +124,27 @@
       "diff" tmpfile "-" "-u"
       :in news)))
 
+(defn- format-error [buf message]
+  (async buf
+         (update buf
+                 :message
+                 #(str %2 %3 " " %1)
+                 "Format failed: " message)))
+
 (defn- format-buffer [buf]
   ;use temp file
   (if (buf :dirty)
-    (let [res (time (cljfmt-diff (-> buf :str str) (buf :name)))]
+    (try
+      (let [res (time (cljfmt-diff (-> buf :str str) (buf :name)))]
       ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
-      (if (-> res :err empty?) 
-        (-> buf
-            (apply-line-changes
-              (time (parse-diff (str (res :out)))))
-            save-undo)
-        (do
-          (println "Format Error:" (res :err))
-          (assoc buf :message (res :err)))))  ;use old buf if formatter fails
+        (if (-> res :err empty?) 
+          (-> buf
+              (apply-line-changes
+                (time (parse-diff (str (res :out)))))
+              save-undo)
+          (format-error (-> res :err str))))  ;use old buf if formatter fails
+      (catch Exception exp
+        (format-error buf (.getMessage exp))))
     buf))
 
 (defn- print-eval [buf code]
