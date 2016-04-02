@@ -57,9 +57,11 @@
 (defn buf-indent-current-line
   [buf]
   (let [{r :str pos :pos} buf
+        line-first (pos-line-first r pos)
         before (line-str r pos)
         buf (buf-indent-line buf pos)
-        after (line-str (buf :str) pos)]
+        ;line-first will remain in the same row after indent
+        after (line-str (buf :str) line-first)]
     ;press 'o' 'O' then '<esc>' cancel auto indent of cursor line.
     (if (and (= (count before) 1) (> (count after) 1) (rblank? after))
       (update buf :last-indents conj (pos-line (buf :str) pos))
