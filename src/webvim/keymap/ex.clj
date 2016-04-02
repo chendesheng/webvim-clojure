@@ -181,12 +181,9 @@
 
 (defn cmd-cd [buf execmd args]
   (if (string/blank? args) (assoc buf :message (str fs/*cwd*))
-      (let [dir (fs/expand-home args)]
-      ;(println "dir:2" dir)
+      (let [dir (expand-path args)]
         (if (fs/directory? dir)
-          (do
-            (update-cwd dir)
-            (assoc buf :message (str "Change working directory to: " (str fs/*cwd*))))
+          (assoc buf :message (str "Change working directory to: " (update-cwd dir)))
           (assoc buf :message "Path is not a directory or not exists.")))))
 
 (defn cmd-ls [buf execmd args]

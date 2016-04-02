@@ -160,32 +160,41 @@
 (defn- re-current-word
   "create regexp from word under cursor"
   [buf]
-  (let [word (current-word buf)
-        not-word-chars (-> buf :language word-re :not-word-chars)
-        re-start (str "(?<=^|[" not-word-chars "])")
-        re-end (str "(?=[" not-word-chars "]|$)")]
-    (re-pattern
-      (str re-start (quote-pattern word) re-end))))
+  (let [word (current-word buf)]
+    (println (count word))
+    (if (empty? word)
+      nil
+      (let [not-word-chars (-> buf :language word-re :not-word-chars)
+            re-start (str "(?<=^|[" not-word-chars "])")
+            re-end (str "(?=[" not-word-chars "]|$)")]
+        (re-pattern
+          (str re-start (quote-pattern word) re-end))))))
 
 (defn- same-word [forward?]
   (fn [buf keycode]
     (let [re (re-current-word buf)
           s (str re)]
-      (registers-put! "/" {:str s :forward? forward?})
-      (-> buf 
-          (search-message s forward?)
-          (re-forward-highlight re)
-          (highlight-all-matches re)))))
+      (if (nil? re)
+        (assoc buf :message "No string under cursor")
+        (do
+          (registers-put! "/" {:str s :forward? forward?})
+          (-> buf 
+              (search-message s forward?)
+              (re-forward-highlight re)
+              (highlight-all-matches re)))))))
 
 (defn- same-word-first [buf]
   (let [re (re-current-word buf)
         s (str re)]
-    (registers-put! "/" {:str s :forward? true})
-    (-> buf
-        buf-start
-        (search-message s true)
-        (re-forward-highlight re)
-        (highlight-all-matches re))))
+    (if (nil? re)
+      (assoc buf :message "No string under cursor")
+      (do
+        (registers-put! "/" {:str s :forward? true})
+        (-> buf
+            buf-start
+            (search-message s true)
+            (re-forward-highlight re)
+            (highlight-all-matches re))))))
 
 ;TODO: only highlight diff parts
 ;(defonce listen-change-buffer

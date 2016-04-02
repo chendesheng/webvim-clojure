@@ -56,12 +56,13 @@
     (update buf :line-buffer f)))
 
 (defn- linebuf-insert [buf r]
-  (update-linebuf 
-    buf 
-    (fn [linebuf]
-      (let [pos (linebuf :pos)]
-        (-> linebuf
-            (linebuf-replace pos pos r))))))
+  (if (empty? r) buf
+      (update-linebuf 
+        buf 
+        (fn [linebuf]
+          (let [pos (linebuf :pos)]
+            (-> linebuf
+                (linebuf-replace pos pos r)))))))
 
 (defn- linebuf-delete [buf offset]
   (update-linebuf 

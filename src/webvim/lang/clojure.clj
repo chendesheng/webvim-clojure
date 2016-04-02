@@ -161,8 +161,11 @@
             (wrap-key keymap
                       "K" (fn [handler]
                             (fn [buf keycode]
-                              (print-eval buf
-                                          (str "(clojure.repl/doc " (current-word buf) ")"))
+                              (let [word (current-word buf)]
+                                (if (empty? word)
+                                  (assoc buf :message "No string under cursor")
+                                  (print-eval buf
+                                              (str "(clojure.repl/doc " word ")"))))
                               buf)))
             keymap)))
 

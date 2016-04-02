@@ -125,16 +125,19 @@
     [a b1]))
 
 (defn- current-range [buf word-chars not-word-chars around?]
-  (let [{pos :pos
-         r :str} buf
+  (let [[line-first line-last] (pos-line (buf :str) (buf :pos))
+        line (subr (buf :str) line-first line-last)
+        pos (- (buf :pos) line-first)  
         re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))
         re-end (re-pattern (str "[" word-chars "](?=[" not-word-chars "])"))
-        b (or (last (pos-re+ r pos re-end)) (count r))
-        a (or (last (pos-re- r (dec b) re-start)) 0)]
-    (println a b)
+        b (or (last (pos-re+ line pos re-end)) (count line))
+        a (or (last (pos-re- line (dec b) re-start)) 0)    
+        a1 (+ a line-first)
+        b1 (+ b line-first)]
+    (println a1 b1)
     (if around?
-      (expand-around buf a b)
-      [a b])))
+      (expand-around buf a1 b1)
+      [a1 b1])))
 
 (defn- current-word-range [buf around?]
   (let [{word-chars :word-chars
@@ -147,10 +150,14 @@
     (current-range buf not-space-chars space-chars around?)))
 
 (defn current-word [buf]
-  (subr (buf :str) (current-word-range buf false)))
+  (-> buf :str
+      (subr (current-word-range buf false))
+      str .trim)) ;rope's trim bug: (.trim (webvim.core.rope/rope " ")) == " "
 
 (defn current-WORD [buf]
-  (subr (buf :str) (current-WORD-range buf false)))
+  (-> buf :str
+      (subr (current-WORD-range buf false))
+      str .trim))
 
 (defn- objects-keymap [around?]
   (merge (reduce-kv
