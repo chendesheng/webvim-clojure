@@ -25,5 +25,4 @@
       {:output output
        :result @result})
     (catch Exception e
-      (print (.getMessage e))
       {:exception e})))

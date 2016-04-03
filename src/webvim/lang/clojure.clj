@@ -143,8 +143,9 @@
                 (time (parse-diff (str (res :out)))))
               save-undo)
           (format-error (-> res :err str))))  ;use old buf if formatter fails
-      (catch Exception exp
-        (format-error buf (.getMessage exp))))
+      (catch Exception e
+        (fire-event e :exception)
+        (format-error buf (.getMessage e))))
     buf))
 
 (listen :normal-mode-keymap

@@ -1,5 +1,5 @@
 (ns webvim.persistent
-  (:require [webvim.core.event :refer [listen]]
+  (:require [webvim.core.event :refer [listen fire-event]]
             [webvim.core.ui :refer [send-buf!]]
             [webvim.core.register :refer [registers-put! registers-get]]
             [webvim.core.buffer :refer [new-file get-buffers get-buffer-by-filepath persistent-buffers]]
@@ -32,7 +32,7 @@
       (if (fs/exists? file)
         (read-string (slurp file))))
     (catch Exception e
-      (print e))))
+      (fire-event e :exception))))
 
 (defn recover-buffers []
   (let [{buffers :buffers active :active alternative :alternative} (read-buffers)]

@@ -1,11 +1,11 @@
 (ns webvim.core.buffer
   (:require [me.raynes.fs :as fs]
             [clojure.java.io :as io]
+            [clojure.string :as string]
             [webvim.core.ui :refer [send-buf!]]
             [webvim.core.register :refer [registers-put!]]
             [webvim.core.editor :refer [*window*]])
   (:use clojure.pprint
-        (clojure [string :only (join split blank? lower-case)])
         webvim.core.rope
         webvim.core.pos
         webvim.core.lang
@@ -53,6 +53,7 @@
   `(try
      (do ~@body)
      (catch Exception e#
+       (fire-event e# :exception)
        (assoc ~buf :message (str e#)))))
 
 (defmacro async [buf & body]
@@ -115,7 +116,7 @@
              :name bufname
              ;= nil if it is a special buffer like [New File] or [Quick Fix]
              :filepath filepath 
-             :ext (lower-case 
+             :ext (string/lower-case 
                     (or (re-find #"\.\w+$" (or bufname "")) ""))
              :str r
              :linescnt (count-<br> r)
@@ -270,10 +271,8 @@
             set-mod-time))
       (assoc buf :message "No changes to write"))
     (catch Exception e 
-      ;(println (.getMessage e))
-      (.printStackTrace e)
-      (let [err (str "caught exception: " (.getMessage e))]
-        (assoc buf :message err)))))
+      (fire-event e :exception)
+      (assoc buf :message (str e)))))
 
 (defn file-register [buf]
   {:id (buf :id) :str (or (buf :filepath) (buf :name))})

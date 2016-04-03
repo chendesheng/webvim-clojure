@@ -19,27 +19,6 @@
         webvim.lang.csharp
         webvim.lang.html))
 
-(defn- pretty-trace
-  "convert error trace to file path with line number"
-  [err]
-  (let [st (-> err .getStackTrace seq)]
-    (map (fn [line]
-           (let [class (.getClassName line)
-                ;method (.getMethodName line)
-                 file (.getFileName line)
-                 linenum (.getLineNumber line)
-                 appendsrc (fn [name]
-                             (if (re-test #"^webvim" name)
-                               (str "src/" name)
-                               name))]
-             (str (-> class
-                      (str/replace #"\$.*" "")
-                      ;FIXME: handle class name doesn't contains dot 
-                      (str/replace #"[.][^.]*$" "")
-                      (str/replace "." "/")
-                      (str/replace "_" "-")
-                      appendsrc) "/" file ":" linenum))) st)))
-
 (defn- change-buffer! [buf keycodes]
   (time
     (try
@@ -62,12 +41,7 @@
                                  (send-buf! true))))
             (dissoc buf :nextid))))
       (catch Exception e
-        (let [output (str e "\nstack trace:\n\t"
-                          (str/join "\n\t" (pretty-trace e)) "\n")]
-          (-> buf
-              keycode-cancel
-              (append-output-panel output true)
-              (dissoc :nextid)))))))
+        (fire-event :error (keycode-cancel buf) e)))))
 
 (listen :input-keys
         (fn [[id keycode]]

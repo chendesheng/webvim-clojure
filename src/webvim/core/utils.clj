@@ -206,3 +206,25 @@
           (string/replace "/" ".")
           (string/replace "\\" ".")
           (string/replace "_" "-")))))
+
+(defn pretty-trace
+  "convert error trace to file path with line number"
+  [err]
+  (let [st (-> err .getStackTrace seq)]
+    (map (fn [line]
+           (let [class (.getClassName line)
+                ;method (.getMethodName line)
+                 file (.getFileName line)
+                 linenum (.getLineNumber line)
+                 appendsrc (fn [name]
+                             (if (nil? (re-seq #"^webvim" name))
+                               name
+                               (str "src/" name)))]
+             (str (-> class
+                      (string/replace #"\$.*" "")
+                      ;FIXME: handle class name doesn't contains dot 
+                      (string/replace #"[.][^.]*$" "")
+                      (string/replace "." "/")
+                      (string/replace "_" "-")
+                      appendsrc) "/" file ":" linenum))) st)))
+

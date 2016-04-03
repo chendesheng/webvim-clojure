@@ -48,6 +48,7 @@
       (send! ws (-> ui :queue (vconj diff) json/generate-string))
       (dissoc ui :queue)
       (catch Exception e
+        (fire-event e :exception)
         (update ui :queue vconj diff)))))
 
 (defn- handle-socket [request]

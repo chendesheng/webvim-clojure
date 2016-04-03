@@ -64,6 +64,7 @@
         (re-pattern (str "(?m)(?i)" s))
         (re-pattern (str "(?m)" s))))
     (catch Exception e 
+      (fire-event e :exception)
       (re-pattern "(?m)(?!x)x"))))
 
 (defn- increment-search-<esc> [buf keycode]
