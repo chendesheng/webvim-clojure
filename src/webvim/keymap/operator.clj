@@ -63,7 +63,7 @@
     (buf-yank buf a b linewise? false)))
 
 (defn yank-blockwise [buf items]
-  (registers-put! (buf :register) {:str (str/join "\n" (map first items)) :blockwise? true}))
+  (registers-put! (-> buf :context :register) {:str (str/join "\n" (map first items)) :blockwise? true}))
 
 ;delete [a b) shift pos
 (defn- shift-delete [pos a b]
