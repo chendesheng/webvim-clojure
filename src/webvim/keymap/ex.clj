@@ -72,11 +72,6 @@
                      (append-panel buf apanel line false)))
   (append-panel buf apanel (str \newline (string/join \space cmds)) true))
 
-(defn- expand-path [f]
-  (if (= (first f) \~)
-    (str (fs/expand-home f))
-    (str (fs/normalized f))))
-
 (defn cmd-write [buf _ file]
   ;(println (expand-path file))
   (if (not (string/blank? file))

@@ -154,10 +154,15 @@
     (clojure.java.shell/sh "clip" :in text)
     :else (clipboard/set-text! text)))
 
+(defn expand-path [f]
+  (-> f
+      fs/expand-home
+      fs/normalized)) 
+
 (defn path= [f1 f2]
   (try
-    (= (str (fs/normalized f1))
-       (str (fs/normalized f2)))
+    (= (expand-path f1)
+       (expand-path f2))
     (catch Exception ex
       (println ex)
       false)))
@@ -168,11 +173,15 @@
 
 (defn uuid [] (str (java.util.UUID/randomUUID)))
 
-(defn shorten-path [^String path]
+(defn shorten-path
+  [^String path]
   (if-not (nil? path)
     (if (fs/child-of? fs/*cwd* path)
       (subs path (-> fs/*cwd* str count inc))
-      path)))
+      (let [home (fs/home)]
+        (if (fs/child-of? home path)
+          (str "~" (subs path (-> home str count)))
+          path)))))
 
 (defmacro with-ns
   "Evaluates body in another namespace.  ns is either a namespace
