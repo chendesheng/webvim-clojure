@@ -5,7 +5,9 @@
             [webvim.panel :refer [append-output-panel]]
             [clojure.string :as string]
             [webvim.server :as server]
-            [webvim.main :refer [start]])
+            [webvim.main :refer [start]]
+            [webvim.keymap.ex :refer [print-eval]]
+            [webvim.core.eval :refer [eval-refer-ns]])
   (:use clojure.pprint
         clojure.repl
         webvim.core.buffer
@@ -46,30 +48,17 @@
     (start false {:port 8080 :join? false}))
   "ok")
 
-;FIXME: This is too hacky
 (defn- cmd-reload [buf execmd args]
-  (let [[[_ _ _ nm]] (re-seq #"(?i)webvim[/\\](src|dev)(/|\\)(.+)\.clj" (buf :filepath)) 
-        ret (if (empty? nm)
+  (let [ns (get-namespace (buf :filepath))
+        ret (if (nil? ns)  
               "Can't get right namespace"
-              (let [code (str "(use '" (-> nm
-                                           (string/replace "/" ".")
-                                           (string/replace "\\" ".")
-                                           (string/replace "_" "-")) " :reload)")]
-                (->> code read-string eval)))]
+              ((eval-refer-ns nil (format "(use '%s :reload)" ns)) :exception))]
     (if (nil? ret)
       (assoc buf :message (restart))
       (assoc buf :message (str ret)))))
 
-(defn- print-eval [buf code]
-  (append-output-panel 
-    buf
-    (format ":eval %s\n %s" code
-            (with-out-str
-              (->> code read-string eval str)))
-    true))
-
 (defn- cmd-doc [buf execmd args]
-  (let [code (str "(clojure.repl/doc " args ")")]
+  (let [code (str "(doc " args ")")]
     (print-eval buf code)))
 
 (defn- cmd-print [buf execmd args]

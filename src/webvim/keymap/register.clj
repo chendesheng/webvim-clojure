@@ -1,4 +1,5 @@
 (ns webvim.keymap.register
+  (:require [webvim.core.eval :refer [eval-refer-ns]])
   (:use clojure.pprint
         webvim.keymap.compile
         webvim.keymap.linebuf.linebuf
@@ -15,16 +16,17 @@
     buf))
 
 (defn- read-eval-put [buf code insert?]
-  (try
-    (let [result (->> code read-string eval str)]
-      (registers-put! "=" {:str code :result result})
-      (if insert?
-        (-> buf
-            (assoc-in [:context :register] "=")
-            (buf-insert result))
-        (assoc-in buf [:context :register] "=")))
-    (catch Exception e
-      (assoc buf :message (str e)))))
+  (let [{result :result
+         exception :exception} (eval-refer-ns nil code)]
+    (if (nil? exception)
+      (do
+        (registers-put! "=" {:str code :result result})
+        (if insert?
+          (-> buf
+              (assoc-in [:context :register] "=")
+              (buf-insert result))
+          (assoc-in buf [:context :register] "=")))
+      (assoc buf :message (str exception)))))
 
 (defonce ^:private linebuf-keymap (init-linebuf-keymap))
 (defn- expression-keymap [insert?]

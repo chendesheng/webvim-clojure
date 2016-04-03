@@ -147,14 +147,6 @@
         (format-error buf (.getMessage exp))))
     buf))
 
-(defn- print-eval [buf code]
-  (append-output-panel 
-    buf
-    (format ":eval %s\n %s" code
-            (with-out-str
-              (->> code read-string eval str)))
-    true))
-
 (listen :normal-mode-keymap
         (fn [keymap buf]
           (if (clojure? buf)
@@ -162,11 +154,11 @@
                       "K" (fn [handler]
                             (fn [buf keycode]
                               (let [word (current-word buf)]
+                                ;(println "empty:" (empty? word))
                                 (if (empty? word)
                                   (assoc buf :message "No string under cursor")
                                   (print-eval buf
-                                              (str "(clojure.repl/doc " word ")"))))
-                              buf)))
+                                              (format "(doc %s)" word)))))))
             keymap)))
 
 (listen :init-ex-commands

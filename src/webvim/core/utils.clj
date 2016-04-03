@@ -1,6 +1,7 @@
 (ns webvim.core.utils
   (:require [snipsnap.core :as clipboard]
-            [me.raynes.fs :as fs]))
+            [me.raynes.fs :as fs]
+            [clojure.string :as string]))
 
 (defn quote-pattern [ch]
   (java.util.regex.Pattern/quote (str ch)))
@@ -173,3 +174,35 @@
       (subs path (-> fs/*cwd* str count inc))
       path)))
 
+(defmacro with-ns
+  "Evaluates body in another namespace.  ns is either a namespace
+  object or a symbol.  This makes it possible to define functions in
+  namespaces other than the current one."
+  [ns & body]
+  `(binding [*ns* (the-ns ~ns)]
+     ~@(map (fn [form] `(eval '~form)) body)))
+
+;https://clojure.github.io/clojure-contrib/with-ns-api.html
+(defmacro with-temp-ns
+  "Evaluates body in an anonymous namespace, which is then immediately
+  removed.  The temporary namespace will 'refer' clojure.core."
+  [& body]
+  `(try
+     (create-ns 'sym#)
+     (let [result# (with-ns 'sym#
+                            (clojure.core/refer-clojure)
+                            ~@body)]
+       result#)
+     (finally (remove-ns 'sym#))))
+
+;FIXME: This is too hacky
+(defn get-namespace [filepath]
+  "get namespace under webvim by file path"
+  (let [filepath (or filepath "")
+        [[_ _ _ nm]] (re-seq #"(?i)webvim[/\\](src|dev)(/|\\)(.+)\.clj" filepath)]
+    (if (empty? nm)
+      nil
+      (-> nm
+          (string/replace "/" ".")
+          (string/replace "\\" ".")
+          (string/replace "_" "-")))))

@@ -3,7 +3,8 @@
             [webvim.mode :refer [set-normal-mode]]
             [webvim.core.editor :refer [update-cwd]]
             [webvim.panel :refer [append-panel append-output-panel grep-panel find-panel edit-file goto-buf]]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [webvim.core.eval :refer [eval-refer-ns]])
   (:use clojure.pprint
         webvim.core.rope
         webvim.core.line
@@ -146,21 +147,29 @@
         (assoc :nextid nextid)
         (fire-event :close-buffer))))
 
+(defn print-eval [buf code]
+  (let [{output :output
+         exception :exception} (eval-refer-ns nil code)]
+    (if (nil? exception)
+      (append-output-panel 
+        buf
+        (format ":eval %s\n %s" code output)
+        true)
+      (assoc buf :message (str exception)))))
+
 (defn cmd-eval [buf execmd args]
-  (try 
-    (let [result (atom nil)
-          output (with-out-str 
-                   (->> args read-string eval str
-                        (reset! result)))]
+  (let [{result :result
+         output :output
+         exception :exception} (eval-refer-ns (get-namespace (buf :filepath)) args)]
+    (if (nil? exception)
       (append-output-panel
         buf
         (str 
           ":" execmd " " args \newline
-          output \newline
-          @result \newline)
-        true))
-    (catch Exception e
-      (assoc buf :message (str e)))))
+          (if-not (empty? output) (str output \newline))
+          (if-not (empty? result) (str result \newline)))
+        true)
+      (assoc buf :message (str exception)))))
 
 (defn cmd-eval-shortcut [buf execmd [code]]
   ;(println "cmd-eval-shortcut" execmd)
