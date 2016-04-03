@@ -190,16 +190,24 @@
                (neg? (-> y (- h) inc)) 0
                :else (-> y (- h) inc))))))
 
-(defn send-buf! [buf]
-  (let [buf (bound-scroll-top buf)]
-    (send-off (ui-agent) 
-              (fn [ui buf]
-                (let [diff (diff-ui ui buf)
-                      ui (assoc ui :buf (dissoc buf :changes))]
-                  (if (or (nil? diff)
-                          (empty? diff)) ui
-                      ((ui :render!) ui diff)))) buf)
-    (assoc buf :changes [])))
+(defn active-buf? [buf]
+  (= (buf :id) (-> (ui-agent) deref :buf :id)))
+
+(defn send-buf!
+  ([buf switch-buf?]
+    (let [buf (bound-scroll-top buf)]
+      (if (or switch-buf? (active-buf? buf))
+        (send-off (ui-agent) 
+                  (fn [ui buf]
+                    (let [diff (diff-ui ui buf)
+                          ui (assoc ui :buf (dissoc buf :changes))]
+                      (if (or (nil? diff)
+                              (empty? diff)) ui
+                          ((ui :render!) ui diff)))) buf))
+      (assoc buf :changes [])))
+  ([buf]
+    ;only for active buffer, use :nextid for switch buffer
+    (send-buf! buf false)))
 
 (defn ui-buf []
   [(diff-window nil (get-from-ui :window))

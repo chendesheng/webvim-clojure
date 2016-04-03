@@ -59,7 +59,7 @@
                              (-> buf
                                  (fire-event :switch-buffer)
                                  buf-match-bracket
-                                 send-buf!)))
+                                 (send-buf! true))))
             (dissoc buf :nextid))))
       (catch Exception e
         (let [output (str e "\nstack trace:\n\t"
