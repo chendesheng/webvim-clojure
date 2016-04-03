@@ -162,13 +162,20 @@
          output :output
          exception :exception} (eval-refer-ns (get-namespace (buf :filepath)) args)]
     (if (nil? exception)
-      (append-output-panel
-        buf
-        (str 
-          ":" execmd " " args \newline
-          (if-not (empty? output) (str output \newline))
-          (if-not (empty? result) (str result \newline)))
-        true)
+      (let [lines (filter (comp not empty?)
+                          (list output result))]
+        (if (empty? lines)
+          (assoc buf :message "no result and output")
+          (let [multi-lines? (-> lines count (> 1))
+                buf (if-not multi-lines?
+                      (assoc buf :message (first lines))
+                      buf)]
+            ;(println "multi-lines?" multi-lines?)
+            (append-output-panel
+              buf
+              (str (string/join \newline 
+                                (conj lines (str ":" execmd " " args))) \newline)
+              multi-lines?))))
       (assoc buf :message (str exception)))))
 
 (defn cmd-eval-shortcut [buf execmd [code]]
