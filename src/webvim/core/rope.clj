@@ -289,7 +289,7 @@
             (assoc :pending-undo nil)
             (update :history
                     new-future
-                    (update pending :changes merge-changes))))))
+                    (update pending :changes (comp reverse merge-changes)))))))
 
 (defn- apply-undo [buf undo]
   (let [chs (undo :changes)
