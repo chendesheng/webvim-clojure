@@ -2,7 +2,7 @@
   (:require [clojure.string :as str]
             [webvim.keymap.motion :refer [init-motion-keymap-fix-cw init-motion-keymap-for-operators]]
             [webvim.core.line :refer [pos-line-start]]
-            [webvim.keymap.operator :refer [wrap-operator inclusive? setup-range not-empty-range range-prefix]]
+            [webvim.keymap.operator :refer [make-operator inclusive? setup-range not-empty-range range-prefix]]
             [webvim.core.rope :refer [buf-set-pos buf-replace subr]]))
 
 (defn- change-case [f]
@@ -32,13 +32,13 @@
         (update "g" assoc
                 "u" (merge
                       motion-keymap
-                      {:after (wrap-operator (change-case clojure.string/lower-case))})
+                      {:after (make-operator (change-case str/lower-case))})
                 "U" (merge
                       motion-keymap
-                      {:after (wrap-operator (change-case clojure.string/upper-case))}))
+                      {:after (make-operator (change-case str/upper-case))}))
         (assoc "~" (merge
                      motion-keymap
-                     {:after (wrap-operator (change-case swap-case))})))))
+                     {:after (make-operator (change-case swap-case))})))))
 
 (defn- visual-change-case [f]
   (fn [buf keycode]

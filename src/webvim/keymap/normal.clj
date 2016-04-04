@@ -64,9 +64,7 @@
            :continue (fn [buf keycode]
                        (= (buf :mode) :normal-mode))
            :before (fn [buf keycode]
-                     (-> buf
-                         (assoc-in [:context :lastbuf] buf)
-                         (assoc-in [:context :range] nil)))
+                     (update buf :context assoc :lastbuf buf)) 
            :after normal-mode-after})
         (wrap-keymap-visual buf)
         wrap-keymap-addsub

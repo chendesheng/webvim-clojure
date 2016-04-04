@@ -4,7 +4,9 @@
     [webvim.core.rope :refer [buf-set-pos buf-delete]]
     [webvim.core.line :refer [line-end line-start]]
     [webvim.keymap.compile :refer [wrap-keycode]]
-    [webvim.keymap.operator :refer [buf-yank setup-range-line-end setup-range-line setup-range inclusive? visual-block-delete delete-char range-prefix]]
+    [webvim.keymap.operator :refer [buf-yank setup-range-line-end
+                                    set-range set-linewise
+                                    visual-block-delete delete-char range-prefix make-operator make-operator-line-end]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]))
 
 (defn- delete-range [buf inclusive? linewise?]
@@ -20,15 +22,21 @@
       setup-range-line-end
       (delete-range false false)))
 
-(defn- delete [buf keycode]
-  (if (contains? #{"d" "j" "k"} keycode)
-    (-> buf
-        setup-range-line
-        (delete-range false true)
-        line-start)
-    (-> buf
-        setup-range
-        (delete-range (inclusive? keycode) false))))
+(defn- delete-range [buf [a b]]
+  (-> buf
+      (buf-yank a b (-> buf :context :linewise?) true)
+      (buf-delete a b)
+      (buf-set-pos a)))
+
+;(defn- delete [buf keycode]
+;  (if (or (linewise? keycode) (= keycode "d"))
+;    (-> buf
+;        setup-range-line
+;        (delete-range false true)
+;        line-start)
+;    (-> buf
+;        setup-range
+;        (delete-range (inclusive? keycode) false))))
 
 (defmulti visual-keymap-d (fn [buf keycode] (-> buf :visual :type)))
 (defmethod visual-keymap-d :visual-range [buf keycode]
@@ -41,12 +49,12 @@
 (defn wrap-keymap-delete [keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)]
     (assoc keymap
-           "D" delete-to-line-end
+           "D" (make-operator-line-end delete-range)
            "x" (wrap-keycode delete-char)
            "d" (merge
                  motion-keymap
-                 {"d" nop
-                  :after delete}))))
+                 {"d" (wrap-keycode set-linewise)
+                  :after (make-operator delete-range)}))))
 
 (defn wrap-keymap-delete-visual [keymap]
   (assoc keymap

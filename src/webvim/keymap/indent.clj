@@ -1,6 +1,6 @@
 (ns webvim.keymap.indent
   (:require [webvim.keymap.motion :refer [init-motion-keymap-fix-cw init-motion-keymap-for-operators]]
-            [webvim.keymap.operator :refer [wrap-operator inclusive? setup-range range-prefix]]
+            [webvim.keymap.operator :refer [make-linewise-operator inclusive? setup-range range-prefix]]
             [webvim.indent :refer [buf-indent-current-line buf-indent-lines]]
             [webvim.core.rope :refer [buf-set-pos buf-replace subr re-test buf-insert rblank? char-at buf-delete]]
             [webvim.core.line :refer [line-start line-end pos-line pos-lines-seq+ pos-line-start]]
@@ -50,10 +50,10 @@
                                  (indent-range true))))})
            ">" (merge
                  motion-keymap
-                 {:after (wrap-operator indent-more)})
+                 {:after (make-linewise-operator indent-more)})
            "<" (merge
                  motion-keymap
-                 {:after (wrap-operator indent-less)}))))
+                 {:after (make-linewise-operator indent-less)}))))
 
 (defn- indent [f]
   (fn [buf keycode]

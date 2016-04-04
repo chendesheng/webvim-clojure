@@ -1,11 +1,15 @@
 (ns webvim.keymap.operator
   (:require 
     [clojure.string :as str]
+    [clojure.pprint :refer [pprint]]
     [webvim.mode :refer [set-insert-mode]]
     [webvim.keymap.compile :refer [wrap-key]]
     [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete subr]]
-    [webvim.core.line :refer [make-linewise-range expand-block-ranges pos-line-last pos-line pos-line-end]]
+    [webvim.core.line :refer [make-linewise-range expand-block-ranges
+                              pos-line-last pos-line pos-line-end
+                              pos-line-start line-start]]
     [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
+    [webvim.core.range :refer [range-exclusive range-linewise range-line-end]]
     [webvim.core.utils :refer [make-range sort2 nop]]))
 
 (defn setup-range [buf]
@@ -19,12 +23,15 @@
           (merge (select-keys lastbuf [:pos :x :y]))
           (assoc-in [:context :range] [lastpos pos]))) buf))
 
+(defn linewise? [keycode]
+  (contains? #{"j" "k" "+" "-" "G" "H" "M" "L"} keycode))
+
 (defn inclusive? [keycode]
   (println "keycode:" keycode)
   (let [m {"h" false "l" false "w" false "W" false "e" true
            "E" true "b" false "B" false "f" true "F" false
            "t" true "T" false "/" false "$" false "a" true
-           "i" true}]
+           "i" true "{" false "}" false "0" false "n" false "N" false}]
     (if (contains? m keycode)
       (m keycode)
       true)))
@@ -42,11 +49,85 @@
     (-> buf :context :range (make-range inclusive?))
     :else (throw (Exception. "no range prefix exist"))))
 
-(defn wrap-operator [f]
-  (fn [buf keycode]
-    (let [buf (setup-range buf)
-          rg (range-prefix buf (inclusive? keycode))]
-      (f buf rg))))
+(defn set-range [buf range]
+  (update buf :context assoc :range range))
+
+(defn set-linewise
+  ([buf linewise?]
+    (update buf :context assoc :linewise? linewise?))
+  ([buf]
+    (set-linewise buf true)))
+
+(defn set-inclusive
+  ([buf inclusive?]
+    (update buf :context assoc :inclusive? inclusive?))
+  ([buf]
+    (set-inclusive buf true)))
+
+(defn- set-default-range [buf]
+  (update buf :context
+          update :range
+          (fn [rg]
+            (or rg (sort2 (buf :pos)
+                          (-> buf :context :lastbuf :pos))))))
+
+(defn- set-default-inclusive [buf keycode]
+  (update buf :context
+          update :inclusive?
+          (fn [b]
+            (if (nil? b) (inclusive? keycode) b))))
+
+(defn- set-default-linewise [buf keycode]
+  (update buf :context
+          update :linewise?
+          (fn [b]
+            (if (nil? b) (linewise? keycode) b))))
+
+;return range for operator, always characterwise and exclusive
+(defn- get-operator-range [{r :str
+                            {linewise? :linewise?
+                             inclusive? :inclusive?
+                             rg :range} :context :as buf}]
+  (pprint {:linewise? linewise?
+           :inclusive? inclusive?
+           :rang rg})
+  (if linewise?
+    (range-linewise r rg)
+    (if inclusive? (range-exclusive rg) rg)))
+
+(defn make-operator
+  ([fn-init fn-operator]
+    (fn [buf keycode]
+      (let [buf (-> buf
+                    fn-init
+                    set-default-range
+                    (set-default-inclusive keycode)
+                    (set-default-linewise keycode))
+            rg (get-operator-range buf)
+            fn-set-pos (if (-> buf :context :linewise?)
+                         line-start identity)]
+        (-> buf
+          ;This will make cursor position in right place after undo/redo. 
+            (buf-set-pos (-> buf :context :range first)) 
+            (fn-operator rg)
+            fn-set-pos
+            (update :context (fn [ctx]
+                               (-> ctx
+                                   (dissoc :linewise?)
+                                   (dissoc :inclusive?)
+                                   (dissoc :range))))))))
+  ([f]
+    (make-operator identity f)))
+
+(defn make-operator-line-end [f]
+  (make-operator
+    (fn [buf]
+      (-> buf
+          (set-range (range-line-end (buf :str) (buf :pos)))
+          (set-inclusive false))) f))
+
+(defn make-linewise-operator [f]
+  (make-operator set-linewise f))
 
 (defn not-empty-range [ranges]
   (filter (fn [[a b]]
