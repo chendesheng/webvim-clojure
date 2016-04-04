@@ -3,6 +3,7 @@
   (:require
     [webvim.core.event :refer [listen]]
     [me.raynes.fs :as fs]
+    [clojure.pprint :refer [pprint]]
     [clojure.string :as string]
     [webvim.core.buffer :refer [update-buffer
                                 output-panel-name grep-panel-name find-panel-name 
@@ -147,4 +148,10 @@
         (fn [buf e]
           (.printStackTrace e)
           (append-output-panel buf (format-exception e) true)))
+
+(listen :log
+        (fn [obj]
+          (append-output-panel nil
+                               (with-out-str
+                                 (pprint obj)) false)))
 

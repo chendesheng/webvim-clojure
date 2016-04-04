@@ -20,3 +20,5 @@
                  (f b oldb c)) b (@listeners typ))))
 
 ;(fire-str-changes {} :str-change)
+(defn log [obj]
+  (fire-event obj :log))
