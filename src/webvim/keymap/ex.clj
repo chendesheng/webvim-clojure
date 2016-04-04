@@ -197,6 +197,11 @@
           (assoc buf :message (str "Change working directory to: " (update-cwd dir)))
           (assoc buf :message "Path is not a directory or not exists.")))))
 
+(defn cmd-git [buf execmd args]
+  (let [args (vec (clojure.string/split args #"\s+"))
+        res (apply clojure.java.shell/sh (concat ["git"] args [:dir (str fs/*cwd*)]))]
+    (append-output-panel buf (res :out) true)))
+
 (defn cmd-ls [buf execmd args]
   (append-output-panel buf
                        (str ":ls\n"
@@ -296,6 +301,7 @@
          [#"^\d+$" cmd-move-to-line]
          [#"^\(.*$" cmd-eval-shortcut]
          ["ls" cmd-ls]
+         ["git" cmd-git]
          ["diff" cmd-diff]]]
     (fire-event :init-ex-commands cmds buf)))
 
