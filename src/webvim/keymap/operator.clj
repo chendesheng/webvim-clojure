@@ -115,12 +115,10 @@
   ([f]
     (make-operator identity f)))
 
-(defn make-operator-line-end [f]
-  (make-operator
-    (fn [buf]
-      (-> buf
-          (set-range (range-line-end (buf :str) (buf :pos)))
-          (set-inclusive false))) f))
+(defn set-line-end [buf]
+  (-> buf
+      (set-range (range-line-end (buf :str) (buf :pos)))
+      (set-inclusive false)))
 
 (defn make-linewise-operator [f]
   (make-operator set-linewise f))

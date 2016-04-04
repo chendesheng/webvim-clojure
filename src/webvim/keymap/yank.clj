@@ -2,7 +2,7 @@
   (:require
     [webvim.core.utils :refer [nop]]
     [webvim.core.rope :refer [buf-set-pos buf-subr]]
-    [webvim.core.register :refer [registers-yank-to! registers-delete-to!]]
+    [webvim.core.register :refer [registers-yank-to!]]
     [webvim.core.range :refer [range-linewise]]
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
@@ -13,7 +13,8 @@
 (defn yank-range
   ([buf [a b]]
     (let [s (buf-subr buf a b)]
-      (registers-yank-to! (-> buf :context :register) {:str s :linewise? (-> buf :context :linewise?)})
+      (registers-yank-to! (-> buf :context :register)
+                          {:str s :linewise? (-> buf :context :linewise?)})
       (update buf :context dissoc :register))))
 
 (defn- visual-block-yank [buf]
