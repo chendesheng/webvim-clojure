@@ -36,20 +36,18 @@
   (let [r (buf :str)
         lines (filter #(not (rblank? r %)) 
                       (pos-lines-seq+ r a b))
-        buf (buf-set-pos buf (-> lines first first))
         lang (buf :language)]
-    (line-start
-      (first (reduce
-               (fn [[buf delta] [pos _]]
-                 (let [r (buf :str)
-                       a (+ pos delta)
-                       b (pos-line-start r a)
-                       indent (indent-pos lang r a)]
-                   [(buf-replace buf a b indent)
-                    ;shift after buffer changed pos
-                    (+ delta (- (indent-size indent buf) (- b a)))])) 
-               [buf 0]
-               lines)))))
+    (reduce
+      (fn [[buf delta] [pos _]]
+        (let [r (buf :str)
+              a (+ pos delta)
+              b (pos-line-start r a)
+              indent (indent-pos lang r a)]
+          [(buf-replace buf a b indent)
+           ;shift after buffer changed pos
+           (+ delta (- (indent-size indent buf) (- b a)))])) 
+      [buf 0]
+      lines)))
 
 (defn buf-indent-current-line
   [buf]

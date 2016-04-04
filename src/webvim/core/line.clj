@@ -52,18 +52,17 @@
 (defn pos-lines-seq+
   "return a lazy seq, line by line start at pos until bottom"
   ([r pos]
-    (let [rg (pos-line r pos)
-          [_ b] rg]
+    (let [[_ b :as rg] (pos-line r pos)]
       (if (< b (count r))
         (cons rg (lazy-seq (pos-lines-seq+ r b)))
         (list rg))))
   ([r] (pos-lines-seq+ r 0))
-  ([r a b] ;both inclusive
+  ([r a b] ;exclusive
     (take-while
-      #(>= b (first %))
+      #(-> % first (< b))
       (pos-lines-seq+ r a))))
 
-;(pos-lines-seq+ (rope "aa\nbb\ncc\n\n") 0 0)
+;(pos-lines-seq+ (rope "aa\nbb\ncc\n\n") 0 1)
 
 (defn- lines-move [buf n fndir]
   (let [vx (buf :x)]

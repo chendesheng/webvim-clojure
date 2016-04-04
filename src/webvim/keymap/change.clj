@@ -64,7 +64,7 @@
         lines (if (= newy lasty) ;repeat contents must not cross line
                 (reverse 
                   (rest
-                    (take (-> dy absolute inc) (pos-lines-seq+ (buf :str) pos))))
+                    (take (-> dy absolute inc) (pos-lines-seq+ (buf :str) (inc pos)))))
                 '())]
     ;(println "lines:" lines)
     (reduce (fn [buf [a b]]
@@ -81,7 +81,7 @@
 
 (defn- repeat-ranges [{{tp :type rg :range} :visual r :str tabsize :tabsize :as buf}]
   (cond
-    (= tp :visual-line) (rest (map (fn [[a b]] [a (dec b)])
+    (= tp :visual-line) (rest (map (fn [[a b]] [a b])
                                    (pos-lines-seq+ r (sort2 rg))))
     (= tp :visual-block) (rest (map (fn [[a b]] [a (inc b)])
                                     (expand-block-ranges r rg tabsize)))
