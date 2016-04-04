@@ -107,15 +107,11 @@
             fn-set-pos (if (-> buf :context :linewise?)
                          line-start identity)]
         (-> buf
-          ;This will make cursor position in right place after undo/redo. 
+            ;This will make cursor position in right place after undo/redo. 
             (buf-set-pos (-> buf :context :range first)) 
             (fn-operator rg)
             fn-set-pos
-            (update :context (fn [ctx]
-                               (-> ctx
-                                   (dissoc :linewise?)
-                                   (dissoc :inclusive?)
-                                   (dissoc :range))))))))
+            (update :context dissoc :linewise? :inclusive? :range)))))
   ([f]
     (make-operator identity f)))
 
@@ -128,6 +124,13 @@
 
 (defn make-linewise-operator [f]
   (make-operator set-linewise f))
+
+(defn make-operator-current-line [f]
+  (fn [{r :str pos :pos :as buf} keycode]
+    (-> buf
+        set-linewise
+        (f (range-linewise r pos pos))
+        (update :context dissoc :linewise?))))
 
 (defn not-empty-range [ranges]
   (filter (fn [[a b]]
@@ -218,3 +221,5 @@
     {"v" visual-keymap
      "V" visual-keymap
      "<c-v>" visual-keymap}))
+
+
