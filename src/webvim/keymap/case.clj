@@ -1,8 +1,9 @@
 (ns webvim.keymap.case
   (:require [clojure.string :as str]
-            [webvim.keymap.motion :refer [init-motion-keymap-fix-cw init-motion-keymap-for-operators]]
             [webvim.core.line :refer [pos-line-start]]
-            [webvim.keymap.operator :refer [make-operator inclusive? setup-range not-empty-range range-prefix]]
+            [webvim.keymap.compile :refer [wrap-keycode]]
+            [webvim.keymap.motion :refer [init-motion-keymap-fix-cw init-motion-keymap-for-operators]]
+            [webvim.keymap.operator :refer [make-operator not-empty-range set-visual-range]]
             [webvim.core.rope :refer [buf-set-pos buf-replace subr]]))
 
 (defn- change-case [f]
@@ -41,23 +42,23 @@
                      {:after (make-operator (change-case swap-case))})))))
 
 (defn- visual-change-case [f]
-  (fn [buf keycode]
-    (if (= (-> buf :visual :type) :visual-block)
-      (let [ranges (-> buf :visual :ranges)
-            firstline (last ranges) ;ranges in reverse order
-            r (buf :str)
-            pos (buf :pos)
-            newbuf (reduce
-                     (fn [buf [a b]]
-                       ((change-case f) buf [a (inc b)])) buf (not-empty-range ranges))]
-        (-> newbuf
-            (buf-set-pos (first firstline))
-            ;leave visual mode
-            (assoc-in [:context :cancel-visual-mode?] true)))
-      (let [[a b :as rg] (range-prefix buf true)]
+  (let [f (change-case f)
+        fn-range (make-operator set-visual-range f)]
+    (fn [buf keycode]
+      (if (= (-> buf :visual :type) :visual-block)
+        (let [ranges (-> buf :visual :ranges)
+              firstline (last ranges) ;ranges in reverse order
+              r (buf :str)
+              pos (buf :pos)
+              newbuf (reduce
+                       (fn [buf [a b]]
+                         (buf [a (inc b)])) buf (not-empty-range ranges))]
+          (-> newbuf
+              (buf-set-pos (first firstline))
+              ;leave visual mode
+              (assoc-in [:context :cancel-visual-mode?] true)))
         (-> buf
-            (buf-set-pos (pos-line-start (buf :str) a))
-            ((change-case f) rg)
+            (fn-range keycode)
             (assoc-in [:context :cancel-visual-mode?] true))))))
 
 

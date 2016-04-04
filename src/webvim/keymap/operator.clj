@@ -9,7 +9,7 @@
                               pos-line-last pos-line pos-line-end
                               pos-line-start line-start]]
     [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
-    [webvim.core.range :refer [range-exclusive range-linewise range-line-end]]
+    [webvim.core.range :refer [range-inclusive range-exclusive range-linewise range-line-end]]
     [webvim.core.utils :refer [make-range sort2 nop]]))
 
 (defn setup-range [buf]
@@ -108,20 +108,29 @@
                          line-start identity)]
         (-> buf
             ;This will make cursor position in right place after undo/redo. 
-            (buf-set-pos (-> buf :context :range first)) 
+            (buf-set-pos (first rg)) 
             (fn-operator rg)
             fn-set-pos
             (update :context dissoc :linewise? :inclusive? :range)))))
   ([f]
     (make-operator identity f)))
 
+(defn set-visual-range [{r :str {rg :range typ :type} :visual :as buf}]
+  (-> buf
+      (set-linewise (= typ :visual-line))
+      (set-inclusive true)
+      (set-range rg)))
+
 (defn set-line-end [buf]
   (-> buf
       (set-range (range-line-end (buf :str) (buf :pos)))
       (set-inclusive false)))
 
-(defn make-linewise-operator [f]
-  (make-operator set-linewise f))
+(defn make-linewise-operator
+  ([fn-init f]
+    (make-operator (comp set-linewise fn-init) f))
+  ([f]
+    make-linewise-operator identity f))
 
 (defn make-operator-current-line [f]
   (fn [{r :str pos :pos :as buf} keycode]
@@ -162,13 +171,15 @@
          (shift-delete b1 a b)])
       ranges) ranges))
 
-(defn set-visual-ranges [{{tp :type rg :range} :visual :as buf}]
-  ;(println "set-visual-ranges:" tp rg)
+(defn set-visual-ranges [{r :str
+                          {tp :type rg :range} :visual
+                          :as buf}]
+  (println "set-visual-ranges:" (range-linewise r rg))
   (assoc-in buf [:visual :ranges]
             (condp = tp
               :visual-range (list (sort2 rg))
-              :visual-line (list (make-linewise-range rg buf))
-              :visual-block (into '() (expand-block-ranges (buf :str) rg (buf :tabsize)))
+              :visual-line (list (range-linewise r rg))
+              :visual-block (into '() (expand-block-ranges r rg (buf :tabsize)))
               nil)))
 
 (defn visual-block-lines [buf]

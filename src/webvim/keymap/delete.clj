@@ -6,7 +6,7 @@
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.core.register :refer [registers-delete-to!]]
     [webvim.keymap.operator :refer [buf-yank setup-range-line-end
-                                    set-range set-linewise set-line-end
+                                    set-range set-linewise set-line-end set-visual-range
                                     visual-block-delete delete-char range-prefix make-operator]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]))
 
@@ -17,14 +17,6 @@
     (-> buf
         (buf-delete a b)
         (update :context dissoc :register))))
-
-(defmulti visual-keymap-d (fn [buf keycode] (-> buf :visual :type)))
-(defmethod visual-keymap-d :visual-range [buf keycode]
-  (delete-range buf true false))
-(defmethod visual-keymap-d :visual-line [buf keycode]
-  (delete-range buf true true))
-(defmethod visual-keymap-d :visual-block [buf keycode]
-  (visual-block-delete buf))
 
 (defn wrap-keymap-delete [keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)
@@ -38,5 +30,9 @@
                   :after fn-delete}))))
 
 (defn wrap-keymap-delete-visual [keymap]
-  (assoc keymap
-         "d" visual-keymap-d))
+  (let [fn-delete (make-operator set-visual-range delete-range)]
+    (assoc keymap
+           "d" (fn [buf keycode]
+                 (if (= (-> buf :visual :type) :visual-block)
+                   (visual-block-delete buf)
+                   (fn-delete buf keycode))))))

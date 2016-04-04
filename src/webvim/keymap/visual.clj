@@ -32,12 +32,7 @@
       (assoc :visual {:type :no-visual :range [0 0]})))
 
 (defn- visual-select [buf]
-  (let [[a b :as rg] (-> buf :context :range)]
-    (if (nil? rg)
-      (assoc-in buf [:visual :range 0] (buf :pos))
-      (-> buf
-          (assoc-in [:visual :range] [b a])
-          (buf-set-pos b)))))
+  (assoc-in buf [:visual :range 0] (buf :pos)))
 
 (defn- swap-visual-start-end [buf keycode]
   (let [[a b] (-> buf :visual :range)]
@@ -45,10 +40,10 @@
         (assoc-in [:visual :range] [b a])
         (buf-set-pos b))))
 
-;type/mode    | keycode | next
-;-------------|---------|-------
-;normal       |  v      | :visual-range
-;normal       |  V      | :visual-line
+;type/mode     | keycode | next
+;----------- --|---------|-------
+;normal        |  v      | :visual-range
+;normal        |  V      | :visual-line
 ;:visual-range |  V      | :visual-line
 ;:visual-range |  v      | normal
 ;:visual-line  |  v      | :visual-range
@@ -102,11 +97,10 @@
                       (fn [context]
                         (-> context
                             (assoc :last-visual-type (-> buf :visual :type)
-                                   :cancel-visual-mode? false)
-                            (dissoc :range)))))
+                                   :cancel-visual-mode? false)))))
     :after (fn [buf keycode]
              (-> buf
-                 visual-select
+                 (assoc-in [:visual :range 0] (buf :pos))
                  set-visual-ranges
                  (update-x-if-not-jk keycode)))
     "V" change-visual-mode-type

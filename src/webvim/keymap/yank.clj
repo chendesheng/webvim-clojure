@@ -7,8 +7,8 @@
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
     [webvim.keymap.operator :refer [visual-block-lines yank-blockwise make-operator
-                                    make-operator-current-line
-                                    make-linewise-operator set-linewise set-range]]))
+                                    make-operator-current-line make-linewise-operator
+                                    set-linewise set-range set-visual-range]]))
 
 (defn yank-range
   ([buf [a b]]
@@ -22,14 +22,6 @@
         buf (buf-set-pos buf (-> items last (get 1)))]
     (yank-blockwise buf (rseq items))
     buf))
-
-(defmulti visual-keymap-y (fn [buf keycode] (-> buf :visual :type)))
-(defmethod visual-keymap-y :visual-range [buf keycode]
-  (yank-range buf true false))
-(defmethod visual-keymap-y :visual-line [buf keycode]
-  (yank-range buf true true))
-(defmethod visual-keymap-y :visual-block [buf keycode]
-  (visual-block-yank buf))
 
 (defn wrap-keymap-yank [keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)
@@ -45,4 +37,9 @@
            "Y" (make-operator-current-line yank-range))))
 
 (defn wrap-keymap-yank-visual [keymap]
-  (assoc keymap "y" visual-keymap-y))
+  (let [fn-yank (make-operator set-visual-range yank-range)]
+    (assoc keymap "y" 
+           (fn [buf keycode]
+             (if (= (-> buf :visual :type) :visual-block)
+               (visual-block-yank buf)
+               (fn-yank buf keycode))))))
