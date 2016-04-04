@@ -5,9 +5,9 @@
     [webvim.core.line :refer [line-end line-start]]
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.core.register :refer [registers-delete-to!]]
-    [webvim.keymap.operator :refer [buf-yank setup-range-line-end
-                                    set-range set-linewise set-line-end set-visual-range
-                                    visual-block-delete delete-char range-prefix make-operator]]
+    [webvim.keymap.operator :refer [set-range set-linewise set-line-end
+                                    set-visual-range visual-block-delete
+                                    make-operator]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]))
 
 (defn- delete-range [buf [a b :as rg]]

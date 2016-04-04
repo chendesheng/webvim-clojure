@@ -34,6 +34,7 @@ html,
     bottom: 1.5em;
     overflow: auto;
     -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
 }
 
 .content {
