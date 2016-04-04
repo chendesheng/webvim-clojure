@@ -130,7 +130,7 @@
   ([fn-init f]
     (make-operator (comp set-linewise fn-init) f))
   ([f]
-    make-linewise-operator identity f))
+    (make-linewise-operator identity f)))
 
 (defn make-operator-current-line [f]
   (fn [{r :str pos :pos :as buf} keycode]

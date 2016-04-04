@@ -48,6 +48,6 @@
 
 (defn wrap-keymap-indent-visual [keymap]
   (assoc keymap
-         "=" (fn [buf keycode] (indent-range buf true))
+         "=" (make-linewise-operator buf-indent-lines)
          ">" (make-linewise-operator set-visual-range indent-more)
          "<" (make-linewise-operator set-visual-range indent-less)))
