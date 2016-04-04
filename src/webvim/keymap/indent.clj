@@ -23,6 +23,7 @@
     (- b a)))
 
 (defn- indent-less [buf [a b]]
+  (println a b)
   (reduce
     (fn [{r :str pos :pos :as buf} [a b]]
       (let [line (subr r a b)]
@@ -37,7 +38,7 @@
     (assoc keymap
            "=" (merge
                  motion-keymap
-                 {"=" (wrap-keycode set-linewise)
+                 {"=" nop
                   :after (make-linewise-operator buf-indent-lines)})
            ">" (merge
                  motion-keymap
@@ -48,6 +49,6 @@
 
 (defn wrap-keymap-indent-visual [keymap]
   (assoc keymap
-         "=" (make-linewise-operator buf-indent-lines)
+         "=" (make-linewise-operator set-visual-range buf-indent-lines)
          ">" (make-linewise-operator set-visual-range indent-more)
          "<" (make-linewise-operator set-visual-range indent-less)))
