@@ -1,58 +1,29 @@
 (ns webvim.keymap.change
   (:require
     [clojure.pprint :refer [pprint]]
-    [webvim.keymap.compile :refer [replay-keys wrap-key]]
+    [webvim.keymap.compile :refer [replay-keys wrap-key wrap-keycode]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
+    [webvim.keymap.delete :refer [delete-range visual-block-delete]]
     [webvim.keymap.operator :refer [buf-yank range-prefix setup-range setup-range-line-end
-                                    inclusive? not-empty-range visual-block-delete wrap-temp-visual-mode]]
+                                    set-linewise set-current-line make-operator set-line-end set-visual-range
+                                    not-empty-range wrap-temp-visual-mode]]
     [webvim.indent :refer [buf-indent-current-line]]
     [webvim.mode :refer [set-insert-mode]]
-    [webvim.core.utils :refer [nop sort2]]
+    [webvim.core.utils :refer [sort2]]
     [webvim.core.rope :refer [buf-replace buf-delete buf-insert buf-set-pos subr indexr]]
     [webvim.core.pos :refer [char+ buf-start]]
     [webvim.core.line :refer [pos-line expand-block-ranges pos-lines-seq+ pos-line-last pos-line-first line-end line-start]]))
 
-(defn start-insert-mode [fnmotion fnedit]
+(defn- start-insert-mode [f]
   (fn [buf keycode]
     (-> buf 
-        fnmotion
-        set-insert-mode
-        fnedit)))
-(defn- start-insert-mode-with-keycode [fnmotion fnedit]
-  (fn [buf keycode]
-    (-> buf 
-        (fnmotion keycode)
-        set-insert-mode
-        (fnedit keycode))))
-
-(defn- delete-line [buf]
-  (let [pos (buf :pos)
-        r (buf :str)
-        [a b] (pos-line r pos)]
-    (-> buf
-        (buf-yank a b false true)
-        (buf-replace a (dec b) "")
-        buf-indent-current-line)))
-
-(defn- change-range [buf inclusive? linewise?]
-  (let [[a b] (range-prefix buf inclusive?)]
-    (-> buf
-        (buf-yank a b linewise? true)
-        (buf-delete a b)
+        f
         set-insert-mode)))
 
-(defn- change-by-motion [buf keycode]
-  (-> buf 
-      setup-range
-      (change-range (inclusive? keycode) false)))
-
-(defn- change-to-line-end [buf]
+(defn- change-range [buf rg]
   (-> buf
-      setup-range-line-end
-      (change-range false false)))
-
-(defn- change-visual [linewise?]
-  (start-insert-mode identity #(change-range % true linewise?)))
+      (delete-range rg)
+      set-insert-mode))
 
 (defn- absolute [d]
   (if (neg? d) (- d) d))
@@ -163,9 +134,9 @@
 
 (defmulti visual-keymap-c (fn [buf keycode] (-> buf :visual :type)))
 (defmethod visual-keymap-c :visual-range [buf keycode]
-  ((change-visual false) buf keycode))
+  ((make-operator set-visual-range change-range) buf keycode))
 (defmethod visual-keymap-c :visual-line [buf keycode]
-  ((change-visual true) buf keycode))
+  ((make-operator set-visual-range change-range) buf keycode))
 (defmethod visual-keymap-c :visual-block [buf keycode]
   (-> buf
       visual-block-delete
@@ -176,7 +147,7 @@
   (let [fnmotion (fn [buf]
                    (let [[pos _] (pos-line (buf :str) (-> buf :visual :range sort2 first))]
                      (buf-set-pos buf pos)))]
-    ((start-insert-mode fnmotion identity) buf keycode)))
+    ((start-insert-mode fnmotion) buf keycode)))
 (defmethod visual-keymap-I :visual-line [buf keycode]
   (visual-line-repeat-change buf false))
 (defmethod visual-keymap-I :visual-block [buf keycode]
@@ -191,26 +162,11 @@
                    (fn [buf]
                      (let [[pos _] (pos-line r (max a b))]
                        (buf-set-pos buf pos))))]
-    ((start-insert-mode fnmotion identity) buf keycode)))
+    ((start-insert-mode fnmotion) buf keycode)))
 (defmethod visual-keymap-A :visual-line [buf keycode]
   (visual-line-repeat-change buf true))
 (defmethod visual-keymap-A :visual-block [buf keycode]
   (start-insert-and-repeat buf true))
-
-(defn- delete-char [buf]
-  (let [pos (buf :pos)
-        [a b] [pos (inc pos)]]
-    (buf-yank buf a b false true)
-    (buf-delete buf a b)))
-
-(defn- delete-line [buf]
-  (let [pos (buf :pos)
-        r (buf :str)
-        [a b] (pos-line r pos)]
-    (-> buf
-        (buf-yank a b false true)
-        (buf-replace a (dec b) "")
-        buf-indent-current-line)))
 
 (defn- insert-new-line [buf]
   (buf-indent-current-line
@@ -234,31 +190,30 @@
             (buf-set-pos (- a 1))
             (buf-insert "\n"))))))
 
-
 (defn wrap-keymap-change [keymap visual-keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)
         visual-keymap (wrap-temp-visual-mode visual-keymap visual-keymap-c)]
     (assoc keymap
-           "i" (start-insert-mode identity identity)
-           "a" (start-insert-mode char+ identity)
-           "A" (start-insert-mode line-end identity)
-           "I" (start-insert-mode line-start identity)
-           "s" (start-insert-mode identity delete-char)
-           "S" (start-insert-mode identity delete-line)
-           "o" (start-insert-mode identity insert-new-line)
-           "O" (start-insert-mode identity insert-new-line-before)
+           "i" (wrap-keycode set-insert-mode)
+           "a" (start-insert-mode char+)
+           "A" (start-insert-mode line-end)
+           "I" (start-insert-mode line-start)
+           "s" (make-operator change-range)
+           "S" (make-operator set-current-line change-range)
+           "o" (start-insert-mode insert-new-line)
+           "O" (start-insert-mode insert-new-line-before)
            "c" (merge
                  motion-keymap
                  visual-keymap
-                 {"c" (start-insert-mode identity delete-line)
+                 {"c" (make-operator set-current-line change-range)
                   :after (fn [buf keycode]
                            (if (or (= keycode "c")
                                    (and
                                      (= (-> buf :context :lastbuf :pos) (buf :pos))
                                      (-> buf :context :range empty?)))
                              buf
-                             ((start-insert-mode-with-keycode nop change-by-motion) buf keycode)))})
-           "C" (start-insert-mode identity change-to-line-end))))
+                             ((make-operator change-range) buf keycode)))})
+           "C" (make-operator set-line-end change-range))))
 
 (defn wrap-keymap-change-visual [keymap]
   (assoc keymap
