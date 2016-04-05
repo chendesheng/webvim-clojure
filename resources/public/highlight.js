@@ -125,7 +125,7 @@ var highlights = (function() {
 
     function rainbowColor(text, ctx) {
         var pred = function(mode) {
-            return mode.className === rainbowColor;
+            return mode.originalClassName === rainbowColor;
         };
 
         if ('([{'.indexOf(text) != -1) {
@@ -209,6 +209,7 @@ function hlcompile(language) {
         //prevent circle reference
         if (mode.compiled) return mode;
         mode.compiled = true;
+        mode.originalClassName = mode.className;
 
         mode.keywords = mode.keywords || mode.beginKeywords;
 
