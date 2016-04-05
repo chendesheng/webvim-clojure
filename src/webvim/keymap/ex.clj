@@ -157,20 +157,18 @@
          output :output
          exception :exception} (eval-refer-ns (get-namespace (buf :filepath)) args)]
     (if (nil? exception)
-      (let [lines (filter (comp not empty?)
-                          (list output result))]
-        (if (empty? lines)
+      (let [lines (apply concat
+                          (map string/split-lines
+                               (filter (comp not empty?)
+                                       (list output result))))
+            cnt (count lines)]
+        (if (zero? cnt)
           (assoc buf :message "no result and output")
-          (let [multi-lines? (-> lines count (> 1))
-                buf (if-not multi-lines?
-                      (assoc buf :message (first lines))
-                      buf)]
-            ;(println "multi-lines?" multi-lines?)
-            (append-output-panel
-              buf
-              (str (string/join \newline 
-                                (conj lines (str ":" execmd " " args))) \newline)
-              multi-lines?))))
+          (append-output-panel
+            (update buf :message #(if (= cnt 1) (first lines) %))
+            (str (string/join \newline 
+                              (conj lines (str ":" execmd " " args))) \newline)
+            (> cnt 1))))
       (assoc buf :message (str exception)))))
 
 (defn cmd-eval-shortcut [buf execmd [code]]
