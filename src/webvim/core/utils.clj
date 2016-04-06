@@ -237,3 +237,10 @@
                       (string/replace "_" "-")
                       appendsrc) "/" file ":" linenum))) st)))
 
+(defmacro nilor
+  "Like `or` but check nil?"
+  ([] nil)
+  ([x] x)
+  ([x & next]
+    `(let [or# ~x]
+       (if-not (nil? or#) or# (or ~@next)))))

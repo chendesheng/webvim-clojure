@@ -1,12 +1,14 @@
 (ns webvim.keymap.change
   (:require
     [clojure.pprint :refer [pprint]]
+    [webvim.core.event :refer [log]]
     [webvim.keymap.compile :refer [replay-keys wrap-key wrap-keycode]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
     [webvim.keymap.delete :refer [delete-range visual-block-delete]]
+    [webvim.keymap.visual :refer [wrap-temp-visual-mode]]
     [webvim.keymap.operator :refer [buf-yank range-prefix setup-range setup-range-line-end
                                     set-linewise set-current-line make-operator set-line-end set-visual-range
-                                    not-empty-range wrap-temp-visual-mode]]
+                                    not-empty-range]]
     [webvim.indent :refer [buf-indent-current-line]]
     [webvim.mode :refer [set-insert-mode]]
     [webvim.core.utils :refer [sort2]]
@@ -21,6 +23,9 @@
         set-insert-mode)))
 
 (defn- change-range [buf rg]
+  (log "change-range")
+  (log rg)
+  (log (subr (buf :str) (sort2 rg)))
   (-> buf
       (delete-range rg)
       set-insert-mode))
@@ -132,15 +137,19 @@
                                               (repeat-insert poses r)
                                               (handler keycode))))))))))))
 
-(defmulti visual-keymap-c (fn [buf keycode] (-> buf :visual :type)))
-(defmethod visual-keymap-c :visual-range [buf keycode]
-  ((make-operator set-visual-range change-range) buf keycode))
-(defmethod visual-keymap-c :visual-line [buf keycode]
-  ((make-operator set-visual-range change-range) buf keycode))
-(defmethod visual-keymap-c :visual-block [buf keycode]
-  (-> buf
-      visual-block-delete
-      (start-insert-and-repeat false)))
+(defn- visual-keymap-c [buf keycode]
+  (if (-> buf :visual :type (= :visual-block))
+    (-> buf
+        visual-block-delete
+        (start-insert-and-repeat false))
+    ((make-operator set-visual-range change-range) buf keycode)))
+
+(defn- temp-visual-keymap-c [buf keycode]
+  (if (-> buf :visual :type (= :visual-block))
+    (-> buf
+        visual-block-delete
+        (start-insert-and-repeat false))
+    ((make-operator change-range) buf keycode)))
 
 (defmulti visual-keymap-I (fn [buf keycode] (-> buf :visual :type)))
 (defmethod visual-keymap-I :visual-range [buf keycode]
@@ -192,7 +201,7 @@
 
 (defn wrap-keymap-change [keymap visual-keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)
-        visual-keymap (wrap-temp-visual-mode visual-keymap visual-keymap-c)]
+        visual-keymap (wrap-temp-visual-mode visual-keymap)]
     (assoc keymap
            "i" (wrap-keycode set-insert-mode)
            "a" (start-insert-mode char+)
@@ -207,11 +216,17 @@
                  visual-keymap
                  {"c" (make-operator set-current-line change-range)
                   :after (fn [buf keycode]
-                           (if (or (= keycode "c")
-                                   (and
-                                     (= (-> buf :context :lastbuf :pos) (buf :pos))
-                                     (-> buf :context :range empty?)))
+                           (log {:keycode keycode
+                                 :inclusive? (-> buf :context :inclusive?)})
+                           (cond
+                             (or (= keycode "c")
+                                 (and
+                                   (= (-> buf :context :lastbuf :pos) (buf :pos))
+                                   (-> buf :context :range empty?)))
                              buf
+                             (contains? visual-keymap keycode)
+                             (temp-visual-keymap-c buf keycode)
+                             :else
                              ((make-operator change-range) buf keycode)))})
            "C" (make-operator set-line-end change-range))))
 

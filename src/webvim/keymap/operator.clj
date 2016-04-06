@@ -1,9 +1,9 @@
 (ns webvim.keymap.operator
   (:require 
+    [webvim.core.event :refer [log]]
     [clojure.string :as str]
     [clojure.pprint :refer [pprint]]
     [webvim.mode :refer [set-insert-mode]]
-    [webvim.core.event :refer [log]]
     [webvim.keymap.compile :refer [wrap-key]]
     [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete subr]]
     [webvim.core.line :refer [make-linewise-range expand-block-ranges
@@ -31,7 +31,7 @@
   (println "keycode:" keycode)
   (let [m {"h" false "l" false "w" false "W" false "e" true
            "E" true "b" false "B" false "f" true "F" false
-           "t" true "T" false "/" false "$" false "a" true
+           "t" true "T" false "/" false "$" false "a" true "^" false
            "i" true "{" false "}" false "0" false "n" false "N" false}]
     (if (contains? m keycode)
       (m keycode)
@@ -72,17 +72,19 @@
             (or rg (sort2 (buf :pos)
                           (-> buf :context :lastbuf :pos))))))
 
-(defn- set-default-inclusive [buf keycode]
-  (update buf :context
-          update :inclusive?
-          (fn [b]
-            (if (nil? b) (inclusive? keycode) b))))
+(defmacro nilor
+  "Like `or` but check nil?"
+  ([] nil)
+  ([x] x)
+  ([x & next]
+    `(let [or# ~x]
+       (if-not (nil? or#) or# (or ~@next)))))
+
+(defn set-default-inclusive [buf keycode]
+  (update-in buf [:context :inclusive?] #(nilor % (inclusive? keycode))))
 
 (defn- set-default-linewise [buf keycode]
-  (update buf :context
-          update :linewise?
-          (fn [b]
-            (if (nil? b) (linewise? keycode) b))))
+  (update-in buf [:context :linewise?] #(nilor % (linewise? keycode))))
 
 ;return range for operator, always characterwise and exclusive
 (defn- get-operator-range [{r :str
@@ -99,6 +101,7 @@
 (defn make-operator
   ([fn-init fn-operator]
     (fn [buf keycode]
+      (log (-> buf :context :inclusive?))
       (let [buf (-> buf
                     fn-init
                     set-default-range
@@ -107,8 +110,8 @@
             rg (get-operator-range buf)
             fn-set-pos (if (-> buf :context :linewise?)
                          line-start identity)]
-        (log "pos:")
-        (log (nil? (:pos (fn-operator buf rg))))
+        (log "make-operator")
+        (log [rg (-> buf :context :linewise?)])
         (-> buf
             ;This will make cursor position in right place after undo/redo. 
             (buf-set-pos (first rg)) 
@@ -119,10 +122,13 @@
     (make-operator identity f)))
 
 (defn set-visual-range [{r :str {rg :range typ :type} :visual :as buf}]
+  (log "set-visual-range")
+  (log rg)
+  (log (subr r (sort2 rg)))
   (-> buf
       (set-linewise (= typ :visual-line))
       (set-inclusive true)
-      (set-range rg)))
+      (set-range (sort2 rg))))
 
 (defn set-line-end [buf]
   (-> buf
@@ -166,6 +172,10 @@
                           {tp :type rg :range} :visual
                           :as buf}]
   (println "set-visual-ranges:" (range-linewise r rg))
+  (log "set-visual-ranges")
+  (log {:visual-range rg
+        :text (str (subr r (sort2 rg)))})
+  (.printStackTrace (Exception.))
   (assoc-in buf [:visual :ranges]
             (condp = tp
               :visual-range (list (sort2 rg))
@@ -191,18 +201,4 @@
   (let [a (buf :pos)
         b (pos-line-end (buf :str) a)]
     (assoc-in buf [:context :range] [a b])))
-
-;for cv{motion}, dv{motion} etc.
-(defn wrap-temp-visual-mode [visual-keymap f]
-  (let [visual-keymap (wrap-key visual-keymap
-                                :leave (fn [handler]
-                                         (fn [buf keycode]
-                                           (let [f (if (= keycode "<esc>") nop f)]
-                                             (-> buf
-                                                 (f keycode)
-                                                 (handler keycode))))))]
-    {"v" visual-keymap
-     "V" visual-keymap
-     "<c-v>" visual-keymap}))
-
 
