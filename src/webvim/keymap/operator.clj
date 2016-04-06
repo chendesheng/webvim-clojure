@@ -3,13 +3,14 @@
     [clojure.string :as str]
     [clojure.pprint :refer [pprint]]
     [webvim.mode :refer [set-insert-mode]]
+    [webvim.core.event :refer [log]]
     [webvim.keymap.compile :refer [wrap-key]]
     [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete subr]]
     [webvim.core.line :refer [make-linewise-range expand-block-ranges
                               pos-line-last pos-line pos-line-end
                               pos-line-start line-start]]
     [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
-    [webvim.core.range :refer [range-inclusive range-exclusive range-linewise range-line-end]]
+    [webvim.core.range :refer [range-inclusive range-exclusive range-linewise range-line-end range-current-line]]
     [webvim.core.utils :refer [make-range sort2 nop]]))
 
 (defn setup-range [buf]
@@ -106,6 +107,8 @@
             rg (get-operator-range buf)
             fn-set-pos (if (-> buf :context :linewise?)
                          line-start identity)]
+        (log "pos:")
+        (log (nil? (:pos (fn-operator buf rg))))
         (-> buf
             ;This will make cursor position in right place after undo/redo. 
             (buf-set-pos (first rg)) 
@@ -124,6 +127,12 @@
 (defn set-line-end [buf]
   (-> buf
       (set-range (range-line-end (buf :str) (buf :pos)))
+      (set-inclusive false)))
+
+(defn set-current-line [buf]
+  (-> buf
+      (set-range (range-current-line (buf :str) (buf :pos)))
+      (set-linewise false)
       (set-inclusive false)))
 
 (defn make-linewise-operator
@@ -153,24 +162,6 @@
   ([buf a b linewise?]
     (buf-yank buf a b linewise? false)))
 
-(defn yank-blockwise [buf items]
-  (registers-put! (-> buf :context :register) {:str (str/join "\n" (map first items)) :blockwise? true}))
-
-;delete [a b) shift pos
-(defn- shift-delete [pos a b]
-  (cond
-    (and (<= a pos) (< pos b)) a
-    (>= pos b) (- pos (- b a))
-    :else pos))
-
-(defn- shift-ranges-delete [ranges a b]
-  (if (< a b)
-    (map 
-      (fn [[a1 b1]]
-        [(shift-delete a1 a b)
-         (shift-delete b1 a b)])
-      ranges) ranges))
-
 (defn set-visual-ranges [{r :str
                           {tp :type rg :range} :visual
                           :as buf}]
@@ -189,16 +180,6 @@
               (let [eol (dec (pos-line-last (buf :str) a))
                     b (min eol (inc b))]
                 (conj items [(-> buf :str (subr a b)) a b]))) [] (-> buf :visual :ranges))))
-
-(defn visual-block-delete [buf]
-  (let [items (visual-block-lines buf)
-        buf (buf-set-pos buf (-> items last (get 1)))]
-    (yank-blockwise buf (rseq items))
-    (reduce (fn [buf [_ a b]]
-              (-> buf
-                  (update-in [:visual :ranges] shift-ranges-delete a b)
-                  (buf-delete a b))) buf items)))
-
 
 (defn yank-range [buf inclusive? linewise?]
   (let [[a b] (range-prefix buf inclusive?)]

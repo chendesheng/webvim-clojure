@@ -1,14 +1,18 @@
 (ns webvim.keymap.yank
   (:require
+    [clojure.string :as string]
     [webvim.core.utils :refer [nop]]
     [webvim.core.rope :refer [buf-set-pos buf-subr]]
-    [webvim.core.register :refer [registers-yank-to!]]
+    [webvim.core.register :refer [registers-yank-to! registers-put!]]
     [webvim.core.range :refer [range-linewise]]
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
-    [webvim.keymap.operator :refer [visual-block-lines yank-blockwise make-operator
+    [webvim.keymap.operator :refer [visual-block-lines make-operator
                                     make-operator-current-line make-linewise-operator
                                     set-linewise set-range set-visual-range]]))
+
+(defn yank-blockwise [buf items]
+  (registers-put! (-> buf :context :register) {:str (string/join "\n" (map first items)) :blockwise? true}))
 
 (defn yank-range
   ([buf [a b]]

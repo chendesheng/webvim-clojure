@@ -19,3 +19,6 @@
 
 (defn range-line-end [r pos]
   [pos (pos-line-end r pos)])
+
+(defn range-current-line [r pos]
+  [(pos-line-start r pos) (pos-line-end r pos)])
