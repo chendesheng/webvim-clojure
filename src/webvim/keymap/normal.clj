@@ -72,7 +72,7 @@
         wrap-keymap-replace
         wrap-keymap-scrolling
         wrap-keymap-yank
-        wrap-keymap-delete
+        (wrap-keymap-delete visual-keymap)
         wrap-keymap-join
         wrap-keymap-put
         wrap-keymap-jump
