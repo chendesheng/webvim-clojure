@@ -174,8 +174,7 @@
               nil)))
 
 (defn visual-block-lines [buf]
-  (let [buf (-> buf
-                set-visual-ranges)]
+  (let [buf (set-visual-ranges buf)]
     (reduce (fn [items [a b]]
               (let [eol (dec (pos-line-last (buf :str) a))
                     b (min eol (inc b))]

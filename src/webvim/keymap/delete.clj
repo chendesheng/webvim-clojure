@@ -7,7 +7,7 @@
     [webvim.core.register :refer [registers-delete-to!]]
     [webvim.keymap.yank :refer [yank-blockwise]]
     [webvim.keymap.operator :refer [set-range set-linewise set-line-end
-                                    set-visual-range
+                                    set-visual-range visual-block-lines
                                     make-operator]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]))
 
