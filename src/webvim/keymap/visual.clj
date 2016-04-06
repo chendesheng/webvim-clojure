@@ -155,12 +155,11 @@
       (update-in [:context :inclusive?] not)))
 
 ;for cv{motion}, dv{motion} etc.
-(defn wrap-temp-visual-mode [visual-keymap]
+(defn wrap-temp-visual-mode [visual-keymap f]
   (let [visual-keymap (-> visual-keymap
-                          (assoc :enter (fn [buf keycode]
-                                          (assoc buf :visual {:type (keycode2type keycode)
-                                                              :range [0 0]})))
-                          (dissoc :after)
+;                          (assoc :enter (fn [buf keycode]
+;                                          (assoc buf :visual {:type (keycode2type keycode)
+;                                                              :range [0 0]})))
                           (wrap-key :leave
                                     (fn [handler]
                                       (fn [buf keycode]
@@ -172,7 +171,8 @@
                                                    :context :inclusive?)))
                                         (-> buf
                                             (set-temp-visual-mode-range keycode)
-                                            (assoc :visual {:type :no-visual :range [0 0]}))))))]
+                                            (f keycode)
+                                            (handler keycode))))))]
     {"v" visual-keymap
      "V" visual-keymap
      "<c-v>" visual-keymap}))

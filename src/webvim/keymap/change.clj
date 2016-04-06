@@ -145,6 +145,7 @@
     ((make-operator set-visual-range change-range) buf keycode)))
 
 (defn- temp-visual-keymap-c [buf keycode]
+  (log (nil? buf))
   (if (-> buf :visual :type (= :visual-block))
     (-> buf
         visual-block-delete
@@ -201,7 +202,7 @@
 
 (defn wrap-keymap-change [keymap visual-keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)
-        visual-keymap (wrap-temp-visual-mode visual-keymap)]
+        visual-keymap (wrap-temp-visual-mode visual-keymap temp-visual-keymap-c)]
     (assoc keymap
            "i" (wrap-keycode set-insert-mode)
            "a" (start-insert-mode char+)
@@ -218,15 +219,12 @@
                   :after (fn [buf keycode]
                            (log {:keycode keycode
                                  :inclusive? (-> buf :context :inclusive?)})
-                           (cond
-                             (or (= keycode "c")
-                                 (and
-                                   (= (-> buf :context :lastbuf :pos) (buf :pos))
-                                   (-> buf :context :range empty?)))
+                           (if (or (= keycode "c")
+                                   (contains? visual-keymap keycode)
+                                   (and
+                                     (= (-> buf :context :lastbuf :pos) (buf :pos))
+                                     (-> buf :context :range empty?)))
                              buf
-                             (contains? visual-keymap keycode)
-                             (temp-visual-keymap-c buf keycode)
-                             :else
                              ((make-operator change-range) buf keycode)))})
            "C" (make-operator set-line-end change-range))))
 
