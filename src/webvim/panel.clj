@@ -1,8 +1,6 @@
 ;buildin panels: [Output] [Grep] [Directory] etc.
 (ns webvim.panel
   (:require
-    [clj-time.format :as tf]
-    [clj-time.core :refer [now]]
     [webvim.core.event :refer [listen]]
     [me.raynes.fs :as fs]
     [clojure.pprint :refer [pprint]]
@@ -152,9 +150,9 @@
           (append-output-panel buf (format-exception e) true)))
 
 (listen :log
-        (fn [obj]
+        (fn [prefix obj]
           (append-output-panel nil
-                               (with-out-str
-                                 (print (tf/formatter "'['hh:mm:ss'] '" now))
-                                 (pprint obj)) false)))
+                               (format "%s %s" prefix (with-out-str (pprint obj)))
+                               false)
+          obj))
 

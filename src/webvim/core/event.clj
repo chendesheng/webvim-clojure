@@ -1,4 +1,6 @@
-(ns webvim.core.event)
+(ns webvim.core.event
+  (:require [clj-time.format :as tf]
+            [clj-time.core :refer [now]]))
 
 ;str change event
 ;require listener has at least 1 arity and return buffer
@@ -20,5 +22,9 @@
                  (f b oldb c)) b (@listeners typ))))
 
 ;(fire-str-changes {} :str-change)
-(defn log [obj]
-  (fire-event obj :log))
+(defmacro log [obj]
+  `(fire-event :log
+               (with-out-str
+                 (printf "src/%s:%s [%s]"
+                         ~*file* ~(:line (meta &form))
+                         (tf/unparse (tf/formatter "hh:mm:ss") (now)))) ~obj))
