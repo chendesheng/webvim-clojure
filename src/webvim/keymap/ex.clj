@@ -69,7 +69,7 @@
 (defn exec-shell-commands [buf apanel cmds]
   (println "exec-shell-commands:" cmds)
   (exec-async cmds (fn [line]
-                     (append-panel buf apanel line false)))
+                     (append-panel buf apanel (str line \newline) false)))
   (append-panel buf apanel (str \newline (string/join \space cmds)) true))
 
 (defn cmd-write [buf _ file]
