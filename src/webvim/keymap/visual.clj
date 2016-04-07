@@ -4,8 +4,6 @@
             [webvim.keymap.case :refer [wrap-keymap-case-visual]]
             [webvim.keymap.replace :refer [wrap-keymap-replace-visual]]
             [webvim.keymap.yank :refer [wrap-keymap-yank-visual]]
-            [webvim.keymap.delete :refer [wrap-keymap-delete-visual]]
-            [webvim.keymap.change :refer [wrap-keymap-change-visual]]
             [webvim.keymap.operator :refer [set-visual-ranges set-default-inclusive set-linewise]]
             [webvim.keymap.motion :refer [init-motion-keymap-with-objects init-motion-keymap-fix-cw]]
             [webvim.keymap.compile :refer [wrap-key]]
@@ -126,9 +124,7 @@
                   wrap-keymap-replace-visual
                   wrap-keymap-scrolling-visual
                   wrap-keymap-yank-visual
-                  wrap-keymap-delete-visual
-                  wrap-keymap-case-visual
-                  wrap-keymap-change-visual) buf))
+                  wrap-keymap-case-visual) buf))
 
 (defn wrap-keymap-visual [keymap buf]
   (let [motion-keymap (init-motion-keymap-with-objects)

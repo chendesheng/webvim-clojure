@@ -1,7 +1,7 @@
 (ns webvim.keymap.change
   (:require
     [clojure.pprint :refer [pprint]]
-    [webvim.core.event :refer [log]]
+    [webvim.core.event :refer [log listen]]
     [webvim.keymap.compile :refer [replay-keys wrap-key wrap-keycode]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
     [webvim.keymap.delete :refer [delete-range visual-block-delete]]
@@ -228,8 +228,10 @@
                              ((make-operator change-range) buf keycode)))})
            "C" (make-operator set-line-end change-range))))
 
-(defn wrap-keymap-change-visual [keymap]
-  (assoc keymap
+(listen
+  :visual-mode-keymap
+  (fn [keymap _]
+    (assoc keymap
          "c" visual-keymap-c
          "I" visual-keymap-I
-         "A" visual-keymap-A))
+         "A" visual-keymap-A)))

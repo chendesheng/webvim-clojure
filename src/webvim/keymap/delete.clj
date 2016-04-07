@@ -3,6 +3,7 @@
     [webvim.core.utils :refer [nop]]
     [webvim.core.rope :refer [buf-set-pos buf-delete buf-subr]]
     [webvim.core.line :refer [line-end line-start]]
+    [webvim.core.event :refer [listen]]
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.keymap.visual :refer [wrap-temp-visual-mode]]
     [webvim.core.register :refer [registers-delete-to!]]
@@ -64,10 +65,13 @@
                            (if (contains? visual-keymap keycode) buf
                                (fn-delete buf keycode)))}))))
 
-(defn wrap-keymap-delete-visual [keymap]
-  (let [fn-delete (make-operator set-visual-range delete-range)]
-    (assoc keymap
-           "d" (fn [buf keycode]
-                 (if (= (-> buf :visual :type) :visual-block)
-                   (visual-block-delete buf)
-                   (fn-delete buf keycode))))))
+
+(listen
+  :visual-mode-keymap
+  (fn [keymap _]
+    (let [fn-delete (make-operator set-visual-range delete-range)]
+      (assoc keymap
+             "d" (fn [buf keycode]
+                   (if (= (-> buf :visual :type) :visual-block)
+                     (visual-block-delete buf)
+                     (fn-delete buf keycode)))))))

@@ -175,7 +175,7 @@
   (log "set-visual-ranges")
   (log {:visual-range rg
         :text (str (subr r (sort2 rg)))})
-  (.printStackTrace (Exception.))
+  ;(.printStackTrace (Exception.))
   (assoc-in buf [:visual :ranges]
             (condp = tp
               :visual-range (list (sort2 rg))
