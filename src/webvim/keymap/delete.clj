@@ -5,12 +5,12 @@
     [webvim.core.line :refer [line-end line-start]]
     [webvim.core.event :refer [listen]]
     [webvim.keymap.compile :refer [wrap-keycode]]
-    [webvim.keymap.visual :refer [wrap-temp-visual-mode]]
+    [webvim.keymap.visual :refer [wrap-temp-visual-mode keycodes-visual]]
     [webvim.core.register :refer [registers-delete-to!]]
     [webvim.keymap.yank :refer [yank-blockwise]]
     [webvim.keymap.operator :refer [set-range set-linewise set-line-end
                                     set-visual-range visual-block-lines
-                                    make-operator]]
+                                    make-operator ignore-by-keycode]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]))
 
 ;delete [a b) shift pos
@@ -61,10 +61,7 @@
                  motion-keymap
                  visual-keymap
                  {"d" (wrap-keycode set-linewise)
-                  :after (fn [buf keycode]
-                           (if (contains? visual-keymap keycode) buf
-                               (fn-delete buf keycode)))}))))
-
+                  :after (ignore-by-keycode fn-delete keycodes-visual)}))))
 
 (listen
   :visual-mode-keymap

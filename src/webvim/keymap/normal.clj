@@ -68,16 +68,16 @@
            :after normal-mode-after})
         (wrap-keymap-visual buf)
         wrap-keymap-addsub
-        wrap-keymap-indent
+        (wrap-keymap-indent visual-keymap)
         wrap-keymap-replace
         wrap-keymap-scrolling
-        wrap-keymap-yank
+        (wrap-keymap-yank visual-keymap)
         (wrap-keymap-delete visual-keymap)
         wrap-keymap-join
         wrap-keymap-put
         wrap-keymap-jump
         (wrap-keymap-change visual-keymap)
-        wrap-keymap-case)))
+        (wrap-keymap-case visual-keymap))))
 
 (listen :before-change-to-normal-mode
         normal-mode-fix-pos)

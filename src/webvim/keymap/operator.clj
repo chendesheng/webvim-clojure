@@ -202,3 +202,9 @@
         b (pos-line-end (buf :str) a)]
     (assoc-in buf [:context :range] [a b])))
 
+(defn ignore-by-keycode [f pred]
+  (fn [buf keycode]
+    (if (pred keycode)
+      buf
+      (f buf keycode))))
+

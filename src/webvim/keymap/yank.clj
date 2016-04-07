@@ -5,9 +5,11 @@
     [webvim.core.rope :refer [buf-set-pos buf-subr]]
     [webvim.core.register :refer [registers-yank-to! registers-put!]]
     [webvim.core.range :refer [range-linewise]]
+    [webvim.core.event :refer [listen]]
     [webvim.keymap.compile :refer [wrap-keycode]]
+    [webvim.keymap.visual :refer [wrap-temp-visual-mode keycodes-visual]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
-    [webvim.keymap.operator :refer [visual-block-lines make-operator
+    [webvim.keymap.operator :refer [visual-block-lines make-operator ignore-by-keycode
                                     make-operator-current-line make-linewise-operator
                                     set-linewise set-range set-visual-range]]))
 
@@ -27,23 +29,25 @@
     (yank-blockwise buf (rseq items))
     buf))
 
-(defn wrap-keymap-yank [keymap]
+(defn- visual-keymap-y [buf keycode]
+  (if (= (-> buf :visual :type) :visual-block)
+    (visual-block-yank buf)
+    ((make-operator set-visual-range yank-range) buf keycode)))
+
+(defn wrap-keymap-yank [keymap visual-keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)
         fn-yank (make-operator yank-range)]
     (assoc keymap
            "y" (merge
                  motion-keymap
+                 (wrap-temp-visual-mode visual-keymap visual-keymap-y)
                  {"y" (make-operator-current-line yank-range)
-                  :after (fn [buf keycode]
-                           (if (not= keycode "y")
-                             (fn-yank buf keycode)
-                             buf))})
+                  :after (ignore-by-keycode fn-yank
+                                            (conj keycodes-visual "y"))})
            "Y" (make-operator-current-line yank-range))))
 
-(defn wrap-keymap-yank-visual [keymap]
-  (let [fn-yank (make-operator set-visual-range yank-range)]
-    (assoc keymap "y" 
-           (fn [buf keycode]
-             (if (= (-> buf :visual :type) :visual-block)
-               (visual-block-yank buf)
-               (fn-yank buf keycode))))))
+(listen
+  :visual-mode-keymap
+  (fn [keymap _]
+    (let [fn-yank (make-operator set-visual-range yank-range)]
+      (assoc keymap "y" visual-keymap-y))))

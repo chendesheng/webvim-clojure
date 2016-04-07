@@ -1,10 +1,7 @@
 (ns webvim.keymap.visual
   (:require [clojure.string :as str]
-            [webvim.keymap.indent :refer [wrap-keymap-indent-visual]]
-            [webvim.keymap.case :refer [wrap-keymap-case-visual]]
             [webvim.keymap.replace :refer [wrap-keymap-replace-visual]]
-            [webvim.keymap.yank :refer [wrap-keymap-yank-visual]]
-            [webvim.keymap.operator :refer [set-visual-ranges set-default-inclusive set-linewise]]
+            [webvim.keymap.operator :refer [set-visual-ranges set-default-inclusive set-linewise ignore-by-keycode]]
             [webvim.keymap.motion :refer [init-motion-keymap-with-objects init-motion-keymap-fix-cw]]
             [webvim.keymap.compile :refer [wrap-key]]
             [webvim.keymap.scrolling :refer [wrap-keymap-scrolling-visual]])
@@ -105,12 +102,16 @@
     "v" change-visual-mode-type
     "<c-v>" change-visual-mode-type))
 
+(def keycodes-visual #{"v" "V" "<c-v>"})
+(defn visual-keycode? [keycode]
+  (contains? keycodes-visual keycode))
+
 (defn init-visual-mode-keymap-for-operators []
   (let [motion-keymap (init-motion-keymap-fix-cw)]
     (-> motion-keymap
         init-visual-mode-keymap
         (assoc :continue (fn [_ keycode]
-                           (contains? #{"v" "V" "<c-v>"} keycode))))))
+                           (visual-keycode? keycode))))))
 
 (defn- init-visual-mode-keymap-with-operators [motion-keymap buf]
   (fire-event :visual-mode-keymap
@@ -120,11 +121,8 @@
                          "<c-i>" nop
                          "<c-o>" nop
                          "<c-r>" nop)
-                  wrap-keymap-indent-visual
                   wrap-keymap-replace-visual
-                  wrap-keymap-scrolling-visual
-                  wrap-keymap-yank-visual
-                  wrap-keymap-case-visual) buf))
+                  wrap-keymap-scrolling-visual) buf))
 
 (defn wrap-keymap-visual [keymap buf]
   (let [motion-keymap (init-motion-keymap-with-objects)

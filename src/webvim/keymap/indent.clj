@@ -1,12 +1,14 @@
 (ns webvim.keymap.indent
   (:require [webvim.keymap.motion :refer [init-motion-keymap-fix-cw init-motion-keymap-for-operators]]
             [webvim.keymap.compile :refer [wrap-keycode]]
-            [webvim.keymap.operator :refer [make-linewise-operator set-linewise set-visual-range]]
+            [webvim.keymap.operator :refer [make-linewise-operator set-linewise set-visual-range ignore-by-keycode]]
+            [webvim.keymap.visual :refer [wrap-temp-visual-mode keycodes-visual]]
             [webvim.indent :refer [buf-indent-current-line buf-indent-lines]]
             [webvim.core.rope :refer [buf-set-pos buf-replace subr re-test buf-insert rblank? char-at buf-delete]]
+            [webvim.core.event :refer [listen]]
             [webvim.core.line :refer [line-start line-end pos-line pos-lines-seq+ pos-line-start]]
             [webvim.core.pos :refer [char- pos-re-seq+]]
-            [webvim.core.utils :refer [repeat-chars nop]]))
+            [webvim.core.utils :refer [repeat-chars nop deep-merge]]))
 
 (defn- indent-more [buf [a b]]
   (reduce
@@ -33,22 +35,38 @@
     buf
     (reverse (pos-lines-seq+ (buf :str) a b))))
 
-(defn wrap-keymap-indent [keymap]
+(defn temp-visual-mode [visual-keymap f]
+  (wrap-temp-visual-mode visual-keymap
+                         #((make-linewise-operator f) %1 %2)))
+
+
+(defn wrap-keymap-indent [keymap visual-keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)]
     (assoc keymap
-           "=" (merge
+           "=" (deep-merge
                  motion-keymap
+                 (temp-visual-mode visual-keymap buf-indent-lines)
                  {"=" nop
-                  :after (make-linewise-operator buf-indent-lines)})
-           ">" (merge
+                  :after (-> buf-indent-lines
+                             make-linewise-operator
+                             (ignore-by-keycode keycodes-visual))})
+           ">" (deep-merge
                  motion-keymap
-                 {:after (make-linewise-operator indent-more)})
-           "<" (merge
+                 (temp-visual-mode visual-keymap indent-more)
+                 {:after (-> indent-more
+                             make-linewise-operator
+                             (ignore-by-keycode keycodes-visual))})
+           "<" (deep-merge
                  motion-keymap
-                 {:after (make-linewise-operator indent-less)}))))
+                 (temp-visual-mode visual-keymap indent-less)
+                 {:after (-> indent-less
+                             make-linewise-operator
+                             (ignore-by-keycode keycodes-visual))}))))
 
-(defn wrap-keymap-indent-visual [keymap]
-  (assoc keymap
-         "=" (make-linewise-operator set-visual-range buf-indent-lines)
-         ">" (make-linewise-operator set-visual-range indent-more)
-         "<" (make-linewise-operator set-visual-range indent-less)))
+(listen
+  :visual-mode-keymap
+  (fn [keymap _]
+    (assoc keymap
+           "=" (make-linewise-operator set-visual-range buf-indent-lines)
+           ">" (make-linewise-operator set-visual-range indent-more)
+           "<" (make-linewise-operator set-visual-range indent-less))))
