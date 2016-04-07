@@ -23,7 +23,11 @@ function renderCursor(buf, from, visibleLines) {
         res.ch = ' ';
     }
     //console.log(res);
-    var color = getComputedStyle(res.e.parentNode, null).color;
+    var style = getComputedStyle(res.e.parentNode, null);
+    var color = style.color;
+    var fontStyle = style.fontStyle;
+    var fontWeight = style.fontWeight;
+
     var background = getComputedStyle(document.body, null).backgroundColor;
     //console.log(color);
     //console.log(background);
@@ -36,11 +40,12 @@ function renderCursor(buf, from, visibleLines) {
         if (buf.focusStatusBar) {
             return 'border:solid 1px ' + color + ';' + 'color:rgba(0,0,0,0);';
         } else {
-            return 'background-color:' + color + ';' + 'color:' + background + ';';
+            return 'background-color:' + color + ';' + 'color:' + background + ';' + 'font-style:' + fontStyle + ';' + 'font-weight:' + fontWeight + ';';
         }
     }
 
     cursor.style.cssText = 'left:' + (res.left + (alignright ? res.width : 0) + 'px;' //right align
+        + (buf.focusStatusBar ? ('width:' + cursor.offsetWidth - 4 + 'px;' + 'height:' + cursor.offsetHeight - 4 + 'px;') : '') //
         + 'margin-left:' + (((alignright ? -1 : 0) - gutterWidth(buf.id))) + 'ch') + ';' + 'top:' + res.top + 'px;' + colorStyle();
     if (buf.focusStatusBar) {
         cursor.style.width = cursor.offsetWidth - 4 + 'px';

@@ -28,7 +28,7 @@
             "render/gutter.js" "render/offscreen/changes.js" "render/offscreen/lines.js" 
             "render/offscreen/pos.js" "render/selection.js" "render/viewport.js" 
             "render/watchers.js"]
-        css ["ubuntu-mono.css" "main.css" "monokai.css"]]
+        css ["main.css" "monokai.css"]]
     (html5
       (reduce add-js [:head] js)
       (reduce add-css [:head] css)

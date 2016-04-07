@@ -11,6 +11,34 @@ about z-index:
     status bar 2
 */
 
+@font-face {
+    font-family: 'Ubuntu Mono';
+    src: url('fonts/UbuntuMono-B.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Ubuntu Mono';
+    src: url('fonts/UbuntuMono-BI.ttf') format('truetype');
+    font-weight: bold;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Ubuntu Mono';
+    src: url('fonts/UbuntuMono-RI.ttf') format('truetype');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Ubuntu Mono';
+    src: url('fonts/UbuntuMono-R.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
 body {
     font-family: 'Ubuntu Mono', 'Source Code Pro for Powerline', 'Source Code Pro', 'Courier New';
     padding: 0;
@@ -118,7 +146,7 @@ pre {
 }
 
 .status-bar .second-cursor {
-    background: #007acc;
+    background: #272822;
     opacity: 0.3;
 }
 

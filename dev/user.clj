@@ -32,8 +32,7 @@
 
 ;I don't like include js library directly, but also don't want download it over and over.
 (defn- cache-resources []
-  (doseq [r [["resources/public/jquery.js" "http://libs.baidu.com/jquery/2.0.3/jquery.js"]
-             ["resources/public/ubuntu-mono.css" "http://fonts.useso.com/css?family=Ubuntu+Mono"]]]
+  (doseq [r [["resources/public/jquery.js" "http://libs.baidu.com/jquery/2.0.3/jquery.js"]]]
     (apply cache-resource r)))
 
 (defn restart []

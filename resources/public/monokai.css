@@ -29,6 +29,7 @@ body {
 
 .lines .comment {
     color: #75715E;
+    font-style: italic;
 }
 
 .lines .string,
@@ -66,10 +67,13 @@ body {
 }
 */
 
+
+/*
 .status-bar {
     background: #565656;
     border-top: solid 1px #323232;
 }
+*/
 
 
 /*
