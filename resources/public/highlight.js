@@ -14,7 +14,7 @@ function inherit(parent, obj) {
     return result;
 }
 
-var highlights = (function() {
+function initHighlights() {
 
     var hljs = {};
     hljs.inherit = inherit;
@@ -147,9 +147,13 @@ var highlights = (function() {
         'Go': hlgo(hljs),
         'C#': hlcs(hljs),
     }
-})();
+}
 
 function newHighlight(lang) {
+    if (!window.highlights) {
+        //TODO: delay download js
+        window.highlights = initHighlights();
+    }
     return hlcompile(highlights[lang]);
 }
 

@@ -32,6 +32,10 @@ body {
     font-style: italic;
 }
 
+.lines .doctag {
+    font-style: italic;
+}
+
 .lines .string,
 .lines .regexp {
     color: #E6DB74;
