@@ -1,6 +1,5 @@
 (ns webvim.keymap.visual
   (:require [clojure.string :as str]
-            [webvim.keymap.replace :refer [wrap-keymap-replace-visual]]
             [webvim.keymap.operator :refer [set-visual-ranges set-default-inclusive set-linewise ignore-by-keycode]]
             [webvim.keymap.motion :refer [init-motion-keymap-with-objects init-motion-keymap-fix-cw]]
             [webvim.keymap.compile :refer [wrap-key]]
@@ -121,7 +120,6 @@
                          "<c-i>" nop
                          "<c-o>" nop
                          "<c-r>" nop)
-                  wrap-keymap-replace-visual
                   wrap-keymap-scrolling-visual) buf))
 
 (defn wrap-keymap-visual [keymap buf]

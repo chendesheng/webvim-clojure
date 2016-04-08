@@ -1,6 +1,7 @@
 (ns webvim.keymap.replace
   (:require [webvim.core.utils :refer [keycode-to-char nop]]
             [webvim.core.rope :refer [buf-set-pos subr buf-replace]]
+            [webvim.core.event :refer [listen]]
             [webvim.indent :refer [buf-indent-current-line]]
             [webvim.keymap.operator :refer [not-empty-range range-prefix]]))
 
@@ -65,8 +66,10 @@
       (assoc "r" {"<esc>" nop
                   :else replace-char-keycode})))
 
-(defn wrap-keymap-replace-visual [keymap]
-  (-> keymap
-      (assoc "r" {"<esc>" nop
-                  "<cr>" nop
-                  :else replace-char-keycode})))
+(listen
+  :visual-mode-keymap
+  (fn [keymap _]
+    (-> keymap
+        (assoc "r" {"<esc>" nop
+                    "<cr>" nop
+                    :else replace-char-keycode}))))
