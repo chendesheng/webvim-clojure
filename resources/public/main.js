@@ -19,6 +19,14 @@ window.onload = function() { //use window.onload, not sure if stylesheet is load
     document.body.appendChild(d);
     lineHeight = d.offsetHeight;
     document.body.removeChild(d);
+    document.body.onclick = window.onfocus = function() {
+	    var input = $hiddenInput();
+	    if (input.disabled) {
+		    input.blur();
+	    } else {
+		    input.focus();
+	    }
+    }
 
     keyboardInit();
     viewport.height = Math.floor((window.innerHeight - lineHeight * 1.5) / lineHeight);

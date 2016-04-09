@@ -14,6 +14,7 @@
         webvim.jumplist))
 
 (defn- insert-keycode [{pos :pos :as buf} keycode]
+  (println "keycode:" keycode)
   (if (= "<bs>" keycode)
     (if (zero? pos) buf (buf-delete buf (dec pos) pos))
     (buf-insert buf (keycode-to-char keycode))))

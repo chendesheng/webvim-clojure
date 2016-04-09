@@ -9,6 +9,7 @@ about z-index:
     autocompl 2
     gutter 2
     status bar 2
+    hidden input 3
 */
 
 @font-face {
@@ -129,6 +130,36 @@ pre {
     white-space: pre;
     height: 1.2em;
     line-height: 1.2em;
+}
+
+#hidden-input {
+    position: absolute;
+    font-size: inherit;
+    font-weight: inherit;
+    font-family: inherit;
+    resize: none;
+    height: 1.2em;
+    padding: 0;
+    margin: 0;
+    outline: none;
+    border: none;
+    z-index: 3;
+    background: none;
+    color: #fff;
+    min-width: 1ch;
+    overflow-x: hidden;
+    white-space: nowrap;
+    white-space: pre;
+    word-wrap: normal;
+    opacity: 0;
+}
+
+#hidden-input.ime {
+    background: #000;
+    color: #fff;
+    opacity: 1;
+    padding-top: 3px;
+    box-sizing: border-box;
 }
 
 .cursor.ongoing-key {

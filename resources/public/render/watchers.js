@@ -1,6 +1,8 @@
 watchLocalbufChange('str', function(buf) {
     renderLines(buf);
     setSize(buf.id);
+    console.log(buf.mode);
+    renderHiddenInput(buf.mode);
 })
 
 watchLocalbufChange('changes', function(buf) {
@@ -143,12 +145,32 @@ watchLocalbufChange('mode', function(buf) {
     buf.focusStatusBar = false;
 });
 
+function renderHiddenInput(mode) {
+    var NORMAL = 0,
+        INSERT = 1;
+
+    var input = $hiddenInput();
+    if (mode == NORMAL) {
+        input.blur();
+        console.log("set blur");
+        input.disabled = true;
+    }
+
+    if (mode == INSERT) {
+        input.disabled = false;
+        console.log("set focus");
+        input.focus();
+    }
+}
+
 function renderMode(buf) {
     var MODES = ['NORMAL', 'INSERT'];
     var SUBMODES = ['', '(insert)'];
     var VISUAL_MODES = ['', 'VISUAL', 'VISUAL LINE', 'VISUAL BLOCK']
 
     var mode = buf.mode;
+    renderHiddenInput(mode);
+
     if (mode >= MODES.length) {
         return;
     }

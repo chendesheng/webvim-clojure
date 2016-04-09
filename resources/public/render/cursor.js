@@ -43,12 +43,22 @@ function renderCursor(buf, from, visibleLines) {
             return 'background-color:' + color + ';' + 'color:' + background + ';' + 'font-style:' + fontStyle + ';' + 'font-weight:' + fontWeight + ';';
         }
     }
+    var x = res.left + (alignright ? res.width : 0);
+    var y = res.top;
+    var marginLeft = (((alignright ? -1 : 0) - gutterWidth(buf.id)));
 
-    cursor.style.cssText = 'left:' + (res.left + (alignright ? res.width : 0) + 'px;' //right align
-        + (buf.focusStatusBar ? ('width:' + cursor.offsetWidth - 4 + 'px;' + 'height:' + cursor.offsetHeight - 4 + 'px;') : '') //
-        + 'margin-left:' + (((alignright ? -1 : 0) - gutterWidth(buf.id))) + 'ch') + ';' + 'top:' + res.top + 'px;' + colorStyle();
+    cursor.style.cssText = 'left:' + (x + 'px;' +
+            (buf.focusStatusBar ? ('width:' + cursor.offsetWidth - 4 + 'px;' + 'height:' + cursor.offsetHeight - 4 + 'px;') : '') +
+            'margin-left:' + marginLeft + 'ch') + ';' +
+        'top:' + y + 'px;' + colorStyle();
+
     if (buf.focusStatusBar) {
         cursor.style.width = cursor.offsetWidth - 4 + 'px';
         cursor.style.height = cursor.offsetHeight - 4 + 'px';
     }
+
+    var input = $hiddenInput();
+    input.style.left = x + 'px';
+    input.style.top = y + 'px';
+    input.style.marginLeft = marginLeft + 'ch';
 }

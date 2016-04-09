@@ -42,7 +42,7 @@ var KEYCODE_KEYDOWN = {
 }
 
 var KEYCODE_DIC = {
-    0: "\\",
+    //0: "\\",
     8: "bs",
     9: "tab",
     12: "num",
