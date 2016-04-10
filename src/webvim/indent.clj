@@ -25,28 +25,31 @@
     ;(println a b (count indent))
     (buf-replace buf a b indent)))
 
-(defn- indent-size [indent buf]
-  (if (buf :expandtab)
-    (visual-size indent (buf :tabsize))
+(defn- indent-size [indent {expandtab? :expandtab
+                            tabsize :tabsize}]
+  (if expandtab?
+    (visual-size indent tabsize)
     (count indent)))
 
 (defn buf-indent-lines 
   "indent from cursor row to row both inclusive. Only indent not blank line."
   [buf [a b]]
-  (log "buf-indent-lines:")
-  (log [a b])
+  ;(log "buf-indent-lines:")
+  ;(log [a b])
   (let [r (buf :str)
         lines (filter #(not (rblank? r %)) 
                       (pos-lines-seq+ r a b))
         lang (buf :language)]
+    ;(log (vec lines))
     (first (reduce
              (fn [[buf delta] [pos _]]
                (let [r (buf :str)
                      a (+ pos delta)
                      b (pos-line-start r a)
                      indent (indent-pos lang r a)]
+                 ;(log [(str r) indent a b (char-at r a) (pos-line-first r pos) (indent-size indent buf) delta])
                  [(buf-replace buf a b indent)
-           ;shift after buffer changed pos
+                  ;shift after buffer changed pos
                   (+ delta (- (indent-size indent buf) (- b a)))])) 
              [buf 0]
              lines))))

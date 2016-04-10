@@ -97,7 +97,6 @@
   (let [[m] (re-seq #"\r?\n" txt)]
     (= (count m) 2)))
 
-
 (defn visual-size [s tabsize]
   (let [len (count s)]
     (if (empty? s) 0
@@ -108,7 +107,17 @@
               (if (neg? nexti)
                 (+ ret (- (count s) i))
                 (recur (inc nexti) 
-                       (+ ret (- tabsize (rem ret tabsize)))))))))))
+                       (let [ret (+ ret (- nexti i))]
+                         (+ ret (- tabsize (rem ret tabsize))))))))))))
+
+(comment
+  (defn test-visual-size []
+    [(visual-size "    \t" 4)
+     (visual-size "  \t  " 4)
+     (visual-size "\t\t  " 4)
+     (visual-size "    \t\t" 4)
+     (visual-size "   \t" 4)
+     (visual-size "     \t \t" 4)]))
 
 (defn visualx-to-charx [^String s vx tabsize]
   (let [chars (char-array s)]

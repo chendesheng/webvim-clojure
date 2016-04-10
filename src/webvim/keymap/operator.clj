@@ -123,8 +123,6 @@
 
 (defn set-visual-range [{r :str {rg :range typ :type} :visual :as buf}]
   (log "set-visual-range")
-  (log rg)
-  (log (subr r (sort2 rg)))
   (-> buf
       (set-linewise (= typ :visual-line))
       (set-inclusive true)
@@ -172,9 +170,6 @@
                           {tp :type rg :range} :visual
                           :as buf}]
   (println "set-visual-ranges:" (range-linewise r rg))
-  (log "set-visual-ranges")
-  (log {:visual-range rg
-        :text (str (subr r (sort2 rg)))})
   ;(.printStackTrace (Exception.))
   (assoc-in buf [:visual :ranges]
             (condp = tp
