@@ -198,6 +198,10 @@ function removeClass(ele, cls) {
     }
 }
 
+function hasClass(ele, cls) {
+    return (new RegExp('\b' + cls + '\b')).test(ele.className);
+}
+
 
 function $empty(ele) {
     while (ele.firstChild) {
@@ -215,3 +219,12 @@ function removeUnused($p, usedIds) {
         }
     }
 }
+
+function getCaret($txt) {
+    return $txt.selectionStart;
+}
+
+function createSpan() {
+    return document.createElement('SPAN');
+}
+

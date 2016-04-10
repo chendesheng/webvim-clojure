@@ -20,7 +20,7 @@ function renderLines(buf) {
     $content(buf.id).style.height = cnt * lineHeight + 'px';
 
     //put a pivot in the end
-    var pivot = document.createElement('SPAN');
+    var pivot = createSpan();
     pivot.className = 'code end-code';
     offscreenLines.appendChild(pivot);
 
@@ -40,7 +40,7 @@ function renderLines(buf) {
 }
 
 function renderLine(items) {
-    var block = document.createElement('SPAN');
+    var block = createSpan();
     block.className = 'code';
     block.id = uniqueId();
 

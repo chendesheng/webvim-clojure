@@ -148,20 +148,31 @@ pre {
     margin: 0;
     outline: none;
     border: none;
-    z-index: 3;
     background: none;
     color: #fff;
     min-width: 1ch;
     overflow-x: hidden;
-    white-space: nowrap;
     white-space: pre;
     word-wrap: normal;
     opacity: 0;
 }
 
-#ime-preview {
-    text-decoration: underline;
+.ime-preview {
+    border: solid 1px white;
+    border-radius: 3px;
     color: #fff;
+    padding-left: 0.1ch;
+    padding-right: 0.4ch;
+    white-space: pre;
+}
+
+.ime-cursor {
+    position: absolute;
+    width: 0.2ch;
+    background: #fff;
+    height: 0.8em;
+    line-height: 0.8em;
+    margin-top: 0.2em;
 }
 
 .cursor.ongoing-key {

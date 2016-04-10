@@ -10,7 +10,7 @@ function renderSelection($p, a, b, buf, usedIds) {
             }
             __e = __e.nextSibling;
         }
-        __e = document.createElement('SPAN');
+        __e = createSpan();
         __e.className = 'line-selected';
         __e.id = uniqueId();
         return __e;

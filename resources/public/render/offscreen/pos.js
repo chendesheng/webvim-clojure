@@ -209,7 +209,7 @@ function getScreenXYInner(buf, res) {
 function createDOMItem(className, text) {
     var node;
     if (className) {
-        node = document.createElement('SPAN');
+        node = createSpan();
         node.className = className;
         node.textContent = text;
     } else {

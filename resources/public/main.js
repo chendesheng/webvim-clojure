@@ -9,7 +9,7 @@ function wrapActiveId(keys) {
 }
 
 window.onload = function() { //use window.onload, not sure if stylesheet is loaded in document.ready
-    var d = document.createElement('SPAN');
+    var d = createSpan();
     d.className = 'line-num';
     d.style.opacity = 0;
     d.style.position = 'absolute';

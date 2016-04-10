@@ -33,7 +33,7 @@ function autocomplItem(subject, word) {
     var ele = document.createElement('PRE');
     for (var i = 1; i < splits.length; i++) {
         ele.appendChild(document.createTextNode(word.substring(splits[i - 1] + 1, splits[i])));
-        var matched = document.createElement('SPAN');
+        var matched = createSpan();
         matched.className = 'matched';
         matched.textContent = word[splits[i]];
         ele.appendChild(matched);
@@ -51,7 +51,7 @@ function appendAutocomplItems(bufid, suggestions, $a, selectedIndex) {
         if (i > 0) {
             var ele = autocomplItem(subject.name, word.name);
             if (word.type) {
-                var eletyp = document.createElement('SPAN');
+                var eletyp = createSpan();
                 eletyp.className = 'info'; //can't use "type" here conflict with class
                 eletyp.textContent = word.type;
                 ele.appendChild(eletyp);

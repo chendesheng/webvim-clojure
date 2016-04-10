@@ -2,23 +2,62 @@ function escapseKeys(keys) {
     return keys.replace(/([\\<>])/, '\\$1');
 }
 
-var imeHandler = (function() {
-    var input = $hiddenInput();
+function imePreview(input) {
     var previewNode;
+    var previewCursor;
 
     function removePreviewNode() {
         if (previewNode != null) {
             $remove(previewNode);
             previewNode = null;
+            previewCursor = null;
         }
     }
 
-    function getPreviewNode(buf) {
-        if (previewNode == null) {
-            previewNode = document.createElement('SPAN');
-            previewNode.id = 'ime-preview';
-            insertNodeAtPos(buf, previewNode, buf.cursor);
+    function getLineNum() {
+        var line = $findParent(previewNode, function(n) {
+            return hasClass(n, 'code');
+        });
+
+        if (line) {
+            return parseInt(line.id.match(/line-(\d+)/)[1]);
         }
+
+        return 0;
+    }
+
+    function setPreviewContent(buf, text) {
+        if (previewNode == null) {
+            previewNode = createSpan();
+            addClass(previewNode, 'ime-preview');
+            previewNode.textContent = text;
+
+            previewCursor = createSpan();
+            addClass(previewCursor, 'ime-cursor');
+            previewNode.appendChild(previewCursor);
+
+            insertNodeAtPos(buf, previewNode, buf.cursor);
+        } else {
+            previewNode.firstChild.textContent = text;
+        }
+
+        var pos = getCaret(input);
+        var sl = $buffer(buf.id).scrollLeft;
+        if (pos == 0) {
+            var range = document.createRange();
+            range.setStart(previewNode.firstChild, pos);
+            range.setEnd(previewNode.firstChild, pos + 1);
+            rect = range.getBoundingClientRect();
+            previewCursor.style.left = (rect.left + sl) + 'px';
+        } else {
+            var range = document.createRange();
+            range.setStart(previewNode.firstChild, pos - 1);
+            range.setEnd(previewNode.firstChild, pos);
+            rect = range.getBoundingClientRect();
+            previewCursor.style.left = (rect.right + sl) + 'px';
+        }
+        previewCursor.style.marginLeft = -gutterWidth(buf.id) + 'ch';
+
         return previewNode;
     }
 
@@ -26,9 +65,7 @@ var imeHandler = (function() {
         onTyping: function(text) {
             var buf = buffers.active;
             if (text.length > 0) {
-                var pn = getPreviewNode(buf);
-                pn.textContent = text;
-
+                setPreviewContent(buf, text);
                 addClass($cursor(buf.id), 'ime');
             } else {
                 removePreviewNode();
@@ -41,7 +78,7 @@ var imeHandler = (function() {
             removeClass($cursor(buf.id), 'ime');
         }
     }
-})();
+}
 
 function keyboardInit() {
     var channel = connect("/socket");
@@ -69,7 +106,7 @@ function keyboardInit() {
 
 
     var input = $hiddenInput();
-    input.focus();
+    var imeHandler = imePreview(input);
 
     function onkeydown(event) {
         event.stopPropagation();
