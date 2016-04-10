@@ -23,14 +23,14 @@ function $newBuffer(bufid) {
         'id': bufid
     });
     document.body.appendChild(ele);
+    return ele;
 }
 
 function $buffer(bufid) {
     var id = 'buffer-' + bufid;
     var $buf = document.getElementById(id);
     if (!$buf) {
-        $newBuffer(bufid);
-        $buf = document.getElementById(id);
+        $buf = $newBuffer(bufid);
 
         var input = $hiddenInput();
         var content = $content(bufid);

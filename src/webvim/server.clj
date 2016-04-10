@@ -30,9 +30,16 @@
             "render/watchers.js"]
         css ["main.css" "monokai.css"]]
     (html5
-      (reduce add-js [:head] js)
+      (conj (reduce add-js [:head] js)
+            [:meta {:name "apple-touch-fullscreen" :content "yes"}]
+            [:meta {:name "apple-mobile-web-app-capable" :content "yes"}]
+            [:meta {:name "apple-mobile-web-app-status-bar-style" :content "default"}]
+            [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}])
       (reduce add-css [:head] css)
-      [:body])))
+      [:body [:textarea {:type "text" :id "hidden-input" :autocomplete "off"
+                         :autocorrect "off" :autocapitalize "off"
+                         :spellcheck "false" :aria-multiline "true"
+                         :role "textbox" :wrap "off" :disabled "disabled"}]])))
 
 (defn- parse-input [body]
   (let [[id keycode]

@@ -2,6 +2,47 @@ function escapseKeys(keys) {
     return keys.replace(/([\\<>])/, '\\$1');
 }
 
+var imeHandler = (function() {
+    var input = $hiddenInput();
+    var previewNode;
+
+    function removePreviewNode() {
+        if (previewNode != null) {
+            $remove(previewNode);
+            previewNode = null;
+        }
+    }
+
+    function getPreviewNode(buf) {
+        if (previewNode == null) {
+            previewNode = document.createElement('SPAN');
+            previewNode.id = 'ime-preview';
+            insertNodeAtPos(buf, previewNode, buf.cursor);
+        }
+        return previewNode;
+    }
+
+    return {
+        onTyping: function(text) {
+            var buf = buffers.active;
+            if (text.length > 0) {
+                var pn = getPreviewNode(buf);
+                pn.textContent = text;
+
+                addClass($cursor(buf.id), 'ime');
+            } else {
+                removePreviewNode();
+                removeClass($cursor(buf.id), 'ime');
+            }
+        },
+        onInput: function() {
+            var buf = buffers.active;
+            removePreviewNode();
+            removeClass($cursor(buf.id), 'ime');
+        }
+    }
+})();
+
 function keyboardInit() {
     var channel = connect("/socket");
 
@@ -78,6 +119,10 @@ function keyboardInit() {
         }
     }
 
+    document.body.onclick = function() {
+        input.focus();
+    };
+
     document.addEventListener('keydown', function(event) {
         onkeydown(event);
     });
@@ -91,7 +136,10 @@ function keyboardInit() {
 
     input.addEventListener('keydown', function(event) {
         onkeydown(event);
-        console.log('textdarea keypress:' + input.value);
+        console.log('textdarea keydown:' + input.value);
+
+        imeHandler.onTyping(input.value);
+
         if (input.value.length > 0) {
             addClass(input, 'ime');
         } else {
@@ -109,6 +157,7 @@ function keyboardInit() {
         channel.send(event.data);
         setTimeout(function() {
             input.value = '';
+            imeHandler.onInput();
             removeClass(input, 'ime');
         }, 10);
     });

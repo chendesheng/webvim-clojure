@@ -29,12 +29,9 @@ body {
 
 .lines .comment {
     color: #75715E;
-    font-style: italic;
 }
 
-.lines .doctag {
-    font-style: italic;
-}
+.lines .doctag {}
 
 .lines .string,
 .lines .regexp {

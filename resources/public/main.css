@@ -132,13 +132,18 @@ pre {
     line-height: 1.2em;
 }
 
+.cursor.ime {
+    visibility: hidden;
+}
+
 #hidden-input {
     position: absolute;
     font-size: inherit;
     font-weight: inherit;
     font-family: inherit;
     resize: none;
-    height: 1.2em;
+    height: 1px;
+    width: 10000px;
     padding: 0;
     margin: 0;
     outline: none;
@@ -154,12 +159,9 @@ pre {
     opacity: 0;
 }
 
-#hidden-input.ime {
-    background: #000;
+#ime-preview {
+    text-decoration: underline;
     color: #fff;
-    opacity: 1;
-    padding-top: 3px;
-    box-sizing: border-box;
 }
 
 .cursor.ongoing-key {

@@ -2,7 +2,6 @@ watchLocalbufChange('str', function(buf) {
     renderLines(buf);
     setSize(buf.id);
     console.log(buf.mode);
-    renderHiddenInput(buf.mode);
 })
 
 watchLocalbufChange('changes', function(buf) {
@@ -141,6 +140,7 @@ watchLocalbufChange('line-buffer', function(buf) {
 
 watchLocalbufChange('mode', function(buf) {
     renderMode(buf);
+    renderHiddenInput(buf.mode);
     keymap = keymaps[buf.mode];
     buf.focusStatusBar = false;
 });
@@ -151,8 +151,8 @@ function renderHiddenInput(mode) {
 
     var input = $hiddenInput();
     if (mode == NORMAL) {
-        input.blur();
         console.log("set blur");
+        input.blur();
         input.disabled = true;
     }
 
@@ -169,7 +169,6 @@ function renderMode(buf) {
     var VISUAL_MODES = ['', 'VISUAL', 'VISUAL LINE', 'VISUAL BLOCK']
 
     var mode = buf.mode;
-    renderHiddenInput(mode);
 
     if (mode >= MODES.length) {
         return;
