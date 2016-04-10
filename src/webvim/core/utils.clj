@@ -97,6 +97,9 @@
   (let [[m] (re-seq #"\r?\n" txt)]
     (= (count m) 2)))
 
+(defn- round-to-tabstop [n tabsize]
+  (+ n (- tabsize (rem n tabsize))))
+
 (defn visual-size [s tabsize]
   (let [len (count s)]
     (if (empty? s) 0
@@ -105,14 +108,14 @@
             ret
             (let [nexti (.indexOf s "\t" i)]
               (if (neg? nexti)
-                (+ ret (- (count s) i))
+                (+ ret (- len i))
                 (recur (inc nexti) 
-                       (let [ret (+ ret (- nexti i))]
-                         (+ ret (- tabsize (rem ret tabsize))))))))))))
+                       (+ ret (round-to-tabstop (- nexti i) tabsize))))))))))
 
 (comment
   (defn test-visual-size []
-    [(visual-size "    \t" 4)
+    [(visual-size " \t  " 4)
+     (visual-size "    \t" 4)
      (visual-size "  \t  " 4)
      (visual-size "\t\t  " 4)
      (visual-size "    \t\t" 4)
