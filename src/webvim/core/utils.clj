@@ -166,8 +166,14 @@
     (clojure.java.shell/sh "clip" :in text)
     :else (clipboard/set-text! text)))
 
+(defn- replace-path-sep[f]
+  (if windows?
+    (string/replace (str f) "/" "\\")
+    f))
+
 (defn expand-path [f]
   (-> f
+      replace-path-sep
       fs/expand-home
       fs/normalized)) 
 
