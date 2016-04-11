@@ -1,7 +1,6 @@
 watchLocalbufChange('str', function(buf) {
     renderLines(buf);
     setSize(buf.id);
-    console.log(buf.mode);
 })
 
 watchLocalbufChange('changes', function(buf) {
@@ -152,7 +151,6 @@ function renderHiddenInput(mode) {
     var input = $hiddenInput();
     if (mode == NORMAL) {
         console.log("set blur");
-        input.blur();
         input.disabled = true;
     }
 

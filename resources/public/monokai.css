@@ -1,5 +1,6 @@
 body,.gutter {
     background: #272822;
+    font-size: 30px;
 }
 
 .buffer:before {

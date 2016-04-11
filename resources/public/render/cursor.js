@@ -32,8 +32,8 @@ function renderCursor(buf, from, visibleLines) {
     //console.log(color);
     //console.log(background);
     var cursor = $cursor(buf.id);
-    if (cursor.textContent != res.ch) {
-        cursor.textContent = res.ch;
+    if (cursor.firstChild.textContent != res.ch) {
+        cursor.firstChild.textContent = res.ch;
     }
 
     function colorStyle() {
@@ -48,7 +48,7 @@ function renderCursor(buf, from, visibleLines) {
     var marginLeft = (((alignright ? -1 : 0) - gutterWidth(buf.id)));
 
     cursor.style.cssText = 'left:' + (x + 'px;' +
-            (buf.focusStatusBar ? ('width:' + cursor.offsetWidth - 4 + 'px;' + 'height:' + cursor.offsetHeight - 4 + 'px;') : '') +
+            //(buf.focusStatusBar ? ('width:' + cursor.offsetWidth - 4 + 'px;' + 'height:' + cursor.offsetHeight - 4 + 'px;') : '') +
             'margin-left:' + marginLeft + 'ch') + ';' +
         'top:' + y + 'px;' + colorStyle();
 
@@ -57,8 +57,8 @@ function renderCursor(buf, from, visibleLines) {
         cursor.style.height = cursor.offsetHeight - 4 + 'px';
     }
 
-    var input = $hiddenInput();
-    input.style.left = x + 'px';
-    input.style.top = y + 'px';
-    input.style.marginLeft = marginLeft + 'ch';
+    //var input = $hiddenInput();
+    //input.style.left = x + 'px';
+    //input.style.top = y + 'px';
+    //input.style.marginLeft = marginLeft + 'ch';
 }

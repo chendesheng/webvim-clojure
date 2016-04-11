@@ -261,11 +261,10 @@ function insertNodeAtPos(buf, node, pos) {
 
     var nd = line.childNodes[res.index];
     var e = (nd.nodeType == 3) ? nd : nd.firstChild;
-    console.log(e);
+    //console.log(e);
 
     var range = document.createRange();
     range.setStart(e, res.offset);
     range.setEnd(e, res.offset);
-    console.log(range);
     range.insertNode(node);
 }

@@ -47,7 +47,7 @@ function connect(path) {
             updateViewportSize(function() {
                 if (_conn.readyState == 1) { //OPEN https://developer.mozilla.org/en-US/docs/Web/API/WebSocket#Ready_state_constants
                     _conn.send(wrapActiveId(_inputBuffer));
-                    console.log(_inputBuffer);
+                    //console.log(_inputBuffer);
                     _inputBuffer = '';
                 } else if (_conn.readyState != 0) { //not CONNECTING
                     //reconnect

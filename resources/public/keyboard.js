@@ -62,7 +62,8 @@ function imePreview(input) {
     }
 
     return {
-        onTyping: function(text) {
+        onTyping: function() {
+            var text = input.value;
             var buf = buffers.active;
             if (text.length > 0) {
                 setPreviewContent(buf, text);
@@ -73,6 +74,8 @@ function imePreview(input) {
             }
         },
         onInput: function() {
+            input.value = '';
+
             var buf = buffers.active;
             removePreviewNode();
             removeClass($cursor(buf.id), 'ime');
@@ -81,7 +84,7 @@ function imePreview(input) {
 }
 
 function keyboardInit() {
-    var channel = connect("/socket");
+    var channel = connect('/socket');
 
     var terminalAlias = {
         'c-[': 'esc',
@@ -109,25 +112,28 @@ function keyboardInit() {
     var imeHandler = imePreview(input);
 
     function onkeydown(event) {
-        event.stopPropagation();
-
         var key = KEYCODE_KEYDOWN[event.keyCode];
         if (key || event.ctrlKey || event.altKey) {
             //console.log(event);
 
             if (event.ctrlKey) {
                 if (event.keyCode != 0 && event.keyCode != 16 && event.keyCode != 17 && event.keyCode != 18) {
-                    var prefix = "c-";
+                    var prefix = 'c-';
                     if (event.shiftKey) {
-                        prefix += "s-"
+                        prefix += 's-'
                     }
                     if (event.altKey) {
-                        prefix += "a-";
+                        prefix += 'a-';
                     }
-                    key = prefix + KEYCODE_DIC[event.keyCode];
+
+                    if (KEYCODE_DIC[event.keyCode]) {
+                        key = prefix + KEYCODE_DIC[event.keyCode];
+                    }
                 }
             } else if (event.shiftKey) {
-                key = "s-" + KEYCODE_DIC[event.keyCode];
+                if (KEYCODE_DIC[event.keyCode]) {
+                    key = 's-' + KEYCODE_DIC[event.keyCode];
+                }
             }
 
             if (key) {
@@ -144,7 +150,6 @@ function keyboardInit() {
     }
 
     function onkeypress(event) {
-        event.stopPropagation();
         if (iOS) {
             var code = event.keyCode || event.charCode || event.which;;
             //FIXME: is this correctly??
@@ -160,10 +165,7 @@ function keyboardInit() {
         input.focus();
     };
 
-    document.addEventListener('keydown', function(event) {
-        onkeydown(event);
-    });
-
+    document.addEventListener('keydown', onkeydown);
     document.addEventListener('keypress', function(event) {
         onkeypress(event);
         if (!event.defaultPrevented) {
@@ -172,30 +174,24 @@ function keyboardInit() {
     });
 
     input.addEventListener('keydown', function(event) {
+        event.stopPropagation();
         onkeydown(event);
-        console.log('textdarea keydown:' + input.value);
-
-        imeHandler.onTyping(input.value);
-
-        if (input.value.length > 0) {
-            addClass(input, 'ime');
-        } else {
-            removeClass(input, 'ime');
-        }
     });
 
     input.addEventListener('keypress', function(event) {
+        event.stopPropagation();
         onkeypress(event);
-        //console.log('textdarea keypress');
+    });
+
+    input.addEventListener('input', function(event) {
+        //FIXME: without setTimeout here, getCaret() will always return 0, not sure why. 
+        setTimeout(imeHandler.onTyping, 0);
     });
 
     input.addEventListener('textInput', function(event) {
-        console.log(event);
         channel.send(event.data);
-        setTimeout(function() {
-            input.value = '';
-            imeHandler.onInput();
-            removeClass(input, 'ime');
-        }, 10);
+
+        //FIXME: without setTimeout here, input.value = '' will not work, not sure why. 
+        setTimeout(imeHandler.onInput, 0);
     });
 }

@@ -4,7 +4,7 @@ function $newBuffer(bufid) {
     ele.className = 'buffer';
     var tmpl = '<div id="gutter-{id}" class="gutter">' + '</div>' +
         '<div id="content-{id}" class="content">' +
-        '<div id="cursor-{id}" class="cursor"></div>' +
+        '<div id="cursor-{id}" class="cursor">&nbsp;</div>' +
         '<div id="selections-{id}" class="selections"></div>' +
         '<div id="highlights-{id}" class="highlights"></div>' +
         '<div id="autocompl-{id}" class="autocompl"></div>' +
@@ -30,13 +30,14 @@ function $buffer(bufid) {
     var id = 'buffer-' + bufid;
     var $buf = document.getElementById(id);
     if (!$buf) {
+        var input = $hiddenInput();
+
         $buf = $newBuffer(bufid);
 
-        var input = $hiddenInput();
-        var content = $content(bufid);
-        if (input.parent != content) {
+        var cursor = $cursor(bufid);
+        if (input.parentNode != cursor) {
             $remove(input);
-            content.appendChild(input);
+            cursor.appendChild(input);
         }
     }
 
@@ -80,7 +81,7 @@ function $cursor(bufid) {
     return _$bufid('cursor-', bufid);
 }
 
-function $hiddenInput(bufid) {
+function $hiddenInput() {
     return document.getElementById('hidden-input');
 }
 
@@ -227,4 +228,3 @@ function getCaret($txt) {
 function createSpan() {
     return document.createElement('SPAN');
 }
-

@@ -133,28 +133,26 @@ pre {
 }
 
 .cursor.ime {
-    visibility: hidden;
+    opacity: 0;
 }
 
 #hidden-input {
     position: absolute;
     font-size: inherit;
-    font-weight: inherit;
-    font-family: inherit;
     resize: none;
-    height: 1px;
+    left: 0;
     width: 10000px;
+    height: 100%;
     padding: 0;
     margin: 0;
     outline: none;
     border: none;
     background: none;
     color: #fff;
-    min-width: 1ch;
-    overflow-x: hidden;
     white-space: pre;
     word-wrap: normal;
     opacity: 0;
+    z-index: -1;
 }
 
 .ime-preview {
