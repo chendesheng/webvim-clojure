@@ -49,7 +49,7 @@ function renderViewport(aheadlines, scrolling) {
     var lastline;
     var cnt = 0;
     var usedIds = {};
-    while (offscreen && !offscreen.className.contains('end-code') && cnt < h) {
+    while (offscreen && !offscreen.className.contains('end-code-block') && cnt < h) {
         var line = document.getElementById(offscreen.id);
         var linenum = from + cnt;
         if (line) {

@@ -25,3 +25,26 @@
       (assoc-in [:language :name] "Plain Text")
       (assoc :tabsize 4)
       (assoc :expandtab false)))
+
+(defn- init-markdown-file-type [buf]
+  (-> buf
+      (assoc-in [:language :id] ::markdown)
+      (assoc-in [:language :name] "MarkDown")
+      (assoc :tabsize 4)
+      (assoc :expandtab true)))
+
+(defn- init-actionscript-file-type [buf]
+  (-> buf
+      (assoc-in [:language :id] ::markdown)
+      (assoc-in [:language :name] "ActionScript")
+      (assoc :tabsize 4)
+      (assoc :expandtab true)))
+
+(defmethod init-file-type ".md"
+  [buf]
+  (init-markdown-file-type buf))
+
+(defmethod init-file-type ".as"
+  [buf]
+  (init-actionscript-file-type buf))
+

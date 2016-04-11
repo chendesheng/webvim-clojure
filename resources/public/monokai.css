@@ -40,7 +40,8 @@ body {
 
 .lines .number,
 .lines .escape,
-.lines .literal {
+.lines .literal,
+.lines .subst {
     color: #AE81FF;
 }
 
@@ -55,16 +56,18 @@ body {
 
 .lines .attr,
 .lines .builtin-name,
-.lines .attribute {
+.lines .attribute,
+.lines .code,
+.lines .section {
     color: #66D9EF;
 }
 
 
 /*.highlight-bracket-pair .line-selected, .cursor {
-	background:#F8F8F0;
+    background:#F8F8F0;
 }
 .cursor {
-	opacity:0.5;
+    opacity:0.5;
 }
 */
 

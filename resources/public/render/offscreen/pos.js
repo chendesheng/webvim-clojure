@@ -1,9 +1,9 @@
 function outOfRange(ele) {
-    return ele == null || !/\bcode\b/.test(ele.className);
+    return ele == null || !/\bcode-block\b/.test(ele.className);
 }
 
 function endCode(ele) {
-    return ele != null && /\bend\-code\b/.test(ele.className);
+    return ele != null && /\bend\-code\-block\b/.test(ele.className);
 }
 
 function getCodeBlockByPos(buf, pos) {
@@ -252,6 +252,7 @@ function substring(buf, a, b) {
 
     return txt;
 }
+<<<<<<< Updated upstream
 
 function insertNodeAtPos(buf, node, pos) {
     var res = getElementByPos(buf, pos);
@@ -269,3 +270,5 @@ function insertNodeAtPos(buf, node, pos) {
     console.log(range);
     range.insertNode(node);
 }
+=======
+>>>>>>> Stashed changes

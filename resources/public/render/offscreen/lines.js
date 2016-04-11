@@ -21,7 +21,7 @@ function renderLines(buf) {
 
     //put a pivot in the end
     var pivot = createSpan();
-    pivot.className = 'code end-code';
+    pivot.className = 'code-block end-code-block';
     offscreenLines.appendChild(pivot);
 
     buf.hl = hl;
@@ -41,7 +41,7 @@ function renderLines(buf) {
 
 function renderLine(items) {
     var block = createSpan();
-    block.className = 'code';
+    block.className = 'code-block';
     block.id = uniqueId();
 
     items.each(function(item) {

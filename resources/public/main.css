@@ -1,7 +1,7 @@
 /*
 about z-index:
     selection -1
-    code 0
+    code-block 0
     search highlight 1
     cursor 1
     matched bracket 1
@@ -72,7 +72,7 @@ html,
     position: relative;
 }
 
-.code {
+.code-block {
     z-index: 0;
     line-height: 1.2em;
 }
