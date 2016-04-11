@@ -252,7 +252,6 @@ function substring(buf, a, b) {
 
     return txt;
 }
-<<<<<<< Updated upstream
 
 function insertNodeAtPos(buf, node, pos) {
     var res = getElementByPos(buf, pos);
@@ -270,5 +269,3 @@ function insertNodeAtPos(buf, node, pos) {
     console.log(range);
     range.insertNode(node);
 }
-=======
->>>>>>> Stashed changes
