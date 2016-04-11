@@ -1,5 +1,16 @@
-body {
+body,.gutter {
     background: #272822;
+}
+
+.buffer:before {
+    content: '';
+    display:block;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='1.2em' width='0'><text x='0' y='5' fill='#595959' font-size='1em'>~</text></svg>");
+    height: 100%;
+    width: 2ch;
+    left:1ch;
+    z-index:-1;
+    position:absolute;
 }
 
 .lines .keyword {
