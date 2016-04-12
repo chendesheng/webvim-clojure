@@ -161,9 +161,7 @@ function keyboardInit() {
         }
     }
 
-    document.body.onclick = function() {
-        input.focus();
-    };
+    document.body.onclick = input.focus;
 
     document.addEventListener('keydown', onkeydown);
     document.addEventListener('keypress', function(event) {

@@ -151,6 +151,7 @@ function renderHiddenInput(mode) {
     var input = $hiddenInput();
     if (mode == NORMAL) {
         console.log("set blur");
+        input.blur();
         input.disabled = true;
     }
 
