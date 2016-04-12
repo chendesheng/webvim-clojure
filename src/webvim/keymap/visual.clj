@@ -92,9 +92,13 @@
                             (assoc :last-visual-type (-> buf :visual :type)
                                    :cancel-visual-mode? false)))))
     :after (fn [buf keycode]
-             ;(log "visual after")
+             (log ["visual after:" keycode (-> buf :context :range)])
+
              (-> buf
-                 (assoc-in [:visual :range 0] (buf :pos))
+                 (update-in [:visual :range]
+                            (fn [rg]
+                              (or (-> buf :context :range)
+                                  (assoc rg 0 (buf :pos)))))
                  set-visual-ranges
                  (update-x-if-not-jk keycode)))
     "V" change-visual-mode-type
