@@ -250,11 +250,21 @@
 (defn- repeat-prefix-value [buf]
   (-> buf :context :repeat-prefix (or "1") parse-int))
 
+(defn- wrap-repeat [f]
+  (fn [buf keycode]
+    (loop [i (repeat-prefix-value buf)
+           buf buf]
+      (if (or
+            (zero? i)
+            (-> buf :context :interrupt?))
+        buf
+        (recur (dec i) (f buf keycode))))))
+
 (defn init-motion-keymap []
-  {"h" (wrap-keycode char-)
-   "l" (wrap-keycode char+)
-   "k" (wrap-keycode #(lines-n % -1))
-   "j" (wrap-keycode #(lines-n % 1))
+  {"h" (wrap-repeat (wrap-keycode char-))
+   "l" (wrap-repeat (wrap-keycode char+))
+   "k" (wrap-repeat (wrap-keycode #(lines-n % -1)))
+   "j" (wrap-repeat (wrap-keycode #(lines-n % 1)))
    "g" {"g" (wrap-keycode (comp buf-start jump-push))
         "d" (wrap-keycode (comp same-word-first jump-push))
         "e" word-end-
@@ -266,29 +276,29 @@
    "H" (viewport-position 0)
    "M" (viewport-position 0.5)
    "L" (viewport-position 1)
-   "w" word+
-   "W" WORD+
-   "b" word-
-   "B" WORD-
-   "e" word-end+
-   "E" WORD-end+
+   "w" (wrap-repeat word+)
+   "W" (wrap-repeat WORD+)
+   "b" (wrap-repeat word-)
+   "B" (wrap-repeat WORD-)
+   "e" (wrap-repeat word-end+)
+   "E" (wrap-repeat WORD-end+)
    "0" (wrap-keycode line-first)
    "^" (wrap-keycode line-start)
    "$" (wrap-keycode line-end)
-   "f" {:else move-to-char+}
-   "F" {:else move-to-char-}
-   "t" {:else move-before-char+}
-   "T" {:else move-before-char-}
-   ";" repeat-move-by-char+
-   "," repeat-move-by-char-
+   "f" {:else (wrap-repeat move-to-char+)}
+   "F" {:else (wrap-repeat move-to-char-)}
+   "t" {:else (wrap-repeat move-before-char+)}
+   "T" {:else (wrap-repeat move-before-char-)}
+   ";" (wrap-repeat repeat-move-by-char+)
+   "," (wrap-repeat repeat-move-by-char-)
    "/" (increment-search-keymap true)
    "?" (increment-search-keymap false)
    "*" (same-word true)
    "#" (same-word false)
-   "n" repeat-search+
-   "N" repeat-search-
-   "}" paragraph+
-   "{" paragraph-
+   "n" (wrap-repeat repeat-search+)
+   "N" (wrap-repeat repeat-search-)
+   "}" (wrap-repeat paragraph+)
+   "{" (wrap-repeat paragraph-)
    "%" move-to-matched-brackets})
 
 (defn- dont-cross-line [f]
