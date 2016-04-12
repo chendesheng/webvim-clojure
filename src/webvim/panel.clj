@@ -12,7 +12,7 @@
     [webvim.core.rope :refer [buf-insert buf-set-pos save-undo buf-replace subr]]
     [webvim.core.line :refer [line-start pos-line-first lines-row move-to-line column]]
     [webvim.core.pos :refer [buf-end buf-start]]
-    [webvim.core.utils :refer [shorten-path visual-size path= pretty-trace]]
+    [webvim.core.utils :refer [shorten-path visual-size path= pretty-trace expand-path]]
     [webvim.core.ui :refer [send-buf!]]
     [webvim.scrolling :refer [cursor-center-viewport]]
     [webvim.jumplist :refer [jump-push]]))
@@ -77,14 +77,16 @@
       (let [buf-exists (some #(if (and (-> % :filepath nil? not)
                                        (path= file (% :filepath))) %)
                              (get-buffers))
-            file (str (fs/expand-home file))
+            file (str (expand-path file))
             newbuf (if (nil? buf-exists)
                      (if (or new-file? (fs/exists? file))
                        (if (fs/directory? file)
                          (edit-dir file)
                          (-> file str new-file deref)))
                      buf-exists)]
-        (goto-buf buf (newbuf :id)))))
+        (if (nil? newbuf)
+          buf
+          (goto-buf buf (newbuf :id))))))
   ([buf file linenum new-file?]
     (let [newbuf (edit-file buf file new-file?)
           nextid (newbuf :nextid)

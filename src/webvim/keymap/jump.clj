@@ -1,12 +1,13 @@
 (ns webvim.keymap.jump
   (:require
+    [me.raynes.fs :as fs]
     [webvim.core.buffer :refer [change-active-buffer get-buffer-by-id]]
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.panel :refer [edit-file output-panel goto-buf]]
     [webvim.core.rope :refer [buf-set-pos subr re-test]]
     [webvim.core.pos :refer [pos-re+ pos-re-]]
     [webvim.core.register :refer [registers-get]]
-    [webvim.core.utils :refer [parse-int deep-merge]]
+    [webvim.core.utils :refer [parse-int deep-merge expand-path]]
     [webvim.jumplist :refer [jump-prev jump-next]]))
 
 (defn- move-to-jumplist
@@ -48,8 +49,12 @@
 
 (defn- goto-file [buf]
   (let [[uri linenum] (path-under-cursor buf)]
-    (if (nil? linenum)
+    (cond
+      (-> uri expand-path fs/exists? not)
+      (assoc buf :message "!!!file or directory not found!!!")
+      (nil? linenum)
       (edit-file buf uri false)
+      :else
       (edit-file buf uri (parse-int linenum) false))))
 
 (defn wrap-keymap-jump [keymap]
