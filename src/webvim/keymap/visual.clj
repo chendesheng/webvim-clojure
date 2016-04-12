@@ -104,6 +104,7 @@
                                   (or (-> buf :context :range)
                                       (assoc rg 0 (buf :pos)))))
                      set-visual-ranges
+                     (update :context dissoc :range)
                      (update-x-if-not-jk keycode))))
       (merge (visual-keycodes-map change-visual-mode-type))))
 
