@@ -185,18 +185,6 @@
                     b (min eol (inc b))]
                 (conj items [(-> buf :str (subr a b)) a b]))) [] (-> buf :visual :ranges))))
 
-(defn yank-range [buf inclusive? linewise?]
-  (let [[a b] (range-prefix buf inclusive?)]
-    (buf-yank buf a b linewise?)))
-
-(defn setup-range-line [buf]
-  (assoc-in buf [:context :range] (pos-line (buf :str) (buf :pos))))
-
-(defn setup-range-line-end [buf]
-  (let [a (buf :pos)
-        b (pos-line-end (buf :str) a)]
-    (assoc-in buf [:context :range] [a b])))
-
 (defn ignore-by-keycode [f pred]
   (fn [buf keycode]
     (if (pred keycode)

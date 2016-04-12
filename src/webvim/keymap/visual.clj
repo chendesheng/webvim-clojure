@@ -32,6 +32,14 @@
         (assoc-in [:visual :range] [b a])
         (buf-set-pos b))))
 
+(def keycodes-visual #{"v" "V" "<c-v>"})
+(defn visual-keycode? [keycode]
+  (contains? keycodes-visual keycode))
+(defn- keycode2type [keycode]
+  ({"v" :visual-range "V" :visual-line "<c-v>" :visual-block} keycode))
+(defn- visual-keycodes-map [f]
+  (reduce #(assoc %1 %2 f) {} keycodes-visual))
+
 ;type/mode     | keycode | next
 ;----------- --|---------|-------
 ;normal        |  v      | :visual-range
@@ -40,9 +48,6 @@
 ;:visual-range |  v      | normal
 ;:visual-line  |  v      | :visual-range
 ;:visual-line  |  V      | normal
-(defn- keycode2type [keycode]
-  ({"v" :visual-range "V" :visual-line "<c-v>" :visual-block} keycode))
-
 (defn- visual-mode-continue? [buf keycode]
   (if (-> buf :context :cancel-visual-mode?)
     false
@@ -76,38 +81,31 @@
       set-visual-ranges))
 
 (defn- init-visual-mode-keymap [motion-keymap]
-  (assoc 
-    motion-keymap 
-    :enter (fn [buf keycode]
-             (let [pos (buf :pos)]
-               (set-visual-mode buf 
-                                {:type (keycode2type keycode)
-                                 :range [pos pos]})))
-    :leave (fn [buf keycode] (clear-visual buf))
-    :continue visual-mode-continue?
-    :before (fn [buf keycode] 
-              (update buf :context
-                      (fn [context]
-                        (-> context
-                            (assoc :last-visual-type (-> buf :visual :type)
-                                   :cancel-visual-mode? false)))))
-    :after (fn [buf keycode]
-             (log ["visual after:" keycode (-> buf :context :range)])
-
-             (-> buf
-                 (update-in [:visual :range]
-                            (fn [rg]
-                              (or (-> buf :context :range)
-                                  (assoc rg 0 (buf :pos)))))
-                 set-visual-ranges
-                 (update-x-if-not-jk keycode)))
-    "V" change-visual-mode-type
-    "v" change-visual-mode-type
-    "<c-v>" change-visual-mode-type))
-
-(def keycodes-visual #{"v" "V" "<c-v>"})
-(defn visual-keycode? [keycode]
-  (contains? keycodes-visual keycode))
+  (-> motion-keymap 
+      (assoc 
+        :enter (fn [buf keycode]
+                 (let [pos (buf :pos)]
+                   (set-visual-mode buf 
+                                    {:type (keycode2type keycode)
+                                     :range [pos pos]})))
+        :leave (fn [buf keycode] (clear-visual buf))
+        :continue visual-mode-continue?
+        :before (fn [buf keycode] 
+                  (update buf :context
+                          (fn [context]
+                            (-> context
+                                (assoc :last-visual-type (-> buf :visual :type)
+                                       :cancel-visual-mode? false)))))
+        :after (fn [buf keycode]
+                 (log ["visual after:" keycode (-> buf :context :range)])
+                 (-> buf
+                     (update-in [:visual :range]
+                                (fn [rg]
+                                  (or (-> buf :context :range)
+                                      (assoc rg 0 (buf :pos)))))
+                     set-visual-ranges
+                     (update-x-if-not-jk keycode))))
+      (merge (visual-keycodes-map change-visual-mode-type))))
 
 (defn init-visual-mode-keymap-for-operators []
   (let [motion-keymap (init-motion-keymap-fix-cw)]
@@ -130,9 +128,7 @@
   (let [motion-keymap (init-motion-keymap-with-objects)
         visual-mode-keymap (init-visual-mode-keymap-with-operators motion-keymap buf)]
     (-> keymap
-        (assoc "v" visual-mode-keymap
-               "V" visual-mode-keymap
-               "<c-v>" visual-mode-keymap)
+        (merge (visual-keycodes-map visual-mode-keymap))
         (update "g"
                 assoc "v" (assoc
                             visual-mode-keymap
@@ -169,9 +165,7 @@
                                             (set-temp-visual-mode-range keycode)
                                             (f keycode)
                                             (handler keycode))))))]
-    {"v" visual-keymap
-     "V" visual-keymap
-     "<c-v>" visual-keymap}))
+    (visual-keycodes-map visual-keymap)))
 
 ;keep track visual ranges when buffer changed
 (listen
