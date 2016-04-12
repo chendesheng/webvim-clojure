@@ -70,7 +70,7 @@
   (println "exec-shell-commands:" cmds)
   (exec-async cmds (fn [line]
                      (append-panel buf apanel (str line \newline) false)))
-  (append-panel buf apanel (str \newline (string/join \space cmds)) true))
+  (append-panel buf apanel (str \newline (string/join \space cmds) \newline) true))
 
 (defn cmd-write [buf _ file]
   ;(println (expand-path file))
@@ -158,9 +158,9 @@
          exception :exception} (eval-refer-ns (get-namespace (buf :filepath)) args)]
     (if (nil? exception)
       (let [lines (apply concat
-                          (map string/split-lines
-                               (filter (comp not empty?)
-                                       (list output result))))
+                         (map string/split-lines
+                              (filter (comp not empty?)
+                                      (list output result))))
             cnt (count lines)]
         (if (zero? cnt)
           (assoc buf :message "no result and output")
