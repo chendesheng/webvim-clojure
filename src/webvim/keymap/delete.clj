@@ -10,7 +10,7 @@
     [webvim.keymap.yank :refer [yank-blockwise]]
     [webvim.keymap.operator :refer [set-range set-linewise set-line-end
                                     set-visual-range visual-block-lines
-                                    make-operator ignore-by-keycode]]
+                                    make-operator if-not-keycode]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]))
 
 ;delete [a b) shift pos
@@ -61,7 +61,7 @@
                  motion-keymap
                  visual-keymap
                  {"d" (wrap-keycode set-linewise)
-                  :after (ignore-by-keycode fn-delete keycodes-visual)}))))
+                  :after (if-not-keycode fn-delete keycodes-visual)}))))
 
 (listen
   :visual-mode-keymap

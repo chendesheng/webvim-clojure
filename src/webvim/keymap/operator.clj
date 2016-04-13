@@ -11,7 +11,7 @@
                               pos-line-start line-start]]
     [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
     [webvim.core.range :refer [range-inclusive range-exclusive range-linewise range-line-end range-current-line]]
-    [webvim.core.utils :refer [make-range sort2 nop]]))
+    [webvim.core.utils :refer [make-range sort2 nop nilor]]))
 
 (defn setup-range [buf]
   ;(println "setup-range:" (-> buf :context :range))
@@ -71,14 +71,6 @@
           (fn [rg]
             (or rg (sort2 (buf :pos)
                           (-> buf :context :lastbuf :pos))))))
-
-(defmacro nilor
-  "Like `or` but check nil?"
-  ([] nil)
-  ([x] x)
-  ([x & next]
-    `(let [or# ~x]
-       (if-not (nil? or#) or# (or ~@next)))))
 
 (defn set-default-inclusive [buf keycode]
   (update-in buf [:context :inclusive?] #(nilor % (inclusive? keycode))))
@@ -185,9 +177,16 @@
                     b (min eol (inc b))]
                 (conj items [(-> buf :str (subr a b)) a b]))) [] (-> buf :visual :ranges))))
 
-(defn ignore-by-keycode [f pred]
+(defn yank-range [buf inclusive? linewise?]
+  (let [[a b] (range-prefix buf inclusive?)]
+    (buf-yank buf a b linewise?)))
+
+(defn if-keycode [pred f]
   (fn [buf keycode]
     (if (pred keycode)
-      buf
-      (f buf keycode))))
+      (f buf keycode)
+      buf)))
+
+(defn if-not-keycode [pred f]
+  (if-keycode (complement pred) f))
 

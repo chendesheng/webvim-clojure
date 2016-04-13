@@ -4,7 +4,7 @@
             [webvim.core.event :refer [listen]]
             [webvim.keymap.compile :refer [wrap-keycode]]
             [webvim.keymap.motion :refer [init-motion-keymap-fix-cw init-motion-keymap-for-operators]]
-            [webvim.keymap.operator :refer [make-operator not-empty-range set-visual-range ignore-by-keycode]]
+            [webvim.keymap.operator :refer [make-operator not-empty-range set-visual-range if-not-keycode]]
             [webvim.keymap.visual :refer [keycodes-visual wrap-temp-visual-mode]]
             [webvim.core.rope :refer [buf-set-pos buf-replace subr]]))
 
@@ -33,7 +33,7 @@
   (-> f
       change-case
       make-operator
-      (ignore-by-keycode keycodes-visual)))
+      (if-not-keycode keycodes-visual)))
 
 (defn- visual-change-case [f]
   (let [f (change-case f)

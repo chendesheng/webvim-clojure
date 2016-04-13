@@ -248,7 +248,7 @@
                      (-> (viewport) :h dec (* percentFromTop) Math/ceil)))))
 
 (defn- repeat-prefix-value [buf]
-  (-> buf :context :repeat-prefix (or "1") parse-int))
+  (get-in buf [:context :repeat-prefix] 1))
 
 (defn- wrap-repeat [f]
   (fn [buf keycode]
@@ -267,8 +267,8 @@
    "j" (wrap-repeat (wrap-keycode #(lines-n % 1)))
    "g" {"g" (wrap-keycode (comp buf-start jump-push))
         "d" (wrap-keycode (comp same-word-first jump-push))
-        "e" word-end-
-        "E" WORD-end-}
+        "e" (wrap-repeat word-end-)
+        "E" (wrap-repeat WORD-end-)}
    "G" (fn [buf keycode]
          (if (-> buf :context :repeat-prefix nil? not)
            (lines-row buf (dec (repeat-prefix-value buf)))
