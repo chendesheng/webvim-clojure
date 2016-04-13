@@ -75,10 +75,10 @@ function keyboardInit() {
     var channel = connect('/socket');
 
     var terminalAlias = {
-        'c-[': 'esc',
-        'c-h': 'bs',
-        'c-i': 'tab',
-        'c-m': 'cr',
+        '<c-[>': '<esc>',
+        '<c-h>': '<bs>',
+        '<c-i>': '<tab>',
+        '<c-m>': '<cr>',
     };
 
     function handleKey(key) {
@@ -103,7 +103,7 @@ function keyboardInit() {
         var NORMAL = 0,
             INSERT = 1;
 
-	var mode = buf.mode;
+        var mode = buf.mode;
         if (mode == NORMAL) {
             console.log("set blur");
             input.blur();

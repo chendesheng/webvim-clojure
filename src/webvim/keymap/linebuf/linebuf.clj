@@ -157,7 +157,6 @@
                "<c-a>" linebuf-start
                "<c-e>" linebuf-end
                "<bs>" linebuf-<bs>
-               "<c-h>" linebuf-<bs>
                "<c-d>" (wrap-keycode #(linebuf-delete % 1))
                "<c-r>" {"<esc>" nop
                         "<c-w>" (fn [buf keycode]

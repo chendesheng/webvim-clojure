@@ -13,11 +13,14 @@
         webvim.core.utils
         webvim.jumplist))
 
+(defn- delete-left-char [{pos :pos :as buf} _]
+  (if (zero? pos)
+    (assoc buf :beep true)
+    (buf-delete buf (dec pos) pos)))
+
 (defn- insert-keycode [{pos :pos :as buf} keycode]
   (println "keycode:" keycode)
-  (if (= "<bs>" keycode)
-    (if (zero? pos) buf (buf-delete buf (dec pos) pos))
-    (buf-insert buf (keycode-to-char keycode))))
+  (buf-insert buf (keycode-to-char keycode)))
 
 (defn- insert-mode-default [buf keycode]
   (let [pos (buf :pos)
@@ -63,9 +66,10 @@
   (let [keymap {"<esc>" nop
                 "<c-o>" (fire-event
                           :temp-normal-mode-keymap
-                          (temp-normal-mode-keymap normal-mode-keymap)             
+                          (temp-normal-mode-keymap normal-mode-keymap)
                           buf)
-                :else insert-mode-default 
+                "<bs>" delete-left-char          
+                :else insert-mode-default
                 :continue #(not (= "<esc>" %2))
                 :leave (fn [buf keycode]
                          (-> buf
