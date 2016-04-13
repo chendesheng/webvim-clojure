@@ -16,8 +16,11 @@
                    (* 10)
                    (+ (Integer. keycode))))))
 
-(defn- repeat-prefix? [buf]
+(defn repeat-prefix? [buf]
   (-> buf :context :repeat-prefix nil? not))
+
+(defn repeat-prefix-value [buf]
+  (get-in buf [:context :repeat-prefix] 1))
 
 (defn wrap-keymap-repeat-prefix [keymap]
   (-> keymap

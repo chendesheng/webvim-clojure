@@ -2,6 +2,7 @@
   (:require
     [webvim.keymap.objects :refer [current-word]]
     [webvim.keymap.compile :refer [wrap-keycode wrap-key]]
+    [webvim.keymap.repeat :refer [repeat-prefix? repeat-prefix-value]]
     [webvim.core.ui :refer [viewport]])
   (:use webvim.core.pos
         webvim.core.buffer
@@ -247,16 +248,13 @@
                   (+ (buf :scroll-top)
                      (-> (viewport) :h dec (* percentFromTop) Math/ceil)))))
 
-(defn- repeat-prefix-value [buf]
-  (get-in buf [:context :repeat-prefix] 1))
-
 (defn- wrap-repeat [f]
   (fn [buf keycode]
     (loop [i (repeat-prefix-value buf)
            buf buf]
       (if (or
             (zero? i)
-            (-> buf :context :interrupt?))
+            (-> buf :context :motion-fail?))
         buf
         (recur (dec i) (f buf keycode))))))
 
@@ -270,7 +268,7 @@
         "e" (wrap-repeat word-end-)
         "E" (wrap-repeat WORD-end-)}
    "G" (fn [buf keycode]
-         (if (-> buf :context :repeat-prefix nil? not)
+         (if (repeat-prefix? buf)
            (lines-row buf (dec (repeat-prefix-value buf)))
            (-> buf buf-end line-start)))
    "H" (viewport-position 0)
