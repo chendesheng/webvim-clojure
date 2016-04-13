@@ -51,7 +51,9 @@
   (let [[uri linenum] (path-under-cursor buf)]
     (cond
       (-> uri expand-path fs/exists? not)
-      (assoc buf :message "!!!file or directory not found!!!")
+      (-> buf
+          (assoc :message "!!!file or directory not found!!!")
+          (assoc :beep true))
       (nil? linenum)
       (edit-file buf uri false)
       :else

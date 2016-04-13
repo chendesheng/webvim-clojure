@@ -194,3 +194,10 @@ function renderMode(buf) {
     var ex = $statusBuf(buf.id);
     ex.textContent = '-- ' + text + ' --';
 }
+
+watchLocalbufChange('beep', function(buf) {
+    if (buf.beep) {
+        console.log('beep');
+        beep();
+    }
+});

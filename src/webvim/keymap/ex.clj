@@ -324,6 +324,7 @@
             buf)
           (-> buf
               (assoc :message "!!!unknown command!!!")
+              (assoc :beep true)
               (dissoc :line-buffer)))))))
 
 (defn- ex-tab-complete [{{r :str} :line-buffer :as buf} cmds]

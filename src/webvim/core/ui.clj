@@ -15,6 +15,10 @@
     (dissoc buf k)
     buf))
 
+(defn- dissoc-false [buf k]
+  (if (buf k)
+    buf (dissoc buf k)))
+
 (defn- dissoc-if-equal [after before k]
   (if (and (some? before)
            (= (before k) (after k)))
@@ -89,6 +93,7 @@
       update-visual
       update-mode
       (dissoc-nil :keys)
+      (dissoc-false :beep)
       line-editor))
 
 (defn- ui-agent []
@@ -204,7 +209,9 @@
                       (if (or (nil? diff)
                               (empty? diff)) ui
                           ((ui :render!) ui diff)))) buf))
-      (assoc buf :changes [])))
+      (-> buf
+          (assoc :changes [])
+          (dissoc :beep))))
   ([buf]
     ;only for active buffer, use :nextid for switch buffer
     (send-buf! buf false)))

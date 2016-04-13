@@ -99,6 +99,11 @@
 (defn- paragraph- [buf keycode]
   (re- buf #"((?<=\n)\n[^\n])"))
 
+(defn- set-motion-fail [buf]
+  (-> buf
+      (assoc-in [:context :motion-fail?] true)
+      (assoc :beep true)))
+
 (defn- move-by-char [buf ch forward? inclusive?]
   (let [{r :str pos :pos} buf
         a (pos-line-first r pos)
@@ -116,12 +121,13 @@
                  (if forward? first last))
         x (- pos a)
         newpos (-> line 
-                   (f (if forward? (inc x) 
-                          (if inclusive? (dec x) (- x 2))) re)
-                   fpos 
-                   (or x)
-                   (+ a))]
-    (buf-set-pos buf newpos)))
+                   (f (if forward?
+                        (inc x) 
+                        (if inclusive? (dec x) (- x 2))) re)
+                   fpos)]
+    (if (nil? newpos)
+      (set-motion-fail buf)
+      (buf-set-pos buf (+ newpos a)))))
 
 (defn- move-to-char+ [buf keycode]
   (registers-put! ";" {:str keycode :forward? true :inclusive? true})
@@ -255,7 +261,7 @@
       (if (or
             (zero? i)
             (-> buf :context :motion-fail?))
-        buf
+        (update buf :context dissoc :motion-fail?)
         (recur (dec i) (f buf keycode))))))
 
 (defn init-motion-keymap []

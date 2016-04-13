@@ -103,7 +103,10 @@
           (fire-after-handle-key keycode)))))
 
 (defn apply-keycodes [buf keycodes]
-  (reduce apply-keycode buf keycodes))
+  (reduce (fn [buf keycode]
+            (let [buf (apply-keycode buf keycode)]
+              (if (-> buf :context :motion-fail?)
+                (reduced buf) buf))) buf keycodes))
 
 (defn replay-keys [buf keycodes]
   (let [keys (buf :keys)] 
@@ -121,7 +124,7 @@
 
 (defn wrap-continue [keymap f]
   (update keymap :continue (fn [handler]
-                       (f (or handler (fn[a b] false))))))
+                             (f (or handler (fn [a b] false))))))
 
 (defn wrap-keycode [f]
   (fn [buf keycode]

@@ -149,7 +149,9 @@
 (listen :error
         (fn [buf e]
           (.printStackTrace e)
-          (append-output-panel buf (format-exception e) true)))
+          (-> buf
+              (append-output-panel (format-exception e) true)
+              (assoc :beep true))))
 
 (listen :log
         (fn [prefix obj]

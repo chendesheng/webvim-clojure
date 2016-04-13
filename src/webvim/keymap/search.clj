@@ -20,17 +20,23 @@
                           (and (= a (rg 0)) (= b (rg 1)))) highlights))
       (update buf :highlights conj rg) buf)))
 
+(defn- set-motion-fail [buf]
+  (-> buf
+      (assoc-in [:context :motion-fail?] true)
+      (assoc :beep true)))
+
 (defn re-forward-highlight [buf re]
   (let [pos (buf :pos)
         r (buf :str)
         rg (or
              (pos-re+ r (inc pos) re)
              (pos-re+ r 0 re))] ;TODO: use region reduce duplicate work
-    (if (nil? rg) buf
-        (let [[a b] rg]
-          (-> buf
-              (buf-set-pos a)
-              (add-highlight [a (dec b)]))))))
+    (if (nil? rg)
+      (set-motion-fail buf)
+      (let [[a b] rg]
+        (-> buf
+            (buf-set-pos a)
+            (add-highlight [a (dec b)]))))))
 
 (defn re-backward-highlight [buf re]
   (let [pos (buf :pos)
@@ -38,11 +44,12 @@
         rg (or
              (pos-re- r (dec pos) re)
              (pos-re- r (-> r count dec) re))]
-    (if (nil? rg) buf
-        (let [[a b] rg]
-          (-> buf
-              (buf-set-pos a)
-              (add-highlight [a (dec b)]))))))
+    (if (nil? rg)
+      (set-motion-fail buf)
+      (let [[a b] rg]
+        (-> buf
+            (buf-set-pos a)
+            (add-highlight [a (dec b)]))))))
 
 (defn highlight-all-matches [buf re]
   ;(println "highlight-all-matches:" (buf :message))

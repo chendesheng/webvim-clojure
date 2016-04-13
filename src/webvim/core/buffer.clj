@@ -272,7 +272,9 @@
       (assoc buf :message "No changes to write"))
     (catch Exception e 
       (fire-event e :exception)
-      (assoc buf :message (str e)))))
+      (-> buf
+          (assoc :message (str e))
+          (assoc :beep true)))))
 
 (defn file-register [buf]
   {:id (buf :id) :str (or (buf :filepath) (buf :name))})
