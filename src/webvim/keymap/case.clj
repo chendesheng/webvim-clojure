@@ -71,6 +71,7 @@
                         {:after (make-change-case-operator str/lower-case)}))
                 "U" (wrap-keymap-repeat-prefix
                       (merge
+                        motion-keymap
                         (change-case-visual-keymap visual-keymap str/upper-case)
                         {:after (make-change-case-operator str/upper-case)})))
         (assoc "~" (wrap-keymap-repeat-prefix
