@@ -13,7 +13,7 @@ function imePreview(input) {
             previewCursor = null;
         }
     }
-    
+
     function setPreviewContent(buf, text) {
         if (previewNode == null) {
             previewNode = createSpan();
@@ -98,6 +98,24 @@ function keyboardInit() {
 
     var input = $hiddenInput();
     var imeHandler = imePreview(input);
+
+    watchLocalbufChange('mode', function(buf) {
+        var NORMAL = 0,
+            INSERT = 1;
+
+	var mode = buf.mode;
+        if (mode == NORMAL) {
+            console.log("set blur");
+            input.blur();
+            input.disabled = true;
+        }
+
+        if (mode == INSERT) {
+            input.disabled = false;
+            console.log("set focus");
+            input.focus();
+        }
+    });
 
     function onkeydown(event) {
         var key = KEYCODE_KEYDOWN[event.keyCode];

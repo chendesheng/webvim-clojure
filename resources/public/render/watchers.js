@@ -139,28 +139,8 @@ watchLocalbufChange('line-buffer', function(buf) {
 
 watchLocalbufChange('mode', function(buf) {
     renderMode(buf);
-    renderHiddenInput(buf.mode);
-    keymap = keymaps[buf.mode];
     buf.focusStatusBar = false;
 });
-
-function renderHiddenInput(mode) {
-    var NORMAL = 0,
-        INSERT = 1;
-
-    var input = $hiddenInput();
-    if (mode == NORMAL) {
-        console.log("set blur");
-        input.blur();
-        input.disabled = true;
-    }
-
-    if (mode == INSERT) {
-        input.disabled = false;
-        console.log("set focus");
-        input.focus();
-    }
-}
 
 function renderMode(buf) {
     var MODES = ['NORMAL', 'INSERT'];
