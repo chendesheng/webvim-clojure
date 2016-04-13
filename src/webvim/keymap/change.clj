@@ -6,6 +6,7 @@
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
     [webvim.keymap.delete :refer [delete-range visual-block-delete]]
     [webvim.keymap.visual :refer [wrap-temp-visual-mode]]
+    [webvim.keymap.repeat :refer [wrap-keymap-repeat-prefix]]
     [webvim.keymap.operator :refer [buf-yank set-linewise set-current-line
                                     make-operator set-line-end set-visual-range not-empty-range]]
     [webvim.indent :refer [buf-indent-current-line]]
@@ -211,20 +212,21 @@
            "S" (make-operator set-current-line change-range)
            "o" (start-insert-mode insert-new-line)
            "O" (start-insert-mode insert-new-line-before)
-           "c" (merge
-                 motion-keymap
-                 visual-keymap
-                 {"c" (make-operator set-current-line change-range)
-                  :after (fn [buf keycode]
-                           (log {:keycode keycode
-                                 :inclusive? (-> buf :context :inclusive?)})
-                           (if (or (= keycode "c")
-                                   (contains? visual-keymap keycode)
-                                   (and
-                                     (= (-> buf :context :lastbuf :pos) (buf :pos))
-                                     (-> buf :context :range empty?)))
-                             buf
-                             ((make-operator change-range) buf keycode)))})
+           "c" (wrap-keymap-repeat-prefix
+                 (merge
+                   motion-keymap
+                   visual-keymap
+                   {"c" (make-operator set-current-line change-range)
+                    :after (fn [buf keycode]
+                             (log {:keycode keycode
+                                   :inclusive? (-> buf :context :inclusive?)})
+                             (if (or (= keycode "c")
+                                     (contains? visual-keymap keycode)
+                                     (and
+                                       (= (-> buf :context :lastbuf :pos) (buf :pos))
+                                       (-> buf :context :range empty?)))
+                               buf
+                               ((make-operator change-range) buf keycode)))}))
            "C" (make-operator set-line-end change-range))))
 
 (listen

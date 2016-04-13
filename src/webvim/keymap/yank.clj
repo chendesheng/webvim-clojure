@@ -7,6 +7,7 @@
     [webvim.core.range :refer [range-linewise]]
     [webvim.core.event :refer [listen]]
     [webvim.keymap.compile :refer [wrap-keycode]]
+    [webvim.keymap.repeat :refer [wrap-keymap-repeat-prefix]]
     [webvim.keymap.visual :refer [wrap-temp-visual-mode keycodes-visual]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
     [webvim.keymap.operator :refer [visual-block-lines make-operator if-not-keycode
@@ -38,12 +39,13 @@
   (let [motion-keymap (init-motion-keymap-for-operators)
         fn-yank (make-operator yank-range)]
     (assoc keymap
-           "y" (merge
-                 motion-keymap
-                 (wrap-temp-visual-mode visual-keymap visual-keymap-y)
-                 {"y" (make-operator-current-line yank-range)
-                  :after (if-not-keycode fn-yank
-                                         (conj keycodes-visual "y"))})
+           "y" (wrap-keymap-repeat-prefix
+                 (merge
+                   motion-keymap
+                   (wrap-temp-visual-mode visual-keymap visual-keymap-y)
+                   {"y" (make-operator-current-line yank-range)
+                    :after (if-not-keycode fn-yank
+                             (conj keycodes-visual "y"))}))
            "Y" (make-operator-current-line yank-range))))
 
 (listen

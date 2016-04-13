@@ -2,6 +2,7 @@
   (:require [clojure.string :as str]
             [webvim.core.line :refer [pos-line-start]]
             [webvim.core.event :refer [listen]]
+            [webvim.keymap.repeat :refer [wrap-keymap-repeat-prefix]]
             [webvim.keymap.compile :refer [wrap-keycode]]
             [webvim.keymap.motion :refer [init-motion-keymap-fix-cw init-motion-keymap-for-operators]]
             [webvim.keymap.operator :refer [make-operator not-empty-range set-visual-range if-not-keycode]]
@@ -63,17 +64,20 @@
   (let [motion-keymap (init-motion-keymap-for-operators)]
     (-> keymap
         (update "g" assoc
-                "u" (merge
-                      motion-keymap
-                      (change-case-visual-keymap visual-keymap str/lower-case)
-                      {:after (make-change-case-operator str/lower-case)})
-                "U" (merge
-                      (change-case-visual-keymap visual-keymap str/upper-case)
-                      {:after (make-change-case-operator str/upper-case)}))
-        (assoc "~" (merge
-                     motion-keymap
-                     (change-case-visual-keymap visual-keymap swap-case)
-                     {:after (make-change-case-operator swap-case)})))))
+                "u" (wrap-keymap-repeat-prefix
+                      (merge
+                        motion-keymap
+                        (change-case-visual-keymap visual-keymap str/lower-case)
+                        {:after (make-change-case-operator str/lower-case)}))
+                "U" (wrap-keymap-repeat-prefix
+                      (merge
+                        (change-case-visual-keymap visual-keymap str/upper-case)
+                        {:after (make-change-case-operator str/upper-case)})))
+        (assoc "~" (wrap-keymap-repeat-prefix
+                     (merge
+                       motion-keymap
+                       (change-case-visual-keymap visual-keymap swap-case)
+                       {:after (make-change-case-operator swap-case)}))))))
 
 (listen
   :visual-mode-keymap

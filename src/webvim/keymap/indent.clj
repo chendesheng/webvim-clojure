@@ -2,6 +2,7 @@
   (:require [webvim.keymap.motion :refer [init-motion-keymap-fix-cw init-motion-keymap-for-operators]]
             [webvim.keymap.compile :refer [wrap-keycode]]
             [webvim.keymap.operator :refer [make-linewise-operator set-linewise set-visual-range if-not-keycode]]
+            [webvim.keymap.repeat :refer [wrap-keymap-repeat-prefix]]
             [webvim.keymap.visual :refer [wrap-temp-visual-mode keycodes-visual]]
             [webvim.indent :refer [buf-indent-current-line buf-indent-lines]]
             [webvim.core.rope :refer [buf-set-pos buf-replace subr re-test buf-insert rblank? char-at buf-delete]]
@@ -43,25 +44,28 @@
 (defn wrap-keymap-indent [keymap visual-keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)]
     (assoc keymap
-           "=" (deep-merge
-                 motion-keymap
-                 (temp-visual-mode visual-keymap buf-indent-lines)
-                 {"=" nop
-                  :after (-> buf-indent-lines
-                             make-linewise-operator
-                             (if-not-keycode keycodes-visual))})
-           ">" (deep-merge
-                 motion-keymap
-                 (temp-visual-mode visual-keymap indent-more)
-                 {:after (-> indent-more
-                             make-linewise-operator
-                             (if-not-keycode keycodes-visual))})
-           "<" (deep-merge
-                 motion-keymap
-                 (temp-visual-mode visual-keymap indent-less)
-                 {:after (-> indent-less
-                             make-linewise-operator
-                             (if-not-keycode keycodes-visual))}))))
+           "=" (wrap-keymap-repeat-prefix
+                 (deep-merge
+                   motion-keymap
+                   (temp-visual-mode visual-keymap buf-indent-lines)
+                   {"=" nop
+                    :after (-> buf-indent-lines
+                               make-linewise-operator
+                               (if-not-keycode keycodes-visual))}))
+           ">" (wrap-keymap-repeat-prefix
+                 (deep-merge
+                   motion-keymap
+                   (temp-visual-mode visual-keymap indent-more)
+                   {:after (-> indent-more
+                               make-linewise-operator
+                               (if-not-keycode keycodes-visual))}))
+           "<" (wrap-keymap-repeat-prefix
+                 (deep-merge
+                   motion-keymap
+                   (temp-visual-mode visual-keymap indent-less)
+                   {:after (-> indent-less
+                               make-linewise-operator
+                               (if-not-keycode keycodes-visual))})))))
 
 (listen
   :visual-mode-keymap

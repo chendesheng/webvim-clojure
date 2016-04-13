@@ -1,7 +1,7 @@
 (ns webvim.keymap.repeat
   (:require [webvim.core.rope :refer [re-test]]
             [webvim.core.event :refer [listen]]
-            [webvim.keymap.compile :refer [wrap-key wrap-keycode]]))
+            [webvim.keymap.compile :refer [wrap-key wrap-keycode wrap-continue]]))
 
 (defn- digit? [keycode]
   (re-test #"^[0-9]$" keycode))
@@ -31,7 +31,7 @@
                           (if (digit? keycode)
                             (append-repeat-prefix buf keycode)
                             (handler buf keycode)))))
-      (wrap-key :continue (fn [handler]
+      (wrap-continue (fn [handler]
                             (fn [buf keycode]
                               (or (and (repeat-prefix? buf)
                                        (digit? keycode))

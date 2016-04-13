@@ -21,7 +21,7 @@
   (filter (fn [[a b]]
             (< a (inc b))) ranges))
 
-(defn- clear-visual [buf]
+(defn- clear-visual [buf _]
   (-> buf
       (assoc :last-visual (-> buf :visual (dissoc :ranges))) ;keep last visual
       (assoc :visual {:type :no-visual :range [0 0]})))
@@ -88,7 +88,7 @@
                    (set-visual-mode buf 
                                     {:type (keycode2type keycode)
                                      :range [pos pos]})))
-        :leave (fn [buf keycode] (clear-visual buf))
+        :leave clear-visual
         :continue visual-mode-continue?
         :before (fn [buf keycode] 
                   (update buf :context

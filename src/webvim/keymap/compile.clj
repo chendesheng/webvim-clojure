@@ -119,6 +119,10 @@
   (update keymap key (fn [handler]
                        (f (or handler nop)))))
 
+(defn wrap-continue [keymap f]
+  (update keymap :continue (fn [handler]
+                       (f (or handler (fn[a b] false))))))
+
 (defn wrap-keycode [f]
   (fn [buf keycode]
     (f buf)))

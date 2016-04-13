@@ -13,19 +13,7 @@ function imePreview(input) {
             previewCursor = null;
         }
     }
-
-    function getLineNum() {
-        var line = $findParent(previewNode, function(n) {
-            return hasClass(n, 'code');
-        });
-
-        if (line) {
-            return parseInt(line.id.match(/line-(\d+)/)[1]);
-        }
-
-        return 0;
-    }
-
+    
     function setPreviewContent(buf, text) {
         if (previewNode == null) {
             previewNode = createSpan();
