@@ -6,9 +6,8 @@
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]
     [webvim.keymap.delete :refer [delete-range visual-block-delete]]
     [webvim.keymap.visual :refer [wrap-temp-visual-mode]]
-    [webvim.keymap.operator :refer [buf-yank range-prefix setup-range setup-range-line-end
-                                    set-linewise set-current-line make-operator set-line-end set-visual-range
-                                    not-empty-range]]
+    [webvim.keymap.operator :refer [buf-yank set-linewise set-current-line
+                                    make-operator set-line-end set-visual-range not-empty-range]]
     [webvim.indent :refer [buf-indent-current-line]]
     [webvim.mode :refer [set-insert-mode]]
     [webvim.core.utils :refer [sort2]]
@@ -232,6 +231,6 @@
   :visual-mode-keymap
   (fn [keymap _]
     (assoc keymap
-         "c" visual-keymap-c
-         "I" visual-keymap-I
-         "A" visual-keymap-A)))
+           "c" visual-keymap-c
+           "I" visual-keymap-I
+           "A" visual-keymap-A)))

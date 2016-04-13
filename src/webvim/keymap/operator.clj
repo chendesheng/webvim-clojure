@@ -13,17 +13,6 @@
     [webvim.core.range :refer [range-inclusive range-exclusive range-linewise range-line-end range-current-line]]
     [webvim.core.utils :refer [make-range sort2 nop nilor]]))
 
-(defn setup-range [buf]
-  ;(println "setup-range:" (-> buf :context :range))
-  (if (-> buf :context :range nil?)
-    (let [pos (buf :pos)
-          lastbuf (-> buf :context :lastbuf)
-          lastpos (lastbuf :pos)]
-      (-> buf
-          ;Restore positoin to lastbuf so that changes happen next can record correct start position. This will make cursor position in right place after undo/redo.
-          (merge (select-keys lastbuf [:pos :x :y]))
-          (assoc-in [:context :range] [lastpos pos]))) buf))
-
 (defn linewise? [keycode]
   (contains? #{"j" "k" "+" "-" "G" "H" "M" "L"} keycode))
 
@@ -36,19 +25,6 @@
     (if (contains? m keycode)
       (m keycode)
       true)))
-
-;collect range argument, TODO: add linewise
-(defn range-prefix [{{tp :type rg :range} :visual :as buf} inclusive?]
-  (cond
-    (= tp :visual-range)
-    (make-range rg inclusive?)
-    (= tp :visual-line)
-    (make-linewise-range rg buf)
-    (= tp :visual-block)
-    (throw (Exception. "TODO: visual-block"))
-    (-> buf :context :range nil? not)
-    (-> buf :context :range (make-range inclusive?))
-    :else (throw (Exception. "no range prefix exist"))))
 
 (defn set-range [buf range]
   (update buf :context assoc :range range))
@@ -177,16 +153,9 @@
                     b (min eol (inc b))]
                 (conj items [(-> buf :str (subr a b)) a b]))) [] (-> buf :visual :ranges))))
 
-(defn yank-range [buf inclusive? linewise?]
-  (let [[a b] (range-prefix buf inclusive?)]
-    (buf-yank buf a b linewise?)))
-
-(defn if-keycode [pred f]
+(defn if-not-keycode [f pred]
   (fn [buf keycode]
     (if (pred keycode)
-      (f buf keycode)
-      buf)))
-
-(defn if-not-keycode [pred f]
-  (if-keycode (complement pred) f))
+      buf
+      (f buf keycode))))
 

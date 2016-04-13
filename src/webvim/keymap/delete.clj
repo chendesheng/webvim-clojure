@@ -3,7 +3,7 @@
     [webvim.core.utils :refer [nop]]
     [webvim.core.rope :refer [buf-set-pos buf-delete buf-subr]]
     [webvim.core.line :refer [line-end line-start]]
-    [webvim.core.event :refer [listen]]
+    [webvim.core.event :refer [listen log]]
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.keymap.visual :refer [wrap-temp-visual-mode keycodes-visual]]
     [webvim.core.register :refer [registers-delete-to!]]
@@ -11,6 +11,7 @@
     [webvim.keymap.operator :refer [set-range set-linewise set-line-end
                                     set-visual-range visual-block-lines
                                     make-operator if-not-keycode]]
+    [webvim.keymap.repeat :refer [wrap-keymap-repeat-prefix]]
     [webvim.keymap.motion :refer [init-motion-keymap-for-operators]]))
 
 ;delete [a b) shift pos
@@ -38,6 +39,7 @@
                   (buf-delete a b))) buf items)))
 
 (defn delete-range [buf [a b :as rg]]
+  (log ["delete-range" rg])
   (let [s (buf-subr buf a b)]
     (registers-delete-to! (-> buf :context :register)
                           {:str s :linewise? (-> buf :context :linewise?)})
@@ -57,11 +59,12 @@
     (assoc keymap
            "D" (make-operator set-line-end delete-range)
            "x" fn-delete
-           "d" (merge
-                 motion-keymap
-                 visual-keymap
-                 {"d" (wrap-keycode set-linewise)
-                  :after (if-not-keycode fn-delete keycodes-visual)}))))
+           "d" (wrap-keymap-repeat-prefix
+                 (merge
+                   motion-keymap
+                   visual-keymap
+                   {"d" (wrap-keycode set-linewise)
+                    :after (if-not-keycode fn-delete keycodes-visual)})))))
 
 (listen
   :visual-mode-keymap
