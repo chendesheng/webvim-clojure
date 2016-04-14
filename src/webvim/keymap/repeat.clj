@@ -22,6 +22,9 @@
 (defn repeat-prefix-value [buf]
   (get-in buf [:context :repeat-prefix] 1))
 
+(defn repeat-pos-range [{pos :pos :as buf}]
+  [pos (+ pos (repeat-prefix-value buf))])
+
 (defn wrap-keymap-repeat-prefix [keymap]
   (-> keymap
       (wrap-key "0" (fn [handler]
@@ -35,10 +38,10 @@
                             (append-repeat-prefix buf keycode)
                             (handler buf keycode)))))
       (wrap-continue (fn [handler]
-                            (fn [buf keycode]
-                              (or (and (repeat-prefix? buf)
-                                       (digit? keycode))
-                                  (handler buf keycode)))))
+                       (fn [buf keycode]
+                         (or (and (repeat-prefix? buf)
+                                  (digit? keycode))
+                             (handler buf keycode)))))
       (wrap-key :after (fn [handler]
                          (fn [buf keycode]
                            (if (and (repeat-prefix? buf)
