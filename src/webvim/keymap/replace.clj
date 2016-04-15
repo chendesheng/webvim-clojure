@@ -39,7 +39,6 @@
       (set-inclusive false)))
 
 (defn- replace-char-normal [buf keycode]
-  (log ["replace-char-keycode" keycode])
   (let [ch (keycode-to-char keycode)
         f (make-operator
             set-current-point-range

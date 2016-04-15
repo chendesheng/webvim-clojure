@@ -2,7 +2,7 @@
   (:require
     [webvim.keymap.objects :refer [current-word]]
     [webvim.keymap.compile :refer [wrap-keycode wrap-key]]
-    [webvim.keymap.repeat :refer [repeat-prefix? repeat-prefix-value]]
+    [webvim.keymap.repeat :refer [repeat-count? repeat-count]]
     [webvim.core.ui :refer [viewport]])
   (:use webvim.core.pos
         webvim.core.buffer
@@ -256,7 +256,7 @@
 
 (defn- wrap-repeat [f]
   (fn [buf keycode]
-    (loop [i (repeat-prefix-value buf)
+    (loop [i (repeat-count buf)
            buf buf]
       (if (or
             (zero? i)
@@ -274,8 +274,8 @@
         "e" (wrap-repeat word-end-)
         "E" (wrap-repeat WORD-end-)}
    "G" (fn [buf keycode]
-         (if (repeat-prefix? buf)
-           (lines-row buf (dec (repeat-prefix-value buf)))
+         (if (repeat-count? buf)
+           (lines-row buf (dec (repeat-count buf)))
            (-> buf buf-end line-start)))
    "H" (viewport-position 0)
    "M" (viewport-position 0.5)

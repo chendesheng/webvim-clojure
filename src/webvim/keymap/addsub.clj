@@ -2,7 +2,7 @@
   (:require [webvim.core.rope :refer [buf-set-pos buf-replace subr re-test]]
             [webvim.core.line :refer [line-start line-end pos-line]]
             [webvim.core.pos :refer [char- pos-re-seq+]]
-            [webvim.keymap.repeat :refer [repeat-prefix-value]]
+            [webvim.keymap.repeat :refer [repeat-count]]
             [webvim.core.utils :refer [repeat-chars parse-int]]))
 
 (defn- padding-zeroes [news olds]
@@ -18,7 +18,7 @@
 (defn- inc-dec-number [f]
   (fn [buf keycode]
     ;(println "inc-dec-number:" keycode)
-    (let [repeat-times (repeat-prefix-value buf)
+    (let [repeat-times (repeat-count buf)
           f (fn [n] (f n repeat-times))
           pos (buf :pos)
           r (buf :str)
@@ -43,7 +43,7 @@
                            [(+ a line-start)
                             (+ b line-start)
                             (-> s Long/parseLong f str (padding-zeroes s))])]
-          
+
           (-> buf
               (buf-set-pos (dec b))
               (buf-replace a b news)

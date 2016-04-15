@@ -1,13 +1,19 @@
 (ns webvim.keymap.repeat
   (:require [webvim.core.rope :refer [re-test]]
-            [webvim.core.event :refer [listen]]
+            [webvim.core.event :refer [listen log]]
             [webvim.keymap.compile :refer [wrap-key wrap-keycode wrap-continue]]))
 
 (defn- digit? [keycode]
   (re-test #"^[0-9]$" keycode))
 
-(defn- reset-repeat-prefix [buf keycode]
+(defn- reset-repeat-prefix [buf]
   (update buf :context dissoc :repeat-prefix))
+
+(defn- reset-repeat-count [buf]
+  (update buf :context dissoc :repeat-count))
+
+(defn- repeat-prefix-value [buf]
+  (get-in buf [:context :repeat-prefix] 1))
 
 (defn- append-repeat-prefix [buf keycode]
   (update-in buf [:context :repeat-prefix]
@@ -16,21 +22,30 @@
                    (* 10)
                    (+ (Integer. keycode))))))
 
-(defn repeat-prefix? [buf]
+(defn repeat-count? [buf]
   (-> buf :context :repeat-prefix nil? not))
 
-(defn repeat-prefix-value [buf]
-  (get-in buf [:context :repeat-prefix] 1))
+(defn repeat-count [buf]
+  (* (repeat-prefix-value buf)
+     (get-in buf [:context :repeat-count] 1)))
 
 (defn repeat-pos-range [{pos :pos :as buf}]
   [pos (+ pos (repeat-prefix-value buf))])
 
 (defn wrap-keymap-repeat-prefix [keymap]
   (-> keymap
+      (wrap-key :enter (fn [handler]
+                         (fn [buf keycode]
+                           (-> buf
+                               (update-in [:context :repeat-count]
+                                          #(* (or % 1)
+                                              (repeat-prefix-value buf)))
+                               reset-repeat-prefix
+                               (handler keycode)))))
       (wrap-key "0" (fn [handler]
                       (fn [buf keycode]
-                        (if (repeat-prefix? buf)
-                          (append-repeat-prefix buf 0)
+                        (if (repeat-count? buf)
+                          (append-repeat-prefix buf keycode)
                           (handler buf keycode)))))
       (wrap-key :else (fn [handler]
                         (fn [buf keycode]
@@ -39,17 +54,18 @@
                             (handler buf keycode)))))
       (wrap-continue (fn [handler]
                        (fn [buf keycode]
-                         (or (and (repeat-prefix? buf)
+                         (or (and (repeat-count? buf)
                                   (digit? keycode))
                              (handler buf keycode)))))
       (wrap-key :after (fn [handler]
                          (fn [buf keycode]
-                           (if (and (repeat-prefix? buf)
+                           (if (and (repeat-count? buf)
                                     (digit? keycode))
                              buf
                              (-> buf
                                  (handler keycode)
-                                 (reset-repeat-prefix keycode))))))))
+                                 reset-repeat-prefix
+                                 reset-repeat-count)))))))
 
 (listen :normal-mode-keymap
         (fn [keymap _]
