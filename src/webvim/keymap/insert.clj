@@ -1,6 +1,7 @@
 (ns webvim.keymap.insert
   (:require [webvim.keymap.put :refer [wrap-keymap-put-insert]]
-            [webvim.mode :refer [set-normal-mode]])
+            [webvim.mode :refer [set-normal-mode]]
+            [webvim.keymap.motion :refer [re-word-start-border]])
   (:use webvim.keymap.compile
         webvim.core.buffer
         webvim.core.event
@@ -68,7 +69,18 @@
                           :temp-normal-mode-keymap
                           (temp-normal-mode-keymap normal-mode-keymap)
                           buf)
-                "<bs>" delete-left-char          
+                "<c-u>" (fn [buf keycode]
+                          (let [r (buf :str)
+                                pos (buf :pos)
+                                newpos (pos-line-start r pos)]
+                            (buf-delete buf newpos pos)))
+                "<bs>" delete-left-char
+                "<c-w>" (fn [buf keycode]
+                          (let [r (buf :str)
+                                pos (buf :pos)
+                                lang (buf :language)
+                                newpos (or (first (pos-re- r (dec pos) (re-word-start-border lang))) 0)]
+                            (buf-delete buf newpos pos)))
                 :else insert-mode-default
                 :continue #(not (= "<esc>" %2))
                 :leave (fn [buf keycode]
