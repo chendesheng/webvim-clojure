@@ -33,7 +33,7 @@
   [buf]
   (init-clojure-file-type buf))
 
-(defmethod init-file-type ".cljx"
+(defmethod init-file-type ".cljc"
   [buf]
   (init-clojure-file-type buf))
 
