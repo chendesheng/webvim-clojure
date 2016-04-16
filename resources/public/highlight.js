@@ -489,15 +489,20 @@ function hlcompile(language) {
 
                 if (!matched) {
                     if (testRe(mode.illegalRe, captured)) {
+                        ctx.modes.pop();
+                        ctx.fail = true;
                         matched = true;
                         writeOutput(ctx, "illegal", captured);
+
+                        ctx.index += captured.length;
+                        writeOutput(ctx, mode.className, block.substring(ctx.index));
+                        ctx.index = block.length;
                     }
                 }
 
                 if (!matched) {
                     throw 'Something wrong with syntax descriptor, should never reach here';
                 }
-
             } else {
                 if (ctx.index < block.length) {
                     mode = (mode || {});
@@ -513,7 +518,8 @@ function hlcompile(language) {
             block: block,
             index: 0,
             modes: startModes.slice(),
-            output: [] //[[className, text], [className, text]...]
+            output: [], //[[className, text], [className, text]...]
+            fail: false //if stop parse 
         };
         parse(ctx);
         return ctx;
@@ -531,6 +537,7 @@ function hlcompile(language) {
             states[row] = [rootCompiled];
         }
         var ctx = doParse(block, states[row]);
+
         states[row + 1] = ctx.modes;
         //logmodes(row+1);
 
@@ -553,6 +560,10 @@ function hlcompile(language) {
             var i = iter.index();
             var ctx = doParse(iter.text(), states[i]);
             iter.render(ctx.output);
+            if (ctx.fail) {
+                break;
+            }
+
             if (states[i + 1].equal(ctx.modes)) {
                 //doParse has 3 arguments, in next lines none of them changed
                 //so no syntax will be changed in next lines
