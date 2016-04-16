@@ -32,7 +32,7 @@
       (str "(?<=[" (res :space-chars) "])[" (res :not-space-chars) "]|"
            "(?<=[" (res :not-space-chars) "])[" (res :space-chars) "]"))))
 
-(defn- re-word-start-border [lang]
+(defn re-word-start-border [lang]
   (let [res (word-re lang)]
     (re-pattern 
       (str "(?<=[" (res :not-word-chars) "])[" (res :word-chars) "]|(?<=[" (res :not-punctuation-chars) "])[" (res :punctuation-chars) "]"))))
