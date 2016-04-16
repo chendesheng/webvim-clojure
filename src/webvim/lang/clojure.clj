@@ -29,6 +29,14 @@
   [buf]
   (init-clojure-file-type buf))
 
+(defmethod init-file-type ".cljs"
+  [buf]
+  (init-clojure-file-type buf))
+
+(defmethod init-file-type ".cljx"
+  [buf]
+  (init-clojure-file-type buf))
+
 (defmethod init-file-type ".edn"
   [buf]
   (init-clojure-file-type buf))
