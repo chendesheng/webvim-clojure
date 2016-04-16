@@ -494,7 +494,6 @@ function hlcompile(language) {
                         matched = true;
                         writeOutput(ctx, "illegal", captured);
 
-                        ctx.index += captured.length;
                         writeOutput(ctx, mode.className, block.substring(ctx.index));
                         ctx.index = block.length;
                     }
