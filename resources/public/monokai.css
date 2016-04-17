@@ -75,6 +75,10 @@ body,
     color: #66D9EF;
 }
 
+.lines .illegal {
+    background: red;
+}
+
 
 /*.highlight-bracket-pair .line-selected, .cursor {
     background:#F8F8F0;

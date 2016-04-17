@@ -438,7 +438,6 @@ function hlcompile(language) {
                     var c = mode.contains[i];
 
                     if (testRe(c.beginRe, captured)) {
-                        //if (testRe(new RegExp("^"+reStr(c.beginRe)+"$"), captured)) {
                         matched = true;
 
                         ctx.modes.push(c);
@@ -489,13 +488,16 @@ function hlcompile(language) {
 
                 if (!matched) {
                     if (testRe(mode.illegalRe, captured)) {
-                        ctx.modes.pop();
                         ctx.fail = true;
                         matched = true;
-                        writeOutput(ctx, "illegal", captured);
 
-                        writeOutput(ctx, mode.className, block.substring(ctx.index));
-                        ctx.index = block.length;
+                        if (captured.length == 0) {
+                            //usually be \newline
+                            writeOutput(ctx, mode.className, block.substr(ctx.index, 1));
+                            ctx.index++;
+                        } else {
+                            writeOutput(ctx, "illegal", captured);
+                        }
                     }
                 }
 
