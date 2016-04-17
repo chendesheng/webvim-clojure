@@ -195,20 +195,23 @@
                (neg? (-> y (- h) inc)) 0
                :else (-> y (- h) inc))))))
 
-(defn active-buf? [buf]
-  (= (buf :id) (-> (ui-agent) deref :buf :id)))
+(defn- active-buf? [ui buf]
+  (= (buf :id) (-> ui :buf :id)))
 
 (defn send-buf!
   ([buf switch-buf?]
+    (println "send-buf!" switch-buf?)
     (let [buf (bound-scroll-top buf)]
-      (if (or switch-buf? (active-buf? buf))
-        (send-off (ui-agent) 
-                  (fn [ui buf]
+      (send-off (ui-agent) 
+                (fn [ui buf]
+                  (if (or switch-buf? (active-buf? ui buf))
                     (let [diff (diff-ui ui buf)
                           ui (assoc ui :buf (dissoc buf :changes))]
                       (if (or (nil? diff)
                               (empty? diff)) ui
-                          ((ui :render!) ui diff)))) buf))
+                        ((ui :render!) ui diff)))
+                    ui))
+                buf)
       (-> buf
           (assoc :changes [])
           (dissoc :beep))))
