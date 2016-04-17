@@ -73,14 +73,17 @@
                           (let [r (buf :str)
                                 pos (buf :pos)
                                 newpos (pos-line-start r pos)]
-                            (buf-delete buf newpos pos)))
+                            (if (<= pos newpos)
+                              (assoc buf :beep true)
+                              (buf-delete buf newpos pos))))
                 "<bs>" delete-left-char
-                "<c-w>" (fn [buf keycode]
-                          (let [r (buf :str)
-                                pos (buf :pos)
-                                lang (buf :language)
-                                newpos (or (first (pos-re- r (dec pos) (re-word-start-border lang))) 0)]
-                            (buf-delete buf newpos pos)))
+                "<c-w>" (fn [{pos :pos :as buf} keycode]
+                          (if (zero? pos)
+                            (assoc buf :beep true)
+                            (let [r (buf :str)
+                                  lang (buf :language)
+                                  newpos (or (first (pos-re- r (dec pos) (re-word-start-border lang))) 0)]
+                              (buf-delete buf newpos pos))))
                 :else insert-mode-default
                 :continue #(not (= "<esc>" %2))
                 :leave (fn [buf keycode]

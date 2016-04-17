@@ -2,8 +2,23 @@
   (:require [webvim.core.utils :refer [deep-merge bound-range]]
             [webvim.scrolling :refer [scroll-to viewport-center viewport-inc-lines]]
             [webvim.core.ui :refer [viewport]]
-            [webvim.core.line :refer [lines-row]]
+            [webvim.core.line :refer [lines-row pos-line-first pos-line-last]]
             [webvim.keymap.compile :refer [wrap-keycode]]))
+
+(defn- not-first-line [f]
+  (fn [{pos :pos r :str :as buf} keycode]
+    (if (zero? (pos-line-first r pos))
+      (assoc buf :beep true)
+      (f buf keycode))))
+
+(defn- end? [r pos]
+  (>= (inc pos) (count r)))
+
+(defn- not-last-line [f]
+  (fn [{pos :pos r :str :as buf} keycode]
+    (if (end? r (pos-line-last r pos))
+      (assoc buf :beep true)
+      (f buf keycode))))
 
 (defn- round-to-zero
   "(round-to-zero -9.1) = -9; (round-to-zero 9.1) = 9"
@@ -32,8 +47,8 @@
 
 (defn- scrolling-keymap []
   {"z" {"z" (scroll-to viewport-center)}
-   "<c-u>" (cursor-move-viewport -0.5) 
-   "<c-d>" (cursor-move-viewport 0.5)
+   "<c-u>" (not-first-line (cursor-move-viewport -0.5))
+   "<c-d>" (not-last-line (cursor-move-viewport 0.5))
    ;TODO: scroll beyond border
    "<c-e>" (scroll-to (viewport-inc-lines (- 1)))
    "<c-y>" (scroll-to (viewport-inc-lines 1))})

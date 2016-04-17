@@ -104,6 +104,47 @@
       (assoc-in [:context :motion-fail?] true)
       (assoc :beep true)))
 
+(defn- not-line-first [f]
+  (fn [{pos :pos r :str :as buf} keycode]
+    (if (or (zero? pos)
+            (contains? #{\return \newline} (char-at r (dec pos))))
+      (set-motion-fail buf)
+      (f buf keycode))))
+
+(defn- not-line-last [f]
+  (fn [{pos :pos r :str :as buf} keycode]
+    (if (or (zero? pos)
+            (contains? #{\return \newline} (char-at r (inc pos))))
+      (set-motion-fail buf)
+      (f buf keycode))))
+
+(defn- not-buf-start [f]
+  (fn [{pos :pos :as buf} keycode]
+    (if (zero? pos)
+      (set-motion-fail buf)
+      (f buf keycode))))
+
+(defn- not-first-line [f]
+  (fn [{pos :pos r :str :as buf} keycode]
+    (if (zero? (pos-line-first r pos))
+      (set-motion-fail buf)
+      (f buf keycode))))
+
+(defn- end? [r pos]
+  (>= (inc pos) (count r)))
+
+(defn- not-last-line [f]
+  (fn [{pos :pos r :str :as buf} keycode]
+    (if (end? r (pos-line-last r pos))
+      (set-motion-fail buf)
+      (f buf keycode))))
+
+(defn- not-buf-end [f]
+  (fn [{pos :pos r :str :as buf} keycode]
+    (if (end? r (inc pos))
+      (set-motion-fail buf)
+      (f buf keycode))))
+
 (defn- move-by-char [buf ch forward? inclusive?]
   (let [{r :str pos :pos} buf
         a (pos-line-first r pos)
@@ -265,14 +306,14 @@
         (recur (dec i) (f buf keycode))))))
 
 (defn init-motion-keymap []
-  {"h" (wrap-repeat (wrap-keycode char-))
-   "l" (wrap-repeat (wrap-keycode char+))
-   "k" (wrap-repeat (wrap-keycode #(lines-n % -1)))
-   "j" (wrap-repeat (wrap-keycode #(lines-n % 1)))
+  {"h" (wrap-repeat (not-line-first (wrap-keycode char-)))
+   "l" (wrap-repeat (not-line-last (wrap-keycode char+)))
+   "k" (wrap-repeat (not-first-line (wrap-keycode #(lines-n % -1))))
+   "j" (wrap-repeat (not-last-line (wrap-keycode #(lines-n % 1))))
    "g" {"g" (wrap-keycode (comp buf-start jump-push))
         "d" (wrap-keycode (comp same-word-first jump-push))
-        "e" (wrap-repeat word-end-)
-        "E" (wrap-repeat WORD-end-)}
+        "e" (not-buf-start (wrap-repeat word-end-))
+        "E" (not-buf-start (wrap-repeat WORD-end-))}
    "G" (fn [buf keycode]
          (if (repeat-count? buf)
            (lines-row buf (dec (repeat-count buf)))
@@ -280,12 +321,12 @@
    "H" (viewport-position 0)
    "M" (viewport-position 0.5)
    "L" (viewport-position 1)
-   "w" (wrap-repeat word+)
-   "W" (wrap-repeat WORD+)
-   "b" (wrap-repeat word-)
-   "B" (wrap-repeat WORD-)
-   "e" (wrap-repeat word-end+)
-   "E" (wrap-repeat WORD-end+)
+   "w" (wrap-repeat (not-buf-end word+))
+   "W" (wrap-repeat (not-buf-end WORD+))
+   "b" (wrap-repeat (not-buf-start word-))
+   "B" (wrap-repeat (not-buf-start WORD-))
+   "e" (wrap-repeat (not-buf-end word-end+))
+   "E" (wrap-repeat (not-buf-end WORD-end+))
    "0" (wrap-keycode line-first)
    "^" (wrap-keycode line-start)
    "$" (wrap-keycode line-end)
