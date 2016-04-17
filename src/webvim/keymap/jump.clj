@@ -70,4 +70,5 @@
                         (assoc buf :message "No alternative file")
                         (goto-buf buf (:id (get-buffer-by-id (:id reg)))))))
         "<c-o>" (move-to-jumplist jump-prev)
-        "<c-i>" (move-to-jumplist jump-next))))
+        ;<tab> === <c-i>
+        "<tab>" (move-to-jumplist jump-next))))

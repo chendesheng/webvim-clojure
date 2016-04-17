@@ -120,7 +120,7 @@
               (-> motion-keymap 
                   init-visual-mode-keymap
                   (assoc "o" swap-visual-start-end
-                         "<c-i>" nop
+                         "<tab>" nop
                          "<c-o>" nop
                          "<c-r>" nop)
                   wrap-keymap-scrolling-visual) buf))
