@@ -61,6 +61,7 @@ function connect(path) {
 
     return {
         'send': function(key) {
+            console.log(key)
             _lastSentTime = (new Date).getTime();
             _inputBuffer += key;
             _flushBuffer();

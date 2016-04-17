@@ -263,6 +263,6 @@
     `(let [or# ~x]
        (if-not (nil? or#) or# (or ~@next)))))
 
-(defn print-stack []
+(defmacro print-stack []
   (.printStackTrace (Exception.)))
 

@@ -81,7 +81,7 @@
   (-> buf
       save-undo
       set-normal-mode
-      (dissoc :context :keys :line-buffer)
+      (dissoc :context)
       (assoc :visual {:type :no-visual :range [0 0]}
              :message ""
              :autocompl nil

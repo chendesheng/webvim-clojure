@@ -23,9 +23,6 @@
         set-insert-mode)))
 
 (defn- change-range [buf rg]
-  (log "change-range")
-  (log rg)
-  (log (subr (buf :str) (sort2 rg)))
   (-> buf
       (delete-range rg)
       set-insert-mode))
