@@ -150,10 +150,11 @@ function keyboardInit() {
     }
 
 
-    function iOS() {
-        var ua = navigator.userAgent;
-        return (ua.indexOf('iPad') >= 0 || ua.indexOf('iPhone') >= 0) && ua.indexOf('Safari') >= 0;
-    }
+    var iOS =
+        (function() {
+            var ua = navigator.userAgent;
+            return (ua.indexOf('iPad') >= 0 || ua.indexOf('iPhone') >= 0) && ua.indexOf('Safari') >= 0;
+        })();
 
     function onkeypress(event) {
         if (iOS) {
