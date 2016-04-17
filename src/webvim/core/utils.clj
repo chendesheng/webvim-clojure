@@ -166,7 +166,7 @@
     (clojure.java.shell/sh "clip" :in text)
     :else (clipboard/set-text! text)))
 
-(defn- replace-path-sep[f]
+(defn- replace-path-sep [f]
   (if windows?
     (string/replace (str f) "/" "\\")
     f))
@@ -262,3 +262,7 @@
   ([x & next]
     `(let [or# ~x]
        (if-not (nil? or#) or# (or ~@next)))))
+
+(defn print-stack []
+  (.printStackTrace (Exception.)))
+

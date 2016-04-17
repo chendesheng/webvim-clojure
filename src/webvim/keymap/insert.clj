@@ -1,6 +1,7 @@
 (ns webvim.keymap.insert
   (:require [webvim.keymap.put :refer [wrap-keymap-put-insert]]
             [webvim.mode :refer [set-normal-mode]]
+            [webvim.keymap.repeat :refer [reset-repeat-count repeat-count]]
             [webvim.keymap.motion :refer [re-word-start-border]])
   (:use webvim.keymap.compile
         webvim.core.buffer
@@ -53,8 +54,7 @@
              :enter (fn [buf keycode]
                       (let [buf (fire-event buf :before-change-to-normal-mode)]
                         (-> buf
-                            ;cancel-last-indents
-                            ;update-x
+                            reset-repeat-count
                             (assoc :mode :normal-mode
                                    :submode :temp-normal-mode))))
              :leave (fn [buf keycode]
@@ -62,8 +62,14 @@
                              :mode :insert-mode
                              :submode :none)))))
 
+(defn- repeat-insert [buf]
+  (let [keycodes (-> buf :context :record-keys rest reverse)]
+    (if (empty? keycodes)
+      buf
+      (reduce (fn [buf _]
+                (replay-keys buf keycodes)) buf (range (dec (repeat-count buf)))))))
+
 (defn init-insert-mode-keymap [normal-mode-keymap buf]
-  ;TODO: <c-u> <c-w>
   (let [keymap {"<esc>" nop
                 "<c-o>" (fire-event
                           :temp-normal-mode-keymap
@@ -84,13 +90,19 @@
                                   lang (buf :language)
                                   newpos (or (first (pos-re- r (dec pos) (re-word-start-border lang))) 0)]
                               (buf-delete buf newpos pos))))
+                :enter (fn [buf keycode]
+                         (update buf :context dissoc :record-keys))
+                :before (fn [buf keycode]
+                          (update-in buf [:context :record-keys] conj keycode))
                 :else insert-mode-default
                 :continue #(not (= "<esc>" %2))
                 :leave (fn [buf keycode]
                          (-> buf
+                             repeat-insert
                              char-
                              set-normal-mode
-                             save-undo))}]
+                             save-undo
+                             (update :context dissoc :record-keys)))}]
     (-> keymap
         wrap-keymap-put-insert)))
 

@@ -9,8 +9,10 @@
 (defn- reset-repeat-prefix [buf]
   (update buf :context dissoc :repeat-prefix))
 
-(defn- reset-repeat-count [buf]
-  (update buf :context dissoc :repeat-count))
+(defn reset-repeat-count [buf]
+  (-> buf
+      reset-repeat-prefix
+      (update :context dissoc :repeat-count)))
 
 (defn- repeat-prefix-value [buf]
   (get-in buf [:context :repeat-prefix] 1))
@@ -62,10 +64,11 @@
                            (if (and (repeat-count? buf)
                                     (digit? keycode))
                              buf
-                             (-> buf
-                                 (handler keycode)
-                                 reset-repeat-prefix
-                                 reset-repeat-count)))))))
+                             (if (not= (buf :mode) :normal-mode)
+                               (handler buf keycode)
+                               (-> buf
+                                   (handler keycode)
+                                   reset-repeat-count))))))))
 
 (listen :normal-mode-keymap
         (fn [keymap _]
