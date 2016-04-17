@@ -29,9 +29,9 @@
 ;(split-words (rope "(ns [me.ray])"))
 
 (defn- autocompl-parse
-  "Split to word with length longer than 2."
+  "Split to word with length longer than 2 and shorter than 50."
   [lang txt]
-  (frequencies (filter #(> (count %) 2) (split-words lang txt))))
+  (frequencies (filter #(< 2 (count %) 51) (split-words lang txt))))
 
 (defn- merge-words [m1 m2]
   (reduce-kv (fn [m w c]
