@@ -1,6 +1,7 @@
 (ns webvim.keymap.compile
   (:require
     [webvim.mode :refer [set-normal-mode]]
+    [webvim.core.rope :refer [save-undo]]
     [webvim.core.utils :refer [nop tree-reduce]]
     [webvim.core.event :refer [fire-event]]))
 
@@ -78,6 +79,7 @@
 
 (defn keycode-cancel [buf]
   (-> buf
+      save-undo
       set-normal-mode
       (dissoc :context :keys :line-buffer)
       (assoc :visual {:type :no-visual :range [0 0]}
