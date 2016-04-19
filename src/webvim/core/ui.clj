@@ -200,7 +200,6 @@
 
 (defn send-buf!
   ([buf switch-buf?]
-    (println "send-buf!" switch-buf?)
     (let [buf (bound-scroll-top buf)]
       (send-off (ui-agent) 
                 (fn [ui buf]
