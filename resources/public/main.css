@@ -156,6 +156,10 @@ pre {
     pointer-events: none;
 }
 
+#hidden-input:disabled {
+    width: 0;
+}
+
 .ime-preview {
     border: solid 1px white;
     border-radius: 3px;
