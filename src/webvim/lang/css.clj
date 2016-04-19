@@ -1,6 +1,6 @@
 (ns webvim.lang.css
   (:require [me.raynes.fs :as fs]
-            [webvim.core.utils :refer [windows?]])
+            [webvim.core.utils :refer [windows? trim-last-newline]])
   (:use webvim.core.lang
         webvim.core.diff
         webvim.core.event
@@ -40,7 +40,7 @@
 (defn- format-buffer [buf]
   ;use temp file
   (if (-> buf :language :id (= ::css))
-    (let [res (time (js-beautify (-> buf :str str) (buf :name)))]
+    (let [res (time (js-beautify (-> buf :str str trim-last-newline) (buf :name)))]
       (if (-> res :err empty?) 
         (-> buf
             (apply-line-changes

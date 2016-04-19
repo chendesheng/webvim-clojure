@@ -1,6 +1,6 @@
 (ns webvim.lang.javascript
   (:require [me.raynes.fs :as fs]
-            [webvim.core.utils :refer [windows?]])
+            [webvim.core.utils :refer [windows? trim-last-newline]])
   (:use webvim.core.lang
         webvim.core.rope
         webvim.core.diff
@@ -51,7 +51,8 @@
 (defn- format-buffer [buf]
   ;use temp file
   (if (-> buf :language :id (= ::javascript))
-    (let [res (time (js-beautify (-> buf :str str) (buf :name)))]
+    ;FIXME: trim-last-newline is only a temp solution
+    (let [res (time (js-beautify (-> buf :str str trim-last-newline) (buf :name)))]
     ;(let [res (time (jsfmt (-> buf :str str)))]
       ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
       (if (-> res :err empty?) 

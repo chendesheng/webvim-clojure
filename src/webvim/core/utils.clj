@@ -266,3 +266,8 @@
 (defmacro print-stack []
   (.printStackTrace (Exception.)))
 
+(defn trim-last-newline [s]
+  (let [idx (dec (count s))]
+    (if (= (.charAt s idx) \newline)
+      (subs s 0 idx)
+      s)))
