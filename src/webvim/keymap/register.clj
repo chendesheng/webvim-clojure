@@ -11,7 +11,7 @@
         webvim.core.event))
 
 (defn- start-register [buf keycode]
-  (if (re-test #"[0-9a-zA-Z/*#%.:+=\-_~]" keycode)
+  (if (re-test #"[0-9a-zA-Z/*#%.:+=-_~]" keycode)
     (assoc-in buf [:context :register] keycode)
     buf))
 

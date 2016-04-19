@@ -218,12 +218,15 @@ function createDOMItem(className, text) {
     return node;
 }
 
-var __id = 0;
+var uniqueId = (function() {
+    var __id = 0;
 
-function uniqueId() {
-    __id++;
-    return (new Date).getTime() + __id;
-}
+    return function () {
+        __id++;
+        return (new Date).getTime() + __id;
+    }
+})();
+
 
 //extract text from DOM: [a, b)
 function substring(buf, a, b) {
