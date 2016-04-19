@@ -1,5 +1,6 @@
 (ns webvim.lang.javascript
-  (:require [me.raynes.fs :as fs])
+  (:require [me.raynes.fs :as fs]
+            [webvim.core.utils :refer [windows?]])
   (:use webvim.core.lang
         webvim.core.rope
         webvim.core.diff
@@ -27,7 +28,8 @@
 
 (defn- js-beautify [s name]
   (println "js-beautify")
-  (let [res (clojure.java.shell/sh "js-beautify" :in s)]
+  (let [cmd-name (if windows? "js-beautify.cmd" "js-beautify")
+        res (clojure.java.shell/sh cmd-name :in s)]
     (if (-> res :exit zero? not)
       res
       (let [tmpfile (str (fs/temp-file "" name))]
