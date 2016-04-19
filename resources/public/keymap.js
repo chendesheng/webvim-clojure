@@ -3,14 +3,13 @@ function imap(key, callback) {
     if (!key) {
         return;
     }
-
-    if (key == '<c-[>') {
-        key = '<esc>';
-    } else if (key == '<c-j>') {
+    if (key == '<c-j>') {
         //can't capture ctrl-n and ctrl-p on Windows's Chrome
         key = '<c-n>';
     } else if (key == '<c-k>') {
         key = '<c-p>';
+    } else if (key == '<c-s>') {
+        callback('<esc>:w<cr>');
     }
 
     if (key == 'j') {
@@ -55,6 +54,8 @@ function nmap(key, callback) {
         callback(':nohl<cr>');
     } else if (key == '<c-[>') {
         callback('<esc>');
+    } else if (key == '<c-s>') {
+        callback(':w<cr>');
     } else if (key == '<f6>') {
         callback(':reload<cr>');
     } else {
@@ -80,3 +81,17 @@ function showOngoingKey(key) {
 function hideOngoingKey() {
     $cursor(buffers.active.id).className = 'cursor';
 }
+
+watchLocalbufChange('mode', function(buf) {
+    if (buf.mode == 0) {
+        keymap = nmap;
+    }
+
+    if (buf.mode == 1) {
+        keymap = imap;
+    }
+
+    if (buf.mode == 0 && buf.visual.type != 0) {
+        keymap = vmap;
+    }
+});

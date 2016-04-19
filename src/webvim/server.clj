@@ -21,11 +21,11 @@
 
 (defn- homepage
   [request]
-  (let [js ["jquery.js" "cookie.js" "socket.js" "utils.js" "dom.js" "keycode.js" "keymap.js"
+  (let [js ["jquery.js" "cookie.js" "socket.js" "utils.js" "dom.js" "keycode.js" 
             "keyboard.js" "syntax/clojure.js" "syntax/css.js" "syntax/xml.js" 
             "syntax/sql.js" "syntax/go.js" "syntax/cs.js" "syntax/javascript.js"
             "syntax/markdown.js" "syntax/actionscript.js"
-            "highlight.js" "main.js" "render/autocompl.js" "render/cursor.js" 
+            "highlight.js" "main.js" "keymap.js" "render/autocompl.js" "render/cursor.js" 
             "render/gutter.js" "render/offscreen/changes.js" "render/offscreen/lines.js" 
             "render/offscreen/pos.js" "render/selection.js" "render/viewport.js" 
             "render/watchers.js"]

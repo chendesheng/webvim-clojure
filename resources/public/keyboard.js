@@ -194,7 +194,7 @@ function keyboardInit() {
     });
 
     input.addEventListener('textInput', function(event) {
-        channel.send(event.data);
+        handleKey(event.data);
 
         //FIXME: without setTimeout here, input.value = '' will not work, not sure why. 
         setTimeout(imeHandler.onInput, 0);
