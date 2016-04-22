@@ -106,7 +106,7 @@
     (doseq [{filepath :filepath y :y} buffers]
       (let [buf @(new-file filepath y)]
         (cond
-          (and (-> (get-from-ui :buf) :filepath nil? not)
+          (and (-> (get-from-ui :buf) :filepath some?)
                (path= filepath ((get-from-ui :buf) :filepath)))
           (do
             (update-ui (fn [ui] (dissoc ui :buf)))

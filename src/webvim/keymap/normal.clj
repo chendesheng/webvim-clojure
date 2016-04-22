@@ -36,7 +36,7 @@
   (let [insert-mode? (= (buf :mode) :insert-mode)
         save-undo (if insert-mode? identity save-undo)
         fix-pos (if insert-mode? identity normal-mode-fix-pos)]
-    (if-not (nil? (motions-push-jumps (string/join (buf :keys))))
+    (if (some? (motions-push-jumps (string/join (buf :keys))))
       (jump-push (-> buf :context :lastbuf)))
     (-> buf
         fix-pos

@@ -279,7 +279,7 @@
 (defn file-register [buf]
   {:id (buf :id) :str (or (buf :filepath) (buf :name))})
 
-(def persistent-buffers #(-> % :filepath nil? not))
+(def persistent-buffers #(-> % :filepath some?))
 (def temp-buffers #(-> % :filepath nil?))
 
 (defn get-buffer-by-filepath [filepath]

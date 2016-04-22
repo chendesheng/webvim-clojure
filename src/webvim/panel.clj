@@ -74,7 +74,7 @@
   ([buf file new-file?]
     (if (or (empty? file) (path= file (:filepath buf)))
       buf
-      (let [buf-exists (some #(if (and (-> % :filepath nil? not)
+      (let [buf-exists (some #(if (and (-> % :filepath some?)
                                        (path= file (% :filepath))) %)
                              (get-buffers))
             file (str (expand-path file))

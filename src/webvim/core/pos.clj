@@ -62,7 +62,7 @@
 
 (defn pos-re-seq+ [r pos re]
   (let [rg (pos-re+ r pos re)]
-    (if-not (nil? rg)
+    (if (some? rg)
       (cons rg (lazy-seq (pos-re-seq+ r (-> rg second) re))))))
 
 (defn pos-re-seq-
@@ -104,7 +104,7 @@
   ;about 10 times slower
   (defn slow-pos-re-seq- [r pos re]
     (let [rg (pos-re- r pos re)]
-      (if-not (nil? rg)
+      (if (some? rg)
         (cons rg (lazy-seq (slow-pos-re-seq- r (-> rg first dec) re))))))
 
   (let [r (rope (clojure.string/join (repeat 10000 "defn")))]

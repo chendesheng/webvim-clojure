@@ -57,8 +57,8 @@
                                                      :suggestions suggestions)))
                                     send-buf!))) words suggestions))
                     (if (and
-                          (-> @abuf :autocompl nil? not)
-                          (-> rest-words nil? not))
+                          (-> @abuf :autocompl some?)
+                          (some? rest-words))
                       (recur (concat words (first rest-words))
                              (next rest-words))))))
               autocompl)

@@ -25,7 +25,7 @@
                    (+ (Integer. keycode))))))
 
 (defn repeat-count? [buf]
-  (-> buf :context :repeat-prefix nil? not))
+  (-> buf :context :repeat-prefix some?))
 
 (defn repeat-count [buf]
   (* (repeat-prefix-value buf)

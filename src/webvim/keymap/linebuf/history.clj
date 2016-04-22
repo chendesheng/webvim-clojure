@@ -44,7 +44,7 @@
               (let [linebuf (buf :line-buffer)]
                 ;(println "leave:" linebuf)
                 ;remove :line-buffer or :line-buffer :str can prevent current operation save to history
-                (if-not (nil? linebuf)
+                (if (some? linebuf)
                   (save-history! ahistory
                                  (-> linebuf :str str))))
               buf)

@@ -193,7 +193,7 @@
 
 (defn shorten-path
   [^String path]
-  (if-not (nil? path)
+  (if (some? path)
     (if (fs/child-of? fs/*cwd* path)
       (subs path (-> fs/*cwd* str count inc))
       (let [home (fs/home)]
@@ -261,7 +261,7 @@
   ([x] x)
   ([x & next]
     `(let [or# ~x]
-       (if-not (nil? or#) or# (or ~@next)))))
+       (if (some? or#) or# (or ~@next)))))
 
 (defmacro print-stack []
   (.printStackTrace (Exception.)))

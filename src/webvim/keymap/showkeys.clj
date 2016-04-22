@@ -45,15 +45,15 @@
                       ;(println "normal-after:" keycode (-> buf :context :register) (buf :showkeys))
                         (cond
                           (and (= "\"" keycode)
-                               (-> buf :context :register nil? not)
+                               (-> buf :context :register some?)
                                (-> buf :context :register (not= "\"")))
                           buf
                           (or (re-test #"^[1-9]$" keycode)
-                              (and (-> buf :context :repeat-prefix nil? not)
+                              (and (-> buf :context :repeat-prefix some?)
                                    (= keycode "0")))
                           buf
                           (or (= "<esc>" keycode)
-                              (-> buf :line-buffer nil? not))
+                              (-> buf :line-buffer some?))
                           (assoc buf :showkeys nil)
                           :else
                           (do

@@ -22,7 +22,7 @@
           (fs/mkdir config-dir)
           (spit (fs/file config-dir buffers-edn)
                 (prn-str {:buffers (map #(select-keys % [:filepath :y])
-                                        (filter #(-> % :filepath nil? not) buffers))
+                                        (filter #(-> % :filepath some?) buffers))
                           :active (-> active :filepath)
                           :alternative (:str (registers-get "#"))})))))
 
@@ -42,12 +42,12 @@
     ;recover active buffer
     (doseq [buf (get-buffers persistent-buffers)]
       (cond
-        (and (-> active nil? not)
+        (and (some? active)
              (path= (buf :filepath) active))
         (do
           (registers-put! "%" {:str active :id (buf :id)})
           (send-buf! buf))
-        (and (-> alternative nil? not)
+        (and (some? alternative)
              (path= (buf :filepath) alternative))
         (registers-put! "#" {:str alternative :id (buf :id)})))
     (if (nil? (registers-get "%"))

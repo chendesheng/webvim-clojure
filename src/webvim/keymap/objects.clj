@@ -92,7 +92,7 @@
                             (same-tag? (peek stack) rg) (recur rest (pop stack))
                             :else nil)))
         close-tag (unbalance-tag close-tags open-tag? same-tag?)]
-    (if-not (nil? close-tag)
+    (if (some? close-tag)
       (let [open-tags (filter
                         (fn [[a b]]
                           (if (and (<= a pos) (< pos b))
@@ -103,7 +103,7 @@
                                     (complement open-tag?)
                                     (fn [a b]
                                       (same-tag? b a)))]
-        (if (and (-> open-tag nil? not)
+        (if (and (some? open-tag)
                  (same-tag? open-tag close-tag))
           [open-tag close-tag])))))
 

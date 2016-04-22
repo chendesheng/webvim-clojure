@@ -69,16 +69,16 @@
     :temp-normal-mode 1} mode))
 
 (defn- update-visual [buf]
-  (if (-> :visual buf nil? not)
+  (if (-> :visual buf some?)
     (update buf :visual (fn [visual]
                           (-> visual
                               (dissoc :range)
                               (assoc :type (visual-type (visual :type)))))) buf))
 
 (defn- update-mode [buf]
-  (let [buf (if (-> buf :mode nil? not)
+  (let [buf (if (-> buf :mode some?)
               (update buf :mode buf-mode) buf)]
-    (if (-> buf :submode nil? not)
+    (if (-> buf :submode some?)
       (update buf :submode buf-submode) buf)))
 
 (defn- remove-fields [buf]
@@ -208,7 +208,7 @@
                           ui (assoc ui :buf (dissoc buf :changes))]
                       (if (or (nil? diff)
                               (empty? diff)) ui
-                        ((ui :render!) ui diff)))
+                          ((ui :render!) ui diff)))
                     ui))
                 buf)
       (-> buf
