@@ -147,7 +147,8 @@ function initHighlights() {
         'Go': hlgo(hljs),
         'C#': hlcs(hljs),
         'MarkDown': hlmd(hljs),
-        'ActionScript': hlactionscript(hljs)
+        'ActionScript': hlactionscript(hljs),
+        'Lisp': hllisp(hljs)
     }
 }
 

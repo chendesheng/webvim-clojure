@@ -35,9 +35,16 @@
 
 (defn- init-actionscript-file-type [buf]
   (-> buf
-      (assoc-in [:language :id] ::markdown)
+      (assoc-in [:language :id] ::actionscript)
       (assoc-in [:language :name] "ActionScript")
       (assoc :tabsize 4)
+      (assoc :expandtab true)))
+
+(defn- init-lisp-file-type [buf]
+  (-> buf
+      (assoc-in [:language :id] ::lisp)
+      (assoc-in [:language :name] "Lisp")
+      (assoc :tabsize 2)
       (assoc :expandtab true)))
 
 (defmethod init-file-type ".md"
@@ -47,4 +54,8 @@
 (defmethod init-file-type ".as"
   [buf]
   (init-actionscript-file-type buf))
+
+(defmethod init-file-type ".lisp"
+  [buf]
+  (init-lisp-file-type buf))
 
