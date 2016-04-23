@@ -64,11 +64,17 @@
       (update :pos op dpos)
       (update :y op dy)))
 
+(defn- fix-utf16-pos [r pos]
+  (if (and (surrogate? (.charAt r pos))
+           (even? (count (take-while surrogate? (iterator-seq (.reverseIterator r (- (count r) pos 1)))))))
+    (dec pos)
+    pos))
+
 ;TODO: keep track of current line number is annoying
 (defn buf-set-pos [buf newpos]
-  (let [pos (buf :pos)
-        r (buf :str)
-        newpos (min newpos (-> r .length dec))]
+  (let [r (buf :str)
+        pos (buf :pos)
+        newpos (fix-utf16-pos r (min newpos (-> r .length dec)))]
     (cond 
       (zero? newpos)
       (-> buf 

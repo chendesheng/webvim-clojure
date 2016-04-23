@@ -157,6 +157,10 @@ function getNextLineBreakScreenXY(buf) {
 function getScreenXYInner(buf, res) {
     var linenum = buf.currentLineNumber;
     var ch = res.e.textContent[res.offset];
+    if (surrogate(ch)) {
+        //UTF16 surrogates
+        ch += res.e.textContent[res.offset + 1];
+    }
 
     var line = getLine(buf.id, linenum)
     if (!line) return {
@@ -221,7 +225,7 @@ function createDOMItem(className, text) {
 var uniqueId = (function() {
     var __id = 0;
 
-    return function () {
+    return function() {
         __id++;
         return (new Date).getTime() + __id;
     }

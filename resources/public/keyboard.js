@@ -81,10 +81,21 @@ function keyboardInit() {
         '<c-m>': '<cr>',
     };
 
+    function isSpecialKey(ch) {
+        if (ch.length <= 1) {
+            return false;
+        } else if (ch.length == 2) {
+            return !surrogate(ch);
+        } else {
+            return true;
+        }
+    }
+
     function handleKey(key) {
+        if (key.length == 0) return;
         //console.log(key);
 
-        if (key.length > 1) {
+        if (isSpecialKey(key)) {
             key = '<' + escapseKeys(key) + '>';
         } else {
             key = escapseKeys(key);

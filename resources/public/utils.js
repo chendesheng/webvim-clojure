@@ -178,3 +178,9 @@ if (typeof Object.assign != 'function') {
         };
     })();
 }
+
+function surrogate(ch) {
+    var charCode = ch.charCodeAt(0);
+    return charCode >= 0xD800 && charCode <= 0xDFFF;
+}
+

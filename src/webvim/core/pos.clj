@@ -114,8 +114,13 @@
 (defn char+ [buf]
   (buf-move buf (fn [r pos]
                   (let [ch (or (char-at r pos) \newline)]
-                    (if (= ch \newline)
-                      pos (inc pos))))))
+                    (cond
+                      (= ch \newline)
+                      pos
+                      (surrogate? ch)
+                      (+ pos 2)
+                      :else
+                      (inc pos))))))
 
 (defn char- [buf]
   (buf-move buf (fn [r pos]

@@ -7,7 +7,7 @@
     [webvim.keymap.delete :refer [delete-range visual-block-delete]]
     [webvim.keymap.visual :refer [wrap-temp-visual-mode]]
     [webvim.keymap.repeat :refer [wrap-keymap-repeat-prefix]]
-    [webvim.keymap.operator :refer [buf-yank set-linewise set-current-line
+    [webvim.keymap.operator :refer [buf-yank set-linewise set-current-line set-current-pos
                                     make-operator set-line-end set-visual-range not-empty-range]]
     [webvim.indent :refer [buf-indent-current-line]]
     [webvim.mode :refer [set-insert-mode]]
@@ -197,6 +197,7 @@
             (buf-set-pos (- a 1))
             (buf-insert "\n"))))))
 
+
 (defn wrap-keymap-change [keymap visual-keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)
         visual-keymap (wrap-temp-visual-mode visual-keymap temp-visual-keymap-c)]
@@ -205,7 +206,7 @@
            "a" (start-insert-mode char+)
            "A" (start-insert-mode line-end)
            "I" (start-insert-mode line-start)
-           "s" (make-operator change-range)
+           "s" (make-operator set-current-pos change-range)
            "S" (make-operator set-current-line change-range)
            "o" (start-insert-mode insert-new-line)
            "O" (start-insert-mode insert-new-line-before)

@@ -8,7 +8,7 @@
     [webvim.keymap.visual :refer [wrap-temp-visual-mode keycodes-visual]]
     [webvim.core.register :refer [registers-delete-to!]]
     [webvim.keymap.yank :refer [yank-blockwise]]
-    [webvim.keymap.operator :refer [set-range set-linewise set-line-end
+    [webvim.keymap.operator :refer [set-current-pos set-range set-linewise set-line-end
                                     set-visual-range visual-block-lines
                                     make-operator if-not-keycode]]
     [webvim.keymap.repeat :refer [wrap-keymap-repeat-prefix]]
@@ -54,17 +54,16 @@
 
 (defn wrap-keymap-delete [keymap visual-keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)
-        visual-keymap (wrap-temp-visual-mode visual-keymap temp-visual-keymap-d)
-        fn-delete (make-operator delete-range)]
+        visual-keymap (wrap-temp-visual-mode visual-keymap temp-visual-keymap-d)]
     (assoc keymap
            "D" (make-operator set-line-end delete-range)
-           "x" fn-delete
+           "x" (make-operator set-current-pos delete-range)
            "d" (wrap-keymap-repeat-prefix
                  (merge
                    motion-keymap
                    visual-keymap
                    {"d" (wrap-keycode set-linewise)
-                    :after (if-not-keycode fn-delete keycodes-visual)})))))
+                    :after (if-not-keycode (make-operator delete-range) keycodes-visual)})))))
 
 (listen
   :visual-mode-keymap

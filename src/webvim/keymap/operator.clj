@@ -5,13 +5,13 @@
     [clojure.pprint :refer [pprint]]
     [webvim.mode :refer [set-insert-mode]]
     [webvim.keymap.compile :refer [wrap-key]]
-    [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete subr]]
+    [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete subr char-at]]
     [webvim.core.line :refer [make-linewise-range expand-block-ranges
                               pos-line-last pos-line pos-line-end
                               pos-line-start line-start]]
     [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
     [webvim.core.range :refer [range-inclusive range-exclusive range-linewise range-line-end range-current-line]]
-    [webvim.core.utils :refer [make-range sort2 nop nilor]]))
+    [webvim.core.utils :refer [make-range sort2 nop nilor surrogate?]]))
 
 (defn linewise? [keycode]
   (contains? #{"j" "k" "+" "-" "G" "H" "M" "L"} keycode))
@@ -106,6 +106,11 @@
       (set-range (range-current-line (buf :str) (buf :pos)))
       (set-linewise false)
       (set-inclusive false)))
+
+(defn set-current-pos [{r :str pos :pos :as buf}]
+  (if (surrogate? (char-at r pos))
+    (set-range buf [pos (+ pos 1)])
+    (set-range buf [pos pos])))
 
 (defn make-linewise-operator
   ([fn-init f]

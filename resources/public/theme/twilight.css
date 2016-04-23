@@ -10,10 +10,6 @@ body,
     background: rgb(114, 110, 115);
 }
 
-.content {
-    padding-left: 1ch;
-}
-
 .line-num.highlight {
     color: #F8F8F8;
     background: rgb(83, 83, 85);

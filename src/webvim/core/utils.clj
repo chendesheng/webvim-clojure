@@ -12,9 +12,16 @@
   ([[a b]]
     (sort2 a b)))
 
+;https://en.wikipedia.org/wiki/UTF-16#U.2BD800_to_U.2BDFFF
+(defn surrogate? [ch]
+  (println "ch:" (int ch))
+  (<= 0xD800 (int ch) 0xDFFF))
+
 (defn keycode-to-char [keycode]
   (cond 
     (= 1 (count keycode))
+    keycode
+    (and (= 2 (count keycode)) (-> keycode first surrogate?))
     keycode
     (= "<cr>" keycode)
     "\n"
