@@ -85,7 +85,7 @@ function keyboardInit() {
         if (ch.length <= 1) {
             return false;
         } else if (ch.length == 2) {
-            return !surrogate(ch);
+            return !is32BitsChar(ch);
         } else {
             return true;
         }

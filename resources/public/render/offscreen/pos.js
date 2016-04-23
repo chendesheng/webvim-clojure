@@ -156,9 +156,10 @@ function getNextLineBreakScreenXY(buf) {
 
 function getScreenXYInner(buf, res) {
     var linenum = buf.currentLineNumber;
-    var ch = res.e.textContent[res.offset];
-    if (surrogate(ch)) {
-        //UTF16 surrogates
+    var text = res.e.textContent;
+    var ch = text[res.offset];
+    var ch32bits = is32BitsChar(text.substring(res.offset));
+    if (ch32bits) {
         ch += res.e.textContent[res.offset + 1];
     }
 
@@ -172,7 +173,7 @@ function getScreenXYInner(buf, res) {
 
     var range = document.createRange();
     range.setStart(e, res.offset);
-    range.setEnd(e, res.offset + 1);
+    range.setEnd(e, res.offset + (ch32bits ? 2 : 1));
 
     var rect = range.getBoundingClientRect();
     var left = rect.left;

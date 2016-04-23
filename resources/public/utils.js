@@ -179,8 +179,16 @@ if (typeof Object.assign != 'function') {
     })();
 }
 
-function surrogate(ch) {
+function is32BitsChar(ch) {
     var charCode = ch.charCodeAt(0);
-    return charCode >= 0xD800 && charCode <= 0xDFFF;
+    if (charCode >= 0xD800 && charCode <= 0xDFFF) {
+        return true;
+    } else if (ch.length > 1) {
+        charCode = ch.charCodeAt(1);
+        //Variation Selectors: https://en.wikipedia.org/wiki/Variation_Selectors_(Unicode_block)
+        return charCode >= 0xFE00 && charCode <= 0xFE0F;
+    } else {
+        return false;
+    }
 }
 

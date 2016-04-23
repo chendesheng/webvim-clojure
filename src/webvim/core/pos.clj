@@ -117,7 +117,8 @@
                     (cond
                       (= ch \newline)
                       pos
-                      (surrogate? ch)
+                      (or (surrogate? ch)
+                          (variation-selector? (char-at r (inc pos))))
                       (+ pos 2)
                       :else
                       (inc pos))))))

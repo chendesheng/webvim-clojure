@@ -11,7 +11,7 @@
                               pos-line-start line-start]]
     [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
     [webvim.core.range :refer [range-inclusive range-exclusive range-linewise range-line-end range-current-line]]
-    [webvim.core.utils :refer [make-range sort2 nop nilor surrogate?]]))
+    [webvim.core.utils :refer [make-range sort2 nop nilor surrogate? variation-selector?]]))
 
 (defn linewise? [keycode]
   (contains? #{"j" "k" "+" "-" "G" "H" "M" "L"} keycode))
@@ -108,7 +108,9 @@
       (set-inclusive false)))
 
 (defn set-current-pos [{r :str pos :pos :as buf}]
-  (if (surrogate? (char-at r pos))
+  (if (or
+        (surrogate? (char-at r pos))
+        (variation-selector? (char-at r (inc pos))))
     (set-range buf [pos (+ pos 1)])
     (set-range buf [pos pos])))
 

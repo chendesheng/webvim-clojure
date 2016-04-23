@@ -11,6 +11,10 @@
     (if (< a b) [a b] [b a]))
   ([[a b]]
     (sort2 a b)))
+;Variation Selectors 
+(defn variation-selector? [ch]
+  (or (nil? ch)
+      (<= 0xFE00 (int ch) 0xFEFF)))
 
 ;https://en.wikipedia.org/wiki/UTF-16#U.2BD800_to_U.2BDFFF
 (defn surrogate? [ch]
