@@ -123,6 +123,12 @@ function initHighlights() {
         relevance: 0
     };
 
+    hljs.METHOD_GUARD = {
+        // excludes method names from keyword processing
+        begin: '\\.\\s*' + hljs.UNDERSCORE_IDENT_RE,
+        relevance: 0
+    };
+
     function rainbowColor(text, ctx) {
         var pred = function(mode) {
             return mode.originalClassName === rainbowColor;
