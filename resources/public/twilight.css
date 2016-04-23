@@ -1,0 +1,103 @@
+body,
+.gutter {
+    background: #202020;
+    font-size: 25px;
+    color: #F8F8F8;
+}
+
+.gutter {
+    color: #F8F8F8;
+    background: rgb(114, 110, 115);
+}
+
+.content {
+    padding-left: 1ch;
+}
+
+.line-num.highlight {
+    color: #F8F8F8;
+    background: rgb(83, 83, 85);
+}
+
+.lines .keyword {
+    color: #CDA869;
+}
+
+.lines .meta,
+.lines .meta-keyword {
+    color: rgb(114, 110, 115);
+}
+
+.lines .selector-tag {
+    /*red*/
+    color: rgb(214, 181, 128);
+}
+
+.lines .name {
+    color: rgb(214, 181, 128);
+}
+
+.lines .selector-persudo {
+    color: #8F9D6A;
+}
+
+.lines .selector-class {
+    color: #9B703F;
+}
+
+.lines .selector-id {
+    color: #8B98AB;
+}
+
+.lines .symbol {
+    color: #F92672;
+}
+
+.lines .comment {
+    font-style: italic;
+    color: rgb(114, 110, 115);
+}
+
+.lines .doctag {}
+
+.lines .string {
+    color: rgb(160, 171, 127);
+}
+
+.lines .regexp {
+    color: #E9C062;
+}
+
+.lines .number,
+.lines .escape,
+.lines .literal,
+.lines .subst {
+    color: #CF6A4C;
+}
+
+.lines .build_in,
+.lines .built_in {
+    color: #E6DB74;
+}
+
+.lines .title {
+    color: rgb(225, 214, 154);
+}
+
+.lines .attr,
+.lines .builtin-name,
+.lines .attribute,
+.lines .code,
+.lines .section {
+    color: #C5AF75;
+}
+
+.lines .illegal {
+    background: red;
+}
+
+.status-bar {
+    background: #664EAD;
+    border-top: solid 1px #7675AD;
+    color: #FFF;
+}
