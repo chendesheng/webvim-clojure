@@ -204,7 +204,7 @@ pre {
     bottom: 0;
     height: 1.5em;
     line-height: 1.5em;
-    padding: 0 10px 0 10px;
+    padding: 0 1ch 0 1ch;
     overflow: auto;
     background: #007ACC;
     z-index: 2;
