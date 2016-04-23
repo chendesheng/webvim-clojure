@@ -92,8 +92,6 @@ html,
     float: left;
     width: 5ch;
     /*ch means width of the zero (0) character*/
-    padding-left: 1ch;
-    padding-right: 1ch;
     overflow: hidden;
     color: #595959;
     position: relative;
@@ -107,6 +105,8 @@ html,
 .line-num {
     text-align: right;
     line-height: 1.2em;
+    padding-left: 1ch;
+    padding-right: 1ch;
 }
 
 .line-num.highlight {

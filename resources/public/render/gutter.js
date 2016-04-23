@@ -9,7 +9,7 @@ function gutterWidth(bufid, linenum) {
         }
 
         __gutterWidth = w;
-        $gutter(bufid).style.width = __gutterWidth + 'ch';
+        $gutter(bufid).style.width = (__gutterWidth + 2) + 'ch';
     } else {
         return __gutterWidth + 2; //left padding 1ch, right padding 1ch
     }
