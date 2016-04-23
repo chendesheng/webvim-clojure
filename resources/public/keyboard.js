@@ -205,7 +205,10 @@ function keyboardInit() {
     });
 
     input.addEventListener('textInput', function(event) {
-        handleKey(event.data);
+        var key = escapseKeys(event.data);
+        keymap(key, function(k) {
+            channel.send(terminalAlias[k] || k);
+        });
 
         //FIXME: without setTimeout here, input.value = '' will not work, not sure why. 
         setTimeout(imeHandler.onInput, 0);
