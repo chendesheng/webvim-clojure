@@ -101,3 +101,7 @@ body,
     border-top: solid 1px #7675AD;
     color: #FFF;
 }
+
+.autocompl .highlight {
+    background: #664EAD;
+}

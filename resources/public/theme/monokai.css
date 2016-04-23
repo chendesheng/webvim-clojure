@@ -1,7 +1,7 @@
 body,
 .gutter {
-    background: #272822;
-    font-size: 20px;
+    background: #1E1E1E;
+    font-size: 25px;
 }
 
 .buffer:before {
@@ -77,6 +77,11 @@ body,
 
 .lines .illegal {
     background: red;
+}
+
+.status-bar {
+    background: #664EAD;
+    border-top: solid 1px #7675AD;
 }
 
 
