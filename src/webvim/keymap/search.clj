@@ -67,7 +67,7 @@
     (if (empty? s) 
       ;http://stackoverflow.com/questions/1723182/a-regex-that-will-never-be-matched-by-anything
       (re-pattern "(?m)(?!x)x")
-      (if (re-test #"^[a-z\s\\{}()\[\]]*$" s)
+      (if (re-test #"^[a-z0-9\s\\{}()\[\]]*$" s)
         (re-pattern (str "(?m)(?i)" s))
         (re-pattern (str "(?m)" s))))
     (catch Exception e 
