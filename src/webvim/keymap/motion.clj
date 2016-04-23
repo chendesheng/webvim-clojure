@@ -113,7 +113,7 @@
 
 (defn- not-line-last [f]
   (fn [{pos :pos r :str :as buf} keycode]
-    (if (or (zero? pos)
+    (if (or (>= pos (-> r count dec))
             (contains? #{\return \newline} (char-at r (inc pos))))
       (set-motion-fail buf)
       (f buf keycode))))
