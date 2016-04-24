@@ -2,7 +2,8 @@
   (:require [cljfmt.core :as cljfmt]
             [me.raynes.fs :as fs]
             [webvim.keymap.objects :refer [current-word]]
-            [webvim.panel :refer [append-output-panel]])
+            [webvim.panel :refer [append-output-panel]]
+            [webvim.autoformat :refer [wrap-async-auto-format]])
   (:use webvim.core.event
         webvim.core.rope
         webvim.core.pos
@@ -142,18 +143,14 @@
 (defn- format-buffer [buf]
   ;use temp file
   (if (buf :dirty)
-    (try
       (let [res (time (cljfmt-diff (-> buf :str str) (buf :name)))]
-      ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
+        ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
         (if (-> res :err empty?) 
           (-> buf
               (apply-line-changes
                 (time (parse-diff (str (res :out)))))
               save-undo)
-          (format-error (-> res :err str))))  ;use old buf if formatter fails
-      (catch Exception e
-        (fire-event e :exception)
-        (format-error buf (.getMessage e))))
+          (-> res :err str Throwable. throw))) ;use old buf if formatter fails
     buf))
 
 (listen :normal-mode-keymap
@@ -173,15 +170,5 @@
 (listen :init-ex-commands
         (fn [cmds buf]
           (if (clojure? buf)
-            (wrap-command
-              cmds
-              "write" (fn [fnwrite]
-                        (fn [buf cmd args]
-                          (-> buf
-                              (assoc :message "formatting...")
-                              (async-with-catch
-                                (-> buf
-                                    format-buffer
-                                    (fnwrite cmd args)
-                                    buf-match-bracket))))))
+            (wrap-async-auto-format cmds format-buffer)
             cmds)))

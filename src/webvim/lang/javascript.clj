@@ -1,5 +1,7 @@
 (ns webvim.lang.javascript
   (:require [me.raynes.fs :as fs]
+            [clojure.java.shell :refer [sh]]
+            [webvim.autoformat :refer [wrap-async-auto-format js-beautify-formatter]]
             [webvim.core.utils :refer [windows? trim-last-newline]])
   (:use webvim.core.lang
         webvim.core.rope
@@ -26,45 +28,15 @@
   [lang keycode]
   (= keycode "}"))
 
-(defn- js-beautify [s name]
-  (println "js-beautify")
-  (let [cmd-name (if windows? "js-beautify.cmd" "js-beautify")
-        res (clojure.java.shell/sh cmd-name :in s)]
-    (if (-> res :exit zero? not)
-      res
-      (let [tmpfile (str (fs/temp-file "" name))]
-        (spit tmpfile s)
-        ;TODO: (fs/delete tmpfile)
-        (clojure.java.shell/sh 
-          "diff" tmpfile "-" "-u"
-          :in (res :out))))))
+(defn- javascript? [buf]
+  (-> buf :language :id (= ::javascript)))
 
-(defn- jsfmt [s]
-  (println "jsfmt")
-  (clojure.java.shell/sh "jsfmt" "-d" :in s))
+(comment defn- jsfmt [s]
+         (println "jsfmt")
+         (clojure.java.shell/sh "jsfmt" "-d" :in s))
 
-;(defn- pprint2[buf]
-;  (println "buffer:")
-;  (pprint (buf :str))
-;  buf)
-
-(defn- format-buffer [buf]
-  ;use temp file
-  (if (-> buf :language :id (= ::javascript))
-    ;FIXME: trim-last-newline is only a temp solution
-    (let [res (time (js-beautify (-> buf :str str trim-last-newline) (buf :name)))]
-    ;(let [res (time (jsfmt (-> buf :str str)))]
-      ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
-      (if (-> res :err empty?) 
-        (-> buf
-            (apply-line-changes
-              (time (parse-diff (str (res :out)))))
-            save-undo)
-        (do
-          (println "Format Error:" (res :err))
-          (assoc buf :message (res :err)))))  ;use old buf if formatter fails
-    buf))
-
-(listen :write-buffer
-        (fn [buf]
-          (format-buffer buf)))
+(listen :init-ex-commands
+        (fn [cmds buf]
+          (if (javascript? buf)
+            (wrap-async-auto-format cmds (js-beautify-formatter "js"))
+            cmds)))

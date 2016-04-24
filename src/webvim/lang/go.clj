@@ -1,6 +1,7 @@
 (ns webvim.lang.go
   (:require [cheshire.core :as json]
             [me.raynes.fs :as fs]
+            [webvim.autoformat :refer [wrap-async-auto-format]]
             [webvim.panel :refer [append-output-panel]])
   (:use webvim.core.lang
         webvim.core.event
@@ -107,12 +108,6 @@
             (golang-autocompl provider)
             provider)))
 
-(listen :write-buffer
-        (fn [buf]
-          (if (golang? buf)
-            (format-buffer buf)
-            buf)))
-
 (defn- directory [path]
   (if (fs/directory? path)
     path
@@ -142,6 +137,7 @@
 (listen :init-ex-commands
         (fn [cmds buf]
           (if (golang? buf)
-            (conj cmds 
-                  ["go" cmd-go])
+            (-> cmds
+                (conj ["go" cmd-go])
+                (wrap-async-auto-format format-buffer))
             cmds)))
