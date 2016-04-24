@@ -35,7 +35,7 @@ function hlclojure(hljs) {
             'disj get union difference intersection extend extend-type extend-protocol int nth delay count concat chunk chunk-buffer ' +
             'chunk-append chunk-first chunk-rest max min dec unchecked-inc-int unchecked-inc unchecked-dec-inc unchecked-dec unchecked-negate ' +
             'unchecked-add-int unchecked-add unchecked-subtract-int unchecked-subtract chunk-next chunk-cons chunked-seq? prn vary-meta ' +
-            'lazy-seq spread list* str find-keyword keyword symbol gensym force rationalize ' +
+            'lazy-seq spread list* str find-keyword keyword symbol gensym force rationalize finally' +
             //not in clojure.core
             ' defproject defroutes'
     };
