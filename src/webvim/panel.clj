@@ -125,11 +125,9 @@
                 save-undo
                 (fn-set-pos pos)
                 cursor-center-viewport
-                (send-buf! goto?)
+                send-buf!
                 buf-match-bracket))) goto?)
-  (if goto? (dissoc
-              (goto-buf buf (:id @apanel))
-              :nextid) buf))
+  (if goto? (goto-buf buf (:id @apanel)) buf))
 
 (defn append-output-panel [buf s goto?]
   (append-panel buf (output-panel) s goto?))
