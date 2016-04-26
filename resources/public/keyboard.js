@@ -15,37 +15,29 @@ function imePreview(input) {
     }
 
     function setPreviewContent(buf, text) {
+        if (previewCursor) {
+            $remove(previewCursor);
+        } else {
+            previewCursor = createSpan();
+            addClass(previewCursor, 'ime-cursor');
+        }
+
         if (previewNode == null) {
             previewNode = createSpan();
             addClass(previewNode, 'ime-preview');
             previewNode.textContent = text;
 
-            previewCursor = createSpan();
-            addClass(previewCursor, 'ime-cursor');
-            previewNode.appendChild(previewCursor);
-
             insertNodeAtPos(buf, previewNode, buf.cursor);
         } else {
-            previewNode.firstChild.textContent = text;
+            previewNode.textContent = text;
         }
 
         var pos = getCaret(input);
-        var sl = $buffer(buf.id).scrollLeft;
-        if (pos == 0) {
-            var range = document.createRange();
-            range.setStart(previewNode.firstChild, pos);
-            range.setEnd(previewNode.firstChild, pos + 1);
-            rect = range.getBoundingClientRect();
-            previewCursor.style.left = (rect.left + sl) + 'px';
-        } else {
-            var range = document.createRange();
-            range.setStart(previewNode.firstChild, pos - 1);
-            range.setEnd(previewNode.firstChild, pos);
-            rect = range.getBoundingClientRect();
-            previewCursor.style.left = (rect.right + sl) + 'px';
-        }
-        previewCursor.style.marginLeft = -gutterWidth(buf.id) + 'ch';
+        var range = document.createRange();
+        range.setStart(previewNode.firstChild, pos);
+        range.setEnd(previewNode.firstChild, pos);
 
+        range.insertNode(previewCursor);
         return previewNode;
     }
 
