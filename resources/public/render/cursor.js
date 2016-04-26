@@ -22,35 +22,38 @@ function renderCursor(buf, from, visibleLines) {
     if (/\r|\n|\t/.test(res.ch)) {
         res.ch = ' ';
     }
-    //console.log(res);
-    var style = getComputedStyle(res.e.parentNode, null);
-    var color = style.color;
-    var fontStyle = style.fontStyle;
-    var fontWeight = style.fontWeight;
 
-    var background = getComputedStyle(document.body, null).backgroundColor;
-    //console.log(color);
-    //console.log(background);
     var cursor = $cursor(buf.id);
     if (cursor.firstChild.textContent != res.ch) {
         cursor.firstChild.textContent = res.ch;
     }
 
     function colorStyle() {
+        var style = getComputedStyle(res.e.parentNode, null);
+        var color = style.color;
+
         if (buf.focusStatusBar) {
             return 'border:solid 1px ' + color + ';' + 'color:rgba(0,0,0,0);';
         } else {
-            return 'background-color:' + color + ';' + 'color:' + background + ';' + 'font-style:' + fontStyle + ';' + 'font-weight:' + fontWeight + ';';
+            var fontStyle = style.fontStyle;
+            var fontWeight = style.fontWeight;
+            var background = getComputedStyle(document.body, null).backgroundColor;
+            return 'background-color:' + color + ';' +
+                'color:' + background + ';' +
+                'font-style:' + fontStyle + ';' +
+                'font-weight:' + fontWeight + ';';
         }
     }
+
     var x = res.left + (alignright ? res.width : 0);
     var y = res.top;
     var marginLeft = (((alignright ? -1 : 0) - gutterWidth(buf.id)));
 
-    cursor.style.cssText = 'left:' + (x + 'px;' +
-            //(buf.focusStatusBar ? ('width:' + cursor.offsetWidth - 4 + 'px;' + 'height:' + cursor.offsetHeight - 4 + 'px;') : '') +
-            'margin-left:' + marginLeft + 'ch') + ';' +
-        'top:' + y + 'px;' + colorStyle();
+    cursor.style.cssText =
+        'left:' + x + 'px;' +
+        'margin-left:' + marginLeft + 'ch' + ';' +
+        'top:' + y + 'px;' +
+        colorStyle();
 
     if (buf.focusStatusBar) {
         cursor.style.width = cursor.offsetWidth - 4 + 'px';

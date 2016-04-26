@@ -102,6 +102,10 @@ html,
     z-index: 2;
 }
 
+.content {
+    padding-left: 1ch;
+}
+
 .line-num {
     text-align: right;
     line-height: 1.2em;
