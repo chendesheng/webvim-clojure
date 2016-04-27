@@ -90,6 +90,24 @@
     ;(println line)
     (or (re-subs #"^\s*" line) "")))
 
+(defn- drop-while-count [pred coll cnt]
+  (let [s (seq coll)]
+    (if (and s (pred (first s)))
+      (recur pred (rest s) (dec cnt))
+      [s cnt])))
+
+(defn- seq-brackets [s pos]
+  (let [[[bracket & s] pos] (drop-while-count (complement #{\( \) \[ \] \{ \}}) s pos)]
+    (if (some? bracket)
+      (loop [[ch & rs :as s] s
+             cnt 0]
+        (if (= ch \\)
+          (recur rs (inc cnt))
+          (concat
+            (if (even? cnt)
+              [[pos bracket]])
+            (lazy-seq (seq-brackets s (- pos cnt 1)))))))))
+
 ;find outer scope and align by start bracket
 (defn clojure-indent
   "Indent by bracket parsing"
@@ -111,7 +129,7 @@
                                     (reduced nil)
                                     stack))
                                 (conj stack ch))))) nil 
-                        (pos-re-seq- r (dec a) #"(?<!(?<!(?<!\\)\\)\\)(\(|\[|\{|\}|\]|\))"))
+                        (seq-brackets (rope-rseq r (dec a)) (dec a)))
                   mpos (if (number? tmp) tmp nil)]
               (if (nil? mpos)
                 ""

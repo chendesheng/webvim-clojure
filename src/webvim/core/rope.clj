@@ -354,3 +354,14 @@
   [r ranges]
   (map #(subr r %) ranges))
 
+(defn rope-seq
+  ([r pos]
+    (-> r (.iterator pos) iterator-seq))
+  ([r]
+    (-> r .iterator iterator-seq)))
+
+(defn rope-rseq
+  ([r pos]
+    (-> r (.reverseIterator (- (count r) pos 1)) iterator-seq))
+  ([r]
+    (-> r .reverseIterator iterator-seq)))
