@@ -13,7 +13,7 @@ function hlclojure(hljs) {
             'quot neg? pos? delay? symbol? keyword? true? false? integer? empty? coll? list? ' +
             'set? ifn? fn? associative? sequential? sorted? counted? reversible? number? decimal? ' +
             'class? distinct? isa? float? rational? reduced? ratio? odd? even? char? seq? vector? ' +
-            'string? map? nil? contains? zero? instance? not-every? not-any? libspec? -> ->> .. . ' +
+            'string? map? nil? some? contains? zero? instance? not-every? not-any? libspec? -> ->> .. . ' +
             'inc compare do dotimes mapcat take remove take-while drop letfn drop-last take-last ' +
             'drop-while while intern condp case reduced cycle split-at split-with repeat replicate ' +
             'iterate range merge zipmap declare line-seq sort comparator sort-by dorun doall nthnext ' +
@@ -98,7 +98,7 @@ function hlclojure(hljs) {
         starts: BODY
     };
     var CHAR_LITERAL = {
-        begin: /\\(newline|tab|space|return|formfeed|backspace|u[a-fA-F\d]{4}|o[0-7]{3}|[\w\(\)\[\]\{\}`~!@#$%^&*-=+])/,
+        begin: /\\(newline|tab|space|return|formfeed|backspace|u[a-fA-F\d]{4}|o[0-7]{3}|[<>\\\w\(\)\[\]\{\}`~!@#$%^&*-=+])/,
         className: 'literal'
     };
     var BLOCK_COMMENT = {
