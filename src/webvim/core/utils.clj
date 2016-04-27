@@ -18,7 +18,6 @@
 
 ;https://en.wikipedia.org/wiki/UTF-16#U.2BD800_to_U.2BDFFF
 (defn surrogate? [ch]
-  (println "ch:" (int ch))
   (<= 0xD800 (int ch) 0xDFFF))
 
 (defn keycode-to-char [keycode]
