@@ -106,17 +106,18 @@
                             (if (and (contains? left-brackets ch) (empty? stack))
                               (reduced a)
                               (if (= (peek stack) (all-brackets ch))
-                                (pop stack)
+                                (let [stack (pop stack)]
+                                  (if (and (empty? stack) (= (char-at r (dec a)) \newline))
+                                    (reduced nil)
+                                    stack))
                                 (conj stack ch))))) nil 
-                        (pos-re-seq- r (dec a) #"(?<!\\)(\(|\[|\{|\}|\]|\))"))
+                        (pos-re-seq- r (dec a) #"(?<!(?<!(?<!\\)\\)\\)(\(|\[|\{|\}|\]|\))"))
                   mpos (if (number? tmp) tmp nil)]
               (if (nil? mpos)
                 ""
-                (let [ch (char-at r mpos)
-                      [a b] (pos-line r mpos)
-                      cnt (- mpos a)]
+                (let [[a b] (pos-line r mpos)]
                   (repeat-chars 
-                    (+ (- mpos a) 
+                    (+ (- mpos a)
                        (clojure-get-indent (subr r mpos b))) \space)))))))
 
 (defmethod indent-pos ::clojure
@@ -143,14 +144,14 @@
 (defn- format-buffer [buf]
   ;use temp file
   (if (buf :dirty)
-      (let [res (time (cljfmt-diff (-> buf :str str) (buf :name)))]
+    (let [res (time (cljfmt-diff (-> buf :str str) (buf :name)))]
         ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
-        (if (-> res :err empty?) 
-          (-> buf
-              (apply-line-changes
-                (time (parse-diff (str (res :out)))))
-              save-undo)
-          (-> res :err str Throwable. throw))) ;use old buf if formatter fails
+      (if (-> res :err empty?) 
+        (-> buf
+            (apply-line-changes
+              (time (parse-diff (str (res :out)))))
+            save-undo)
+        (-> res :err str Throwable. throw))) ;use old buf if formatter fails
     buf))
 
 (listen :normal-mode-keymap
