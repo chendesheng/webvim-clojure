@@ -25,7 +25,7 @@
 
 
 (defn- save-current [history buf]
-  (println "save-current:" (history :current))
+  ;(println "save-current:" (history :current))
   (if (-> history :current nil?)
     (assoc history :current (select-keys
                               (-> buf :line-buffer)
