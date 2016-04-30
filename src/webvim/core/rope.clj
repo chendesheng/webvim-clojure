@@ -77,7 +77,7 @@
 (defn buf-set-pos [buf newpos]
   (let [r (buf :str)
         pos (buf :pos)
-        newpos (fix-utf16-pos r (min newpos (-> r .length dec)))]
+        newpos (fix-utf16-pos r (bound-range newpos 0 (-> r .length dec)))]
     (cond 
       (zero? newpos)
       (assoc buf :y 0 :pos 0)
