@@ -36,7 +36,7 @@
 
 (defn set-inclusive
   ([buf inclusive?]
-       (update buf :context assoc :inclusive? inclusive?))
+    (update buf :context assoc :inclusive? inclusive?))
   ([buf]
     (set-inclusive buf true)))
 
@@ -66,24 +66,24 @@
 
 (defn make-operator
   ([fn-init fn-operator]
-           (fn [buf keycode]
-             (log (-> buf :context :inclusive?))
-             (let [buf (-> buf
-                           fn-init
-                           set-default-range
-                           (set-default-inclusive keycode)
-                           (set-default-linewise keycode))
-                   rg (get-operator-range buf)
-                   fn-set-pos (if (-> buf :context :linewise?)
-                                line-start identity)]
-               (log "make-operator")
-               (log [rg (-> buf :context :linewise?)])
-               (-> buf
+    (fn [buf keycode]
+      (log (-> buf :context :inclusive?))
+      (let [buf (-> buf
+                    fn-init
+                    set-default-range
+                    (set-default-inclusive keycode)
+                    (set-default-linewise keycode))
+            rg (get-operator-range buf)
+            fn-set-pos (if (-> buf :context :linewise?)
+                         line-start identity)]
+        (log "make-operator")
+        (log [rg (-> buf :context :linewise?)])
+        (-> buf
             ;This will make cursor position in right place after undo/redo. 
-                   (buf-set-pos (first rg)) 
-                   (fn-operator rg)
-                   fn-set-pos
-                   (update :context dissoc :linewise? :inclusive? :range)))))
+            (buf-set-pos (first rg)) 
+            (fn-operator rg)
+            fn-set-pos
+            (update :context dissoc :linewise? :inclusive? :range)))))
   ([f]
     (make-operator identity f)))
 
@@ -96,7 +96,7 @@
 
 (defn set-line-end [buf]
   (-> buf
-      (set-range (range-line-end buf))
+      (set-range (range-line-end buf (buf :pos)))
       (set-inclusive false)))
 
 (defn set-current-line [buf]
