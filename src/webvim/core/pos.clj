@@ -135,7 +135,7 @@
 
 (defn buf-end [buf]
   (-> buf
-      (assoc :y (-> buf :linescnt dec))
+      (assoc :y (-> buf buf-total-lines dec))
       (assoc :pos (-> buf :str count dec))))
 
 

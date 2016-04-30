@@ -90,9 +90,10 @@
                  (-> pos (- szfrom) (+ szto))
                  :else
                  (+ a szto))]
-    (-> buf
-        (buf-set-pos newpos)
-        (assoc :linescnt (total-lines lidx)))))
+    (buf-set-pos buf newpos)))
+
+(defn buf-total-lines [buf]
+  (-> buf :lineindex total-lines))
 
 (defn- buf-apply-change [buf c]
   (let [r (buf :str)

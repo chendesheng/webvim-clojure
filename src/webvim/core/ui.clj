@@ -86,7 +86,7 @@
       (dissoc :expandtab :CRLF? :history :context :last-cursor 
               :language :filepath :x :y :cursor :keymap 
               :normal-mode-keymap :insert-mode-keymap :ex-mode-keymap
-              :pending-undo :saved-undo :registers :linescnt :keys
+              :pending-undo :saved-undo :registers :keys
               :save-point :ext :last-visual :nextid :dot-repeat-keys
               :last-indents :mod-time :autocompl-provider :lineindex)
       (dissoc-empty [:changes])

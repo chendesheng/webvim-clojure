@@ -2,6 +2,7 @@
   (:require [webvim.core.utils :refer [deep-merge bound-range negzero]]
             [webvim.scrolling :refer [scroll-to viewport-center viewport-inc-lines]]
             [webvim.core.ui :refer [viewport]]
+            [webvim.core.rope :refer [buf-total-lines]]
             [webvim.core.line :refer [lines-row pos-line-first pos-line-last]]
             [webvim.keymap.compile :refer [wrap-keycode]]))
 
@@ -36,7 +37,7 @@
           scroll-top (buf :scroll-top)
           row (-> buf :y)
           vrow (- row scroll-top)
-          newrow (bound-range (+ row d) 0 (buf :linescnt))
+          newrow (bound-range (+ row d) 0 (buf-total-lines buf))
           newst (-> newrow (- vrow) negzero)]
       (-> buf
           (assoc :scroll-top newst)

@@ -126,7 +126,6 @@
                     (or (re-find #"\.\w+$" (or bufname "")) ""))
              :str (rope txtLF)
              :lineindex lineindex
-             :linescnt (total-lines lineindex)
              :pos 0  ;offset from first char
              :x 0    ;saved x for up down motion
              :y 0    ;num of line breaks from first char
@@ -231,8 +230,8 @@
 
 (defn buf-pos-info [buf]
   (let [{y :y
-         x :x
-         linescnt :linescnt} buf
+         x :x} buf
+        linescnt (buf-total-lines buf)
         percent (-> y inc (* 100) (/ linescnt) int)]
     (assoc buf :message (format "\"%s\" line %d of %d --%d%%-- col %s" 
                                 (printable-filepath buf)
@@ -262,7 +261,7 @@
     (spit f s)
     (-> buf
         set-save-point
-        (assoc :message (format "\"%s\" %dL, %dC written" (shorten-path f) (buf :linescnt) (count s))))))
+        (assoc :message (format "\"%s\" %dL, %dC written" (shorten-path f) (buf-total-lines buf) (count s))))))
 
 ;TODO make write atomic
 ;TODO check disk file change
