@@ -1,5 +1,5 @@
 (ns webvim.core.rope
-  (:require [webvim.core.lineindex :refer [update-lineindex pos-linenum]])
+  (:require [webvim.core.lineindex :refer [update-lineindex pos-linenum total-lines]])
   (:use webvim.core.event
         webvim.core.utils
         webvim.core.parallel-universe)
@@ -52,19 +52,6 @@
         (if (neg? i) n
             (recur (subr r (+ i cnt) (.length r)) (inc n)))))))
 
-(defn rope-size
-  "How many chars and lines rope contains"
-  [r]
-  {:dpos (.length r)
-   :dy (count-<br> r)})
-
-(defn- rope-op-size
-  [r op {dpos :dpos dy :dy}]
-  ;(println r)
-  (-> r
-      (update :pos op dpos)
-      (update :y op dy)))
-
 (defn- fix-utf16-pos [r pos]
   (let [ch (.charAt r pos)]
     (if (or (variation-selector? ch)
@@ -93,29 +80,28 @@
   [buf a from to]
   (let [pos (buf :pos)
         b (+ a (count from))
-        szfrom (rope-size from)
-        szto (rope-size to)
-        t1 (cond 
-             (< pos a)
-             buf
-             (>= pos b)
-             (-> buf
-                 (rope-op-size - szfrom)
-                 (rope-op-size + szto))
-             :else
-             (-> buf
-                 (rope-op-size - (rope-size (subr from 0 (- pos a))))
-                 (rope-op-size + szto)))]
-    (update t1 :linescnt #(-> % (- (szfrom :dy)) (+ (szto :dy))))))
+        szfrom (count from)
+        szto (count to)
+        lidx (buf :lineindex)
+        newpos (cond 
+                 (< pos a)
+                 pos
+                 (>= pos b)
+                 (-> pos (- szfrom) (+ szto))
+                 :else
+                 (+ a szto))]
+    (-> buf
+        (buf-set-pos newpos)
+        (assoc :linescnt (total-lines lidx)))))
 
 (defn- buf-apply-change [buf c]
   (let [r (buf :str)
         [newr rc] (apply-change r c)]
     [(-> buf
+         (update :lineindex update-lineindex c)
          ;keep pos after change
          (shift-pos (c :pos) (rc :to) (c :to))
          (assoc :str newr)
-         (update :lineindex update-lineindex c)
          (fire-event buf c :change-buffer)) rc]))
 
 (defn- buf-apply-changes [buf changes]
