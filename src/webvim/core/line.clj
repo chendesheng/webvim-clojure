@@ -1,5 +1,6 @@
 ;first half part is about "one line" second half part is about "lines"
 (ns webvim.core.line
+  (:require [webvim.core.lineindex :refer [range-by-line]])
   (:use clojure.pprint
         webvim.core.rope
         webvim.core.utils
@@ -82,9 +83,9 @@
     :else buf))
 
 (defn lines-row [buf n]
-  (let [y (buf :y)
-        dy (- n y)]
-    (lines-n buf dy)))
+  (buf-move buf
+            (fn [r pos]
+              (first (range-by-line (buf :lineindex) n)))))
 
 (defn make-linewise-range [[a b] buf]
   ;(println "make-linewise-range:" a b)

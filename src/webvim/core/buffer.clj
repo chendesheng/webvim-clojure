@@ -3,6 +3,7 @@
             [clojure.java.io :as io]
             [clojure.string :as string]
             [webvim.core.ui :refer [send-buf!]]
+            [webvim.core.lineindex :refer [create-lineindex total-lines]]
             [webvim.core.register :refer [registers-put!]]
             [webvim.core.editor :refer [*window*]])
   (:use clojure.pprint
@@ -106,20 +107,26 @@
 (defn set-mod-time [buf]
   (assoc buf :mod-time (mod-time buf)))
 
+;make sure last line ends with line break
+(defn- ensure-ends-with-newline [s]
+  (if (-> s last (= \newline))
+    s
+    (str s \newline)))
+
 (defn- create-buf [bufname filepath txt]
-  (let [txtLF (.replace txt "\r\n" "\n") ;always use LF in memory
-        ;make sure last line ends with line break
-        r (if (.endsWith txtLF "\n")
-            (rope txtLF)
-            (.append (rope txtLF) \newline))
+  (let [txtLF (-> txt
+                  (.replace "\r\n" "\n")
+                  ensure-ends-with-newline) ;always use LF in memory
+        lineindex (create-lineindex txtLF)
         buf {:id (swap! gen-buf-id inc)
              :name bufname
              ;= nil if it is a special buffer like [New File] or [Quick Fix]
              :filepath filepath 
              :ext (string/lower-case 
                     (or (re-find #"\.\w+$" (or bufname "")) ""))
-             :str r
-             :linescnt (count-<br> r)
+             :str (rope txtLF)
+             :lineindex lineindex
+             :linescnt (total-lines lineindex)
              :pos 0  ;offset from first char
              :x 0    ;saved x for up down motion
              :y 0    ;num of line breaks from first char

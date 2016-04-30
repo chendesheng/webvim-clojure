@@ -1,4 +1,5 @@
 (ns webvim.core.rope
+  (:require [webvim.core.lineindex :refer [update-lineindex pos-linenum]])
   (:use webvim.core.event
         webvim.core.utils
         webvim.core.parallel-universe)
@@ -79,14 +80,13 @@
         newpos (fix-utf16-pos r (min newpos (-> r .length dec)))]
     (cond 
       (zero? newpos)
-      (-> buf 
-          (assoc :y 0) 
-          (assoc :pos 0))
-      (> newpos pos)
-      (rope-op-size buf + (rope-size (subr r pos newpos)))
-      (< newpos pos)
-      (rope-op-size buf - (rope-size (subr r newpos pos)))
-      :else buf)))
+      (assoc buf :y 0 :pos 0)
+      (= pos newpos)
+      buf
+      :else
+      (assoc buf
+             :y (-> buf :lineindex (pos-linenum newpos))
+             :pos newpos))))
 
 (defn- shift-pos
   ;only need (buf :pos) and (buf :y)
@@ -115,6 +115,7 @@
          ;keep pos after change
          (shift-pos (c :pos) (rc :to) (c :to))
          (assoc :str newr)
+         (update :lineindex update-lineindex c)
          (fire-event buf c :change-buffer)) rc]))
 
 (defn- buf-apply-changes [buf changes]

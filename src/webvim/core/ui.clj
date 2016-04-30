@@ -88,7 +88,7 @@
               :normal-mode-keymap :insert-mode-keymap :ex-mode-keymap
               :pending-undo :saved-undo :registers :linescnt :keys
               :save-point :ext :last-visual :nextid :dot-repeat-keys
-              :last-indents :mod-time :autocompl-provider)
+              :last-indents :mod-time :autocompl-provider :lineindex)
       (dissoc-empty [:changes])
       update-visual
       update-mode

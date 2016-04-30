@@ -104,8 +104,11 @@
   (conj (or coll []) x))
 
 (defn crlf? [txt]
-  (let [[m] (re-seq #"\r?\n" txt)]
-    (= (count m) 2)))
+  (-> #"\r?\n"  
+      (re-seq txt)
+      first
+      count
+      (= 2)))
 
 (defn- round-to-tabstop [n tabsize]
   (+ n (- tabsize (rem n tabsize))))
@@ -281,3 +284,10 @@
     (if (= (.charAt s idx) \newline)
       (subs s 0 idx)
       s)))
+
+(defn split-lines [s]
+  (string/split s #"(?<=\n)"))
+
+(defn negzero [n]
+  (if (neg? n) 0 n))
+

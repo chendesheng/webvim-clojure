@@ -1,5 +1,5 @@
 (ns webvim.keymap.scrolling
-  (:require [webvim.core.utils :refer [deep-merge bound-range]]
+  (:require [webvim.core.utils :refer [deep-merge bound-range negzero]]
             [webvim.scrolling :refer [scroll-to viewport-center viewport-inc-lines]]
             [webvim.core.ui :refer [viewport]]
             [webvim.core.line :refer [lines-row pos-line-first pos-line-last]]
@@ -26,9 +26,6 @@
   (if (> i 0)
     (int i)
     (- (int (- i)))))
-
-(defn- negzero [n]
-  (if (neg? n) 0 n))
 
 (defn- cursor-move-viewport
   "Jump cursor by viewport height, deps to window's :viewport"
