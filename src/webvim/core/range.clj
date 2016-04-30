@@ -11,14 +11,16 @@
     [a (inc b)]))
 
 (defn range-linewise
-  ([r a b]
+  ([buf a b]
     (let [[a b] (sort2 a b)]
-      [(pos-line-first r a) (pos-line-last r b)]))
-  ([r [a b]]
-    (range-linewise r a b)))
+      [(pos-line-first buf a)
+       (pos-line-last buf b)]))
+  ([buf [a b]]
+    (range-linewise buf a b)))
 
-(defn range-line-end [r pos]
-  [pos (pos-line-end r pos)])
+(defn range-line-end [buf pos]
+  [pos (pos-line-end buf pos)])
 
-(defn range-current-line [r pos]
-  [(pos-line-start r pos) (pos-line-end r pos)])
+(defn range-current-line [buf pos]
+  [(pos-line-start buf pos)
+   (pos-line-end buf pos)])

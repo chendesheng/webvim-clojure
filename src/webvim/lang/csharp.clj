@@ -13,8 +13,8 @@
       (assoc :expandtab false)))
 
 (defmethod indent-pos ::csharp
-  [lang r pos]
-  (clang-indent r pos))
+  [buf]
+  (clang-indent buf))
 
 (defmethod indent-trigger? ::csharp
   [lang keycode]

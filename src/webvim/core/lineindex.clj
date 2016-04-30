@@ -170,6 +170,9 @@
 (defn total-lines [tree]
   (-> tree make-tree :lines))
 
+(defn total-length [tree]
+  (-> tree make-tree :length))
+
 (def pos-linenum
   (visit-by :length (fn [tree child data]
                       (if (= child :right)

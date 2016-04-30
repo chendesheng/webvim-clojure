@@ -19,7 +19,7 @@
     (filter 
       (fn [rg]
         (-> buf :str (subr rg) rblank? not))
-      (reverse (pos-lines-seq+ (buf :str) a b)))))
+      (reverse (pos-lines-seq+ buf a b)))))
 
 (defn- count-leading-space [line]
   (let [[[a b]] (pos-re-seq+ line 0 #"^ *")]
@@ -34,7 +34,7 @@
           (buf-delete buf a (inc a))
           (buf-delete buf a (+ a (min (buf :tabsize) (count-leading-space line)))))))
     buf
-    (reverse (pos-lines-seq+ (buf :str) a b))))
+    (reverse (pos-lines-seq+ buf a b))))
 
 (defn temp-visual-mode [visual-keymap f]
   (wrap-temp-visual-mode visual-keymap

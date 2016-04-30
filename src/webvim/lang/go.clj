@@ -29,8 +29,8 @@
       (assoc :expandtab false)))
 
 (defmethod indent-pos ::go
-  [lang r pos]
-  (clang-indent r pos))
+  [buf]
+  (clang-indent buf))
 
 (defmethod indent-trigger? ::go
   [lang keycode]

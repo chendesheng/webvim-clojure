@@ -9,19 +9,17 @@
         webvim.core.utils))
 
 (defn auto-indent 
-  [r pos]
-  (let [lines (ranges-to-texts r (pos-lines-seq- r pos))
+  [{r :str :as buf}]
+  (let [lines (ranges-to-texts r (pos-lines-seq- buf))
         line (first lines)
         pline (->> lines rest (filter #(-> % rblank? not)) first)]
     (if (nil? pline) ""
         (or (re-subs #"^\s*" pline) ""))))
 
-(defn- buf-indent-line [buf pos]
-  (let [r (buf :str)
-        ;_ (println (buf :language))
-        indent (indent-pos (buf :language) r pos) 
-        a (pos-line-first r pos)
-        b (pos-line-start r pos)]
+(defn- buf-indent-line [buf]
+  (let [indent (indent-pos buf)
+        a (pos-line-first buf)
+        b (pos-line-start buf)]
     ;(println a b (count indent))
     (buf-replace buf a b indent)))
 
@@ -37,16 +35,17 @@
   ;(log "buf-indent-lines:")
   ;(log [a b])
   (let [r (buf :str)
+        lidx (buf :lineindex)
         lines (filter #(not (rblank? r %)) 
-                      (pos-lines-seq+ r a b))
+                      (pos-lines-seq+ buf a b))
         lang (buf :language)]
     ;(log (vec lines))
     (first (reduce
              (fn [[buf delta] [pos _]]
                (let [r (buf :str)
                      a (+ pos delta)
-                     b (pos-line-start r a)
-                     indent (indent-pos lang r a)]
+                     b (pos-line-start buf a)
+                     indent (indent-pos (assoc buf :pos a))]
                  ;(log [(str r) indent a b (char-at r a) (pos-line-first r pos) (indent-size indent buf) delta])
                  [(buf-replace buf a b indent)
                   ;shift after buffer changed pos
@@ -56,15 +55,15 @@
 
 (defn buf-indent-current-line
   [buf]
-  (let [{r :str pos :pos} buf
-        line-first (pos-line-first r pos)
-        before (line-str r pos)
-        buf (buf-indent-line buf pos)
+  (let [{pos :pos} buf
+        line-first (pos-line-first buf)
+        before (line-str buf)
+        buf (buf-indent-line buf)
         ;line-first will remain in the same row after indent
-        after (line-str (buf :str) line-first)]
+        after (line-str buf line-first)]
     ;press 'o' 'O' then '<esc>' cancel auto indent of cursor line.
     (if (and (= (count before) 1) (> (count after) 1) (rblank? after))
-      (update buf :last-indents conj (pos-line (buf :str) pos))
+      (update buf :last-indents conj (pos-line buf))
       buf)))
 
 (def re-c-statements #"\b(if|while|switch|for|struct)\s*\(.*?\)\s*$")
@@ -106,8 +105,8 @@
 ;       hello(aa==bb)  <- ppline
 ;   }                  <- pline
 ;   aaaa               <- line
-(defn clang-indent [r pos]
-  (let [[head & ranges] (pos-lines-seq- r pos)
+(defn clang-indent [{r :str :as buf}]
+  (let [[head & ranges] (pos-lines-seq- buf)
         line (subr r head)
         lines (filter clang-not-blank-or-comment?
                       (ranges-to-texts r ranges))
@@ -118,7 +117,7 @@
         pbracket? (re-test #"[\{]\s*$" pline)
         bracket? (re-test #"^\s*\}" line)]
     (cond (clang-comment? line)
-          (auto-indent r pos)
+          (auto-indent buf)
           (empty? pline)
           ""
           (and (not pbracket?) bracket?)
@@ -138,8 +137,8 @@
               pindent)))))
 
 (defmethod indent-pos :default
-  [lang r pos]
-  (auto-indent r pos))
+  [buf]
+  (auto-indent buf))
 
 (defmethod indent-trigger? :default
   [lang keycode]

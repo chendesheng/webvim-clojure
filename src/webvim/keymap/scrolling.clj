@@ -6,8 +6,8 @@
             [webvim.keymap.compile :refer [wrap-keycode]]))
 
 (defn- not-first-line [f]
-  (fn [{pos :pos r :str :as buf} keycode]
-    (if (zero? (pos-line-first r pos))
+  (fn [buf keycode]
+    (if (zero? (pos-line-first buf))
       (assoc buf :beep true)
       (f buf keycode))))
 
@@ -15,8 +15,8 @@
   (>= (inc pos) (count r)))
 
 (defn- not-last-line [f]
-  (fn [{pos :pos r :str :as buf} keycode]
-    (if (end? r (pos-line-last r pos))
+  (fn [{r :str :as buf} keycode]
+    (if (end? r (pos-line-last buf))
       (assoc buf :beep true)
       (f buf keycode))))
 

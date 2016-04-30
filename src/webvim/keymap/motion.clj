@@ -125,8 +125,8 @@
       (f buf keycode))))
 
 (defn- not-first-line [f]
-  (fn [{pos :pos r :str :as buf} keycode]
-    (if (zero? (pos-line-first r pos))
+  (fn [buf keycode]
+    (if (zero? (pos-line-first buf))
       (set-motion-fail buf)
       (f buf keycode))))
 
@@ -134,8 +134,8 @@
   (>= (inc pos) (count r)))
 
 (defn- not-last-line [f]
-  (fn [{pos :pos r :str :as buf} keycode]
-    (if (end? r (pos-line-last r pos))
+  (fn [{r :str :as buf} keycode]
+    (if (end? r (pos-line-last buf))
       (set-motion-fail buf)
       (f buf keycode))))
 
@@ -147,8 +147,8 @@
 
 (defn- move-by-char [buf ch forward? inclusive?]
   (let [{r :str pos :pos} buf
-        a (pos-line-first r pos)
-        b (pos-line-end r pos) ;not include \n
+        a (pos-line-first buf)
+        b (pos-line-end buf) ;not include \n
         line (subr r a b)  ;only jump inside current line
         re (if inclusive?
              (-> ch quote-pattern re-pattern)
@@ -350,7 +350,7 @@
   (fn [buf keycode]
     (let [newbuf (f buf keycode)
           newpos (min (newbuf :pos) 
-                      (pos-line-end (buf :str) (buf :pos)))]
+                      (pos-line-end buf))]
       (buf-set-pos newbuf newpos))))
 
 (defn init-motion-keymap-with-objects []

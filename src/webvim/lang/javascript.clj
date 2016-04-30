@@ -21,8 +21,8 @@
       (assoc :expandtab true)))
 
 (defmethod indent-pos ::javascript
-  [lang r pos]
-  (clang-indent r pos))
+  [buf]
+  (clang-indent buf))
 
 (defmethod indent-trigger? ::javascript
   [lang keycode]

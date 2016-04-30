@@ -4,7 +4,6 @@
     [webvim.core.utils :refer [nop]]
     [webvim.core.rope :refer [buf-set-pos buf-subr]]
     [webvim.core.register :refer [registers-yank-to! registers-put!]]
-    [webvim.core.range :refer [range-linewise]]
     [webvim.core.event :refer [listen]]
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.keymap.repeat :refer [wrap-keymap-repeat-prefix]]

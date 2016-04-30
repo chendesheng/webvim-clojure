@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [webvim.core.rope :refer [char-at buf-insert buf-set-pos]]
-    [webvim.core.line :refer [vertical-line-pos pos-line-start pos-line-first pos-line-last line-start]]
+    [webvim.core.line :refer [vertical-line-pos line-start pos-line]]
     [webvim.core.pos :refer [char+]]
     [webvim.core.utils :refer [nop]]
     [webvim.keymap.compile :refer [wrap-keycode]]
@@ -19,15 +19,13 @@
                     buf
                     (reverse (map
                                vector
-                               (vertical-line-pos r (if append? (inc pos) pos) h tabsize true)
+                               (vertical-line-pos buf (if append? (inc pos) pos) h tabsize true)
                                lines)))]
     (buf-set-pos buf newpos)))
 
 (defn- put-linewise [buf s append?]
-  (let [{r :str pos :pos} buf
-        newpos (if append?
-                 (pos-line-last r pos)
-                 (pos-line-first r pos))]
+  (let [[a b] (pos-line buf)
+        newpos (if append? b a)]
     (-> buf
         (buf-insert newpos s)
         (buf-set-pos newpos)

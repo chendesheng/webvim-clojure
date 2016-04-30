@@ -69,14 +69,14 @@
             (if (nil? a) buf
                 (set-range buf (if around? [a b] [(inc a) (dec b)]))))))))
 
-(defn- xml-tag-range [r pos]
+(defn- xml-tag-range [{r :str pos :pos :as buf}]
   (let [re #"<(?!\!--)/?([^<>\s]+)[^<>]*(?<!/)>"
         open-tag? (fn [a] (not= (char-at r (inc a)) \/))
         close-tags (filter (fn [[a b]]
                              (if (and (<= a pos) (< pos b))
                                (not (open-tag? a))
                                (< pos b)))
-                           (pos-re-seq+ r (pos-line-first r pos) re))
+                           (pos-re-seq+ r (pos-line-first buf) re))
         same-tag? (fn [[sa sb] [ea eb]]
                     (println (str (subr r sa sb)))
                     (println (str (subr r ea eb)))
@@ -109,7 +109,7 @@
 
 (defn- xml-tag-range-handler [around?]
   (fn [buf keycode]
-    (let [[[sa sb] [ea eb] :as matched] (xml-tag-range (buf :str) (buf :pos))]
+    (let [[[sa sb] [ea eb] :as matched] (xml-tag-range buf)]
       (println matched)
       (if (nil? matched) buf
           (set-range buf (if around?
@@ -125,7 +125,7 @@
     [a b1]))
 
 (defn- current-range [buf word-chars not-word-chars around?]
-  (let [[line-first line-last] (pos-line (buf :str) (buf :pos))
+  (let [[line-first line-last] (pos-line buf)
         line (subr (buf :str) line-first line-last)
         pos (- (buf :pos) line-first)  
         re-start (re-pattern (str "([" not-word-chars "](?=[" word-chars "]))|((?<=[" not-word-chars "])$)"))

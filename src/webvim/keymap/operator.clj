@@ -7,8 +7,7 @@
     [webvim.keymap.compile :refer [wrap-key]]
     [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete subr char-at]]
     [webvim.core.line :refer [make-linewise-range expand-block-ranges
-                              pos-line-last pos-line pos-line-end
-                              pos-line-start line-start]]
+                              pos-line-last line-start]]
     [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
     [webvim.core.range :refer [range-inclusive range-exclusive range-linewise range-line-end range-current-line]]
     [webvim.core.utils :refer [make-range sort2 nop nilor surrogate? variation-selector?]]))
@@ -37,7 +36,7 @@
 
 (defn set-inclusive
   ([buf inclusive?]
-    (update buf :context assoc :inclusive? inclusive?))
+       (update buf :context assoc :inclusive? inclusive?))
   ([buf]
     (set-inclusive buf true)))
 
@@ -55,37 +54,36 @@
   (update-in buf [:context :linewise?] #(nilor % (linewise? keycode))))
 
 ;return range for operator, always characterwise and exclusive
-(defn- get-operator-range [{r :str
-                            {linewise? :linewise?
+(defn- get-operator-range [{{linewise? :linewise?
                              inclusive? :inclusive?
                              rg :range} :context :as buf}]
   (pprint {:linewise? linewise?
            :inclusive? inclusive?
            :rang rg})
   (if linewise?
-    (range-linewise r rg)
+    (range-linewise buf rg)
     (if inclusive? (range-exclusive rg) rg)))
 
 (defn make-operator
   ([fn-init fn-operator]
-    (fn [buf keycode]
-      (log (-> buf :context :inclusive?))
-      (let [buf (-> buf
-                    fn-init
-                    set-default-range
-                    (set-default-inclusive keycode)
-                    (set-default-linewise keycode))
-            rg (get-operator-range buf)
-            fn-set-pos (if (-> buf :context :linewise?)
-                         line-start identity)]
-        (log "make-operator")
-        (log [rg (-> buf :context :linewise?)])
-        (-> buf
+           (fn [buf keycode]
+             (log (-> buf :context :inclusive?))
+             (let [buf (-> buf
+                           fn-init
+                           set-default-range
+                           (set-default-inclusive keycode)
+                           (set-default-linewise keycode))
+                   rg (get-operator-range buf)
+                   fn-set-pos (if (-> buf :context :linewise?)
+                                line-start identity)]
+               (log "make-operator")
+               (log [rg (-> buf :context :linewise?)])
+               (-> buf
             ;This will make cursor position in right place after undo/redo. 
-            (buf-set-pos (first rg)) 
-            (fn-operator rg)
-            fn-set-pos
-            (update :context dissoc :linewise? :inclusive? :range)))))
+                   (buf-set-pos (first rg)) 
+                   (fn-operator rg)
+                   fn-set-pos
+                   (update :context dissoc :linewise? :inclusive? :range)))))
   ([f]
     (make-operator identity f)))
 
@@ -98,12 +96,12 @@
 
 (defn set-line-end [buf]
   (-> buf
-      (set-range (range-line-end (buf :str) (buf :pos)))
+      (set-range (range-line-end buf))
       (set-inclusive false)))
 
 (defn set-current-line [buf]
   (-> buf
-      (set-range (range-current-line (buf :str) (buf :pos)))
+      (set-range (range-current-line buf))
       (set-linewise false)
       (set-inclusive false)))
 
@@ -124,7 +122,7 @@
   (fn [{r :str pos :pos :as buf} keycode]
     (-> buf
         set-linewise
-        (f (range-linewise r pos pos))
+        (f (range-linewise buf pos pos))
         (update :context dissoc :linewise?))))
 
 (defn not-empty-range [ranges]
@@ -144,19 +142,19 @@
 (defn set-visual-ranges [{r :str
                           {tp :type rg :range} :visual
                           :as buf}]
-  (println "set-visual-ranges:" (range-linewise r rg))
+  (println "set-visual-ranges:" (range-linewise buf rg))
   ;(.printStackTrace (Exception.))
   (assoc-in buf [:visual :ranges]
             (condp = tp
               :visual-range (list (sort2 rg))
-              :visual-line (list (range-linewise r rg))
-              :visual-block (into '() (expand-block-ranges r rg (buf :tabsize)))
+              :visual-line (list (range-linewise buf rg))
+              :visual-block (into '() (expand-block-ranges buf rg (buf :tabsize)))
               nil)))
 
 (defn visual-block-lines [buf]
   (let [buf (set-visual-ranges buf)]
     (reduce (fn [items [a b]]
-              (let [eol (dec (pos-line-last (buf :str) a))
+              (let [eol (dec (pos-line-last buf a))
                     b (min eol (inc b))]
                 (conj items [(-> buf :str (subr a b)) a b]))) [] (-> buf :visual :ranges))))
 

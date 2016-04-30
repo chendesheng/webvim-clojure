@@ -82,8 +82,8 @@
         (-> w count (+ 2))))
     :else 2))
 
-(defn- comment-indent [r pos]
-  (let [lines (ranges-to-texts r (pos-lines-seq+ r pos))
+(defn- comment-indent [{r :str :as buf}]
+  (let [lines (ranges-to-texts r (pos-lines-seq+ buf))
         line (or (some (fn [line]
                          (if (clojure-not-blank-or-comment? line) line))
                        lines) (first lines))]
@@ -111,13 +111,13 @@
 ;find outer scope and align by start bracket
 (defn clojure-indent
   "Indent by bracket parsing"
-  [r pos]
-  (let [[a b] (pos-line r pos)]
+  [{r :str :as buf}]
+  (let [[a b] (pos-line buf)]
     (cond 
       (zero? a)
       ""
       (clojure-comment? (subr r a b))
-      (comment-indent r pos)
+      (comment-indent buf)
       :else (let [tmp (reduce 
                         (fn [stack [a _]]
                           (let [ch (char-at r a)]
@@ -133,14 +133,14 @@
                   mpos (if (number? tmp) tmp nil)]
               (if (nil? mpos)
                 ""
-                (let [[a b] (pos-line r mpos)]
+                (let [[a b] (pos-line buf mpos)]
                   (repeat-chars 
                     (+ (- mpos a)
                        (clojure-get-indent (subr r mpos b))) \space)))))))
 
 (defmethod indent-pos ::clojure
-  [lang r pos]
-  (clojure-indent r pos))
+  [buf]
+  (clojure-indent buf))
 
 (defn- cljfmt-diff [s name]
   (println "cljfmt-diff")

@@ -124,7 +124,7 @@
 
 (defn apply-line-changes [buf changes]
   ;(pprint changes)
-  (let [lines (pos-lines-seq+ (buf :str))
+  (let [lines (pos-lines-seq+ buf 0)
         r (buf :str)
         cnt (count r)]
 ;    (pprint (count (buf :str)))

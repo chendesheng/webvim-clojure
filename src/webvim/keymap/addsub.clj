@@ -22,7 +22,7 @@
           f (fn [n] (f n repeat-times))
           pos (buf :pos)
           r (buf :str)
-          [line-start line-end] (pos-line r pos)
+          [line-start line-end] (pos-line buf)
           line (subr r line-start line-end)
           [a b] (first
                   (filter

@@ -18,8 +18,8 @@
       (assoc :expandtab true)))
 
 (defmethod indent-pos ::css
-  [lang r pos]
-  (clang-indent r pos))
+  [buf]
+  (clang-indent buf))
 
 (defmethod indent-trigger? ::css
   [lang keycode]

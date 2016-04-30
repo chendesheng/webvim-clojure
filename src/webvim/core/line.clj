@@ -1,80 +1,100 @@
 ;first half part is about "one line" second half part is about "lines"
 (ns webvim.core.line
-  (:require [webvim.core.lineindex :refer [range-by-line]])
+  (:require [webvim.core.lineindex :refer [range-by-line range-by-pos total-length]])
   (:use clojure.pprint
         webvim.core.rope
         webvim.core.utils
         webvim.core.pos))
 
-(defn pos-line-first [r pos]
-  (or (first (pos-re- r pos #"(?m)^")) 0))
+(defn pos-line
+  ([{lidx :lineindex} pos]
+    (range-by-pos lidx pos))
+  ([{lidx :lineindex pos :pos}]
+    (range-by-pos lidx pos)))
+
+(defn pos-line-first
+  ([{lidx :lineindex} pos] 
+    (first (range-by-pos lidx pos)))
+  ([{pos :pos lidx :lineindex}]
+    (first (range-by-pos lidx pos))))
 ;(pos-line-first (rope "aa\naaa") 4)
 
-(defn pos-line-last [r pos]
-  (or (first (pos-re+ r (inc pos) #"(?m)^")) (count r)))
-
-(defn pos-line [r pos]
-  [(pos-line-first r pos)
-   (pos-line-last r pos)])
+(defn pos-line-last
+  ([{lidx :lineindex} pos] 
+    (last (range-by-pos lidx pos)))
+  ([{pos :pos lidx :lineindex}]
+    (last (range-by-pos lidx pos))))
 
 ;(pos-line (rope "aa\nbb") 1)
 
-(defn pos-line-start [r pos]
-  (let [lf (pos-line-first r pos)]
-    (or (first (pos-re+ r lf #"[\S\n]|((?<=\s)[\S\n])")) 0)))
+(defn pos-line-start 
+  ([buf pos]
+    (let [lf (pos-line-first buf pos)]
+      (or (first (pos-re+ (buf :str) lf #"[\S\n]|((?<=\s)[\S\n])")) 0)))
+  ([{pos :pos :as buf}]
+    (pos-line-start buf pos)))
 
-(defn pos-line-end [r pos]
-  (first (pos-re+ r pos #"(?m)$")))
+(defn pos-line-end
+  ([{r :str} pos]
+    (first (pos-re+ r pos #"(?m)$")))
+  ([buf]
+    (pos-line-end buf (buf :pos))))
 
+(defn buf-move-line 
+  [buf fnmove]
+  (buf-set-pos buf
+               (or (fnmove buf) (buf :pos))))
 
 (defn line-first [buf]
-  (buf-move buf pos-line-first))
+  (buf-move-line buf pos-line-first))
 
 (defn line-last [buf]
-  (buf-move buf pos-line-last))
+  (buf-move-line buf pos-line-last))
 
 (defn line-start [buf]
-  (buf-move buf pos-line-start))
+  (buf-move-line buf pos-line-start))
 
 (defn line-end [buf]
-  (buf-move buf pos-line-end))
+  (buf-move-line buf pos-line-end))
 
 ;(line-end {:x 0 :y 0 :str (rope "aaa") :pos 0})
 
 (defn pos-lines-seq-
   "return a lazy seq, line by line start at pos back to top"
-  [r pos]
-  (let [rg (pos-line r pos)
-        [a _] rg]
-    (if (pos? a)
-      (cons rg (lazy-seq (pos-lines-seq- r (dec a))))
-      (list rg))))
+  ([buf pos]
+    (let [rg (pos-line buf pos)
+          [a _] rg]
+      (if (pos? a)
+        (cons rg (lazy-seq (pos-lines-seq- buf (dec a))))
+        (list rg))))
+  ([{pos :pos :as buf}]
+    (pos-lines-seq- buf pos)))
 
 (defn pos-lines-seq+
   "return a lazy seq, line by line start at pos until bottom"
-  ([r pos]
-    (let [[_ b :as rg] (pos-line r pos)]
-      (if (< b (count r))
-        (cons rg (lazy-seq (pos-lines-seq+ r b)))
+  ([{lidx :lineindex :as buf} pos]
+    (let [[_ b :as rg] (pos-line buf pos)]
+      (if (< b (total-length lidx))
+        (cons rg (lazy-seq (pos-lines-seq+ buf b)))
         (list rg))))
-  ([r] (pos-lines-seq+ r 0))
-  ([r a b] ;exclusive
+  ([buf] (pos-lines-seq+ buf (buf :pos)))
+  ([buf a b] ;exclusive
     (take-while
       #(-> % first (< b))
-      (pos-lines-seq+ r a))))
+      (pos-lines-seq+ buf a))))
 
 ;(pos-lines-seq+ (rope "aa\nbb\ncc\n\n") 0 1)
 
 (defn- lines-move [buf n fndir]
   (let [vx (buf :x)]
-    (buf-move buf
-              (fn [r pos]
-                (let [rg (nth (fndir r pos) n nil)]
-                  (if (nil? rg) pos
-                      (let [[a b] rg
-                            s (subr r a b)
-                            cx (visualx-to-charx s vx (buf :tabsize))]  
-                        (+ a (bound-range cx 0 (- b a 1))))))))))
+    (buf-move-line buf
+                   (fn [{r :str pos :pos :as buf}]
+                     (let [rg (nth (fndir buf pos) n nil)]
+                       (if (nil? rg) pos
+                           (let [[a b] rg
+                                 s (subr r a b)
+                                 cx (visualx-to-charx s vx (buf :tabsize))]  
+                             (+ a (bound-range cx 0 (- b a 1))))))))))
 
 (defn lines-n [buf n]
   (cond 
@@ -83,22 +103,22 @@
     :else buf))
 
 (defn lines-row [buf n]
-  (buf-move buf
-            (fn [r pos]
-              (first (range-by-line (buf :lineindex) n)))))
+  (buf-move-line buf
+                 (fn [{lidx :lineindex}]
+                   (first (range-by-line lidx n)))))
 
 (defn make-linewise-range [[a b] buf]
   ;(println "make-linewise-range:" a b)
-  (let [r (buf :str)
-        [a b] (sort2 a b)]
-    [(pos-line-first r a) (pos-line-last r b)]))
+  (let [[a b] (sort2 a b)]
+    [(pos-line-first buf a) (pos-line-last buf b)]))
 
 ;get vertical line start at pos up/down h lines
-(defn vertical-line-pos [r pos h tabsize skip-hole?]
-  (let [lines (if (pos? h)
-                (take h (pos-lines-seq+ r pos))
-                (take (- h) (pos-lines-seq- r pos)))
-        a (pos-line-first r pos)
+(defn vertical-line-pos [buf pos h tabsize skip-hole?]
+  (let [r (buf :str)
+        lines (if (pos? h)
+                (take h (pos-lines-seq+ buf pos))
+                (take (- h) (pos-lines-seq- buf pos)))
+        a (pos-line-first buf pos)
         vx (visual-size (str (subr r a pos)) tabsize)]
     ;(println pos a vx)
     (map (fn [[a b]]
@@ -121,21 +141,21 @@
        (- b 2) b)])) ;if b < a select empty; both sides inclusive; length=b-a+1
 
 (defn expand-block-ranges
-  ([r a b tabsize]
+  ([buf a b tabsize]
      ;(println "expand-block-ranges" a b)
-    (let [h (inc (-> r (subr (sort2 a b)) count-<br>))]
+    (let [h (inc (-> buf :str (subr (sort2 a b)) count-<br>))]
        ;(println h a b)
       (if (< a b)
         (map sort-column  ;zip
-             (vertical-line-pos r a h tabsize false)
-             (reverse (vertical-line-pos r b (- h) tabsize false))
-             (take h (map second (pos-lines-seq+ r a))))
+             (vertical-line-pos buf a h tabsize false)
+             (reverse (vertical-line-pos buf b (- h) tabsize false))
+             (take h (map second (pos-lines-seq+ buf a))))
         (map sort-column
-             (vertical-line-pos r b h tabsize false)
-             (reverse (vertical-line-pos r a (- h) tabsize false))
-             (take h (map second (pos-lines-seq+ r b)))))))
-  ([r [a b] tabsize]
-    (expand-block-ranges r a b tabsize)))
+             (vertical-line-pos buf b h tabsize false)
+             (reverse (vertical-line-pos buf a (- h) tabsize false))
+             (take h (map second (pos-lines-seq+ buf b)))))))
+  ([buf [a b] tabsize]
+    (expand-block-ranges buf a b tabsize)))
 
 (defn test-expand []
   (vec (expand-block-ranges
@@ -144,8 +164,8 @@
 ;a
 ;hello
 
-(defn first-line [r]
-  (subr r (-> r pos-lines-seq+ first)))
+(defn first-line [{r :str lidx :lineindex}]
+  (subr r (range-by-line lidx 0)))
 
 (defn move-to-line [buf row]
   (-> buf
@@ -156,9 +176,12 @@
   (let [pos (buf :pos)
         r (buf :str)]
     (dec (visual-size 
-           (subr r (pos-line-first r pos) (inc pos)) 
+           (subr r (pos-line-first buf) (inc pos)) 
            (buf :tabsize)))))
 
-(defn line-str [r pos]
-  (subr r (pos-line r pos)))
+(defn line-str
+  ([{r :str :as buf} pos]
+    (subr r (pos-line buf pos)))
+  ([buf]
+    (line-str buf (buf :pos))))
 

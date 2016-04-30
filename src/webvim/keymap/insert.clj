@@ -38,7 +38,7 @@
               (fn [buf [a b]]
                 (let [r (buf :str)
                       [a1 b1] (if (> (count r) a)
-                                (pos-line r a))]
+                                (pos-line buf a))]
                   (if (and (= a1 a)
                            (<= b1 b)
                            (rblank? (subr r a1 b1)))
@@ -76,9 +76,8 @@
                           (temp-normal-mode-keymap normal-mode-keymap)
                           buf)
                 "<c-u>" (fn [buf keycode]
-                          (let [r (buf :str)
-                                pos (buf :pos)
-                                newpos (pos-line-start r pos)]
+                          (let [pos (buf :pos)
+                                newpos (pos-line-start buf)]
                             (if (<= pos newpos)
                               (assoc buf :beep true)
                               (buf-delete buf newpos pos))))

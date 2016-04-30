@@ -37,7 +37,8 @@
         lines (if (= newy lasty) ;repeat contents must not cross line
                 (reverse 
                   (rest
-                    (take (-> dy absolute inc) (pos-lines-seq+ (buf :str) (inc pos)))))
+                    (take (-> dy absolute inc) (pos-lines-seq+ buf
+                                                               (inc pos)))))
                 '())]
     ;(println "lines:" lines)
     (reduce (fn [buf [a b]]
@@ -52,12 +53,13 @@
         buf1 (buf-set-pos buf b)]
     {:y (buf :y) :dy (- (buf1 :y) (buf :y))}))
 
-(defn- repeat-ranges [{{tp :type rg :range} :visual r :str tabsize :tabsize :as buf}]
+(defn- repeat-ranges [{{tp :type rg :range} :visual
+                       tabsize :tabsize :as buf}]
   (cond
     (= tp :visual-line) (rest (map (fn [[a b]] [a b])
-                                   (pos-lines-seq+ r (sort2 rg))))
+                                   (apply pos-lines-seq+ buf (sort2 rg))))
     (= tp :visual-block) (rest (map (fn [[a b]] [a (inc b)])
-                                    (expand-block-ranges r rg tabsize)))
+                                    (expand-block-ranges buf rg tabsize)))
     :else '()))
 
 ;poses must in reverse order
@@ -65,8 +67,8 @@
   (reduce (fn [buf pos]
             (buf-insert buf pos r)) buf poses))
 
-(defn- visual-line-repeat-set-pos [{r :str :as buf} pos append?]
-  (let [[[a b]] (pos-lines-seq+ r pos)
+(defn- visual-line-repeat-set-pos [buf pos append?]
+  (let [[[a b]] (pos-lines-seq+ buf pos)
         newpos (if append? (dec b) a)]
     (buf-set-pos buf newpos)))
 
@@ -110,7 +112,7 @@
         poses (if append?
                 (map (comp inc second) 
                      (filter (fn [[a b]]
-                               (< a (inc b) (pos-line-last (buf :str) a))) ranges))
+                               (< a (inc b) (pos-line-last buf a))) ranges))
                 (map first
                      (not-empty-range ranges)))
         buf (buf-set-pos buf (if append?
@@ -152,7 +154,7 @@
 (defmulti visual-keymap-I (fn [buf keycode] (-> buf :visual :type)))
 (defmethod visual-keymap-I :visual-range [buf keycode]
   (let [fnmotion (fn [buf]
-                   (let [[pos _] (pos-line (buf :str) (-> buf :visual :range sort2 first))]
+                   (let [[pos _] (pos-line buf (-> buf :visual :range sort2 first))]
                      (buf-set-pos buf pos)))]
     ((start-insert-mode fnmotion) buf keycode)))
 (defmethod visual-keymap-I :visual-line [buf keycode]
@@ -164,10 +166,11 @@
 (defmethod visual-keymap-A :visual-range [buf keycode]
   (let [[a b] (-> buf :visual :range)
         r (buf :str)
+        lidx (buf :lineindex)
         fnmotion (if (> a b)
                    char+
                    (fn [buf]
-                     (let [[pos _] (pos-line r (max a b))]
+                     (let [[pos _] (pos-line buf (max a b))]
                        (buf-set-pos buf pos))))]
     ((start-insert-mode fnmotion) buf keycode)))
 (defmethod visual-keymap-A :visual-line [buf keycode]
@@ -177,18 +180,14 @@
 
 (defn- insert-new-line [buf]
   (buf-indent-current-line
-    (let [pos (buf :pos)
-          r (buf :str)
-          b (pos-line-last r pos)]
+    (let [b (pos-line-last buf)]
       (-> buf
           (buf-insert b "\n")
           (buf-set-pos b)))))
 
 (defn- insert-new-line-before [buf]
   (buf-indent-current-line
-    (let [pos (buf :pos)
-          r (buf :str)
-          a (pos-line-first r pos)]
+    (let [a (pos-line-first buf)]
       (if (zero? a)
         (-> buf
             (buf-insert 0 "\n")
