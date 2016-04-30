@@ -97,19 +97,21 @@
   ((update-by :length f) tree pos))
 
 (defn- delete [tree pos len]
-  (let [[a b] (range-by-pos tree pos)
-        tree (update-by-pos tree pos
-                            (fn [tree offset]
-                              (let [todel (-> tree :length (- offset))]
-                                (if (<= todel len)
-                                  {:length offset
-                                   :lines (if (zero? offset) 0 1)}
-                                  {:length (+ offset (- todel len))
-                                   :lines 1}))))
-        dlen (- b pos)]
-    (if (<= len dlen)
-      tree
-      (recur tree pos (- len dlen)))))
+  (if (zero? len)
+    tree
+    (let [[a b] (range-by-pos tree pos)
+          tree (update-by-pos tree pos
+                              (fn [tree offset]
+                                (let [todel (-> tree :length (- offset))]
+                                  (if (<= todel len)
+                                    {:length offset
+                                     :lines (if (zero? offset) 0 1)}
+                                    {:length (+ offset (- todel len))
+                                     :lines 1}))))
+          dlen (- b pos)]
+      (if (<= len dlen)
+        tree
+        (recur tree pos (- len dlen))))))
 
 (comment defn test-delete []
          (comment pprint (delete (update-node
@@ -126,27 +128,29 @@
                          3 3)))
 
 (defn- insert [tree pos s]
-  (loop [tree tree
-         [line & lines] (split-lines s)
-         pos pos]
-    (if (nil? line)
-      tree
-      (let [len (count line)]
-        (recur (update-by-pos tree pos
-                              (fn [tree offset]
-                                (cond
-                                  (-> tree :length (= offset)) ;last line MUST contains \newline
-                                  {:left tree
-                                   :right {:length len :lines 1}
-                                   :priority (rand)}
-                                  (= (last line) \newline)
-                                  {:left {:length (+ offset len) :lines 1}
-                                   :right {:length (-> tree :length (- offset)) :lines 1}
-                                   :priority (rand)}
-                                  :else
-                                  {:lines 1
-                                   :length (-> tree :length (+ len))})))
-               lines (+ pos len))))))
+  (if (empty? s)
+    tree
+    (loop [tree tree
+           [line & lines] (split-lines s)
+           pos pos]
+      (if (nil? line)
+        tree
+        (let [len (count line)]
+          (recur (update-by-pos tree pos
+                                (fn [tree offset]
+                                  (cond
+                                    (-> tree :length (= offset)) ;last line MUST contains \newline
+                                    {:left tree
+                                     :right {:length len :lines 1}
+                                     :priority (rand)}
+                                    (= (last line) \newline)
+                                    {:left {:length (+ offset len) :lines 1}
+                                     :right {:length (-> tree :length (- offset)) :lines 1}
+                                     :priority (rand)}
+                                    :else
+                                    {:lines 1
+                                     :length (-> tree :length (+ len))})))
+                 lines (+ pos len)))))))
 
 (defn test-insert []
   (pprint
@@ -191,10 +195,11 @@
 
 (comment defn test-line-pos-range []
          (range-by-line (update-node
-                           {:left (update-node
-                                    {:left {:length 3 :lines 1}
-                                     :right {:length 2 :lines 1}})
-                            :right {:length 2 :lines 1}}) 3))
+                          {:left (update-node
+                                   {:left {:length 3 :lines 1}
+                                    :right {:length 2 :lines 1}})
+                           :right {:length 2 :lines 1}}) 3))
 
 (defn test-file []
-  (pprint (create-lineindex (str (slurp "/Users/roy/webvim/src/webvim/core/lineindex.clj") \newline))))
+  (comment pprint (create-lineindex (str (slurp "/Users/roy/webvim/src/webvim/core/lineindex.clj") \newline)))
+  (pprint (create-lineindex "")))
