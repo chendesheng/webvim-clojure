@@ -100,14 +100,14 @@
   (let [[a b] (range-by-pos tree pos)
         tree (update-by-pos tree pos
                             (fn [tree offset]
-                              (let [newlen (-> tree :length
-                                               (- offset len)
-                                               negzero)
-                                    newlines (if (zero? newlen) 0 1)]
-                                {:length newlen
-                                 :lines newlines})))
+                              (let [todel (-> tree :length (- offset))]
+                                (if (<= todel len)
+                                  {:length offset
+                                   :lines (if (zero? offset) 0 1)}
+                                  {:length (+ offset (- todel len))
+                                   :lines 1}))))
         dlen (- b pos)]
-    (if (< len dlen)
+    (if (<= len dlen)
       tree
       (recur tree pos (- len dlen)))))
 
