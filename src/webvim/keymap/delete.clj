@@ -39,7 +39,7 @@
                   (buf-delete a b))) buf items)))
 
 (defn delete-range [buf [a b :as rg]]
-  (log ["delete-range" rg])
+  ;(log ["delete-range" rg])
   (let [s (buf-subr buf a b)]
     (registers-delete-to! (-> buf :context :register)
                           {:str s :linewise? (-> buf :context :linewise?)})

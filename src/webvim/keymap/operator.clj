@@ -67,7 +67,7 @@
 (defn make-operator
   ([fn-init fn-operator]
     (fn [buf keycode]
-      (log (-> buf :context :inclusive?))
+      ;(log (-> buf :context :inclusive?))
       (let [buf (-> buf
                     fn-init
                     set-default-range
@@ -76,8 +76,8 @@
             rg (get-operator-range buf)
             fn-set-pos (if (-> buf :context :linewise?)
                          line-start identity)]
-        (log "make-operator")
-        (log [rg (-> buf :context :linewise?)])
+        ;(log "make-operator")
+        ;(log [rg (-> buf :context :linewise?)])
         (-> buf
             ;This will make cursor position in right place after undo/redo. 
             (buf-set-pos (first rg)) 
@@ -88,7 +88,7 @@
     (make-operator identity f)))
 
 (defn set-visual-range [{r :str {rg :range typ :type} :visual :as buf}]
-  (log "set-visual-range")
+  ;(log "set-visual-range")
   (-> buf
       (set-linewise (= typ :visual-line))
       (set-inclusive true)
