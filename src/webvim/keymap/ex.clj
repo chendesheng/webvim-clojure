@@ -185,7 +185,7 @@
 (defn cmd-move-to-line [buf cmd [row]]
 ;(println "row:" row)
   (jump-push buf)
-  (let [row (bound-range (dec (Integer. row)) 0 (-> buf :linescnt dec))]
+  (let [row (bound-range (dec (Integer. row)) 0 (-> buf buf-total-lines dec))]
     (move-to-line buf row)))
 
 (defn cmd-cd [buf execmd args]
