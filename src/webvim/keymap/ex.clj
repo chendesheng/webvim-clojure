@@ -160,7 +160,8 @@
         true)
       (assoc buf :message (str exception)))))
 
-(defn cmd-eval [buf code]
+
+(defn do-eval [buf code]
   (let [{result :result
          output :output
          exception :exception} (eval-refer-ns (get-namespace (buf :filepath)) code)]
@@ -178,6 +179,13 @@
                               (conj lines (str ":" code))) \newline)
             (> cnt 1))))
       (assoc buf :message (str exception)))))
+
+(defn cmd-eval [buf _ [la lb] _]
+  (let [[a _] (line-range buf la)
+        [_ b] (line-range buf lb)
+        code (subr (buf :str) a b)]
+    (println "code:" code)
+    (do-eval buf code)))
 
 (defn cmd-grep [buf _ _ args]
   (exec-shell-commands buf (grep-panel)
@@ -293,15 +301,13 @@
          ["bnext" cmd-bnext]
          ["bprev" cmd-bprev]
          ["bdelete" cmd-bdelete]
-         ;["eval" cmd-eval]
+         ["eval" cmd-eval]
          ["grep" cmd-grep]
          ["find" cmd-find]
          ["history" cmd-history]
          ["register" cmd-register]
          ["jumps" cmd-jumps]
          ["cd" cmd-cd]
-         ;[#"^\d+$" cmd-move-to-line]
-         ;[#"^\(.*$" cmd-eval-shortcut]
          ["ls" cmd-ls]
          ["git" cmd-git]
          ["diff" cmd-diff]]]
@@ -370,7 +376,7 @@
 
 (defn parse-excmd [buf s]
   (let [{ranges :ranges cmd :cmd args :args} (split-ex-cmd s)]
-    {:range (parse-range ranges (-> buf :y inc) (buf-total-lines buf))
+    {:range (parse-range ranges (-> buf :y) (buf-total-lines buf))
      :cmd cmd
      :args (split-arguments args)}))
 
@@ -386,13 +392,13 @@
 (defn- execute [buf cmds]
   (let [s (-> buf :line-buffer :str str .trim)]
     (if (-> s first (= \())
-      (cmd-eval buf s)
+      (do-eval buf s)
       (let [{excmd :cmd rg :range args :args} (parse-excmd buf s)]
         (pprint [excmd rg args])
         (if (nil? excmd)
           (if (empty? rg)
             buf
-            (move-to-line buf (-> rg first dec)))
+            (move-to-line buf (first rg)))
           (let [handlers (filter seq?
                                  (map (fn [[cmd handler]]
                                         ;(println cmd)
