@@ -184,7 +184,7 @@
   (let [[a _] (line-range buf la)
         [_ b] (line-range buf lb)
         code (subr (buf :str) a b)]
-    (println "code:" code)
+    ;(println "code:" code)
     (do-eval buf code)))
 
 (defn cmd-grep [buf _ _ args]
@@ -375,8 +375,9 @@
         (recur restrg state (update res state next-res rg))))))
 
 (defn parse-excmd [buf s]
-  (let [{ranges :ranges cmd :cmd args :args} (split-ex-cmd s)]
-    {:range (parse-range ranges (-> buf :y) (buf-total-lines buf))
+  (let [{ranges :ranges cmd :cmd args :args} (split-ex-cmd s)
+        [a b] (parse-range ranges (-> buf :y inc) (buf-total-lines buf))]
+    {:range [(dec a) (dec b)] ;start from zero
      :cmd cmd
      :args (split-arguments args)}))
 
