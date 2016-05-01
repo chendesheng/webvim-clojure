@@ -107,12 +107,6 @@
 (defn set-mod-time [buf]
   (assoc buf :mod-time (mod-time buf)))
 
-;make sure last line ends with line break
-(defn- ensure-ends-with-newline [s]
-  (if (-> s last (= \newline))
-    s
-    (str s \newline)))
-
 (defn- create-buf [bufname filepath txt]
   (let [txtLF (-> txt
                   (.replace "\r\n" "\n")

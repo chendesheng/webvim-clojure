@@ -135,8 +135,9 @@
           ;(pprint  (str (subr r (nth lines from))))
           ;(println (nth lines (+ from len) [len 0]))
           ;(println "line:" (+ from len) (nth lines (+ from len)) (str (subr r (nth lines (+ from len)))))
-        (let [[a _] (line-range buf from) ;(nth lines from [cnt 0])
-              [b _] (line-range buf (+ from len))];(nth lines (+ from len) [cnt 0])]
+        (let [to (ensure-ends-with-newline to) ;some format tool may removes last \newline
+              [a _] (line-range buf from)
+              [b _] (line-range buf (+ from len))]
             ;(println "a b" a b)
             ;(print "to" to)
           (buf-replace buf a b to))) buf changes)))
