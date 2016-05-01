@@ -43,6 +43,7 @@
                  #(str %2 %3 " " %1)
                  "Format failed: " message)))
 
+
 (defn wrap-async-auto-format [cmds formatter]
   (letfn [(f [buf]
             (try
@@ -53,11 +54,12 @@
     (wrap-command
       cmds
       "write" (fn [fnwrite]
-                (fn [buf cmd args]
+                (fn [buf cmd rg args]
                   (-> buf
                       (assoc :message "formatting...")
                       (async-with-catch
                         (-> buf
                             f
-                            (fnwrite cmd args)
+                            (fnwrite cmd rg args)
                             buf-match-bracket))))))))
+

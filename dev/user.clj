@@ -21,10 +21,10 @@
 (defn print-buf
   ([]
     (let [buf (dissoc (get-from-ui :buf) :str :history :keymap :normal-mode-keymap 
-                      :insert-mode-keymap :ex-mode-keymap :context)]
+                      :insert-mode-keymap :lineindex :ex-mode-keymap :context)]
       (pprint buf)))
   ([& ks]
-    (pprint  ((get-from-ui :buf) ks))))
+    (pprint (select-keys (get-from-ui :buf) ks))))
 
 (defn- cache-resource [path url]
   (if-not (fs/exists? path)
@@ -47,7 +47,7 @@
     (start false {:port 8080 :join? false}))
   "ok")
 
-(defn- cmd-reload [buf execmd args]
+(defn- cmd-reload [buf _ _ _]
   (let [ns (get-namespace (buf :filepath))
         ret (if (nil? ns)  
               "Can't get right namespace"
@@ -56,12 +56,12 @@
       (assoc buf :message (restart))
       (assoc buf :message (str ret)))))
 
-(defn- cmd-doc [buf execmd args]
-  (let [code (str "(doc " args ")")]
+(defn- cmd-doc [buf _ _ [name]]
+  (let [code (str "(doc " name ")")]
     (print-eval buf code)))
 
-(defn- cmd-print [buf execmd args]
-  (let [code (str "(user/print-buf " args ")")]
+(defn- cmd-print [buf _ _ props]
+  (let [code (str "(user/print-buf " (string/join " " props) ")")]
     (print-eval buf code)))
 
 (defn add-init-ex-commands-event []

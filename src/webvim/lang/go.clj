@@ -122,7 +122,7 @@
       (subs (directory filepath) (count parent))
       nil)))
 
-(defn cmd-go [buf execmd args]
+(defn cmd-go [buf _ _ args]
   (let [args (vec (clojure.string/split args #"\s+"))
         args1 (if (= (count args) 1)
                 (if (-> args first (= "run"))

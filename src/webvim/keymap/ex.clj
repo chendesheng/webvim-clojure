@@ -66,13 +66,21 @@
           (conj matches buf))))
     [] buffers))
 
-(defn exec-shell-commands [buf apanel cmds]
-  (println "exec-shell-commands:" cmds)
-  (exec-async cmds (fn [line]
-                     (append-panel buf apanel (str line \newline) false)))
-  (append-panel buf apanel (str \newline (string/join \space cmds) \newline) true))
+(defn- unquote [args]
+  (map (fn [s]
+         (if (and (.startsWith s "\"")
+                  (.endsWith s "\""))
+           (subs s 1 (-> s count (- 2)))
+           s)) args))
 
-(defn cmd-write [buf _ file]
+(defn- exec-shell-commands [buf apanel cmds]
+  (println "exec-shell-commands:" cmds)
+  (exec-async (-> cmds flatten unquote)
+              (fn [line]
+                (append-panel buf apanel (str line \newline) false)))
+  (append-panel buf apanel (str \newline (string/join \space (flatten cmds)) \newline) true))
+
+(defn cmd-write [buf _ _ [file]]
   ;(println (expand-path file))
   (if (not (string/blank? file))
     (-> buf
@@ -83,7 +91,7 @@
       (assoc buf :message "No file name")
       (write-buffer buf))))
 
-(defn cmd-buffer [buf execmd file]
+(defn cmd-buffer [buf _ _ [file]]
   (let [matches (find-buffer (get-buffers) file)
         cnt (count matches)
         equals (filter #(= (% :name) file) matches)]
@@ -107,7 +115,7 @@
       nil
       (apply f args))))
 
-(defn cmd-bnext [buf execmd args]
+(defn cmd-bnext [buf _ _ _]
   (let [id (buf :id)
         nextid (or
                  ;get next id larger than current
@@ -115,7 +123,7 @@
                  (apply min (get-buffers-id)))]
     (goto-buf buf nextid)))
 
-(defn cmd-bprev [buf execmd args]
+(defn cmd-bprev [buf _ _ _]
   (let [id (buf :id)
         nextid (or
                  (->> (get-buffers-id) (filter #(< % id)) (apply (empty-nil max)))
@@ -126,7 +134,7 @@
   (if (nil? reg) nil
       (get-buffer-agent (reg :id))))
 
-(defn cmd-bdelete [buf execmd args]
+(defn cmd-bdelete [buf _ _ _]
   (remove-buffer (buf :id))
   (let [nextbuf @(or (get-buffer-from-reg (registers-get "#")) (new-file nil))
         nextid (nextbuf :id)
@@ -148,14 +156,14 @@
     (if (nil? exception)
       (append-output-panel 
         buf
-        (format ":eval %s\n %s" code output)
+        (format ":%s\n %s" code output)
         true)
       (assoc buf :message (str exception)))))
 
-(defn cmd-eval [buf execmd args]
+(defn cmd-eval [buf code]
   (let [{result :result
          output :output
-         exception :exception} (eval-refer-ns (get-namespace (buf :filepath)) args)]
+         exception :exception} (eval-refer-ns (get-namespace (buf :filepath)) code)]
     (if (nil? exception)
       (let [lines (apply concat
                          (map string/split-lines
@@ -167,20 +175,17 @@
           (append-output-panel
             (update buf :message #(if (= cnt 1) (first lines) %))
             (str (string/join \newline 
-                              (conj lines (str ":" execmd " " args))) \newline)
+                              (conj lines (str ":" code))) \newline)
             (> cnt 1))))
       (assoc buf :message (str exception)))))
 
-(defn cmd-eval-shortcut [buf execmd [code]]
-  ;(println "cmd-eval-shortcut" execmd)
-  ;(println "cmd-eval-shortcut" code)
-  (cmd-eval buf "eval" code))
+(defn cmd-grep [buf _ _ args]
+  (exec-shell-commands buf (grep-panel)
+                       ["grep" "-rnI" args "."]))
 
-(defn cmd-grep [buf execmd args]
-  (exec-shell-commands buf (grep-panel) ["grep" "-rnI" args "."]))
-
-(defn cmd-find [buf execmd args]
-  (exec-shell-commands buf (find-panel) ["find" "." "-name" args "-not" "-path" "*/.*"]))
+(defn cmd-find [buf _ _ args]
+  (exec-shell-commands buf (find-panel)
+                       ["find" "." "-name" args "-not" "-path" "*/.*"]))
 
 (defn cmd-move-to-line [buf cmd [row]]
 ;(println "row:" row)
@@ -188,19 +193,18 @@
   (let [row (bound-range (dec (Integer. row)) 0 (-> buf buf-total-lines dec))]
     (move-to-line buf row)))
 
-(defn cmd-cd [buf execmd args]
-  (if (string/blank? args) (assoc buf :message (str fs/*cwd*))
-      (let [dir (expand-path args)]
+(defn cmd-cd [buf _ _ [path]]
+  (if (string/blank? path) (assoc buf :message (str fs/*cwd*))
+      (let [dir (expand-path path)]
         (if (fs/directory? dir)
           (assoc buf :message (str "Change working directory to: " (update-cwd dir)))
           (assoc buf :message "Path is not a directory or not exists.")))))
 
-(defn cmd-git [buf execmd args]
-  (let [args (vec (clojure.string/split args #"\s+"))
-        res (apply clojure.java.shell/sh (concat ["git"] args [:dir (str fs/*cwd*)]))]
+(defn cmd-git [buf _ _ args]
+  (let [res (apply clojure.java.shell/sh (concat ["git"] args [:dir (str fs/*cwd*)]))]
     (append-output-panel buf (res :out) true)))
 
-(defn cmd-ls [buf execmd args]
+(defn cmd-ls [buf _ _ _]
   (append-output-panel buf
                        (str ":ls\n"
                             (string/join 
@@ -209,7 +213,7 @@
                                      (format "%d: %s" (buf :id) (printable-filepath buf)))
                                    (sort-by :id (get-buffers)))) "\n") true))
 
-(defn cmd-nohl [buf _ _] 
+(defn cmd-nohl [buf _ _ _] 
   (assoc buf :highlights []))
 
 (defn- buf-reload [buf]
@@ -225,7 +229,7 @@
             (assoc :message (format "File reloaded, %d change(s)" (count changes)))))
       (assoc buf :message (res :err)))))
 
-(defn cmd-diff [buf _ _]
+(defn cmd-diff [buf _ _ _]
   (let [f (buf :filepath)
         ;TODO: use Java diff library instead of shell command
         res (clojure.java.shell/sh "diff" "-" f " -u" :in (-> buf :str str))]
@@ -237,9 +241,9 @@
                                (str "diff - " f "-u" "\n" diff) true)))
       (assoc buf :message (res :err)))))
 
-(defn cmd-edit [buf excmd args]
-  (println "edit")
-  (let [[[_ file _ linenum]] (re-seq #"(\S+)(\s+(\d+))?" args)]
+(defn cmd-edit [buf _ _ args]
+  (let [[file linenum] args]
+    (println "edit:" file linenum (count args))
     (if (nil? linenum)
       (if (and (empty? file) (fs/exists? (buf :filepath)))
         (buf-reload buf)
@@ -248,7 +252,7 @@
 
 (defonce ^:private commands-history (atom (parallel-universe)))
 
-(defn cmd-history [buf _ _]
+(defn cmd-history [buf _ _ _]
   (let [{before :before after :after} @commands-history
         all (concat (reverse before) after)]
     (append-output-panel 
@@ -256,7 +260,7 @@
       (str ":history\n" (string/join "\n" all) "\n") 
       true)))
 
-(defn cmd-register [buf _ _]
+(defn cmd-register [buf _ _ _]
   (append-output-panel 
     buf
     (str ":register\n" 
@@ -268,7 +272,7 @@
                                  (clojure.string/escape (or (:str v) "") {\newline "\\n"}))))) "\n")
     true))
 
-(defn cmd-jumps [buf _ _]
+(defn cmd-jumps [buf _ _ _]
   (append-output-panel 
     buf
     (str ":jumps\n" 
@@ -289,43 +293,125 @@
          ["bnext" cmd-bnext]
          ["bprev" cmd-bprev]
          ["bdelete" cmd-bdelete]
-         ["eval" cmd-eval]
+         ;["eval" cmd-eval]
          ["grep" cmd-grep]
          ["find" cmd-find]
          ["history" cmd-history]
          ["register" cmd-register]
          ["jumps" cmd-jumps]
          ["cd" cmd-cd]
-         [#"^\d+$" cmd-move-to-line]
-         [#"^\(.*$" cmd-eval-shortcut]
+         ;[#"^\d+$" cmd-move-to-line]
+         ;[#"^\(.*$" cmd-eval-shortcut]
          ["ls" cmd-ls]
          ["git" cmd-git]
          ["diff" cmd-diff]]]
     (fire-event :init-ex-commands cmds buf)))
 
+;About ctx:
+; {:ranges []
+;  :cmd ""
+;  :args ""}
+(defn split-ex-cmd [s]
+  (println "split-excmd" s)
+  (reduce
+    (fn [ctx [item _]]
+      (if (-> ctx :cmd nil?)
+        (if (re-test #"^[a-zA-Z~<>@=#*&!\(]" item)
+          (assoc ctx :cmd item)
+          (if (= item "%")
+            (update ctx :ranges vconj "1" "," "$")
+            (update ctx :ranges vconj item)))
+        (assoc ctx :args item)))
+    {}
+    (re-seq #"[.$%,;]|[+-]?\d+|'[a-zA-Z0-9<>{}\[\]()']|/(\[(\\\\|\\\]|/|[^\]])*\]|\\\\|\\/|[^/\[\]])+/?|[a-zA-Z~<>@=#*&!\(][^\s]*|.+" s)))
+
+(defn split-arguments [s]
+  (map first (re-seq #"\"(\\\\|\\\"|[^\"]*)\"|[^\s]+" (or s ""))))
+
+(defn- parse-range [ranges dot $]
+  (letfn [(calc-delta [delta op rg]
+            (op (or delta 0) (Integer. (subs rg 1))))
+          (return-nil-if-all-values-nil [coll]
+            (if (every? #(-> coll % nil?) (keys coll))
+              nil coll))
+          (next-res [{base :base delta :delta} rg]
+            (return-nil-if-all-values-nil
+              {:base (cond
+                       (re-test #"^\d" rg) (Integer. rg)
+                       (= "$" rg) $
+                       (= "." rg) dot
+                       ;TODO: (.startsWith "/" rg)
+                       ;TODO: (.startsWith "'" rg)
+                       :else base)
+               :delta (if (re-test #"^[+-]\d" rg)
+                        (+ (or delta 0) (Integer. rg))
+                        delta)}))
+          (res-start [res]
+            (or (:end res) (:start res)))]
+    (loop [[rg & restrg] (map #(.trim %) ranges)
+           state :start
+           res nil]
+      (cond
+        (nil? rg)
+        [(+ (-> res :start :base (or dot))
+            (-> res :start :delta (or 0)))
+         (+ (-> res :end :base (or dot))
+            (-> res :end :delta (or 0)))]
+        (= rg ",")
+        (recur restrg :end {:start (res-start res)})
+        (= rg ";")
+        ;FIXME: doesn't feel right
+        (recur restrg :end {:start (res-start res)
+                            :end (-> res
+                                     res-start
+                                     (dissoc :delta))})
+        :else
+        (recur restrg state (update res state next-res rg))))))
+
+(defn parse-excmd [buf s]
+  (let [{ranges :ranges cmd :cmd args :args} (split-ex-cmd s)]
+    {:range (parse-range ranges (-> buf :y inc) (buf-total-lines buf))
+     :cmd cmd
+     :args (split-arguments args)}))
+
+(comment
+  (parse-excmd "1,./^haha\\\\[\\\\\\]/]hello\\//+1grep hello")
+  (parse-excmd "%grep hello")
+  (parse-excmd ",-2$-1grep hello")
+  (parse-excmd "2%grep hello")
+  (parse-excmd "2,%grep hello")
+  (parse-excmd "2,-2+2-3+4$grep hello")
+  (parse-excmd "2+1,1,2grep hello"))
+
 (defn- execute [buf cmds]
-  (let [r (-> buf :line-buffer :str str)
-        [_ excmd args] (re-find #"^\s*([^\s]+)\s*(.*)\s*$" r)]
-    (if (nil? excmd)
-      buf
-      (let [handlers (filter seq?
-                             (map (fn [[cmd handler]]
-                                    ;(println cmd)
-                                    (if (string? cmd)
-                                      (if (zero? (.indexOf cmd excmd)) (list handler cmd args))
-                                      (let [m (re-seq cmd r)]
-                                        (if (some? m) (list handler cmd m))))) cmds))]
-        ;(println "handlers:")
-        ;(pprint handlers)
-        (if (>= (count handlers) 1)
-          (let [[[handler cmd args]] handlers
-                buf (handler buf cmd args)]
-            (registers-put! ":" {:str r})
-            buf)
-          (-> buf
-              (assoc :message "!!!unknown command!!!")
-              (assoc :beep true)
-              (dissoc :line-buffer)))))))
+  (let [s (-> buf :line-buffer :str str .trim)]
+    (if (-> s first (= \())
+      (cmd-eval buf s)
+      (let [{excmd :cmd rg :range args :args} (parse-excmd buf s)]
+        (pprint [excmd rg args])
+        (if (nil? excmd)
+          (if (empty? rg)
+            buf
+            (move-to-line buf (-> rg first dec)))
+          (let [handlers (filter seq?
+                                 (map (fn [[cmd handler]]
+                                        ;(println cmd)
+                                        (if (string? cmd)
+                                          (if (.startsWith cmd excmd)
+                                            (list handler cmd args))
+                                          (let [m (re-seq cmd s)]
+                                            (if (some? m) (list handler cmd m))))) cmds))]
+            ;(println "handlers:")
+            ;(pprint handlers)
+            (if (>= (count handlers) 1)
+              (let [[[handler cmd args]] handlers
+                    buf (handler buf cmd rg args)]
+                (registers-put! ":" {:str s})
+                buf)
+              (-> buf
+                  (assoc :message "!!!unknown command!!!")
+                  (assoc :beep true)
+                  (dissoc :line-buffer)))))))))
 
 (defn- ex-tab-complete [{{r :str} :line-buffer :as buf} cmds]
   (if (re-test #"^\s*\S+\s*$" r)
