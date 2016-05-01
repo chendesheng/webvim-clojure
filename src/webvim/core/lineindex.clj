@@ -49,6 +49,12 @@
            :lines (+ (left :lines)
                      (right :lines)))))
 
+(defn- rotate [tree leftkey rightkey]
+  (update-node-data
+    (assoc (tree leftkey) rightkey
+           (update-node-data
+             (update tree leftkey rightkey)))))
+
 (defn- update-node [tree]
   (let [remove-empty (fn [tree child]
                        (if (-> tree child empty-node?)
@@ -64,21 +70,9 @@
       (nil? left) right
       (nil? right) left
       (-> left :priority (or -1) (> priority))
-      (update-node-data
-        {:left (left :left)  ;alpha: (left :left); beta: (left :right); lambda: right
-         :right (update-node-data
-                  {:left (left :right)
-                   :right right
-                   :priority (tree :priority)})
-         :priority (left :priority)})
+      (rotate tree :left :right)
       (-> right :priority (or -1) (> priority))
-      (update-node-data ;alpha: left; beta: (right :left); lambda: (right :right)
-        {:left (update-node-data
-                 {:left left
-                  :right (right :left)
-                  :priority (tree :priority)})
-         :right (right :right)
-         :priority (right :priority)})
+      (rotate tree :right :left)
       :else (update-node-data tree))))
 
 (defn- update-by [key f]
