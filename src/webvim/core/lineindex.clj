@@ -34,6 +34,11 @@
                     :right (-> tree :left :length (or 0) (+ data))
                     [data (-> tree :length (+ data))])) 0))
 
+(defn- line-length [linenum]
+  (visit-by :lines (fn [tree child _]
+                     (if (nil? child)
+                       (tree :length))) 0))
+
 (def range-by-pos
   (range-by :length))
 
@@ -90,22 +95,48 @@
 (defn- update-by-pos [tree pos f]
   ((update-by :length f) tree pos))
 
+(defn- update-by-linenum [tree linenum f]
+  ((update-by :lines f) tree linenum))
+
+(def pos-linenum
+  (visit-by :length (fn [tree child data]
+                      (if (= child :right)
+                        (-> tree :left :lines (or 0) (+ data))
+                        data)) 0))
+
+(defn- insert-line [tree linenum len]
+  (if (zero? len)
+    tree
+    (update-by-linenum tree linenum
+                       (fn [tree _]
+                         {:left {:length len
+                                 :lines 1}
+                          :right tree
+                          :priority (rand)}))))
+
+(defn- delete-line [tree linenum]
+  (update-by-linenum
+    tree linenum
+    (fn [_ _] {:length 0 :lines 0})))
+
 (defn- delete [tree pos len]
   (if (zero? len)
     tree
-    (let [[a b] (range-by-pos tree pos)
-          tree (update-by-pos tree pos
-                              (fn [tree offset]
-                                (let [todel (-> tree :length (- offset))]
-                                  (if (<= todel len)
-                                    {:length offset
-                                     :lines (if (zero? offset) 0 1)}
-                                    {:length (+ offset (- todel len))
-                                     :lines 1}))))
-          dlen (- b pos)]
-      (if (<= len dlen)
-        tree
-        (recur tree pos (- len dlen))))))
+    (let [la (pos-linenum tree pos)
+          lb (pos-linenum tree (+ pos len))]
+      (if (= la lb)
+        ;no cross line
+        (update-by-linenum tree la
+                           (fn [tree _]
+                             {:length (-> tree :length (- len))
+                              :lines 1}))
+        (let [dlen (- (last (range-by-pos tree (+ pos len))) ;expand two ends
+                      (first (range-by-pos tree pos)))]
+          (loop [i lb
+                 tree tree]
+            (if (>= i la)
+              (recur (dec i) (delete-line tree i))
+              (insert-line tree la (- dlen len)))))))))
 
 (comment defn test-delete []
          (comment pprint (delete (update-node
@@ -114,12 +145,16 @@
                                              :right {:length 2 :lines 1}})
                                     :right {:length 2 :lines 1}})
                                  3 1))
-         (pprint (delete (update-node
-                           {:left (update-node
-                                    {:left {:length 3 :lines 1}
-                                     :right {:length 2 :lines 1}})
-                            :right {:length 2 :lines 1}})
-                         3 3)))
+         (pprint (delete {:left {:left {:length 3 :lines 1}
+                                 :right {:length 2 :lines 1}
+                                 :length 5
+                                 :lines 2
+                                 :priority (rand)}
+                          :right {:length 2 :lines 1}
+                          :length 7
+                          :lines 3
+                          :priority (rand)}
+                         2 2)))
 
 (defn- insert [tree pos s]
   (if (empty? s)
@@ -166,12 +201,6 @@
 
 (defn total-length [tree]
   (-> tree make-tree :length))
-
-(def pos-linenum
-  (visit-by :length (fn [tree child data]
-                      (if (= child :right)
-                        (-> tree :left :lines (or 0) (+ data))
-                        data)) 0))
 
 (def range-by-line
   (range-by :lines))
