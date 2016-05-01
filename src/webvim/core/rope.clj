@@ -100,9 +100,9 @@
         [newr rc] (apply-change r c)]
     [(-> buf
          (update :lineindex update-lineindex c)
+         (assoc :str newr)
          ;keep pos after change
          (shift-pos (c :pos) (rc :to) (c :to))
-         (assoc :str newr)
          (fire-event buf c :change-buffer)) rc]))
 
 (defn- buf-apply-changes [buf changes]
