@@ -66,7 +66,7 @@
       changes
       (let [from (parse-int (second hunk)) ;from line number
             content (last hunk)
-            lines (map #(str % "\n") (clojure.string/split-lines content))]
+            lines (split-lines content)]
         (recur hunks
                ;start from start next line
                ;@@ -2,5 +2,5 @@ var viewport = {};
@@ -138,7 +138,7 @@
         (let [to (ensure-ends-with-newline to) ;some format tool may removes last \newline
               [a _] (line-range buf from)
               [b _] (line-range buf (+ from len))]
-            ;(println "a b" a b)
-            ;(print "to" to)
+          ;(println "a b" a b)
+          ;(print "to" to)
           (buf-replace buf a b to))) buf changes)))
 
