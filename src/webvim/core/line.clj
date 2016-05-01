@@ -184,3 +184,5 @@
   ([buf]
     (line-str buf (buf :pos))))
 
+(defn line-range[{lidx :lineindex} linenum]
+  (range-by-line lidx linenum))

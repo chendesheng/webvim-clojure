@@ -124,23 +124,20 @@
 
 (defn apply-line-changes [buf changes]
   ;(pprint changes)
-  (let [lines (pos-lines-seq+ buf 0)
-        r (buf :str)
-        cnt (count r)]
 ;    (pprint (count (buf :str)))
 ;    (pprint (count lines))
 ;    (pprint lines)
 ;    (pprint changes)
-    (fix-position
-      (reduce
-        (fn [buf {from :from len :len to :to}]
+  (fix-position
+    (reduce
+      (fn [buf {from :from len :len to :to}]
           ;(println "line:" from (nth lines from))
           ;(pprint  (str (subr r (nth lines from))))
           ;(println (nth lines (+ from len) [len 0]))
           ;(println "line:" (+ from len) (nth lines (+ from len)) (str (subr r (nth lines (+ from len)))))
-          (let [[a _] (nth lines from [cnt 0])
-                [b _] (nth lines (+ from len) [cnt 0])]
+        (let [[a _] (line-range buf from) ;(nth lines from [cnt 0])
+              [b _] (line-range buf (+ from len))];(nth lines (+ from len) [cnt 0])]
             ;(println "a b" a b)
             ;(print "to" to)
-            (buf-replace buf a b to))) buf changes))))
+          (buf-replace buf a b to))) buf changes)))
 
