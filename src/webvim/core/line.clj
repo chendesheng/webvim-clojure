@@ -1,6 +1,7 @@
 ;first half part is about "one line" second half part is about "lines"
 (ns webvim.core.line
-  (:require [webvim.core.lineindex :refer [range-by-line range-by-pos total-length]])
+  (:require [webvim.core.lineindex :refer [range-by-line range-by-pos total-length
+                                           pos-linenum total-lines]])
   (:use clojure.pprint
         webvim.core.rope
         webvim.core.utils
@@ -85,26 +86,21 @@
 
 ;(pos-lines-seq+ (rope "aa\nbb\ncc\n\n") 0 1)
 
-(defn- lines-move [buf n fndir]
-  (let [vx (buf :x)]
-    (buf-move-line buf
-                   (fn [{r :str pos :pos :as buf}]
-                     (let [rg (nth (fndir buf pos) n nil)]
-                       (if (nil? rg) pos
-                           (let [[a b] rg
-                                 s (subr r a b)
-                                 cx (visualx-to-charx s vx (buf :tabsize))]  
-                             (+ a (bound-range cx 0 (- b a 1))))))))))
-
-(defn lines-n [buf n]
-  (cond 
-    (pos? n) (lines-move buf n pos-lines-seq+)
-    (neg? n) (lines-move buf (- n) pos-lines-seq-)
-    :else buf))
+(defn lines-n [{lidx :lineindex pos :pos :as buf} delta]
+  (let [n (+ (pos-linenum lidx pos) delta)]
+    (if (or (< n 0)
+            (>= n (total-lines lidx)))
+      buf
+      (buf-move-line buf
+                     (fn [{r :str :as buf}]
+                       (let [[a b] (range-by-line lidx n)
+                             s (subr r a b)
+                             cx (visualx-to-charx s (buf :x) (buf :tabsize))]  
+                         (+ a (bound-range cx 0 (-> s count dec)))))))))
 
 (defn lines-row [buf n]
   (buf-move-line buf
-                 (fn [{lidx :lineindex}]
+                 (fn [{lidx :lineindex :as buf}]
                    (first (range-by-line lidx n)))))
 
 (defn make-linewise-range [[a b] buf]
@@ -173,11 +169,14 @@
       line-start))
 
 (defn column [buf]
-  (let [pos (buf :pos)
-        r (buf :str)]
-    (dec (visual-size 
-           (subr r (pos-line-first buf) (inc pos)) 
-           (buf :tabsize)))))
+  (dec (visual-size 
+         (subr (buf :str)
+               (pos-line-first buf)
+               (-> buf :pos inc)) 
+         (buf :tabsize))))
+
+(defn buf-update-column [buf]
+  (assoc buf :x (column buf)))
 
 (defn line-str
   ([{r :str :as buf} pos]

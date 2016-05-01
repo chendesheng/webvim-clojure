@@ -3,7 +3,7 @@
             [webvim.scrolling :refer [scroll-to viewport-center viewport-inc-lines]]
             [webvim.core.ui :refer [viewport]]
             [webvim.core.rope :refer [buf-total-lines]]
-            [webvim.core.line :refer [lines-row pos-line-first pos-line-last]]
+            [webvim.core.line :refer [lines-row pos-line-first pos-line-last line-start column]]
             [webvim.keymap.compile :refer [wrap-keycode]]))
 
 (defn- not-first-line [f]
@@ -41,7 +41,8 @@
           newst (-> newrow (- vrow) negzero)]
       (-> buf
           (assoc :scroll-top newst)
-          (lines-row newrow)))))
+          (lines-row newrow)
+          line-start))))
 
 (defn- scrolling-keymap []
   {"z" {"z" (scroll-to viewport-center)}

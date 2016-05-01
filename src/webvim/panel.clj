@@ -10,7 +10,7 @@
                                 directory-panel-name change-active-buffer new-file
                                 get-buffers get-buffer-agent-by-name]]
     [webvim.core.rope :refer [buf-insert buf-set-pos save-undo buf-replace subr]]
-    [webvim.core.line :refer [line-start lines-row move-to-line column]]
+    [webvim.core.line :refer [line-start move-to-line column]]
     [webvim.core.pos :refer [buf-end buf-start]]
     [webvim.core.utils :refer [shorten-path visual-size path= pretty-trace expand-path]]
     [webvim.core.ui :refer [send-buf!]]

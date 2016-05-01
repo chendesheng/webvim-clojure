@@ -109,4 +109,4 @@
         (fn [buf]
           (-> buf
               cancel-last-indents
-              (assoc :x (column buf)))))
+              (assoc :x (-> buf column inc)))))

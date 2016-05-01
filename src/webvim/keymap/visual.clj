@@ -71,7 +71,7 @@
   [buf keycode]
   (let [lastbuf (buf :context :lastbuf)]
     (if (or (= (:pos lastbuf) (:pos buf))
-            (contains? #{"j" "k" "<c-d>" "<c-u>"} keycode))
+            (contains? #{"j" "k"} keycode))
       buf
       (assoc buf :x (column buf)))))
 
