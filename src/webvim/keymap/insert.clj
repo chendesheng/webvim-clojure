@@ -102,11 +102,10 @@
                              set-normal-mode
                              save-undo
                              (update :context dissoc :record-keys)))}]
-    (-> keymap
-        wrap-keymap-put-insert)))
+    (wrap-keymap-put-insert keymap)))
 
 (listen :before-change-to-normal-mode
         (fn [buf]
           (-> buf
               cancel-last-indents
-              (assoc :x (-> buf column inc)))))
+              (assoc :x (column buf)))))

@@ -229,8 +229,7 @@
       (str col))))
 
 (defn buf-pos-info [buf]
-  (let [{y :y
-         x :x} buf
+  (let [y (buf :y)
         linescnt (buf-total-lines buf)
         percent (-> y inc (* 100) (/ linescnt) int)]
     (assoc buf :message (format "\"%s\" line %d of %d --%d%%-- col %s" 

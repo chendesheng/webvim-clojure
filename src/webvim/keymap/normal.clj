@@ -15,6 +15,7 @@
             [webvim.keymap.motion :refer [init-motion-keymap init-motion-keymap-with-objects]]
             [webvim.core.pos :refer [char-]]
             [webvim.core.event :refer [listen]]
+            [webvim.core.line :refer [buf-update-column]]
             [webvim.jumplist :refer [motions-push-jumps jump-push]]
             [webvim.keymap.compile :refer [wrap-keycode]]
             [webvim.keymap.replace :refer [wrap-keymap-replace]])
@@ -79,5 +80,4 @@
         (wrap-keymap-change visual-keymap)
         (wrap-keymap-case visual-keymap))))
 
-(listen :before-change-to-normal-mode
-        normal-mode-fix-pos)
+(listen :before-change-to-normal-mode normal-mode-fix-pos)

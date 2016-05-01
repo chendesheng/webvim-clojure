@@ -131,7 +131,7 @@
       (f buf keycode))))
 
 (defn- end? [r pos]
-  (>= (inc pos) (count r)))
+  (>= pos (count r)))
 
 (defn- not-last-line [f]
   (fn [{r :str :as buf} keycode]
@@ -141,7 +141,7 @@
 
 (defn- not-buf-end [f]
   (fn [{pos :pos r :str :as buf} keycode]
-    (if (end? r (inc pos))
+    (if (end? r (+ pos 2))
       (set-motion-fail buf)
       (f buf keycode))))
 
