@@ -60,25 +60,35 @@
            (update-node-data
              (update tree leftkey rightkey)))))
 
+(defn- set-weight [tree]
+  (cond
+    (leaf? tree) (dissoc tree :weight)
+    (-> tree :weight nil?) (assoc tree :weight (rand))
+    :else tree))
+
+(defn- weight> [a b]
+  (> (-> a :weight (or -1))
+     (-> b :weight (or -1))))
+
 (defn- update-node [tree]
   (let [remove-empty (fn [tree child]
                        (if (-> tree child empty-node?)
                          (dissoc tree child) tree))
-        tree (-> tree
-                 (remove-empty :left)
-                 (remove-empty :right))
-        {priority :priority
-         left :left
-         right :right} tree]
+        parent (-> tree
+                   (remove-empty :left)
+                   (remove-empty :right)
+                   set-weight)
+        {left :left
+         right :right} parent]
     (cond
-      (leaf? tree) tree
+      (leaf? parent) parent
       (nil? left) right
       (nil? right) left
-      (-> left :priority (or -1) (> priority))
-      (rotate tree :left :right)
-      (-> right :priority (or -1) (> priority))
-      (rotate tree :right :left)
-      :else (update-node-data tree))))
+      (weight> left parent)
+      (rotate parent :left :right)
+      (weight> right parent)
+      (rotate parent :right :left)
+      :else (update-node-data parent))))
 
 (defn- update-by [key f]
   (fn upd [tree val]
@@ -111,8 +121,7 @@
                        (fn [tree _]
                          {:left {:length len
                                  :lines 1}
-                          :right tree
-                          :priority (rand)}))))
+                          :right tree}))))
 
 (defn- delete-line [tree linenum]
   (update-by-linenum
@@ -149,11 +158,11 @@
                                  :right {:length 2 :lines 1}
                                  :length 5
                                  :lines 2
-                                 :priority (rand)}
+                                 :weight (rand)}
                           :right {:length 2 :lines 1}
                           :length 7
                           :lines 3
-                          :priority (rand)}
+                          :weight (rand)}
                          2 2)))
 
 (defn- insert [tree pos s]
@@ -170,12 +179,10 @@
                                   (cond
                                     (-> tree :length (= offset)) ;last line MUST contains \newline
                                     {:left tree
-                                     :right {:length len :lines 1}
-                                     :priority (rand)}
+                                     :right {:length len :lines 1}}
                                     (= (last line) \newline)
                                     {:left {:length (+ offset len) :lines 1}
-                                     :right {:length (-> tree :length (- offset)) :lines 1}
-                                     :priority (rand)}
+                                     :right {:length (-> tree :length (- offset)) :lines 1}}
                                     :else
                                     {:lines 1
                                      :length (-> tree :length (+ len))})))
