@@ -66,7 +66,7 @@
           (conj matches buf))))
     [] buffers))
 
-(defn- unquote [args]
+(defn- unquote-args [args]
   (map (fn [s]
          (if (and (.startsWith s "\"")
                   (.endsWith s "\""))
@@ -75,7 +75,7 @@
 
 (defn- exec-shell-commands [buf apanel cmds]
   (println "exec-shell-commands:" cmds)
-  (exec-async (-> cmds flatten unquote)
+  (exec-async (-> cmds flatten unquote-args)
               (fn [line]
                 (append-panel buf apanel (str line \newline) false)))
   (append-panel buf apanel (str \newline (string/join \space (flatten cmds)) \newline) true))
