@@ -59,3 +59,6 @@
   [buf]
   (init-lisp-file-type buf))
 
+(defmethod init-file-type ".el"
+  [buf]
+  (init-lisp-file-type buf))

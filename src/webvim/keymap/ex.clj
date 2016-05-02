@@ -404,6 +404,7 @@
   (parse-excmd "2,-2+2-3+4$grep hello")
   (parse-excmd "2+1,1,2grep hello"))
 
+
 (defn- execute [buf cmds]
   (let [s (-> buf :line-buffer :str str .trim)]
     (if (-> s first (= \())
@@ -413,15 +414,13 @@
         (if (nil? excmd)
           (if (empty? rg)
             buf
-            (move-to-line buf (first rg)))
+            (-> buf
+                jump-push
+                (move-to-line (first rg))))
           (let [handlers (filter seq?
                                  (map (fn [[cmd handler]]
-                                        ;(println cmd)
-                                        (if (string? cmd)
-                                          (if (.startsWith cmd excmd)
-                                            (list handler cmd args))
-                                          (let [m (re-seq cmd s)]
-                                            (if (some? m) (list handler cmd m))))) cmds))]
+                                        (if (.startsWith cmd excmd)
+                                          (list handler cmd args))) cmds))]
             ;(println "handlers:")
             ;(pprint handlers)
             (if (>= (count handlers) 1)
@@ -532,5 +531,5 @@
           (if (and (not= (buf :mod-time) (mod-time buf))
                    (not (buf :dirty)))
             (buf-reload buf)
-            buf)))
 
+            buf)))
