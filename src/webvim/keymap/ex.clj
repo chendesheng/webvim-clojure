@@ -339,6 +339,15 @@
 (defn split-arguments [s]
   (map first (re-seq #"\"(\\\\|\\\"|[^\"]*)\"|[^\s]+" (or s ""))))
 
+(defn- parse-mark [buf ch]
+  (linenum-by-pos
+    buf
+    (cond
+      (= ch \<) (-> buf :visual :range sort2 first)
+      (= ch \>) (-> buf :visual :range sort2 last)
+      :else (throw
+              (str "unknown mark:" ch)))))
+
 (defn- parse-range [ranges dot $ buf]
   (letfn [(calc-delta [delta op rg]
             (op (or delta 0) (Integer. (subs rg 1))))
@@ -348,17 +357,12 @@
           (next-res [{base :base delta :delta} rg]
             (return-nil-if-all-values-nil
               {:base (cond
-                       (re-test #"^\d" rg) (Integer. rg)
+                       (re-test #"^\d" rg) (-> rg Integer. dec)
                        (= "$" rg) $
                        (= "." rg) dot
                        ;TODO: (.startsWith "/" rg)
-                       ;TODO: (.startsWith "'" rg)
-                       (or (= "'<" rg)
-                           (= "'>" rg))
-                       (let [[a b] (-> buf :visual :range sort2)]
-                         (if (-> rg second (= \<))
-                           (inc (linenum-by-pos buf a))
-                           (inc (linenum-by-pos buf b))))
+                       (-> rg first (= \'))
+                       (parse-mark buf (last rg))
                        :else base)
                :delta (if (re-test #"^[+-]\d" rg)
                         (+ (or delta 0) (Integer. rg))
@@ -386,9 +390,8 @@
         (recur restrg state (update res state next-res rg))))))
 
 (defn parse-excmd [buf s]
-  (let [{ranges :ranges cmd :cmd args :args} (split-ex-cmd s)
-        [a b] (parse-range ranges (-> buf :y inc) (buf-total-lines buf) buf)]
-    {:range [(dec a) (dec b)] ;start from zero
+  (let [{ranges :ranges cmd :cmd args :args} (split-ex-cmd s)]
+    {:range (parse-range ranges (buf :y) (buf-total-lines buf) buf)
      :cmd cmd
      :args (split-arguments args)}))
 
