@@ -47,6 +47,28 @@
       (assoc :tabsize 2)
       (assoc :expandtab true)))
 
+(defn- init-json-file-type [buf]
+  (-> buf
+      (assoc-in [:language :id] ::lisp)
+      (assoc-in [:language :name] "JSON")
+      (assoc :tabsize 4)
+      (assoc :expandtab true)))
+
+(defn- init-yaml-file-type [buf]
+  (-> buf
+      (assoc-in [:language :id] ::lisp)
+      (assoc-in [:language :name] "YAML")
+      (assoc :tabsize 4)
+      (assoc :expandtab true)))
+
+(defmethod init-file-type ".json"
+  [buf]
+  (init-json-file-type buf))
+
+(defmethod init-file-type ".yaml"
+  [buf]
+  (init-yaml-file-type buf))
+
 (defmethod init-file-type ".md"
   [buf]
   (init-markdown-file-type buf))

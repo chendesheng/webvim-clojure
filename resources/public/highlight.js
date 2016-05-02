@@ -154,7 +154,9 @@ function initHighlights() {
         'C#': hlcs(hljs),
         'MarkDown': hlmd(hljs),
         'ActionScript': hlactionscript(hljs),
-        'Lisp': hllisp(hljs)
+        'Lisp': hllisp(hljs),
+        'JSON': hljson(hljs),
+        'YAML': hlyaml(hljs),
     }
 }
 

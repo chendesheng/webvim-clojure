@@ -80,6 +80,7 @@ body,
     color: rgb(225, 214, 154);
 }
 
+.lines .bullet,
 .lines .attr,
 .lines .builtin-name,
 .lines .attribute,
