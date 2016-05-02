@@ -374,10 +374,11 @@
            res nil]
       (cond
         (nil? rg)
-        [(+ (-> res :start :base (or dot))
-            (-> res :start :delta (or 0)))
-         (+ (-> res :end :base (or dot))
-            (-> res :end :delta (or 0)))]
+        (sort2
+          [(+ (-> res :start :base (or dot))
+              (-> res :start :delta (or 0)))
+           (+ (-> res :end :base (or dot))
+              (-> res :end :delta (or 0)))])
         (= rg ",")
         (recur restrg :end {:start (res-start res)})
         (= rg ";")
