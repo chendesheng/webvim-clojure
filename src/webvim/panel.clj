@@ -6,7 +6,7 @@
     [clojure.pprint :refer [pprint]]
     [clojure.string :as string]
     [webvim.core.buffer :refer [update-buffer buf-match-bracket
-                                output-panel-name grep-panel-name find-panel-name 
+                                output-panel-name grep-panel-name ag-panel-name find-panel-name 
                                 directory-panel-name change-active-buffer new-file
                                 get-buffers get-buffer-agent-by-name]]
     [webvim.core.rope :refer [buf-insert buf-set-pos save-undo buf-replace subr]]
@@ -33,6 +33,12 @@
     (get-panel create? grep-panel-name))
   ([]
     (grep-panel true)))
+
+(defn ag-panel
+  ([create?]
+    (get-panel create? ag-panel-name))
+  ([]
+    (ag-panel true)))
 
 (defn find-panel
   ([create?]

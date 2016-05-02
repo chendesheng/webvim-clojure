@@ -73,6 +73,7 @@
 
 (defonce output-panel-name "[Output]")
 (defonce grep-panel-name "[Grep]")
+(defonce ag-panel-name "[ag]")
 (defonce find-panel-name "[Find]")
 (defonce directory-panel-name "[Directory]")
 

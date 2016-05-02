@@ -2,7 +2,7 @@
   (:require [me.raynes.fs :as fs]
             [webvim.mode :refer [set-normal-mode]]
             [webvim.core.editor :refer [update-cwd]]
-            [webvim.panel :refer [append-panel append-output-panel grep-panel find-panel edit-file goto-buf]]
+            [webvim.panel :refer [append-panel append-output-panel grep-panel ag-panel find-panel edit-file goto-buf]]
             [clojure.string :as string]
             [webvim.core.eval :refer [eval-refer-ns]])
   (:use clojure.pprint
@@ -191,6 +191,10 @@
   (exec-shell-commands buf (grep-panel)
                        ["grep" "-rnI" args "."]))
 
+(defn cmd-ag [buf _ _ args]
+  (exec-shell-commands buf (ag-panel)
+                       ["ag" "--vimgrep" args]))
+
 (defn cmd-find [buf _ _ args]
   (exec-shell-commands buf (find-panel)
                        ["find" "." "-name" args "-not" "-path" "*/.*"]))
@@ -303,6 +307,7 @@
          ["bdelete" cmd-bdelete]
          ["eval" cmd-eval]
          ["grep" cmd-grep]
+         ["ag" cmd-ag]
          ["find" cmd-find]
          ["history" cmd-history]
          ["register" cmd-register]
