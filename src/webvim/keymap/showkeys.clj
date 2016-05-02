@@ -36,7 +36,7 @@
                       (update (handler buf keycode)
                               :showkeys
                               (fn [showkeys]
-                                (if (not= keycode "/")
+                                (if (not (contains? #{"/" ":"} keycode))
                                   showkeys))))))
         (wrap-key :after
                   (fn [handler]

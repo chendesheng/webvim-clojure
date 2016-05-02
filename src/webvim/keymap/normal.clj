@@ -45,20 +45,11 @@
         (update :context dissoc :range)
         save-undo)))
 
-(defn- start-ex-mode [buf keycode]
-  (let [enter (or (-> buf :ex-mode-keymap :enter) nop)]
-    (-> buf
-        (enter keycode)
-        (assoc 
-          :keymap (buf :ex-mode-keymap)
-          :mode :ex-mode))))
-
 (defn init-normal-mode-keymap [buf]
   (let [visual-keymap (init-visual-mode-keymap-for-operators)]
     (-> (init-motion-keymap) 
         (merge
-          {":" start-ex-mode
-           "u" (wrap-keycode undo)
+          {"u" (wrap-keycode undo)
            "<c-r>" (wrap-keycode redo)
            "<c-g>" (wrap-keycode buf-pos-info)
            "<esc>" (wrap-keycode set-normal-mode)

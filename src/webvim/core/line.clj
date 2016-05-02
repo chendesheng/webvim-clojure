@@ -14,21 +14,21 @@
     (range-by-pos lidx pos)))
 
 (defn pos-line-first
-  ([{lidx :lineindex} pos] 
+  ([{lidx :lineindex} pos]
     (first (range-by-pos lidx pos)))
   ([{pos :pos lidx :lineindex}]
     (first (range-by-pos lidx pos))))
 ;(pos-line-first (rope "aa\naaa") 4)
 
 (defn pos-line-last
-  ([{lidx :lineindex} pos] 
+  ([{lidx :lineindex} pos]
     (last (range-by-pos lidx pos)))
   ([{pos :pos lidx :lineindex}]
     (last (range-by-pos lidx pos))))
 
 ;(pos-line (rope "aa\nbb") 1)
 
-(defn pos-line-start 
+(defn pos-line-start
   ([buf pos]
     (let [lf (pos-line-first buf pos)]
       (or (first (pos-re+ (buf :str) lf #"[\S\n]|((?<=\s)[\S\n])")) 0)))
@@ -41,7 +41,7 @@
   ([buf]
     (pos-line-end buf (buf :pos))))
 
-(defn buf-move-line 
+(defn buf-move-line
   [buf fnmove]
   (buf-set-pos buf
                (or (fnmove buf) (buf :pos))))
@@ -95,7 +95,7 @@
                      (fn [{r :str :as buf}]
                        (let [[a b] (range-by-line lidx n)
                              s (subr r a b)
-                             cx (visualx-to-charx s (buf :x) (buf :tabsize))]  
+                             cx (visualx-to-charx s (buf :x) (buf :tabsize))]
                          (+ a (bound-range cx 0 (-> s count dec)))))))))
 
 (defn lines-row [buf n]
@@ -120,7 +120,7 @@
     (map (fn [[a b]]
            (let [s (str (subr r a b))
                  x (+ (visualx-to-charx s vx tabsize) a)]
-             (if skip-hole? 
+             (if skip-hole?
                (if (>= x b) -1 x) ;use -1 fill "hole"
                x))) lines)))
 
@@ -132,7 +132,7 @@
 
 (defn- sort-column [a b eol]
   (let [[a b] (sort2 a b)]
-    [(if (= a eol) (dec a) a) 
+    [(if (= a eol) (dec a) a)
      (if (= b eol)
        (- b 2) b)])) ;if b < a select empty; both sides inclusive; length=b-a+1
 
@@ -169,10 +169,10 @@
       line-start))
 
 (defn column [buf]
-  (dec (visual-size 
+  (dec (visual-size
          (subr (buf :str)
                (pos-line-first buf)
-               (-> buf :pos inc)) 
+               (-> buf :pos inc))
          (buf :tabsize))))
 
 (defn buf-update-column [buf]
@@ -186,3 +186,6 @@
 
 (defn line-range[{lidx :lineindex} linenum]
   (range-by-line lidx linenum))
+
+(defn linenum-by-pos[{lidx :lineindex} pos]
+  (pos-linenum lidx pos))

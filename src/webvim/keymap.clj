@@ -20,18 +20,13 @@
         insert-mode-keymap (fire-event
                              :insert-mode-keymap
                              (init-insert-mode-keymap normal-mode-keymap buf)
-                             buf)
-        ex-mode-keymap (fire-event
-                         :ex-mode-keymap
-                         (init-ex-mode-keymap buf)
-                         buf)]
+                             buf)]
     {:normal-mode-keymap normal-mode-keymap
-     :insert-mode-keymap insert-mode-keymap
-     :ex-mode-keymap ex-mode-keymap}))
+     :insert-mode-keymap insert-mode-keymap}))
 
 (listen :new-buffer
         (fn [buf]
           (let [keymaps (init-keymap-tree buf)]
-            (merge buf 
-                   (assoc keymaps 
+            (merge buf
+                   (assoc keymaps
                           :keymap (keymaps :normal-mode-keymap))))))

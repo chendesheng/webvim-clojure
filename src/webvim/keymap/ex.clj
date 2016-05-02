@@ -334,7 +334,7 @@
 (defn split-arguments [s]
   (map first (re-seq #"\"(\\\\|\\\"|[^\"]*)\"|[^\s]+" (or s ""))))
 
-(defn- parse-range [ranges dot $]
+(defn- parse-range [ranges dot $ buf]
   (letfn [(calc-delta [delta op rg]
             (op (or delta 0) (Integer. (subs rg 1))))
           (return-nil-if-all-values-nil [coll]
@@ -348,6 +348,12 @@
                        (= "." rg) dot
                        ;TODO: (.startsWith "/" rg)
                        ;TODO: (.startsWith "'" rg)
+                       (or (= "'<" rg)
+                           (= "'>" rg))
+                       (let [[a b] (-> buf :visual :range sort2)]
+                         (if (-> rg second (= \<))
+                           (inc (linenum-by-pos buf a))
+                           (inc (linenum-by-pos buf b))))
                        :else base)
                :delta (if (re-test #"^[+-]\d" rg)
                         (+ (or delta 0) (Integer. rg))
@@ -376,7 +382,7 @@
 
 (defn parse-excmd [buf s]
   (let [{ranges :ranges cmd :cmd args :args} (split-ex-cmd s)
-        [a b] (parse-range ranges (-> buf :y inc) (buf-total-lines buf))]
+        [a b] (parse-range ranges (-> buf :y inc) (buf-total-lines buf) buf)]
     {:range [(dec a) (dec b)] ;start from zero
      :cmd cmd
      :args (split-arguments args)}))
@@ -465,20 +471,46 @@
    :continue-autocompl? (fn [_ _] true)})
 
 (defn init-ex-mode-keymap [buf]
-  (let [cmds (ex-commands buf)]
-    (-> (init-linebuf-keymap commands-history)
-        (wrap-key :leave
-                  (fn [handler]
-                    (fn [buf keycode]
-                      (-> buf
-                          (handler keycode)
-                          set-normal-mode))))
-        (assoc "<cr>"
-               (fn [buf keycode]
-                 (execute buf cmds))
-               "<tab>"
-               (fn [buf keycode]
-                 (ex-tab-complete buf cmds))))))
+  (let [cmds (ex-commands buf)
+        ex-mode-keymap
+        (-> (init-linebuf-keymap commands-history)
+            (wrap-key :enter
+                      (fn [handler]
+                        (fn [buf keycode]
+                          (-> buf
+                              (assoc :mode :ex-mode)
+                              (handler keycode)))))
+            (wrap-key :leave
+                      (fn [handler]
+                        (fn [buf keycode]
+                          (-> buf
+                              (handler keycode)
+                              set-normal-mode))))
+            (assoc "<cr>"
+                   (fn [buf keycode]
+                     (execute buf cmds))
+                   "<tab>"
+                   (fn [buf keycode]
+                     (ex-tab-complete buf cmds))))]
+    (fire-event :ex-mode-keymap ex-mode-keymap buf)))
+
+(listen :normal-mode-keymap
+        (fn [keymap buf]
+          (assoc keymap
+                 ":" (init-ex-mode-keymap buf))))
+
+(listen :visual-mode-keymap
+        (fn [keymap buf]
+          (assoc keymap
+                 ":" (wrap-key (init-ex-mode-keymap buf)
+                               :enter
+                               (fn [handler]
+                                 (fn [buf keycode]
+                                   (-> buf
+                                       (assoc :line-buffer {:prefix keycode
+                                                            :str (rope "'<,'>")
+                                                            :pos 5})
+                                       (handler keycode))))))))
 
 (defn wrap-command [cmds cmd f]
   (map
