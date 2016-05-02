@@ -137,7 +137,7 @@
           ;(println "line:" (+ from len) (nth lines (+ from len)) (str (subr r (nth lines (+ from len)))))
         (let [to (ensure-ends-with-newline to) ;some format tool may removes last \newline
               [a _] (line-range buf from)
-              [b _] (line-range buf (+ from len))]
+              [_ b] (line-range buf (dec (+ from len)))]
           ;(println "a b" a b)
           ;(print "to" to)
           (buf-replace buf a b to))) buf changes)))
