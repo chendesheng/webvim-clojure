@@ -54,7 +54,7 @@
     (let [typ (-> buf :context :last-visual-type)
           newtyp (keycode2type keycode)]
       (if (nil? newtyp)
-        (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<esc>" "<" ">" "r"} keycode))
+        (not (contains? #{"A" "I" "d" "c" "y" "=" "u" "<esc>" "<" ">" "r" ":"} keycode))
         (not (= typ newtyp))))))
 
 (defn- change-visual-mode-type [buf keycode]
