@@ -352,33 +352,36 @@
   (letfn [(calc-delta [delta op rg]
             (op (or delta 0) (Integer. (subs rg 1))))
           (return-nil-if-all-values-nil [coll]
-            (if (every? #(-> coll % nil?) (keys coll))
-              nil coll))
+                                        (if (every? #(-> coll % nil?) (keys coll))
+                                          nil coll))
           (next-res [{base :base delta :delta} rg]
-            (return-nil-if-all-values-nil
-              {:base (cond
-                       (re-test #"^\d" rg) (-> rg Integer. dec)
-                       (= "$" rg) $
-                       (= "." rg) dot
-                       ;TODO: (.startsWith "/" rg)
-                       (-> rg first (= \'))
-                       (parse-mark buf (last rg))
-                       :else base)
-               :delta (if (re-test #"^[+-]\d" rg)
-                        (+ (or delta 0) (Integer. rg))
-                        delta)}))
+                    (return-nil-if-all-values-nil
+                      {:base (cond
+                               (re-test #"^\d" rg) (-> rg Integer. dec)
+                               (= "$" rg) $
+                               (= "." rg) dot
+                               ;TODO: (.startsWith "/" rg)
+                               (-> rg first (= \'))
+                               (parse-mark buf (last rg))
+                               :else base)
+                       :delta (if (re-test #"^[+-]\d" rg)
+                                (+ (or delta 0) (Integer. rg))
+                                delta)}))
           (res-start [res]
-            (or (:end res) (:start res)))]
+                     (or (:end res) (:start res)))]
     (loop [[rg & restrg] (map #(.trim %) ranges)
            state :start
            res nil]
       (cond
         (nil? rg)
-        (sort2
-          [(+ (-> res :start :base (or dot))
-              (-> res :start :delta (or 0)))
-           (+ (-> res :end :base (or dot))
-              (-> res :end :delta (or 0)))])
+        (let [start (+ (-> res :start :base (or dot))
+                       (-> res :start :delta (or 0)))]
+          (sort2
+            [start
+             (if (-> res :end :base nil?)
+               start
+               (+ (-> res :end :base)
+                  (-> res :end :delta (or 0))))]))
         (= rg ",")
         (recur restrg :end {:start (res-start res)})
         (= rg ";")
@@ -417,7 +420,7 @@
             buf
             (-> buf
                 jump-push
-                (move-to-line (first rg))))
+                (move-to-line (last rg))))
           (let [handlers (filter seq?
                                  (map (fn [[cmd handler]]
                                         (if (.startsWith cmd excmd)
