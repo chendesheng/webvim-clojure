@@ -10,7 +10,10 @@
                 '[clojure.set :as set]
                 '[clojure.repl :refer :all]
                 %s)
-                %s)"
+                (try
+                  %s
+                  (catch Exception e
+                    (println e))))"
     (if (nil? ns)
       ""
       (format "'[%s :refer :all]" ns))
