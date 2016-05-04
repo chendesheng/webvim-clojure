@@ -128,10 +128,13 @@
     (dissoc buf :line-buffer)
     (linebuf-delete buf -1)))
 
+(defn- str-first-line [s]
+  (first (clojure.string/split-lines s)))
+
 (defn- linebuf-put [buf keycode]
   (let [txt (:str (registers-get keycode))]
     (if (string? txt)
-      (linebuf-insert buf (-> txt rope first-line .trimEnd str))
+      (linebuf-insert buf (str-first-line txt))
       buf)))
 
 (defn- linebuf-<c-w>
