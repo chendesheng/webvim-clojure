@@ -215,8 +215,6 @@
                    visual-keymap
                    {"c" (make-operator set-current-line change-range)
                     :after (fn [buf keycode]
-                             (log {:keycode keycode
-                                   :inclusive? (-> buf :context :inclusive?)})
                              (if (or (= keycode "c")
                                      (contains? visual-keymap keycode)
                                      (and

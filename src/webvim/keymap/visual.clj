@@ -58,7 +58,7 @@
         (not (= typ newtyp))))))
 
 (defn- change-visual-mode-type [buf keycode]
-  (log "change-visual-mode-type")
+  ;(log "change-visual-mode-type")
   (let [typ (-> buf :context :last-visual-type)
         newtyp (keycode2type keycode)]
     (if (= typ newtyp) buf
@@ -97,7 +97,7 @@
                                 (assoc :last-visual-type (-> buf :visual :type)
                                        :cancel-visual-mode? false)))))
         :after (fn [buf keycode]
-                 (log ["visual after:" keycode (-> buf :context :range)])
+                 ;(log ["visual after:" keycode (-> buf :context :range)])
                  (-> buf
                      (update-in [:visual :range]
                                 (fn [rg]
@@ -141,7 +141,7 @@
                                     (buf-set-pos (-> visual :range first))))))))))
 
 (defn- set-temp-visual-mode-range [{r :str {rg :range typ :type} :visual :as buf} keycode]
-  (log typ)
+  ;(log typ)
   (-> buf
       (set-linewise (= typ :visual-line))
       (set-default-inclusive keycode)

@@ -124,10 +124,10 @@
 
 (defn apply-line-changes [buf changes]
   ;(pprint changes)
-;    (pprint (count (buf :str)))
-;    (pprint (count lines))
-;    (pprint lines)
-;    (pprint changes)
+  ;(pprint (count (buf :str)))
+  ;(pprint (count lines))
+  ;(pprint lines)
+  ;(pprint changes)
   (fix-position
     (reduce
       (fn [buf {from :from len :len to :to}]
