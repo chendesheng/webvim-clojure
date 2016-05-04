@@ -49,14 +49,14 @@
 
 (defn- init-json-file-type [buf]
   (-> buf
-      (assoc-in [:language :id] ::lisp)
+      (assoc-in [:language :id] ::json)
       (assoc-in [:language :name] "JSON")
       (assoc :tabsize 4)
       (assoc :expandtab true)))
 
 (defn- init-yaml-file-type [buf]
   (-> buf
-      (assoc-in [:language :id] ::lisp)
+      (assoc-in [:language :id] ::yaml)
       (assoc-in [:language :name] "YAML")
       (assoc :tabsize 4)
       (assoc :expandtab true)))
