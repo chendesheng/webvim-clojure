@@ -26,11 +26,11 @@ function hlclojure(hljs) {
             'sigs reify second ffirst fnext nfirst nnext defmulti defmethod meta with-meta ns in-ns create-ns import ' +
             'refer keys select-keys vals key val rseq name namespace promise into transient persistent! conj! ' +
             'assoc! dissoc! pop! disj! use class type num float double short byte boolean bigint biginteger ' +
-            'bigdec print-method print-dup throw-if printf format load compile get-in update update-in pr pr-on newline ' +
+            'bigdec print-method print-dup throw-if printf println print format load compile get-in update update-in pr pr-on newline ' +
             'flush read slurp read-line subvec with-open memfn time re-find re-groups rand-int rand mod locking ' +
             'assert-valid-fdecl alias resolve ref deref refset swap! reset! set-validator! compare-and-set! alter-meta! ' +
             'reset-meta! commute get-validator alter ref-set ref-history-count ref-min-history ref-max-history ensure sync io! ' +
-            'new next conj set! to-array future future-call into-array aset gen-class reduce map filter find empty ' +
+            'new next conj set! to-array future future-call into-array aset gen-class reduce reduce-kv map filter find empty ' +
             'hash-map hash-set sorted-map sorted-map-by sorted-set sorted-set-by vec vector seq flatten reverse assoc assoc-in dissoc list ' +
             'disj get union difference intersection extend extend-type extend-protocol int nth delay count concat chunk chunk-buffer ' +
             'chunk-append chunk-first chunk-rest max min dec unchecked-inc-int unchecked-inc unchecked-dec-inc unchecked-dec unchecked-negate ' +
