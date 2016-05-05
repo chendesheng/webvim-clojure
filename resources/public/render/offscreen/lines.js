@@ -1,4 +1,4 @@
-function renderLines(buf) {
+var renderLines = wrapTime(function renderLines(buf) {
     var $buf = $buffer(buf.id);
     if (!$buf.onscroll) {
         $buf.onscroll = onscrollRender;
@@ -37,7 +37,7 @@ function renderLines(buf) {
     buf.dirtyLines = {};
 
     hl.states.push(null);
-}
+});
 
 function renderLine(items) {
     var block = createSpan();

@@ -192,3 +192,12 @@ function is32BitsChar(ch) {
     }
 }
 
+
+function wrapTime(fn) {
+    return function(){     
+        console.time(fn.name);
+        var ret = fn.apply(this, arguments);
+        console.timeEnd(fn.name);
+        return ret;
+    };
+}
