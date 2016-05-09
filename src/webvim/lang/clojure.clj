@@ -163,7 +163,7 @@
   ;use temp file
   (if (buf :dirty)
     (let [res (time (cljfmt-diff (-> buf :str str) (buf :name)))]
-        ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
+      ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
       (if (-> res :err empty?) 
         (-> buf
             (apply-line-changes
