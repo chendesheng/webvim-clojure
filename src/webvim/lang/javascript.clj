@@ -31,12 +31,16 @@
 (defn- javascript? [buf]
   (-> buf :language :id (= ::javascript)))
 
+(defn- json? [buf]
+  (-> buf :language :id (= ::json)))
+
 (comment defn- jsfmt [s]
          (println "jsfmt")
          (clojure.java.shell/sh "jsfmt" "-d" :in s))
 
 (listen :init-ex-commands
         (fn [cmds buf]
-          (if (javascript? buf)
+          (if (or (javascript? buf)
+                  (json? buf))
             (wrap-async-auto-format cmds (js-beautify-formatter "js"))
             cmds)))

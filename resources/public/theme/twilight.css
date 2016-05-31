@@ -1,7 +1,7 @@
 body,
 .gutter {
     background: #202020;
-    font-size: 25px;
+    font-size: 22px;
     color: #F8F8F8;
 }
 
@@ -54,7 +54,9 @@ body,
     color: rgb(114, 110, 115);
 }
 
-.lines .doctag {}
+.lines .doctag {
+    font-style: italic;
+}
 
 .lines .string {
     color: rgb(160, 171, 127);
