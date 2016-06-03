@@ -1,0 +1,347 @@
+{:name "SQL",
+ :file_extensions ["sql" "ddl" "dml"],
+ :scope "source.sql",
+ :contexts
+ {:main
+  {:compiled? true,
+   :pattern
+   #"--|#|/\*|(?i:^\s*(create(?:\s+or\s+replace)?)\s+(aggregate|conversion|database|domain|function|group|(?:unique\s+)?index|language|operator class|operator|procedure|rule|schema|sequence|table|tablespace|trigger|type|user|view)\s+)(?:(\w+)|'(\w+)'|\"(\w+)\"|`(\w+)`)|(?i:^\s*(drop)\s+(aggregate|conversion|database|domain|function|group|index|language|operator class|operator|procedure|rule|schema|sequence|table|tablespace|trigger|type|user|view))|(?i:\s*(drop)\s+(table)\s+(\w+)(\s+cascade)?\b)|(?i:^\s*(alter)\s+(aggregate|conversion|database|domain|function|group|index|language|operator class|operator|procedure|rule|schema|sequence|table|tablespace|trigger|type|user|view)\s+)|(?xi)
+
+				# normal stuff, capture 1
+				 \b(bigint|bigserial|bit|boolean|box|bytea|cidr|circle|date|datetime|double\sprecision|inet|int|integer|line|lseg|macaddr|money|ntext|oid|path|point|polygon|real|serial|smallint|sysdate|sysname|text)\b
+
+				# numeric suffix, capture 2 + 3i
+				|\b(bit\svarying|character\s(?:varying)?|tinyint|var\schar|float|interval)\((\d+)\)
+
+				# optional numeric suffix, capture 4 + 5i
+				|\b(char|number|nvarchar|varbinary|varchar\d?)\b(?:\((\d+)\))?
+
+				# special case, capture 6 + 7i + 8i
+				|\b(numeric|decimal)\b(?:\((\d+),(\d+)\))?
+
+				# special case, captures 9, 10i, 11
+				|\b(times?)\b(?:\((\d+)\))?(\swith(?:out)?\stime\szone\b)?
+
+				# special case, captures 12, 13, 14i, 15
+				|\b(timestamp)(?:(s|tz))?\b(?:\((\d+)\))?(\s(with|without)\stime\szone\b)?|(?i:\b((?:primary|foreign)\s+key|references|on\sdelete(\s+cascade)?|on\supdate(\s+cascade)?|check|constraint|default)\b)|\b\d+\b|(?i:\b(true|false)\b)|(?i:\b(select(\s+(distinct|top))?|insert(\s+(ignore\s+)?into)?|update|delete|from|set|where|group\sby|or|like|between|and|with|case|when|then|else|end|union(\s+all)?|having|order\sby|limit|(inner|cross)\s+join|join|straight_join|(left|right)(\s+outer)?\s+join|natural(\s+(left|right)(\s+outer)?)?\s+join)\b)|(?i:\b(on|((is\s+)?not\s+)?null)\b)|(?i:\bvalues\b)|(?i:\b(begin(\s+work)?|start\s+transaction|commit(\s+work)?|rollback(\s+work)?)\b)|(?i:\b(grant(\swith\sgrant\soption)?|revoke)\b)|(?i:\bin\b)|(?i:^\s*(comment\s+on\s+(table|column|aggregate|constraint|database|domain|function|index|operator|rule|schema|sequence|trigger|type|view))\s+.*?\s+(is)\s+)|(?i)\bAS\b|(?i)\b(DESC|ASC)\b|\*|[!<>]?=|<>|<|>|-|\+|/|\|\||(?i)\b(CURRENT_(DATE|TIME(STAMP)?|USER)|(SESSION|SYSTEM)_USER)\b|(?i)\b(AVG|COUNT|MIN|MAX|SUM)(?=\s*\()|(?i)\b(CONCATENATE|CONVERT|LOWER|SUBSTRING|TRANSLATE|TRIM|UPPER)\b|\b(\w+?)\.(\w+)\b|'|`|\"|%\{|/(?=\S.*/)|%r\{|(\()(\))",
+   :meta_scope nil,
+   :matches
+   ({:match #"^--$",
+     :scope "punctuation.definition.comment.sql",
+     :push nil,
+     :captures {:0 "punctuation.definition.comment.sql"},
+     :pop false}
+    {:match #"^#$",
+     :scope "punctuation.definition.comment.sql",
+     :push nil,
+     :captures {:0 "punctuation.definition.comment.sql"},
+     :pop false}
+    {:match #"^/\*$",
+     :scope "punctuation.definition.comment.sql",
+     :push nil,
+     :captures {:0 "punctuation.definition.comment.sql"},
+     :pop false}
+    {:match
+     #"^(?i:^\s*(create(?:\s+or\s+replace)?)\s+(aggregate|conversion|database|domain|function|group|(?:unique\s+)?index|language|operator class|operator|procedure|rule|schema|sequence|table|tablespace|trigger|type|user|view)\s+)(?:(\w+)|'(\w+)'|\"(\w+)\"|`(\w+)`)$",
+     :scope "meta.create.sql",
+     :captures
+     {:1 "keyword.other.create.sql",
+      :2 "keyword.other.sql",
+      :3 "entity.name.function.sql",
+      :4 "entity.name.function.sql",
+      :5 "entity.name.function.sql",
+      :6 "entity.name.function.sql",
+      :0 "meta.create.sql"},
+     :pop false,
+     :push nil}
+    {:match
+     #"^(?i:^\s*(drop)\s+(aggregate|conversion|database|domain|function|group|index|language|operator class|operator|procedure|rule|schema|sequence|table|tablespace|trigger|type|user|view))$",
+     :scope "meta.drop.sql",
+     :captures
+     {:1 "keyword.other.create.sql",
+      :2 "keyword.other.sql",
+      :0 "meta.drop.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^(?i:\s*(drop)\s+(table)\s+(\w+)(\s+cascade)?\b)$",
+     :scope "meta.drop.sql",
+     :captures
+     {:1 "keyword.other.create.sql",
+      :2 "keyword.other.table.sql",
+      :3 "entity.name.function.sql",
+      :4 "keyword.other.cascade.sql",
+      :0 "meta.drop.sql"},
+     :pop false,
+     :push nil}
+    {:match
+     #"^(?i:^\s*(alter)\s+(aggregate|conversion|database|domain|function|group|index|language|operator class|operator|procedure|rule|schema|sequence|table|tablespace|trigger|type|user|view)\s+)$",
+     :scope "meta.alter.sql",
+     :captures
+     {:1 "keyword.other.create.sql",
+      :2 "keyword.other.table.sql",
+      :0 "meta.alter.sql"},
+     :pop false,
+     :push nil}
+    {:match
+     #"^(?xi)
+
+				# normal stuff, capture 1
+				 \b(bigint|bigserial|bit|boolean|box|bytea|cidr|circle|date|datetime|double\sprecision|inet|int|integer|line|lseg|macaddr|money|ntext|oid|path|point|polygon|real|serial|smallint|sysdate|sysname|text)\b
+
+				# numeric suffix, capture 2 + 3i
+				|\b(bit\svarying|character\s(?:varying)?|tinyint|var\schar|float|interval)\((\d+)\)
+
+				# optional numeric suffix, capture 4 + 5i
+				|\b(char|number|nvarchar|varbinary|varchar\d?)\b(?:\((\d+)\))?
+
+				# special case, capture 6 + 7i + 8i
+				|\b(numeric|decimal)\b(?:\((\d+),(\d+)\))?
+
+				# special case, captures 9, 10i, 11
+				|\b(times?)\b(?:\((\d+)\))?(\swith(?:out)?\stime\szone\b)?
+
+				# special case, captures 12, 13, 14i, 15
+				|\b(timestamp)(?:(s|tz))?\b(?:\((\d+)\))?(\s(with|without)\stime\szone\b)?$",
+     :captures
+     {:14 "constant.numeric.sql",
+      :12 "storage.type.sql",
+      :11 "storage.type.sql",
+      :10 "constant.numeric.sql",
+      :13 "storage.type.sql",
+      :4 "storage.type.sql",
+      :7 "constant.numeric.sql",
+      :1 "storage.type.sql",
+      :8 "constant.numeric.sql",
+      :9 "storage.type.sql",
+      :2 "storage.type.sql",
+      :5 "constant.numeric.sql",
+      :15 "storage.type.sql",
+      :3 "constant.numeric.sql",
+      :6 "storage.type.sql"},
+     :pop false,
+     :push nil}
+    {:match
+     #"^(?i:\b((?:primary|foreign)\s+key|references|on\sdelete(\s+cascade)?|on\supdate(\s+cascade)?|check|constraint|default)\b)$",
+     :scope "storage.modifier.sql",
+     :captures {:0 "storage.modifier.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^\b\d+\b$",
+     :scope "constant.numeric.sql",
+     :captures {:0 "constant.numeric.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^(?i:\b(true|false)\b)$",
+     :scope "constant.boolean.sql",
+     :captures {:0 "constant.boolean.sql"},
+     :pop false,
+     :push nil}
+    {:match
+     #"^(?i:\b(select(\s+(distinct|top))?|insert(\s+(ignore\s+)?into)?|update|delete|from|set|where|group\sby|or|like|between|and|with|case|when|then|else|end|union(\s+all)?|having|order\sby|limit|(inner|cross)\s+join|join|straight_join|(left|right)(\s+outer)?\s+join|natural(\s+(left|right)(\s+outer)?)?\s+join)\b)$",
+     :scope "keyword.other.DML.sql",
+     :captures {:0 "keyword.other.DML.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^(?i:\b(on|((is\s+)?not\s+)?null)\b)$",
+     :scope "keyword.other.DDL.create.II.sql",
+     :captures {:0 "keyword.other.DDL.create.II.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^(?i:\bvalues\b)$",
+     :scope "keyword.other.DML.II.sql",
+     :captures {:0 "keyword.other.DML.II.sql"},
+     :pop false,
+     :push nil}
+    {:match
+     #"^(?i:\b(begin(\s+work)?|start\s+transaction|commit(\s+work)?|rollback(\s+work)?)\b)$",
+     :scope "keyword.other.LUW.sql",
+     :captures {:0 "keyword.other.LUW.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^(?i:\b(grant(\swith\sgrant\soption)?|revoke)\b)$",
+     :scope "keyword.other.authorization.sql",
+     :captures {:0 "keyword.other.authorization.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^(?i:\bin\b)$",
+     :scope "keyword.other.data-integrity.sql",
+     :captures {:0 "keyword.other.data-integrity.sql"},
+     :pop false,
+     :push nil}
+    {:match
+     #"^(?i:^\s*(comment\s+on\s+(table|column|aggregate|constraint|database|domain|function|index|operator|rule|schema|sequence|trigger|type|view))\s+.*?\s+(is)\s+)$",
+     :scope "keyword.other.object-comments.sql",
+     :captures {:0 "keyword.other.object-comments.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^(?i)\bAS\b$",
+     :scope "keyword.other.alias.sql",
+     :captures {:0 "keyword.other.alias.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^(?i)\b(DESC|ASC)\b$",
+     :scope "keyword.other.order.sql",
+     :captures {:0 "keyword.other.order.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^\*$",
+     :scope "keyword.operator.star.sql",
+     :captures {:0 "keyword.operator.star.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^[!<>]?=|<>|<|>$",
+     :scope "keyword.operator.comparison.sql",
+     :captures {:0 "keyword.operator.comparison.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^-|\+|/$",
+     :scope "keyword.operator.math.sql",
+     :captures {:0 "keyword.operator.math.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^\|\|$",
+     :scope "keyword.operator.concatenator.sql",
+     :captures {:0 "keyword.operator.concatenator.sql"},
+     :pop false,
+     :push nil}
+    {:match
+     #"^(?i)\b(CURRENT_(DATE|TIME(STAMP)?|USER)|(SESSION|SYSTEM)_USER)\b$",
+     :comment
+     "List of SQL99 built-in functions from http://www.oreilly.com/catalog/sqlnut/chapter/ch04.html",
+     :scope "support.function.scalar.sql",
+     :captures {:0 "support.function.scalar.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^(?i)\b(AVG|COUNT|MIN|MAX|SUM)(?=\s*\()$",
+     :comment
+     "List of SQL99 built-in functions from http://www.oreilly.com/catalog/sqlnut/chapter/ch04.html",
+     :scope "support.function.aggregate.sql",
+     :captures {:0 "support.function.aggregate.sql"},
+     :pop false,
+     :push nil}
+    {:match
+     #"^(?i)\b(CONCATENATE|CONVERT|LOWER|SUBSTRING|TRANSLATE|TRIM|UPPER)\b$",
+     :scope "support.function.string.sql",
+     :captures {:0 "support.function.string.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^\b(\w+?)\.(\w+)\b$",
+     :captures
+     {:1 "constant.other.database-name.sql",
+      :2 "constant.other.table-name.sql"},
+     :pop false,
+     :push nil}
+    {:match #"^'$",
+     :captures {:0 "punctuation.definition.string.begin.sql"},
+     :push nil,
+     :pop false}
+    {:match #"^`$",
+     :captures {:0 "punctuation.definition.string.begin.sql"},
+     :push nil,
+     :pop false}
+    {:match #"^\"$",
+     :captures {:0 "punctuation.definition.string.begin.sql"},
+     :push nil,
+     :pop false}
+    {:match #"^%\{$",
+     :captures {:0 "punctuation.definition.string.begin.sql"},
+     :push nil,
+     :pop false}
+    {:match #"^/(?=\S.*/)$",
+     :captures {:0 "punctuation.definition.string.begin.sql"},
+     :push nil,
+     :pop false}
+    {:match #"^%r\{$",
+     :comment
+     "We should probably handle nested bracket pairs!?! -- Allan",
+     :captures {:0 "punctuation.definition.string.begin.sql"},
+     :push nil,
+     :pop false}
+    {:match #"^(\()(\))$",
+     :comment "Allow for special ↩ behavior",
+     :scope "meta.block.sql",
+     :captures
+     {:1 "punctuation.section.scope.begin.sql",
+      :2 "punctuation.section.scope.end.sql",
+      :0 "meta.block.sql"},
+     :pop false,
+     :push nil})},
+  :comments
+  {:compiled? true,
+   :pattern #"--|#|/\*",
+   :meta_scope nil,
+   :matches
+   ({:match #"^--$",
+     :scope "punctuation.definition.comment.sql",
+     :push nil,
+     :captures {:0 "punctuation.definition.comment.sql"},
+     :pop false}
+    {:match #"^#$",
+     :scope "punctuation.definition.comment.sql",
+     :push nil,
+     :captures {:0 "punctuation.definition.comment.sql"},
+     :pop false}
+    {:match #"^/\*$",
+     :scope "punctuation.definition.comment.sql",
+     :push nil,
+     :captures {:0 "punctuation.definition.comment.sql"},
+     :pop false})},
+  :regexps
+  {:compiled? true,
+   :pattern #"/(?=\S.*/)|%r\{",
+   :meta_scope nil,
+   :matches
+   ({:match #"^/(?=\S.*/)$",
+     :captures {:0 "punctuation.definition.string.begin.sql"},
+     :push nil,
+     :pop false}
+    {:match #"^%r\{$",
+     :comment
+     "We should probably handle nested bracket pairs!?! -- Allan",
+     :captures {:0 "punctuation.definition.string.begin.sql"},
+     :push nil,
+     :pop false})},
+  :string_escape
+  {:compiled? true,
+   :pattern #"\\.",
+   :meta_scope nil,
+   :matches
+   ({:match #"^\\.$",
+     :scope "constant.character.escape.sql",
+     :captures {:0 "constant.character.escape.sql"},
+     :pop false,
+     :push nil})},
+  :string_interpolation
+  {:compiled? true,
+   :pattern #"(#\{)([^\}]*)(\})",
+   :meta_scope nil,
+   :matches
+   ({:match #"^(#\{)([^\}]*)(\})$",
+     :scope "string.interpolated.sql",
+     :captures
+     {:1 "punctuation.definition.string.begin.sql",
+      :3 "punctuation.definition.string.end.sql",
+      :0 "string.interpolated.sql"},
+     :pop false,
+     :push nil})},
+  :strings
+  {:compiled? true,
+   :pattern #"'|`|\"|%\{",
+   :meta_scope nil,
+   :matches
+   ({:match #"^'$",
+     :captures {:0 "punctuation.definition.string.begin.sql"},
+     :push nil,
+     :pop false}
+    {:match #"^`$",
+     :captures {:0 "punctuation.definition.string.begin.sql"},
+     :push nil,
+     :pop false}
+    {:match #"^\"$",
+     :captures {:0 "punctuation.definition.string.begin.sql"},
+     :push nil,
+     :pop false}
+    {:match #"^%\{$",
+     :captures {:0 "punctuation.definition.string.begin.sql"},
+     :push nil,
+     :pop false})}}}

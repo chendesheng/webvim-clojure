@@ -1,0 +1,3778 @@
+{:name "Go",
+ :file_extensions ["go"],
+ :first_line_match "-[*]-( Mode:)? Go -[*]-",
+ :scope "source.go",
+ :variables
+ {:identifier "\\b[[:alpha:]_][[:alnum:]_]*\\b",
+  :type_chars "[[:alnum:]\\s,._*&<>\\[\\]-]"},
+ :contexts
+ {:_context_21
+  {:compiled? true,
+   :pattern
+   #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\b[\p{Alpha}_][\p{Alnum}_]*\b|\(",
+   :meta_scope nil,
+   :matches
+   ({:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\b[\p{Alpha}_][\p{Alnum}_]*\b",
+     :scope "variable.function.go",
+     :captures {:0 "variable.function.go"}}
+    {:match #"\(",
+     :scope "meta.group.go punctuation.definition.group.begin.go",
+     :set "_context_22",
+     :captures
+     {:0 "meta.group.go punctuation.definition.group.begin.go"}})},
+  :types-group
+  {:compiled? true,
+   :pattern
+   #"^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\*|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+   :meta_scope nil,
+   :matches
+   ({:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}})},
+  :_context_28
+  {:compiled? true,
+   :pattern
+   #"\)|\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope "meta.group.go",
+   :matches
+   ({:match #"\)",
+     :scope "punctuation.definition.group.end.go",
+     :pop true,
+     :captures {:0 "punctuation.definition.group.end.go"}}
+    {:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :block
+  {:compiled? true,
+   :pattern #"\{",
+   :meta_scope nil,
+   :matches
+   ({:match #"\{",
+     :scope "punctuation.definition.block.begin.go",
+     :push :_context_1,
+     :captures {:0 "punctuation.definition.block.begin.go"}})},
+  :anonymous-functions
+  {:compiled? true,
+   :pattern
+   #"(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+   :meta_scope nil,
+   :matches
+   ({:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params})},
+  :initializers
+  {:compiled? true,
+   :pattern
+   #"\b(var)\s+(\()|\b(const)\s+(\()|\b(const)b(?:\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b))?|^\s*(var)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=.*:=)",
+   :meta_scope nil,
+   :matches
+   ({:match #"\b(var)\s+(\()",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_2}
+    {:match #"\b(const)\s+(\()",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_4}
+    {:match #"\b(const)b(?:\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b))?",
+     :captures {:1 "storage.type.go", :2 "entity.name.constant.go"}}
+    {:match #"^\s*(var)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "variable.other.go"},
+     :push :_context_6}
+    {:match #"(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=.*:=)",
+     :scope "variable.other.go",
+     :push :_context_8,
+     :captures {:0 "variable.other.go"}})},
+  :_context_26
+  {:compiled? true,
+   :pattern
+   #"$|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|\b(chan|func|var|type|map)\b|\bconst\b",
+   :meta_scope "meta.type.go",
+   :matches
+   ({:match #"$", :pop true}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}})},
+  :_context_5
+  {:compiled? true,
+   :pattern #"\s*(,)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)|",
+   :meta_scope nil,
+   :matches
+   ({:match #"\s*(,)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures
+     {:1 "punctuation.separator.go", :2 "entity.name.constant.go"}}
+    {:match #"", :pop true})},
+  :_context_16
+  {:compiled? true,
+   :pattern
+   #"\)|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\"|`",
+   :meta_scope "meta.import.go",
+   :matches
+   ({:match #"\)",
+     :scope "meta.group.go punctuation.definition.group.end.go",
+     :pop true,
+     :captures
+     {:0 "meta.group.go punctuation.definition.group.end.go"}}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}})},
+  :no-param-anonymous-function-begin
+  {:compiled? true,
+   :pattern #"(func)(\s*)((\()\s*(\)))(\s*)",
+   :meta_scope nil,
+   :matches
+   ({:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type})},
+  :_context_10
+  {:compiled? true,
+   :pattern
+   #"(?=\))|(,)\s*|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\*|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+   :meta_scope nil,
+   :matches
+   ({:match #"(?=\))", :set "function-params-other"}
+    {:match #"(,)\s*",
+     :captures {:1 "punctuation.separator.go"},
+     :set "function-params-param-name"}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}})},
+  :global
+  {:compiled? true,
+   :pattern
+   #"^\s*(import)\s+(?=\")|^\s*(import)\s*(\()|(func)\s*((\()(?:\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+)?(\*?)\s*\b[\p{Alpha}_][\p{Alnum}_]*\b\s*(\)))\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()|(func)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(func)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|\b(var)\s+(\()|\b(const)\s+(\()|\b(const)b(?:\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b))?|^\s*(var)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=.*:=)|\{|^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(:)(?!=)|\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+(struct)\b|\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope nil,
+   :matches
+   ({:match #"^\s*(import)\s+(?=\")",
+     :scope "meta.import.go",
+     :captures {:1 "keyword.control.import.go", :0 "meta.import.go"},
+     :push :_context_15}
+    {:match #"^\s*(import)\s*(\()",
+     :captures
+     {:1 "keyword.control.import.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_16}
+    {:match
+     #"(func)\s*((\()(?:\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+)?(\*?)\s*\b[\p{Alpha}_][\p{Alnum}_]*\b\s*(\)))\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()",
+     :scope "meta.function.declaration.go",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go",
+      :3 "punctuation.definition.group.begin.go",
+      :4 "variable.parameter.receiver.go",
+      :5 "keyword.operator.go",
+      :6 "punctuation.definition.group.end.go",
+      :7 "entity.name.function.go",
+      :0 "meta.function.declaration.go"},
+     :push :function-params}
+    {:match #"(func)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()",
+     :scope "meta.function.declaration.go",
+     :captures
+     {:1 "storage.type.go",
+      :2 "entity.name.function.go",
+      :0 "meta.function.declaration.go"},
+     :push :function-params}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(func)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "entity.name.function.go"}}
+    {:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"\b(var)\s+(\()",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_2}
+    {:match #"\b(const)\s+(\()",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_4}
+    {:match #"\b(const)b(?:\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b))?",
+     :captures {:1 "storage.type.go", :2 "entity.name.constant.go"}}
+    {:match #"^\s*(var)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "variable.other.go"},
+     :push :_context_6}
+    {:match #"(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=.*:=)",
+     :scope "variable.other.go",
+     :push :_context_8,
+     :captures {:0 "variable.other.go"}}
+    {:match #"\{",
+     :scope "punctuation.definition.block.begin.go",
+     :push :_context_1,
+     :captures {:0 "punctuation.definition.block.begin.go"}}
+    {:match #"^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(:)(?!=)",
+     :captures
+     {:1 "entity.name.label.go", :2 "punctuation.separator.go"}}
+    {:match #"\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+(struct)\b",
+     :captures
+     {:1 "storage.type.go",
+      :2 "entity.name.struct.go",
+      :3 "storage.type.go"},
+     :push :_context_24}
+    {:match #"\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "entity.name.type.go"},
+     :push :_context_26}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :_context_17
+  {:compiled? true,
+   :pattern
+   #"(?=\s|$)|\]|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+   :meta_scope nil,
+   :matches
+   ({:match #"(?=\s|$)", :pop true}
+    {:match #"\]",
+     :scope "meta.brackets.go punctuation.definition.brackets.end.go",
+     :pop true,
+     :captures
+     {:0 "meta.brackets.go punctuation.definition.brackets.end.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}})},
+  :function-params-other
+  {:compiled? true,
+   :pattern
+   #"(?=\)\s*)|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\b[\p{Alpha}_][\p{Alnum}_]*\b(?=\s+[^\s,)])|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\*|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|,",
+   :meta_scope nil,
+   :matches
+   ({:match #"(?=\)\s*)", :set "_context_9"}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\b[\p{Alpha}_][\p{Alnum}_]*\b(?=\s+[^\s,)])",
+     :scope "variable.parameter.go",
+     :set "_context_10",
+     :captures {:0 "variable.parameter.go"}}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #",",
+     :scope "punctuation.separator.go",
+     :captures {:0 "punctuation.separator.go"}})},
+  :basic-types
+  {:compiled? true,
+   :pattern
+   #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+   :meta_scope nil,
+   :matches
+   ({:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}})},
+  :_context_23
+  {:compiled? true,
+   :pattern
+   #"'|\\(\\|[abfnrutv'\"]|x\h{2}|u\h{4}|U\h{8}|[0-7]{3})|\\.",
+   :meta_scope "string.quoted.single.go",
+   :matches
+   ({:match #"'",
+     :scope "punctuation.definition.string.end.go",
+     :pop true,
+     :captures {:0 "punctuation.definition.string.end.go"}}
+    {:match #"\\(\\|[abfnrutv'\"]|x\h{2}|u\h{4}|U\h{8}|[0-7]{3})",
+     :scope "constant.character.escape.go",
+     :captures {:0 "constant.character.escape.go"}}
+    {:match #"\\.",
+     :scope "invalid.illegal.unknown-escape.go",
+     :captures {:0 "invalid.illegal.unknown-escape.go"}})},
+  :function-params
+  {:compiled? true,
+   :pattern #"(\s*)(\()(\s*)",
+   :meta_scope nil,
+   :matches
+   ({:match #"(\s*)(\()(\s*)",
+     :captures
+     {:1 "meta.function.go",
+      :2
+      "meta.function.parameters.go meta.group.go punctuation.definition.group.begin.go",
+      :3 "meta.function.parameters.go meta.group.go"},
+     :set "function-params-param-name"})},
+  :strings
+  {:compiled? true,
+   :pattern #"\"|`",
+   :meta_scope nil,
+   :matches
+   ({:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}})},
+  :comments
+  {:compiled? true,
+   :pattern
+   #"^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//",
+   :meta_scope nil,
+   :matches
+   ({:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}})},
+  :late-keywords
+  {:compiled? true,
+   :pattern #"\b(chan|func|var|type|map)\b|\bconst\b",
+   :meta_scope nil,
+   :matches
+   ({:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}})},
+  :single-param-anonymous-function-begin
+  {:compiled? true,
+   :pattern
+   #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+   :meta_scope nil,
+   :matches
+   ({:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params})},
+  :functions
+  {:compiled? true,
+   :pattern
+   #"(func)\s*((\()(?:\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+)?(\*?)\s*\b[\p{Alpha}_][\p{Alnum}_]*\b\s*(\)))\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()|(func)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(func)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+   :meta_scope nil,
+   :matches
+   ({:match
+     #"(func)\s*((\()(?:\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+)?(\*?)\s*\b[\p{Alpha}_][\p{Alnum}_]*\b\s*(\)))\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()",
+     :scope "meta.function.declaration.go",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go",
+      :3 "punctuation.definition.group.begin.go",
+      :4 "variable.parameter.receiver.go",
+      :5 "keyword.operator.go",
+      :6 "punctuation.definition.group.end.go",
+      :7 "entity.name.function.go",
+      :0 "meta.function.declaration.go"},
+     :push :function-params}
+    {:match #"(func)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()",
+     :scope "meta.function.declaration.go",
+     :captures
+     {:1 "storage.type.go",
+      :2 "entity.name.function.go",
+      :0 "meta.function.declaration.go"},
+     :push :function-params}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(func)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "entity.name.function.go"}})},
+  :_context_6
+  {:compiled? true,
+   :pattern
+   #"^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\s*(,)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)|",
+   :meta_scope "meta.initialization.explicit.go",
+   :matches
+   ({:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\s*(,)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "punctuation.separator.go", :2 "variable.other.go"}}
+    {:match #"", :set "_context_7"})},
+  :_context_11
+  {:compiled? true,
+   :pattern
+   #"\"|%[#0\- +']*(\[\d+\])?[,;:_]?((-?\d+)|(\[\d+\])?\*)?(\.((-?\d+)|(\[\d+\])?\*)?)?[diouxXDOUeEfFgGaAcCsSpqnvtTbyYhHmMzZ%]|%|\\(\\|[abfnrutv'\"]|x\h{2}|u\h{4}|U\h{8}|[0-7]{3})|\\.",
+   :meta_scope "string.quoted.double.go",
+   :matches
+   ({:match #"\"",
+     :scope "punctuation.definition.string.end.go",
+     :pop true,
+     :captures {:0 "punctuation.definition.string.end.go"}}
+    {:match
+     #"%[#0\- +']*(\[\d+\])?[,;:_]?((-?\d+)|(\[\d+\])?\*)?(\.((-?\d+)|(\[\d+\])?\*)?)?[diouxXDOUeEfFgGaAcCsSpqnvtTbyYhHmMzZ%]",
+     :scope "constant.other.placeholder.go",
+     :captures {:0 "constant.other.placeholder.go"}}
+    {:match #"%",
+     :scope "invalid.illegal.placeholder.go",
+     :captures {:0 "invalid.illegal.placeholder.go"}}
+    {:match #"\\(\\|[abfnrutv'\"]|x\h{2}|u\h{4}|U\h{8}|[0-7]{3})",
+     :scope "constant.character.escape.go",
+     :captures {:0 "constant.character.escape.go"}}
+    {:match #"\\.",
+     :scope "invalid.illegal.unknown-escape.go",
+     :captures {:0 "invalid.illegal.unknown-escape.go"}})},
+  :_context_13
+  {:compiled? true,
+   :pattern #"\*/",
+   :meta_scope "comment.block.go",
+   :matches
+   ({:match #"\*/",
+     :scope "punctuation.definition.comment.go",
+     :pop true,
+     :captures {:0 "punctuation.definition.comment.go"}})},
+  :_context_18
+  {:compiled? true,
+   :pattern
+   #"\)|,|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\*|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+   :meta_scope nil,
+   :matches
+   ({:match #"\)",
+     :scope "punctuation.definition.group.end.go",
+     :set "function-body",
+     :captures {:0 "punctuation.definition.group.end.go"}}
+    {:match #",",
+     :scope "punctuation.separator.go",
+     :captures {:0 "punctuation.separator.go"}}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}})},
+  :reciever-function-begin
+  {:compiled? true,
+   :pattern
+   #"(func)\s*((\()(?:\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+)?(\*?)\s*\b[\p{Alpha}_][\p{Alnum}_]*\b\s*(\)))\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()",
+   :meta_scope nil,
+   :matches
+   ({:match
+     #"(func)\s*((\()(?:\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+)?(\*?)\s*\b[\p{Alpha}_][\p{Alnum}_]*\b\s*(\)))\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()",
+     :scope "meta.function.declaration.go",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go",
+      :3 "punctuation.definition.group.begin.go",
+      :4 "variable.parameter.receiver.go",
+      :5 "keyword.operator.go",
+      :6 "punctuation.definition.group.end.go",
+      :7 "entity.name.function.go",
+      :0 "meta.function.declaration.go"},
+     :push :function-params})},
+  :_context_2
+  {:compiled? true,
+   :pattern
+   #"\)|^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)|\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope "meta.initialization.multiple.go",
+   :matches
+   ({:match #"\)",
+     :scope "meta.group.go punctuation.definition.group.end.go",
+     :pop true,
+     :captures
+     {:0 "meta.group.go punctuation.definition.group.end.go"}}
+    {:match #"^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "variable.other.go"},
+     :push :_context_3}
+    {:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :imports
+  {:compiled? true,
+   :pattern #"^\s*(import)\s+(?=\")|^\s*(import)\s*(\()",
+   :meta_scope nil,
+   :matches
+   ({:match #"^\s*(import)\s+(?=\")",
+     :scope "meta.import.go",
+     :captures {:1 "keyword.control.import.go", :0 "meta.import.go"},
+     :push :_context_15}
+    {:match #"^\s*(import)\s*(\()",
+     :captures
+     {:1 "keyword.control.import.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_16})},
+  :_context_14
+  {:compiled? true,
+   :pattern #"\n",
+   :meta_scope "comment.line.double-slash.go",
+   :matches ({:match #"\n", :pop true})},
+  :keywords
+  {:compiled? true,
+   :pattern
+   #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+   :meta_scope nil,
+   :matches
+   ({:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}})},
+  :_context_7
+  {:compiled? true,
+   :pattern
+   #"$|\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope nil,
+   :matches
+   ({:match #"$", :pop true}
+    {:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :types
+  {:compiled? true,
+   :pattern
+   #"\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+   :meta_scope nil,
+   :matches
+   ({:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}})},
+  :_context_22
+  {:compiled? true,
+   :pattern
+   #"\)|\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope "meta.function-call.go",
+   :matches
+   ({:match #"\)",
+     :scope "meta.group.go punctuation.definition.group.end.go",
+     :pop true,
+     :captures
+     {:0 "meta.group.go punctuation.definition.group.end.go"}}
+    {:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :_context_4
+  {:compiled? true,
+   :pattern
+   #"\)|^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)|\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope nil,
+   :matches
+   ({:match #"\)",
+     :scope "meta.group.go punctuation.definition.group.end.go",
+     :pop true,
+     :captures
+     {:0 "meta.group.go punctuation.definition.group.end.go"}}
+    {:match #"^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "entity.name.constant.go"},
+     :push :_context_5}
+    {:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :function-return-type
+  {:compiled? true,
+   :pattern
+   #"(?=\{)|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\*|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|\b[\p{Alpha}_][\p{Alnum}_]*\b|\(|$|(?=\S)",
+   :meta_scope nil,
+   :matches
+   ({:match #"(?=\{)", :set "function-body"}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b[\p{Alpha}_][\p{Alnum}_]*\b"}
+    {:match #"\(",
+     :scope "meta.group.go punctuation.definition.group.begin.go",
+     :set "_context_18",
+     :captures
+     {:0 "meta.group.go punctuation.definition.group.begin.go"}}
+    {:match #"$", :pop true}
+    {:match #"(?=\S)", :pop true})},
+  :operators
+  {:compiled? true,
+   :pattern #"\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]",
+   :meta_scope nil,
+   :matches
+   ({:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}})},
+  :expressions
+  {:compiled? true,
+   :pattern
+   #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope nil,
+   :matches
+   ({:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :_context_9
+  {:compiled? true,
+   :pattern #"(\))(\s*)",
+   :meta_scope nil,
+   :matches
+   ({:match #"(\))(\s*)",
+     :captures
+     {:1
+      "meta.function.parameters.go meta.group.go punctuation.definition.group.end.go",
+      :2 "meta.function.go"},
+     :set "function-return-type"})},
+  :_context_19
+  {:compiled? true,
+   :pattern
+   #"\}|\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|\b(var)\s+(\()|\b(const)\s+(\()|\b(const)b(?:\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b))?|^\s*(var)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=.*:=)|\{|^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(:)(?!=)|\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+(struct)\b|\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope nil,
+   :matches
+   ({:match #"\}",
+     :scope
+     "meta.function.go meta.block.go punctuation.definition.block.end.go",
+     :pop true,
+     :captures
+     {:0
+      "meta.function.go meta.block.go punctuation.definition.block.end.go"}}
+    {:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"\b(var)\s+(\()",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_2}
+    {:match #"\b(const)\s+(\()",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_4}
+    {:match #"\b(const)b(?:\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b))?",
+     :captures {:1 "storage.type.go", :2 "entity.name.constant.go"}}
+    {:match #"^\s*(var)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "variable.other.go"},
+     :push :_context_6}
+    {:match #"(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=.*:=)",
+     :scope "variable.other.go",
+     :push :_context_8,
+     :captures {:0 "variable.other.go"}}
+    {:match #"\{",
+     :scope "punctuation.definition.block.begin.go",
+     :push :_context_1,
+     :captures {:0 "punctuation.definition.block.begin.go"}}
+    {:match #"^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(:)(?!=)",
+     :captures
+     {:1 "entity.name.label.go", :2 "punctuation.separator.go"}}
+    {:match #"\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+(struct)\b",
+     :captures
+     {:1 "storage.type.go",
+      :2 "entity.name.struct.go",
+      :3 "storage.type.go"},
+     :push :_context_24}
+    {:match #"\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "entity.name.type.go"},
+     :push :_context_26}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :function-body
+  {:compiled? true,
+   :pattern #"$|(\s*)(\{)",
+   :meta_scope nil,
+   :matches
+   ({:match #"$", :pop true}
+    {:match #"(\s*)(\{)",
+     :captures
+     {:1 "meta.function.go",
+      :2
+      "meta.function.go meta.block.go punctuation.definition.block.begin.go"},
+     :set "_context_19"})},
+  :access
+  {:compiled? true,
+   :pattern #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+   :meta_scope nil,
+   :matches
+   ({:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.other.dot-access.go"}})},
+  :string-escaped-char
+  {:compiled? true,
+   :pattern #"\\(\\|[abfnrutv'\"]|x\h{2}|u\h{4}|U\h{8}|[0-7]{3})|\\.",
+   :meta_scope nil,
+   :matches
+   ({:match #"\\(\\|[abfnrutv'\"]|x\h{2}|u\h{4}|U\h{8}|[0-7]{3})",
+     :scope "constant.character.escape.go",
+     :captures {:0 "constant.character.escape.go"}}
+    {:match #"\\.",
+     :scope "invalid.illegal.unknown-escape.go",
+     :captures {:0 "invalid.illegal.unknown-escape.go"}})},
+  :_context_15
+  {:compiled? true,
+   :pattern #"\"|`|$",
+   :meta_scope "meta.import.go",
+   :matches
+   ({:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"$", :pop true})},
+  :function-calls
+  {:compiled? true,
+   :pattern
+   #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+   :meta_scope nil,
+   :matches
+   ({:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21})},
+  :_context_3
+  {:compiled? true,
+   :pattern #"\s*(,)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)|",
+   :meta_scope nil,
+   :matches
+   ({:match #"\s*(,)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "punctuation.separator.go", :2 "variable.other.go"}}
+    {:match #"", :pop true})},
+  :_context_12
+  {:compiled? true,
+   :pattern
+   #"`|%[#0\- +']*(\[\d+\])?[,;:_]?((-?\d+)|(\[\d+\])?\*)?(\.((-?\d+)|(\[\d+\])?\*)?)?[diouxXDOUeEfFgGaAcCsSpqnvtTbyYhHmMzZ%]|%",
+   :meta_scope "string.quoted.raw.go",
+   :matches
+   ({:match #"`",
+     :scope "punctuation.definition.string.end.go",
+     :pop true,
+     :captures {:0 "punctuation.definition.string.end.go"}}
+    {:match
+     #"%[#0\- +']*(\[\d+\])?[,;:_]?((-?\d+)|(\[\d+\])?\*)?(\.((-?\d+)|(\[\d+\])?\*)?)?[diouxXDOUeEfFgGaAcCsSpqnvtTbyYhHmMzZ%]",
+     :scope "constant.other.placeholder.go",
+     :captures {:0 "constant.other.placeholder.go"}}
+    {:match #"%",
+     :scope "invalid.illegal.placeholder.go",
+     :captures {:0 "invalid.illegal.placeholder.go"}})},
+  :_context_24
+  {:compiled? true,
+   :pattern
+   #"^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\}|\{",
+   :meta_scope "meta.struct.go",
+   :matches
+   ({:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\}",
+     :scope "meta.block.go punctuation.definition.block.end.go",
+     :pop true,
+     :captures
+     {:0 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"\{",
+     :scope "punctuation.definition.block.begin.go",
+     :push :_context_25,
+     :captures {:0 "punctuation.definition.block.begin.go"}})},
+  :function-params-param-name
+  {:compiled? true,
+   :pattern
+   #"\s+(?=/\*)|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*,|\s*/\*.*?\*/\s*,)|",
+   :meta_scope nil,
+   :matches
+   ({:match #"\s+(?=/\*)"}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match
+     #"\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*,|\s*/\*.*?\*/\s*,)",
+     :captures {:1 "variable.parameter.go"},
+     :set "function-params-other"}
+    {:match #"", :set "function-params-other"})},
+  :main
+  {:compiled? true,
+   :pattern
+   #"^\s*(import)\s+(?=\")|^\s*(import)\s*(\()|(func)\s*((\()(?:\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+)?(\*?)\s*\b[\p{Alpha}_][\p{Alnum}_]*\b\s*(\)))\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()|(func)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(func)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|\b(var)\s+(\()|\b(const)\s+(\()|\b(const)b(?:\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b))?|^\s*(var)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=.*:=)|\{|^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(:)(?!=)|\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+(struct)\b|\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope nil,
+   :matches
+   ({:match #"^\s*(import)\s+(?=\")",
+     :scope "meta.import.go",
+     :captures {:1 "keyword.control.import.go", :0 "meta.import.go"},
+     :push :_context_15}
+    {:match #"^\s*(import)\s*(\()",
+     :captures
+     {:1 "keyword.control.import.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_16}
+    {:match
+     #"(func)\s*((\()(?:\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+)?(\*?)\s*\b[\p{Alpha}_][\p{Alnum}_]*\b\s*(\)))\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()",
+     :scope "meta.function.declaration.go",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go",
+      :3 "punctuation.definition.group.begin.go",
+      :4 "variable.parameter.receiver.go",
+      :5 "keyword.operator.go",
+      :6 "punctuation.definition.group.end.go",
+      :7 "entity.name.function.go",
+      :0 "meta.function.declaration.go"},
+     :push :function-params}
+    {:match #"(func)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()",
+     :scope "meta.function.declaration.go",
+     :captures
+     {:1 "storage.type.go",
+      :2 "entity.name.function.go",
+      :0 "meta.function.declaration.go"},
+     :push :function-params}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(func)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "entity.name.function.go"}}
+    {:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"\b(var)\s+(\()",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_2}
+    {:match #"\b(const)\s+(\()",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_4}
+    {:match #"\b(const)b(?:\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b))?",
+     :captures {:1 "storage.type.go", :2 "entity.name.constant.go"}}
+    {:match #"^\s*(var)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "variable.other.go"},
+     :push :_context_6}
+    {:match #"(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=.*:=)",
+     :scope "variable.other.go",
+     :push :_context_8,
+     :captures {:0 "variable.other.go"}}
+    {:match #"\{",
+     :scope "punctuation.definition.block.begin.go",
+     :push :_context_1,
+     :captures {:0 "punctuation.definition.block.begin.go"}}
+    {:match #"^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(:)(?!=)",
+     :captures
+     {:1 "entity.name.label.go", :2 "punctuation.separator.go"}}
+    {:match #"\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+(struct)\b",
+     :captures
+     {:1 "storage.type.go",
+      :2 "entity.name.struct.go",
+      :3 "storage.type.go"},
+     :push :_context_24}
+    {:match #"\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "entity.name.type.go"},
+     :push :_context_26}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :_context_20
+  {:compiled? true,
+   :pattern
+   #"\)|\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope "meta.function-call.method.go",
+   :matches
+   ({:match #"\)",
+     :scope "meta.group.go punctuation.definition.group.end.go",
+     :pop true,
+     :captures
+     {:0 "meta.group.go punctuation.definition.group.end.go"}}
+    {:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :multi-param-anonymous-function-begin
+  {:compiled? true,
+   :pattern #"(func)(\s*)(?=\(.*,)",
+   :meta_scope nil,
+   :matches
+   ({:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params})},
+  :_context_8
+  {:compiled? true,
+   :pattern
+   #"^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\s*(,)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)|:=",
+   :meta_scope "meta.initialization.short.go",
+   :matches
+   ({:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\s*(,)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "punctuation.separator.go", :2 "variable.other.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :pop true,
+     :captures {:0 "keyword.operator.initialize.go"}})},
+  :_context_25
+  {:compiled? true,
+   :pattern
+   #"(?=\})|(?:(,)|^)\s*(\*)?(?:\b[\p{Alpha}_][\p{Alnum}_]*\b\.)*(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(?=$|\"|`)|(?:(,)|^)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|\"|`|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+   :meta_scope "meta.block.go",
+   :matches
+   ({:match #"(?=\})", :pop true}
+    {:match
+     #"(?:(,)|^)\s*(\*)?(?:\b[\p{Alpha}_][\p{Alnum}_]*\b\.)*(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(?=$|\"|`)",
+     :captures
+     {:1 "punctuation.separator.go",
+      :2 "keyword.operator.go",
+      :3 "variable.other.member.go"}}
+    {:match #"(?:(,)|^)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures
+     {:1 "punctuation.separator.go", :2 "variable.other.member.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params})},
+  :char
+  {:compiled? true,
+   :pattern #"'",
+   :meta_scope nil,
+   :matches
+   ({:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}})},
+  :_context_1
+  {:compiled? true,
+   :pattern
+   #"\}|\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|\b(var)\s+(\()|\b(const)\s+(\()|\b(const)b(?:\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b))?|^\s*(var)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=.*:=)|\{|^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(:)(?!=)|\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+(struct)\b|\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope "meta.block.go",
+   :matches
+   ({:match #"\}",
+     :scope "punctuation.definition.block.end.go",
+     :pop true,
+     :captures {:0 "punctuation.definition.block.end.go"}}
+    {:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"\b(var)\s+(\()",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_2}
+    {:match #"\b(const)\s+(\()",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_4}
+    {:match #"\b(const)b(?:\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b))?",
+     :captures {:1 "storage.type.go", :2 "entity.name.constant.go"}}
+    {:match #"^\s*(var)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "variable.other.go"},
+     :push :_context_6}
+    {:match #"(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=.*:=)",
+     :scope "variable.other.go",
+     :push :_context_8,
+     :captures {:0 "variable.other.go"}}
+    {:match #"\{",
+     :scope "punctuation.definition.block.begin.go",
+     :push :_context_1,
+     :captures {:0 "punctuation.definition.block.begin.go"}}
+    {:match #"^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(:)(?!=)",
+     :captures
+     {:1 "entity.name.label.go", :2 "punctuation.separator.go"}}
+    {:match #"\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+(struct)\b",
+     :captures
+     {:1 "storage.type.go",
+      :2 "entity.name.struct.go",
+      :3 "storage.type.go"},
+     :push :_context_24}
+    {:match #"\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "entity.name.type.go"},
+     :push :_context_26}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :builtins
+  {:compiled? true,
+   :pattern
+   #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+   :meta_scope nil,
+   :matches
+   ({:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}})},
+  :statements
+  {:compiled? true,
+   :pattern
+   #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|\b(var)\s+(\()|\b(const)\s+(\()|\b(const)b(?:\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b))?|^\s*(var)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=.*:=)|\{|^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(:)(?!=)|\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+(struct)\b|\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope nil,
+   :matches
+   ({:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"\b(var)\s+(\()",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_2}
+    {:match #"\b(const)\s+(\()",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_4}
+    {:match #"\b(const)b(?:\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b))?",
+     :captures {:1 "storage.type.go", :2 "entity.name.constant.go"}}
+    {:match #"^\s*(var)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "variable.other.go"},
+     :push :_context_6}
+    {:match #"(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=.*:=)",
+     :scope "variable.other.go",
+     :push :_context_8,
+     :captures {:0 "variable.other.go"}}
+    {:match #"\{",
+     :scope "punctuation.definition.block.begin.go",
+     :push :_context_1,
+     :captures {:0 "punctuation.definition.block.begin.go"}}
+    {:match #"^\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(:)(?!=)",
+     :captures
+     {:1 "entity.name.label.go", :2 "punctuation.separator.go"}}
+    {:match #"\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s+(struct)\b",
+     :captures
+     {:1 "storage.type.go",
+      :2 "entity.name.struct.go",
+      :3 "storage.type.go"},
+     :push :_context_24}
+    {:match #"\b(type)\s+(\b[\p{Alpha}_][\p{Alnum}_]*\b)",
+     :captures {:1 "storage.type.go", :2 "entity.name.type.go"},
+     :push :_context_26}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :expressions-late
+  {:compiled? true,
+   :pattern
+   #"^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope nil,
+   :matches
+   ({:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :expressions-early
+  {:compiled? true,
+   :pattern
+   #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+   :meta_scope nil,
+   :matches
+   ({:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}})},
+  :plain-function-begin
+  {:compiled? true,
+   :pattern #"(func)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()",
+   :meta_scope nil,
+   :matches
+   ({:match #"(func)\s*(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?=\s*\()",
+     :scope "meta.function.declaration.go",
+     :captures
+     {:1 "storage.type.go",
+      :2 "entity.name.function.go",
+      :0 "meta.function.declaration.go"},
+     :push :function-params})},
+  :_context_27
+  {:compiled? true,
+   :pattern
+   #"\]|\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b|\b(nil|true|false|iota)\b|\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b|^/\* =(\s*.*?)\s*= \*/$\n?|/\*|\*/|^// =(\s*.*?)\s*=\s*$\n?|//|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()|\"|`|'|\b(struct|interface)\b(?:(\{)(\}))?|(\[)(\d*)(\])(?=[\p{Alpha}_])|\b(map)\b(\[)|(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])|\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b|\b(ComplexType|FloatType|IntegerType|Type|Type1)\b|(func)(\s*)((\()\s*(\)))(\s*)|(func)(\s*)(?=\(.*,)|(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))|\b(chan|func|var|type|map)\b|\bconst\b|\|\||&[&^]|:=|[=!<>]=|<<|>>|<-|->|=|[-/*&<>+|^%!]|(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()|(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()|\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b|\[|\(",
+   :meta_scope "meta.brackets.go",
+   :matches
+   ({:match #"\]",
+     :scope "punctuation.definition.brackets.end.go",
+     :pop true,
+     :captures {:0 "punctuation.definition.brackets.end.go"}}
+    {:match
+     #"\b(s(elect|witch)|c(ontinue|ase)|i(f|mport)|def(er|ault)|package|else|f(or|allthrough)|r(eturn|ange)|go(to)?|break)\b",
+     :scope "keyword.control.go",
+     :captures {:0 "keyword.control.go"}}
+    {:match #"\b(nil|true|false|iota)\b",
+     :scope "constant.language.go",
+     :captures {:0 "constant.language.go"}}
+    {:match
+     #"\b((0(x|X)\h*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b",
+     :scope "constant.numeric.go",
+     :captures {:0 "constant.numeric.go"}}
+    {:match #"^/\* =(\s*.*?)\s*= \*/$\n?",
+     :scope "comment.block.go",
+     :captures
+     {:1 "meta.toc-list.banner.block.go", :0 "comment.block.go"}}
+    {:match #"/\*",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_13,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"\*/",
+     :scope "invalid.illegal.stray-comment-end.go",
+     :captures {:0 "invalid.illegal.stray-comment-end.go"}}
+    {:match #"^// =(\s*.*?)\s*=\s*$\n?",
+     :scope "comment.line.double-slash.banner.go",
+     :captures
+     {:1 "meta.toc-list.banner.line.go",
+      :0 "comment.line.double-slash.banner.go"}}
+    {:match #"//",
+     :scope "punctuation.definition.comment.go",
+     :push :_context_14,
+     :captures {:0 "punctuation.definition.comment.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)(?!\s*\()",
+     :captures
+     {:1 "punctuation.accessor.go", :2 "variable.other.dot-access.go"}}
+    {:match #"\"",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_11,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"`",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_12,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"'",
+     :scope "punctuation.definition.string.begin.go",
+     :push :_context_23,
+     :captures {:0 "punctuation.definition.string.begin.go"}}
+    {:match #"\b(struct|interface)\b(?:(\{)(\}))?",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.block.go punctuation.definition.block.begin.go",
+      :3 "meta.block.go punctuation.definition.block.end.go"}}
+    {:match #"(\[)(\d*)(\])(?=[\p{Alpha}_])",
+     :scope "meta.brackets.go",
+     :captures
+     {:1 "punctuation.definition.brackets.begin.go",
+      :2 "constant.numeric.go",
+      :3 "punctuation.definition.brackets.end.go",
+      :0 "meta.brackets.go"}}
+    {:match #"\b(map)\b(\[)",
+     :captures
+     {:1 "storage.type.go",
+      :2 "meta.brackets.go punctuation.definition.brackets.begin.go"},
+     :push :_context_17}
+    {:match #"(<-)?\b(chan)\b(<-)?(?=\s+[\p{Alpha}_])",
+     :captures
+     {:1 "keyword.operator.channel.go",
+      :2 "storage.type.go",
+      :3 "keyword.operator.channel.go"}}
+    {:match
+     #"\b(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|error|string|rune|complex(64|128))\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\b(ComplexType|FloatType|IntegerType|Type|Type1)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"(func)(\s*)((\()\s*(\)))(\s*)",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :3 "meta.function.parameters.go meta.group.go",
+      :4 "punctuation.definition.group.begin.go",
+      :5 "punctuation.definition.group.end.go",
+      :6 "meta.function.go"},
+     :push :function-return-type}
+    {:match #"(func)(\s*)(?=\(.*,)",
+     :scope "meta.function.declaration.anonymous.go",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go",
+      :0 "meta.function.declaration.anonymous.go"},
+     :push :function-params}
+    {:match
+     #"(func)(\s*)(?=\([^,)]+\)\s*(\([\p{Alnum}\s,._*&<>\[\]-]+\)|[\p{Alnum}\s,._*&<>\[\]-])?\s*(\{|$))",
+     :captures
+     {:1 "meta.function.declaration.anonymous.go storage.type.go",
+      :2 "meta.function.go"},
+     :push :function-params}
+    {:match #"\b(chan|func|var|type|map)\b",
+     :scope "storage.type.go",
+     :captures {:0 "storage.type.go"}}
+    {:match #"\bconst\b",
+     :scope "storage.modifier.go",
+     :captures {:0 "storage.modifier.go"}}
+    {:match #"\|\|",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"&[&^]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #":=",
+     :scope "keyword.operator.initialize.go",
+     :captures {:0 "keyword.operator.initialize.go"}}
+    {:match #"[=!<>]=",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<<|>>",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"<-|->",
+     :scope "keyword.operator.channel.go",
+     :captures {:0 "keyword.operator.channel.go"}}
+    {:match #"=",
+     :scope "keyword.operator.assignment.go",
+     :captures {:0 "keyword.operator.assignment.go"}}
+    {:match #"[-/*&<>+|^%!]",
+     :scope "keyword.operator.go",
+     :captures {:0 "keyword.operator.go"}}
+    {:match #"(\.)(\b[\p{Alpha}_][\p{Alnum}_]*\b)\s*(\()",
+     :captures
+     {:1 "punctuation.accessor.go",
+      :2 "variable.function.go",
+      :3 "meta.group.go punctuation.definition.group.begin.go"},
+     :push :_context_20}
+    {:match #"(?=\b[\p{Alpha}_][\p{Alnum}_]*\b\s*\()",
+     :push :_context_21}
+    {:match
+     #"\b(append|cap|close|complex|copy|delete|imag|len|make|new|panel|print|println|real|recover)\b",
+     :scope "support.function.builtin.go",
+     :captures {:0 "support.function.builtin.go"}}
+    {:match #"\[",
+     :scope "punctuation.definition.brackets.begin.go",
+     :push :_context_27,
+     :captures {:0 "punctuation.definition.brackets.begin.go"}}
+    {:match #"\(",
+     :scope "punctuation.definition.group.begin.go",
+     :push :_context_28,
+     :captures {:0 "punctuation.definition.group.begin.go"}})},
+  :string-placeholder
+  {:compiled? true,
+   :pattern
+   #"%[#0\- +']*(\[\d+\])?[,;:_]?((-?\d+)|(\[\d+\])?\*)?(\.((-?\d+)|(\[\d+\])?\*)?)?[diouxXDOUeEfFgGaAcCsSpqnvtTbyYhHmMzZ%]|%",
+   :meta_scope nil,
+   :matches
+   ({:match
+     #"%[#0\- +']*(\[\d+\])?[,;:_]?((-?\d+)|(\[\d+\])?\*)?(\.((-?\d+)|(\[\d+\])?\*)?)?[diouxXDOUeEfFgGaAcCsSpqnvtTbyYhHmMzZ%]",
+     :scope "constant.other.placeholder.go",
+     :captures {:0 "constant.other.placeholder.go"}}
+    {:match #"%",
+     :scope "invalid.illegal.placeholder.go",
+     :captures {:0 "invalid.illegal.placeholder.go"}})}}}
