@@ -3,7 +3,7 @@
             [me.raynes.fs :as fs]
             [webvim.core.utils :refer [uuid]]))
 
-(defonce editor (atom {:windows {}}))
+(defonce editor (atom nil))
 
 (def ^:dynamic *window* nil)
 
@@ -18,14 +18,12 @@
   `(binding [*window* ~window
              fs/*cwd* (-> ~window :cwd deref fs/file)] ~@body))
 
+(defn get-or-create-window [id]
+  (if (-> @editor nil?)
+    (reset! editor (create-window)))
+  @editor)
+
 (defmacro with-window-id [window-id & body]
-  `(let [window# (-> @editor :windows (get ~window-id))]
+  `(let [window# (get-or-create-window ~window-id)]
      (binding [*window* window#
                fs/*cwd* (-> window# :cwd deref fs/file)] ~@body)))
-
-(defn get-or-create-window [id]
-  (or (-> @editor :windows (get id))
-      (let [window (create-window)]
-        (swap! editor assoc-in [:windows (window :id)] window)
-        window)))
-

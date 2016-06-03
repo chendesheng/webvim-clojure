@@ -25,6 +25,7 @@
             "keyboard.js" "syntax/clojure.js" "syntax/css.js" "syntax/xml.js" 
             "syntax/sql.js" "syntax/go.js" "syntax/cs.js" "syntax/javascript.js"
             "syntax/markdown.js" "syntax/actionscript.js" "syntax/lisp.js"
+            "syntax/json.js" "syntax/yaml.js"
             "highlight.js" "main.js" "keymap.js" "render/autocompl.js" "render/cursor.js" 
             "render/gutter.js" "render/offscreen/changes.js" "render/offscreen/lines.js" 
             "render/offscreen/pos.js" "render/selection.js" "render/viewport.js" 
@@ -51,13 +52,14 @@
     [(Integer. id) keycode]))
 
 (defn- write-client! [ui diff]
-  (let [ws (ui :ws)]
-    (try
-      (send! ws (-> ui :queue (vconj diff) json/generate-string))
-      (dissoc ui :queue)
-      (catch Exception e
-        (fire-event e :exception)
-        (update ui :queue vconj diff)))))
+  (try
+    (let [output (-> ui :queue (vconj diff) json/generate-string)]
+      (doseq [ws (ui :ws)]
+        (send! ws output)))
+    (dissoc ui :queue)
+    (catch Exception e
+      (fire-event e :exception)
+      (update ui :queue vconj diff))))
 
 (defn- handle-socket [request]
   (let [channels (atom {})]
@@ -70,23 +72,22 @@
       (on-close channel
                 (fn [status] (println "websocket close")))
       ;setup window context
-      (let [window (get-or-create-window
-                     (-> request :query-params (get "windowId")))]
+      (let [window (get-or-create-window "single user")]
         ;(println window)
         (with-window
           window
           ;close last channel
-          (if-let [ws (get-from-ui :ws)]
-            (do
-              (close ws)
-              (swap! channels dissoc ws)))
+          ;(if-let [ws (get-from-ui :ws)]
+          ;  (do
+          ;    (close ws)
+          ;    (swap! channels dissoc ws)))
           (swap! channels assoc channel window)
           ;set current channel
           (update-ui
             (fn [ui ws]
-              (assoc ui
-                     :ws ws
-                     :render! write-client!)) channel)
+              (-> ui
+                  (update :ws conj ws)
+                  (assoc :render! write-client!))) channel)
           (if (-> request :query-params (contains? "init"))
             (send! channel (json/generate-string [(ui-buf)]))))))))
 

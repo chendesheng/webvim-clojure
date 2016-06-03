@@ -1,5 +1,6 @@
 (ns webvim.main
   (:require [clojure.string :as str]
+            [webvim.syntax :as syntax]
             [webvim.server :as server]
             [webvim.panel :refer [append-output-panel]]
             [webvim.persistent :refer [recover-buffers start-track]]

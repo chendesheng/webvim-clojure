@@ -296,3 +296,5 @@
     s
     (str s \newline)))
 
+(defn atom? [x]
+  (instance? clojure.lang.Atom x))
