@@ -102,6 +102,7 @@
 (defn- set-motion-fail [buf]
   (-> buf
       (assoc-in [:context :motion-fail?] true)
+      (assoc-in [:context :motion-cancel?] true)
       (assoc :beep true)))
 
 (defn- not-line-first [f]
@@ -169,6 +170,12 @@
     (if (nil? newpos)
       (set-motion-fail buf)
       (buf-set-pos buf (+ newpos a)))))
+
+(defn- esc-cancel [f]
+  (fn [buf keycode]
+    (if (not= keycode "<esc>")
+      (f buf keycode)
+      (assoc-in buf [:context :motion-cancel?] true))))
 
 (defn- move-to-char+ [buf keycode]
   (registers-put! ";" {:str keycode :forward? true :inclusive? true})
@@ -330,10 +337,10 @@
    "0" (wrap-keycode line-first)
    "^" (wrap-keycode line-start)
    "$" (wrap-keycode line-end)
-   "f" {:else (wrap-repeat move-to-char+)}
-   "F" {:else (wrap-repeat move-to-char-)}
-   "t" {:else (wrap-repeat move-before-char+)}
-   "T" {:else (wrap-repeat move-before-char-)}
+   "f" {:else (esc-cancel (wrap-repeat move-to-char+))}
+   "F" {:else (esc-cancel (wrap-repeat move-to-char-))}
+   "t" {:else (esc-cancel (wrap-repeat move-before-char+))}
+   "T" {:else (esc-cancel (wrap-repeat move-before-char-))}
    ";" (wrap-repeat repeat-move-by-char+)
    "," (wrap-repeat repeat-move-by-char-)
    "/" (increment-search-keymap true)

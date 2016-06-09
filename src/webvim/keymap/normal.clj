@@ -43,6 +43,8 @@
         fix-pos
         (update-x-if-not-jk keycode)
         (update :context dissoc :range)
+        (update :context dissoc :motion-fail?)
+        (update :context dissoc :motion-cancel?)
         save-undo)))
 
 (defn init-normal-mode-keymap [buf]
