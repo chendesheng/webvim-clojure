@@ -238,10 +238,11 @@
         (assoc buf :message "No string under cursor")
         (do
           (registers-put! "/" {:str s :forward? forward?})
-          (-> buf 
-              (search-message s forward?)
-              (re-forward-highlight re)
-              (highlight-all-matches re)))))))
+          (let [fn-highlight (if forward? re-forward-highlight re-backward-highlight)]
+            (-> buf 
+                (search-message s forward?)
+                (fn-highlight re)
+                (highlight-all-matches re))))))))
 
 (defn- same-word-first [buf]
   (let [re (re-current-word buf)
