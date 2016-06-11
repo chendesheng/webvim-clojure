@@ -320,6 +320,9 @@
                   (subr s (.start m) (.end m))
                   nil))))
 
+(defn rmatcher [re r]
+  (.matcher r re))
+
 (defn count-left-spaces [s]
   (count (re-subs #"^\s*" s)))
 ;(pos-re-backward 2 (rope "aa bb") #"(?<=[^a-zA-Z_\-!.?+*=<>&#\':0-9])[a-zA-Z_\-!.?+*=<>&#\':0-9]|(?<=[a-zA-Z_\-!.?+*=<>&#\':0-9\s,])[^a-zA-Z_\-!.?+*=<>&#\':0-9\s,]")

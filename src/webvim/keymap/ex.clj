@@ -4,6 +4,7 @@
             [webvim.core.editor :refer [update-cwd]]
             [webvim.panel :refer [append-panel append-output-panel grep-panel ag-panel find-panel edit-file goto-buf]]
             [clojure.string :as string]
+            [webvim.core.lineindex :refer [range-by-line]]
             [webvim.core.eval :refer [eval-refer-ns]])
   (:use clojure.pprint
         webvim.core.rope
@@ -298,6 +299,38 @@
                 (jumplist-before))) "\n")
     true))
 
+(defn- substitude-line [buf linenum from to whole-line?]
+  (let [[a b] (-> buf :lineindex (range-by-line linenum))
+        line (->  buf :str (subr a b))]
+    ;(println line)
+    (let [m (rmatcher from line)]
+      ;(println "matcher:")
+      ;(println m)
+      ;(println (.find m))
+      (if whole-line?
+        (while (.find m)
+          (buf-replace buf (+ a (.start m)) (+ a (.end m)) to))
+        (if (.find m)
+          (buf-replace buf (+ a (.start m)) (+ a (.end m)) to)
+          buf)))))
+
+(defn cmd-substitude [buf _ rg [args]]
+  (println "substitude" rg args)
+  (let [[_ str-from to opts] (string/split args #"/") ;TODO: handle escapted slash
+        options (or opts "")
+        whole-line? (boolean (string/index-of options "g"))
+        ignore-case? (boolean (string/index-of options "i"))
+        from (re-pattern
+               (if ignore-case?
+                 (str "(?i)" str-from)
+                 str-from))]
+    (println from to options whole-line? ignore-case?)
+    (loop [buf buf
+           i (first rg)]
+      (if (<= i (last rg))
+        (recur (substitude-line buf i from to whole-line?) (inc i))
+        buf))))
+
 ;TODO: ex command parser
 (defn- ex-commands [buf]
   (let [cmds 
@@ -318,7 +351,8 @@
          ["cd" cmd-cd]
          ["ls" cmd-ls]
          ["git" cmd-git]
-         ["diff" cmd-diff]]]
+         ["diff" cmd-diff]
+         ["substitute" cmd-substitude]]]
     (fire-event :init-ex-commands cmds buf)))
 
 (defn split-ex-cmd [s]
