@@ -34,7 +34,7 @@
 
 (defn- set-current-point-range [buf]
   (-> buf
-      (update :context assoc :range (repeat-pos-range buf))
+      (update :context assoc :range (repeat-pos-range buf)) ;TODO: unicode char support
       (set-linewise false)
       (set-inclusive false)))
 

@@ -60,7 +60,6 @@
       (dec pos)
       pos)))
 
-;TODO: keep track of current line number is annoying
 (defn buf-set-pos [buf newpos]
   (let [r (buf :str)
         pos (buf :pos)
