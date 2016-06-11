@@ -29,12 +29,21 @@ function renderChanges(changes) {
         var deletedstates = hl.states.splice(resa.num + 1, blocknumdeleted);
         var savedstate = deletedstates.pop();
 
+        var parseFail = false;
         //insert and keep track hl.states
         var blocknuminserted = newtxt.eachLine(function(block, i) {
             var num = i + resa.num;
-            var res = hl.parse(block, hl.states[num]);
-            hl.states.splice(num + 1, 0, res[0]);
-            offscreenLines.insertBefore(renderLine(res[1]), ele);
+            if (!parseFail) {
+                var res = hl.parse(block, hl.states[num]);
+                hl.states.splice(num + 1, 0, res.modes);
+                offscreenLines.insertBefore(renderLine(res.output), ele);
+                parseFail = res.fail;
+            } else {
+                hl.states.splice(num + 1, 0, []);
+                offscreenLines.insertBefore(renderLine([
+                    [null, block]
+                ]), ele);
+            }
         });
 
 
@@ -52,7 +61,7 @@ function renderChanges(changes) {
         buf.currentBlockNumber = nextblock.num + blocknumdiff;
 
         //update syntax highlight
-        if (!endCode(ele) && !savedstate.equal(hl.states[resa.num + blocknuminserted])) {
+        if (!parseFail && !endCode(ele) && !savedstate.equal(hl.states[resa.num + blocknuminserted])) {
             //currentBlock will change
             var saved = buf.currentBlock.previousSibling;
             hl.refresh(refreshIter(resa.num + blocknuminserted, buf, hl.states, offscreenLines));
