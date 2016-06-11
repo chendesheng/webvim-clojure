@@ -321,25 +321,15 @@
          ["diff" cmd-diff]]]
     (fire-event :init-ex-commands cmds buf)))
 
-;About ctx:
-; {:ranges []
-;  :cmd ""
-;  :args ""}
 (defn split-ex-cmd [s]
   (println "split-excmd" s)
-  (reduce
-    (fn [ctx [item _]]
-      (if (-> ctx :cmd nil?)
-        (if (re-test #"^[a-zA-Z~<>@=#*&!\(]" item)
-          (assoc ctx :cmd item)
-          (if (= item "%")
-            (update ctx :ranges vconj "1" "," "$")
-            (update ctx :ranges vconj item)))
-        (assoc ctx :args item)))
-    {}
-    (re-seq #"[.$%,;]|[+-]?\d+|'[a-zA-Z0-9<>{}\[\]()']|/(\[(\\\\|\\\]|/|[^\]])*\]|\\\\|\\/|[^/\[\]])+/?|[a-zA-Z~<>@=#*&!\(][^\s]*|.+" s)))
+  (let [items (vec (re-seq #"[.$%,;]|[+-]?\d+|'[a-zA-Z0-9<>{}\[\]()']|/(?:\[(?:\\\\|\\\]|/|[^\]])*\]|\\\\|\\/|[^/\[\]])+/?|.+" s))
+        [cmd args] (re-seq #"\w+|.*" (peek items))]
+    {:ranges (vec (pop items))
+     :cmd cmd
+     :args args}))
 
-(defn split-arguments [s]
+(defn- split-arguments [s]
   (map first (re-seq #"\"(\\\\|\\\"|[^\"]*)\"|[^\s]+" (or s ""))))
 
 (defn- parse-mark [buf ch]
@@ -363,10 +353,10 @@
                        (re-test #"^\d" rg) (-> rg Integer. dec)
                        (= "$" rg) $
                        (= "." rg) dot
-                               ;TODO: (.startsWith "/" rg)
+                       ;TODO: (.startsWith "/" rg)
                        (-> rg first (= \'))
                        (parse-mark buf (last rg))
-                       :else base)
+                       :else (or base dot))
                :delta (if (re-test #"^[+-]\d" rg)
                         (+ (or delta 0) (Integer. rg))
                         delta)}))
@@ -375,6 +365,8 @@
     (loop [[rg & restrg] (map #(.trim %) ranges)
            state :start
            res nil]
+      (println rg)
+      (println res)
       (cond
         (nil? rg)
         (let [start (+ (-> res :start :base (or dot))
@@ -396,21 +388,32 @@
         :else
         (recur restrg state (update res state next-res rg))))))
 
+(defn- expand-% [items]
+  (reduce
+    (fn [res item]
+      (if (= item "%")
+        (into res ["1" "," "$"])
+        (conj res item))) [] items))
+
 (defn parse-excmd [buf s]
-  (let [{ranges :ranges cmd :cmd args :args} (split-ex-cmd s)]
+  (let [items (vec (re-seq #"[.$%,;]|[+-]?\d+|'[a-zA-Z0-9<>{}\[\]()']|/(?:\[(?:\\\\|\\\]|/|[^\]])*\]|\\\\|\\/|[^/\[\]])+/?|.+" s))
+        ranges (expand-% (pop items))
+        [cmd args] (re-seq #"\w+|.*" (peek items))]
+    (println "parse-excmd:" items)
     {:range (parse-range ranges (buf :y) (buf-total-lines buf) buf)
      :cmd cmd
      :args (split-arguments args)}))
 
 
 (comment
-  (parse-excmd {:y 0} "1,./^haha\\\\[\\\\\\]/]hello\\//+1grep hello")
-  (parse-excmd {:y 0} "%grep hello")
-  (parse-excmd {:y 0} ",-2$-1grep hello")
-  (parse-excmd {:y 0} "2%grep hello")
-  (parse-excmd {:y 0} "2,%grep hello")
-  (parse-excmd {:y 0} "2,-2+2-3+4$grep hello")
-  (parse-excmd {:y 0} "2+1,1,2grep hello"))
+  (parse-excmd {:y 20} "1,./^haha\\\\[\\\\\\]/]hello\\//+1grep hello")
+  (parse-excmd {:y 20} "%grep hello")
+  (parse-excmd {:y 20} ",-2$-1grep hello")
+  (parse-excmd {:y 20} "2%grep hello")
+  (parse-excmd {:y 20} "2,%grep hello")
+  (parse-excmd {:y 20} "2,-2+2-3+4$grep hello")
+  (parse-excmd {:y 20} "2,+4s/hello/nihao")
+  (parse-excmd {:y 20} "2+1,1,2grep hello"))
 
 (defn- execute [buf cmds]
   (let [s (-> buf :line-buffer :str str .trim)]
