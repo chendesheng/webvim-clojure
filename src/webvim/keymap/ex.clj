@@ -404,14 +404,13 @@
 
 
 (comment
-  (parse-excmd "1,./^haha\\\\[\\\\\\]/]hello\\//+1grep hello")
-  (parse-excmd "%grep hello")
-  (parse-excmd ",-2$-1grep hello")
-  (parse-excmd "2%grep hello")
-  (parse-excmd "2,%grep hello")
-  (parse-excmd "2,-2+2-3+4$grep hello")
-  (parse-excmd "2+1,1,2grep hello"))
-
+  (parse-excmd {:y 0} "1,./^haha\\\\[\\\\\\]/]hello\\//+1grep hello")
+  (parse-excmd {:y 0} "%grep hello")
+  (parse-excmd {:y 0} ",-2$-1grep hello")
+  (parse-excmd {:y 0} "2%grep hello")
+  (parse-excmd {:y 0} "2,%grep hello")
+  (parse-excmd {:y 0} "2,-2+2-3+4$grep hello")
+  (parse-excmd {:y 0} "2+1,1,2grep hello"))
 
 (defn- execute [buf cmds]
   (let [s (-> buf :line-buffer :str str .trim)]

@@ -100,8 +100,9 @@
 (defn parse-int [s]
   (Integer. (re-find #"\d+" (or s "0"))))
 
-(defn vconj [coll x]
-  (conj (or coll []) x))
+(defn vconj
+  [coll & xs]
+  (into (or coll []) xs))
 
 (defn crlf? [txt]
   (-> #"\r?\n"  
