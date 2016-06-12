@@ -378,23 +378,23 @@
   (letfn [(calc-delta [delta op rg]
             (op (or delta 0) (Integer. (subs rg 1))))
           (return-nil-if-all-values-nil [coll]
-                                        (if (every? #(-> coll % nil?) (keys coll))
-                                          nil coll))
+            (if (every? #(-> coll % nil?) (keys coll))
+              nil coll))
           (next-res [{base :base delta :delta} rg]
-                    (return-nil-if-all-values-nil
-                      {:base (cond
-                               (re-test #"^\d" rg) (-> rg Integer. dec)
-                               (= "$" rg) $
-                               (= "." rg) dot
+            (return-nil-if-all-values-nil
+              {:base (cond
+                       (re-test #"^\d" rg) (-> rg Integer. dec)
+                       (= "$" rg) $
+                       (= "." rg) dot
                                ;TODO: (.startsWith "/" rg)
-                               (-> rg first (= \'))
-                               (parse-mark buf (last rg))
-                               :else (or base dot))
-                       :delta (if (re-test #"^[+-]\d" rg)
-                                (+ (or delta 0) (Integer. rg))
-                                delta)}))
+                       (-> rg first (= \'))
+                       (parse-mark buf (last rg))
+                       :else (or base dot))
+               :delta (if (re-test #"^[+-]\d" rg)
+                        (+ (or delta 0) (Integer. rg))
+                        delta)}))
           (res-start [res]
-                     (or (:end res) (:start res)))]
+            (or (:end res) (:start res)))]
     (loop [[rg & restrg] (map #(.trim %) ranges)
            state :start
            res nil]
