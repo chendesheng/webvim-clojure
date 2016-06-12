@@ -298,6 +298,12 @@
                 (jumplist-before))) "\n")
     true))
 
+(defn- all-poses [m]
+  (loop [res []]
+    (if (.find m)
+      (recur (conj res [(.start m) (.end m)]))
+      res)))
+
 (defn- substitude-line [buf linenum from to whole-line?]
   (let [[a b] (-> buf :lineindex (range-by-line linenum))
         line (->  buf :str (subr a b))]
@@ -307,8 +313,10 @@
       ;(println m)
       ;(println (.find m))
       (if whole-line?
-        (while (.find m)
-          (buf-replace buf (+ a (.start m)) (+ a (.end m)) to))
+        (line-start
+          (reduce (fn [buf [a1 b1]]
+                    (buf-replace buf (+ a a1) (+ a b1) to))
+                  (line-first buf) (rseq (all-poses m))))
         (if (.find m)
           (buf-replace buf (+ a (.start m)) (+ a (.end m)) to)
           buf)))))
