@@ -102,6 +102,7 @@
 (defn- set-motion-fail [buf]
   (-> buf
       (assoc-in [:context :motion-fail?] true)
+      (assoc-in [:context :motion-cancel?] true)
       (assoc :beep true)))
 
 (defn- not-line-first [f]
@@ -170,6 +171,12 @@
       (set-motion-fail buf)
       (buf-set-pos buf (+ newpos a)))))
 
+(defn- esc-cancel [f]
+  (fn [buf keycode]
+    (if (not= keycode "<esc>")
+      (f buf keycode)
+      (assoc-in buf [:context :motion-cancel?] true))))
+
 (defn- move-to-char+ [buf keycode]
   (registers-put! ";" {:str keycode :forward? true :inclusive? true})
   (move-by-char buf keycode true true))
@@ -208,28 +215,34 @@
 (defn- re-current-word
   "create regexp from word under cursor"
   [buf]
-  (let [word (current-word buf)]
-    (println (count word))
-    (if (empty? word)
-      nil
+  (let [w (current-word buf)]
+    (println (count w))
+    (if (-> w empty? not)
       (let [not-word-chars (-> buf :language word-re :not-word-chars)
             re-start (str "(?<=^|[" not-word-chars "])")
             re-end (str "(?=[" not-word-chars "]|$)")]
         (re-pattern
-          (str re-start (quote-pattern word) re-end))))))
+          (str re-start (quote-pattern w) re-end))))))
 
-(defn- same-word [forward?]
+(defn- same-word [forward? exact?]
   (fn [buf keycode]
-    (let [re (re-current-word buf)
+    (let [re (if exact?
+               (re-current-word buf)
+               (let [w (current-word buf)]
+                 (if (-> w empty? not)
+                   (-> w
+                       quote-pattern
+                       re-pattern))))
           s (str re)]
       (if (nil? re)
         (assoc buf :message "No string under cursor")
         (do
           (registers-put! "/" {:str s :forward? forward?})
-          (-> buf 
-              (search-message s forward?)
-              (re-forward-highlight re)
-              (highlight-all-matches re)))))))
+          (let [fn-highlight (if forward? re-forward-highlight re-backward-highlight)]
+            (-> buf 
+                (search-message s forward?)
+                (fn-highlight re)
+                (highlight-all-matches re))))))))
 
 (defn- same-word-first [buf]
   (let [re (re-current-word buf)
@@ -313,7 +326,9 @@
    "g" {"g" (wrap-keycode (comp buf-start jump-push))
         "d" (wrap-keycode (comp same-word-first jump-push))
         "e" (not-buf-start (wrap-repeat word-end-))
-        "E" (not-buf-start (wrap-repeat WORD-end-))}
+        "E" (not-buf-start (wrap-repeat WORD-end-))
+        "*" (same-word true false)
+        "#" (same-word false false)}
    "G" (fn [buf keycode]
          (if (repeat-count? buf)
            (lines-row buf (dec (repeat-count buf)))
@@ -330,16 +345,16 @@
    "0" (wrap-keycode line-first)
    "^" (wrap-keycode line-start)
    "$" (wrap-keycode line-end)
-   "f" {:else (wrap-repeat move-to-char+)}
-   "F" {:else (wrap-repeat move-to-char-)}
-   "t" {:else (wrap-repeat move-before-char+)}
-   "T" {:else (wrap-repeat move-before-char-)}
+   "f" {:else (esc-cancel (wrap-repeat move-to-char+))}
+   "F" {:else (esc-cancel (wrap-repeat move-to-char-))}
+   "t" {:else (esc-cancel (wrap-repeat move-before-char+))}
+   "T" {:else (esc-cancel (wrap-repeat move-before-char-))}
    ";" (wrap-repeat repeat-move-by-char+)
    "," (wrap-repeat repeat-move-by-char-)
    "/" (increment-search-keymap true)
    "?" (increment-search-keymap false)
-   "*" (same-word true)
-   "#" (same-word false)
+   "*" (same-word true true)
+   "#" (same-word false true)
    "n" (wrap-repeat repeat-search+)
    "N" (wrap-repeat repeat-search-)
    "}" (wrap-repeat paragraph+)

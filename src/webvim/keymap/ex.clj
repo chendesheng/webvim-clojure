@@ -4,6 +4,7 @@
             [webvim.core.editor :refer [update-cwd]]
             [webvim.panel :refer [append-panel append-output-panel grep-panel ag-panel find-panel edit-file goto-buf]]
             [clojure.string :as string]
+            [webvim.core.lineindex :refer [range-by-line]]
             [webvim.core.eval :refer [eval-refer-ns]])
   (:use clojure.pprint
         webvim.core.rope
@@ -297,6 +298,38 @@
                 (jumplist-before))) "\n")
     true))
 
+(defn- substitude-line [buf linenum from to whole-line?]
+  (let [[a b] (-> buf :lineindex (range-by-line linenum))
+        line (->  buf :str (subr a b))]
+    ;(println line)
+    (let [m (rmatcher from line)]
+      ;(println "matcher:")
+      ;(println m)
+      ;(println (.find m))
+      (if whole-line?
+        (while (.find m)
+          (buf-replace buf (+ a (.start m)) (+ a (.end m)) to))
+        (if (.find m)
+          (buf-replace buf (+ a (.start m)) (+ a (.end m)) to)
+          buf)))))
+
+(defn cmd-substitude [buf _ rg [args]]
+  (println "substitude" rg args)
+  (let [[_ str-from to opts] (string/split args #"/") ;TODO: handle escapted slash
+        options (or opts "")
+        whole-line? (boolean (string/index-of options "g"))
+        ignore-case? (boolean (string/index-of options "i"))
+        from (re-pattern
+               (if ignore-case?
+                 (str "(?i)" str-from)
+                 str-from))]
+    (println from to options whole-line? ignore-case?)
+    (loop [buf buf
+           i (first rg)]
+      (if (<= i (last rg))
+        (recur (substitude-line buf i from to whole-line?) (inc i))
+        buf))))
+
 ;TODO: ex command parser
 (defn- ex-commands [buf]
   (let [cmds 
@@ -317,28 +350,19 @@
          ["cd" cmd-cd]
          ["ls" cmd-ls]
          ["git" cmd-git]
-         ["diff" cmd-diff]]]
+         ["diff" cmd-diff]
+         ["substitute" cmd-substitude]]]
     (fire-event :init-ex-commands cmds buf)))
 
-;About ctx:
-; {:ranges []
-;  :cmd ""
-;  :args ""}
 (defn split-ex-cmd [s]
   (println "split-excmd" s)
-  (reduce
-    (fn [ctx [item _]]
-      (if (-> ctx :cmd nil?)
-        (if (re-test #"^[a-zA-Z~<>@=#*&!\(]" item)
-          (assoc ctx :cmd item)
-          (if (= item "%")
-            (update ctx :ranges vconj "1" "," "$")
-            (update ctx :ranges vconj item)))
-        (assoc ctx :args item)))
-    {}
-    (re-seq #"[.$%,;]|[+-]?\d+|'[a-zA-Z0-9<>{}\[\]()']|/(\[(\\\\|\\\]|/|[^\]])*\]|\\\\|\\/|[^/\[\]])+/?|[a-zA-Z~<>@=#*&!\(][^\s]*|.+" s)))
+  (let [items (vec (re-seq #"[.$%,;]|[+-]?\d+|'[a-zA-Z0-9<>{}\[\]()']|/(?:\[(?:\\\\|\\\]|/|[^\]])*\]|\\\\|\\/|[^/\[\]])+/?|.+" s))
+        [cmd args] (re-seq #"\w+|.*" (peek items))]
+    {:ranges (vec (pop items))
+     :cmd cmd
+     :args args}))
 
-(defn split-arguments [s]
+(defn- split-arguments [s]
   (map first (re-seq #"\"(\\\\|\\\"|[^\"]*)\"|[^\s]+" (or s ""))))
 
 (defn- parse-mark [buf ch]
@@ -374,6 +398,8 @@
     (loop [[rg & restrg] (map #(.trim %) ranges)
            state :start
            res nil]
+      (println rg)
+      (println res)
       (cond
         (nil? rg)
         (let [start (+ (-> res :start :base (or dot))
@@ -395,22 +421,32 @@
         :else
         (recur restrg state (update res state next-res rg))))))
 
+(defn- expand-% [items]
+  (reduce
+    (fn [res item]
+      (if (= item "%")
+        (into res ["1" "," "$"])
+        (conj res item))) [] items))
+
 (defn parse-excmd [buf s]
-  (let [{ranges :ranges cmd :cmd args :args} (split-ex-cmd s)]
+  (let [items (vec (re-seq #"[.$%,;]|[+-]?\d+|'[a-zA-Z0-9<>{}\[\]()']|/(?:\[(?:\\\\|\\\]|/|[^\]])*\]|\\\\|\\/|[^/\[\]])+/?|.+" s))
+        ranges (expand-% (pop items))
+        [cmd args] (re-seq #"\w+|.*" (peek items))]
+    (println "parse-excmd:" items)
     {:range (parse-range ranges (buf :y) (buf-total-lines buf) buf)
      :cmd cmd
      :args (split-arguments args)}))
 
 
 (comment
-  (parse-excmd "1,./^haha\\\\[\\\\\\]/]hello\\//+1grep hello")
-  (parse-excmd "%grep hello")
-  (parse-excmd ",-2$-1grep hello")
-  (parse-excmd "2%grep hello")
-  (parse-excmd "2,%grep hello")
-  (parse-excmd "2,-2+2-3+4$grep hello")
-  (parse-excmd "2+1,1,2grep hello"))
-
+  (parse-excmd {:y 20} "1,./^haha\\\\[\\\\\\]/]hello\\//+1grep hello")
+  (parse-excmd {:y 20} "%grep hello")
+  (parse-excmd {:y 20} ",-2$-1grep hello")
+  (parse-excmd {:y 20} "2%grep hello")
+  (parse-excmd {:y 20} "2,%grep hello")
+  (parse-excmd {:y 20} "2,-2+2-3+4$grep hello")
+  (parse-excmd {:y 20} "2,+4s/hello/nihao")
+  (parse-excmd {:y 20} "2+1,1,2grep hello"))
 
 (defn- execute [buf cmds]
   (let [s (-> buf :line-buffer :str str .trim)]

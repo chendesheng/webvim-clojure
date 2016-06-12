@@ -84,14 +84,14 @@ function hideOngoingKey() {
 
 watchLocalbufChange('mode', function(buf) {
     if (buf.mode == 0) {
-        keymap = nmap;
+        if (buf.visual.type == 0) {
+            keymap = nmap;
+        } else {
+            keymap = vmap;
+        }
     }
 
     if (buf.mode == 1) {
         keymap = imap;
-    }
-
-    if (buf.mode == 0 && buf.visual.type != 0) {
-        keymap = vmap;
     }
 });

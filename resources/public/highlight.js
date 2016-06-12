@@ -172,12 +172,11 @@ function hlcompile(language) {
     if (!language) {
         var hl = {
             parse: function(block, state) {
-                return [
-                    [],
-                    [
-                        [null, block]
-                    ]
-                ];
+                return {
+                    modes: [],
+                    output: [[null, block]],
+                    fail: false
+                }
             },
             parseBlock: function(block, row) {
                 if (hl.states[row] == null)
@@ -560,8 +559,8 @@ function hlcompile(language) {
         if (state == null) {
             state = [rootCompiled];
         }
-        var ctx = doParse(block, state);
-        return [ctx.modes, ctx.output];
+        //ctx.modes, ctx.output, ctx.fail
+        return doParse(block, state);
     };
 
     hl.refresh = function(iter) {

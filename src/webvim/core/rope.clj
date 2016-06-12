@@ -60,7 +60,6 @@
       (dec pos)
       pos)))
 
-;TODO: keep track of current line number is annoying
 (defn buf-set-pos [buf newpos]
   (let [r (buf :str)
         pos (buf :pos)
@@ -320,6 +319,9 @@
                 (if (.find m)
                   (subr s (.start m) (.end m))
                   nil))))
+
+(defn rmatcher [re r]
+  (.matcher r re))
 
 (defn count-left-spaces [s]
   (count (re-subs #"^\s*" s)))

@@ -6,7 +6,7 @@
 
 (defn- make-tree [tree]
   (if (nil? tree)
-    {:length 0 :lines 0}
+    {:length 0 :lines 0 :sentinel? true}
     tree))
 
 (defn- leaf? [tree]
@@ -72,7 +72,8 @@
 
 (defn- update-node [tree]
   (let [remove-empty (fn [tree child]
-                       (if (-> tree child empty-node?)
+                       (if (and (-> tree child empty-node?)
+                                (-> tree child :sentinel? not)) ;don't delete sentinel
                          (dissoc tree child) tree))
         parent (-> tree
                    (remove-empty :left)
@@ -113,86 +114,65 @@
                       (if (= child :right)
                         (-> tree :left :lines (or 0) (+ data))
                         data)) 0))
-
-(defn- insert-line [tree linenum len]
-  (if (zero? len)
-    tree
-    (update-by-linenum tree linenum
-                       (fn [tree _]
-                         {:left {:length len
-                                 :lines 1}
-                          :right tree}))))
-
-(defn- delete-line [tree linenum]
-  (update-by-linenum
-    tree linenum
-    (fn [_ _] {:length 0 :lines 0})))
-
-(defn- delete [tree pos len]
-  (if (zero? len)
-    tree
-    (let [la (pos-linenum tree pos)
-          lb (pos-linenum tree (+ pos len))]
-      (if (= la lb)
-        ;no cross line
-        (update-by-linenum tree la
-                           (fn [tree _]
-                             {:length (-> tree :length (- len))
-                              :lines 1}))
-        (let [dlen (- (last (range-by-pos tree (+ pos len))) ;expand two ends
-                      (first (range-by-pos tree pos)))]
-          (loop [i lb
-                 tree tree]
-            (if (>= i la)
-              (recur (dec i) (delete-line tree i))
-              (insert-line tree la (- dlen len)))))))))
-
-(comment defn test-delete []
-         (comment pprint (delete (update-node
-                                   {:left (update-node
-                                            {:left {:length 3 :lines 1}
-                                             :right {:length 2 :lines 1}})
-                                    :right {:length 2 :lines 1}})
-                                 3 1))
-         (pprint (delete {:left {:left {:length 3 :lines 1}
-                                 :right {:length 2 :lines 1}
-                                 :length 5
-                                 :lines 2
-                                 :weight (rand)}
-                          :right {:length 2 :lines 1}
-                          :length 7
-                          :lines 3
-                          :weight (rand)}
-                         2 2)))
+(defn- insert-line [tree pos len newline?]
+  (update-by-pos tree pos
+                 (fn [tree offset]
+                   (cond
+                     (-> tree :sentinel?)
+                     {:left {:length len :lines 1}
+                      :right tree}
+                     newline?
+                     {:left {:length (+ offset len) :lines 1}
+                      :right {:length (-> tree :length (- offset)) :lines 1}}
+                     :else
+                     {:length (-> tree :length (+ len))
+                      :lines 1}))))
 
 (defn- insert [tree pos s]
-  (if (empty? s)
-    tree
-    (loop [tree tree
-           [line & lines] (split-lines s)
-           pos pos]
-      (if (nil? line)
-        tree
-        (let [len (count line)]
-          (recur (update-by-pos tree pos
-                                (fn [tree offset]
-                                  (cond
-                                    (-> tree :length (= offset)) ;last line MUST contains \newline
-                                    {:left tree
-                                     :right {:length len :lines 1}}
-                                    (= (last line) \newline)
-                                    {:left {:length (+ offset len) :lines 1}
-                                     :right {:length (-> tree :length (- offset)) :lines 1}}
-                                    :else
-                                    {:lines 1
-                                     :length (-> tree :length (+ len))})))
-                 lines (+ pos len)))))))
+  (loop [tree tree
+         [line & lines] (split-lines s)
+         pos pos]
+    (if (some? line)
+      (let [len (count line)]
+        (recur (insert-line tree pos len (= (last line) \newline))
+               lines
+               (+ pos len)))
+      tree)))
 
 (defn test-insert []
   (pprint
     (-> (make-tree nil)
         (insert 0 "11\n1\n")
         (insert 0 "11\n1\n"))))
+
+(defn- delete-line [tree pos len]
+  (if (zero? len)
+    tree
+    (update-by-pos
+      tree pos
+      (fn [tree _]
+        (cond
+          (tree :sentinel?) ;out of range
+          tree
+          (> (tree :length) len)
+          {:length (-> tree :length (- len)) :lines 1}
+          :else
+          {:length 0 :lines 0})))))
+
+(defn- delete [tree pos len]
+  ;(println "delete" pos len)
+  ;(pprint tree)
+  (loop [i (+ pos len)
+         tree tree]
+    (if (> i pos)
+      (let [[a _] (range-by-pos tree (dec i))
+            len (- i a)]
+        (recur a (if (> pos a)
+                   (-> tree
+                       (delete-line a len)
+                       (insert-line a (- pos a) false))
+                   (delete-line tree a len))))
+      tree)))
 
 (defn create-lineindex [s]
   (insert (make-tree nil) 0 s))

@@ -105,6 +105,8 @@
                                       (assoc rg 0 (buf :pos)))))
                      set-visual-ranges
                      (update :context dissoc :range)
+                     (update :context dissoc :motion-fail?)
+                     (update :context dissoc :motion-cancel?)
                      (update-x-if-not-jk keycode))))
       (merge (visual-keycodes-map change-visual-mode-type))))
 
