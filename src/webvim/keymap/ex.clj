@@ -354,14 +354,6 @@
          ["substitute" cmd-substitude]]]
     (fire-event :init-ex-commands cmds buf)))
 
-(defn split-ex-cmd [s]
-  (println "split-excmd" s)
-  (let [items (vec (re-seq #"[.$%,;]|[+-]?\d+|'[a-zA-Z0-9<>{}\[\]()']|/(?:\[(?:\\\\|\\\]|/|[^\]])*\]|\\\\|\\/|[^/\[\]])+/?|.+" s))
-        [cmd args] (re-seq #"\w+|.*" (peek items))]
-    {:ranges (vec (pop items))
-     :cmd cmd
-     :args args}))
-
 (defn- split-arguments [s]
   (map first (re-seq #"\"(\\\\|\\\"|[^\"]*)\"|[^\s]+" (or s ""))))
 
@@ -389,7 +381,7 @@
                                ;TODO: (.startsWith "/" rg)
                                (-> rg first (= \'))
                                (parse-mark buf (last rg))
-                               :else base)
+                               :else (or base dot))
                        :delta (if (re-test #"^[+-]\d" rg)
                                 (+ (or delta 0) (Integer. rg))
                                 delta)}))
