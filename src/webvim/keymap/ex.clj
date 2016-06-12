@@ -164,7 +164,6 @@
         true)
       (assoc buf :message (str exception)))))
 
-
 (defn do-eval [buf code]
   (let [{result :result
          output :output
@@ -429,14 +428,18 @@
         (conj res item))) [] items))
 
 (defn parse-excmd [buf s]
-  (let [items (vec (re-seq #"[.$%,;]|[+-]?\d+|'[a-zA-Z0-9<>{}\[\]()']|/(?:\[(?:\\\\|\\\]|/|[^\]])*\]|\\\\|\\/|[^/\[\]])+/?|.+" s))
-        ranges (expand-% (pop items))
-        [cmd args] (re-seq #"\w+|.*" (peek items))]
-    (println "parse-excmd:" items)
-    {:range (parse-range ranges (buf :y) (buf-total-lines buf) buf)
-     :cmd cmd
-     :args (split-arguments args)}))
-
+  (if (re-seq #"\s*\d+\s*" s)
+    (let [n (negzero (dec (parse-int s)))]
+      {:range [n n]
+       :cmd nil
+       :args ""})
+    (let [items (vec (re-seq #"[.$%,;]|[+-]?\d+|'[a-zA-Z0-9<>{}\[\]()']|/(?:\[(?:\\\\|\\\]|/|[^\]])*\]|\\\\|\\/|[^/\[\]])+/?|.+" s))
+          ranges (expand-% (pop items))
+          [cmd args] (re-seq #"\w+|.*" (peek items))]
+      (println "parse-excmd:" items)
+      {:range (parse-range ranges (buf :y) (buf-total-lines buf) buf)
+       :cmd cmd
+       :args (split-arguments args)})))
 
 (comment
   (parse-excmd {:y 20} "1,./^haha\\\\[\\\\\\]/]hello\\//+1grep hello")
