@@ -11,10 +11,10 @@
                                     make-operator set-line-end set-visual-range not-empty-range]]
     [webvim.indent :refer [buf-indent-current-line]]
     [webvim.mode :refer [set-insert-mode]]
-    [webvim.core.utils :refer [sort2]]
+    [webvim.core.utils :refer [sort2 deep-merge]]
     [webvim.core.rope :refer [buf-replace buf-delete buf-insert buf-set-pos subr indexr]]
     [webvim.core.pos :refer [char+ buf-start]]
-    [webvim.core.line :refer [pos-line expand-block-ranges pos-lines-seq+ pos-line-last pos-line-first line-end line-start]]))
+    [webvim.core.line :refer [pos-line expand-block-ranges pos-lines-seq+ pos-line-last pos-line-first line-end line-start line-first]]))
 
 (defn- start-insert-mode [f]
   (fn [buf keycode]
@@ -200,29 +200,31 @@
 (defn wrap-keymap-change [keymap visual-keymap]
   (let [motion-keymap (init-motion-keymap-for-operators)
         visual-keymap (wrap-temp-visual-mode visual-keymap temp-visual-keymap-c)]
-    (assoc keymap
-           "i" (wrap-keycode set-insert-mode)
-           "a" (start-insert-mode char+)
-           "A" (start-insert-mode line-end)
-           "I" (start-insert-mode line-start)
-           "s" (make-operator set-current-pos change-range)
-           "S" (make-operator set-current-line change-range)
-           "o" (start-insert-mode insert-new-line)
-           "O" (start-insert-mode insert-new-line-before)
-           "c" (wrap-keymap-repeat-prefix
-                 (merge
-                   motion-keymap
-                   visual-keymap
-                   {"c" (make-operator set-current-line change-range)
-                    :after (fn [buf keycode]
-                             (if (or (= keycode "c")
-                                     (contains? visual-keymap keycode)
-                                     (and
-                                       (= (-> buf :context :lastbuf :pos) (buf :pos))
-                                       (-> buf :context :range empty?)))
-                               buf
-                               ((make-operator change-range) buf keycode)))}))
-           "C" (make-operator set-line-end change-range))))
+    (deep-merge
+      keymap
+      {"i" (wrap-keycode set-insert-mode)
+       "a" (start-insert-mode char+)
+       "A" (start-insert-mode line-end)
+       "I" (start-insert-mode line-start)
+       "g" {"I" (start-insert-mode line-first)}
+       "s" (make-operator set-current-pos change-range)
+       "S" (make-operator set-current-line change-range)
+       "o" (start-insert-mode insert-new-line)
+       "O" (start-insert-mode insert-new-line-before)
+       "c" (wrap-keymap-repeat-prefix
+             (merge
+               motion-keymap
+               visual-keymap
+               {"c" (make-operator set-current-line change-range)
+                :after (fn [buf keycode]
+                         (if (or (= keycode "c")
+                                 (contains? visual-keymap keycode)
+                                 (and
+                                   (= (-> buf :context :lastbuf :pos) (buf :pos))
+                                   (-> buf :context :range empty?)))
+                           buf
+                           ((make-operator change-range) buf keycode)))}))
+       "C" (make-operator set-line-end change-range)})))
 
 (listen
   :visual-mode-keymap
