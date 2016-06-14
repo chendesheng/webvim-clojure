@@ -1,6 +1,6 @@
 (ns webvim.keymap.scrolling
   (:require [webvim.core.utils :refer [deep-merge bound-range negzero]]
-            [webvim.scrolling :refer [scroll-to viewport-center viewport-inc-lines]]
+            [webvim.scrolling :refer [scroll-to viewport-center viewport-inc-lines viewport-top viewport-bottom]]
             [webvim.core.ui :refer [viewport]]
             [webvim.core.rope :refer [buf-total-lines]]
             [webvim.core.line :refer [lines-row pos-line-first pos-line-last line-start column]]
@@ -45,7 +45,9 @@
           line-start))))
 
 (defn- scrolling-keymap []
-  {"z" {"z" (scroll-to viewport-center)}
+  {"z" {"z" (scroll-to viewport-center)
+        "t" (scroll-to viewport-top)
+        "b" (scroll-to viewport-bottom)}
    "<c-u>" (not-first-line (cursor-move-viewport -0.5))
    "<c-d>" (not-last-line (cursor-move-viewport 0.5))
    ;TODO: scroll beyond border
@@ -58,4 +60,4 @@
 (defn wrap-keymap-scrolling-visual [keymap]
   (deep-merge keymap (scrolling-keymap)))
 
-;TODO: za, zt, zb <c-b> etc.
+;TODO: za, <c-b> etc.
