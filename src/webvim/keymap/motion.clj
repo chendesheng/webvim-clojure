@@ -125,7 +125,7 @@
       (set-motion-fail buf)
       (f buf keycode))))
 
-(defn- not-first-line [f]
+(defn not-first-line [f]
   (fn [buf keycode]
     (if (zero? (pos-line-first buf))
       (set-motion-fail buf)
@@ -134,7 +134,7 @@
 (defn- end? [r pos]
   (>= pos (count r)))
 
-(defn- not-last-line [f]
+(defn not-last-line [f]
   (fn [{r :str :as buf} keycode]
     (if (end? r (pos-line-last buf))
       (set-motion-fail buf)
@@ -143,6 +143,12 @@
 (defn- not-buf-end [f]
   (fn [{pos :pos r :str :as buf} keycode]
     (if (end? r (+ pos 2))
+      (set-motion-fail buf)
+      (f buf keycode))))
+
+(defn not-scroll-start [f]
+  (fn [{scroll-top :scroll-top :as buf} keycode]
+    (if (zero? scroll-top)
       (set-motion-fail buf)
       (f buf keycode))))
 

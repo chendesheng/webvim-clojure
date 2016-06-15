@@ -297,3 +297,8 @@
     s
     (str s \newline)))
 
+(defn keymap-comp [f g]
+  (fn [buf keycode]
+    (-> buf
+        (g keycode)
+        (f keycode))))
