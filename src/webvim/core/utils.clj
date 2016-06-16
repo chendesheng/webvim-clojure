@@ -302,3 +302,8 @@
     (-> buf
         (g keycode)
         (f keycode))))
+
+(defn keymap-do-before [fprint f]
+  (fn [buf keycode]
+    (fprint buf keycode)
+    (f buf keycode)))
