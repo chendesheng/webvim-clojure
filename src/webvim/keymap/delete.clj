@@ -58,12 +58,11 @@
     (assoc keymap
            "D" (make-operator set-line-end delete-range)
            "x" (make-operator set-current-pos delete-range)
-           "d" (wrap-keymap-repeat-prefix
-                 (merge
-                   motion-keymap
-                   visual-keymap
-                   {"d" (wrap-keycode set-linewise)
-                    :after (if-not-keycode (make-operator delete-range) keycodes-visual)})))))
+           "d" (merge
+                 motion-keymap
+                 visual-keymap
+                 {"d" (wrap-keycode set-linewise)
+                  :after (if-not-keycode (make-operator delete-range) keycodes-visual)}))))
 
 (listen
   :visual-mode-keymap
