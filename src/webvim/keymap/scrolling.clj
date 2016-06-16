@@ -39,7 +39,7 @@
       line-start))
 
 (defn- scroll-end? [buf]
-  (>= (inc scroll-top) (buf-total-lines buf))) 
+  (>= (-> buf :scroll-top inc) (buf-total-lines buf))) 
 
 (defn- backward-page [{scroll-top :scroll-top :as buf} keycode]
   (let [newy (if (scroll-end? buf) 
@@ -50,7 +50,7 @@
         line-start)))
 
 (defn- <c-f>-beep? [f]
-  (fn [{scroll-top :scroll-top :as buf} keycode]
+  (fn [buf keycode]
     (if (scroll-end? buf)
       ((not-last-line f) buf keycode)
       (f buf keycode))))
