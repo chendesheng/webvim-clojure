@@ -47,11 +47,17 @@
     (start false {:port 8080 :join? false}))
   "ok")
 
+(defn eval-reload [^String ns]
+  (try 
+    (->> (format "(use '%s :reload)" ns) read-string eval)
+    (catch Exception e
+      (str e))))
+
 (defn- cmd-reload [buf _ _ _]
   (let [ns (get-namespace (buf :filepath))
         ret (if (nil? ns)  
               "Can't get right namespace"
-              ((eval-refer-ns nil (format "(use '%s :reload)" ns)) :exception))]
+              (eval-reload ns))]
     (if (nil? ret)
       (assoc buf :message (restart))
       (assoc buf :message (str ret)))))
