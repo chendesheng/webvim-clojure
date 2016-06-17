@@ -20,11 +20,12 @@ function updateViewportSize(fnok) {
         viewport.height = sz.height;
 
         __updatingViewportSize = true;
-        $.get('resize/' + buffers.window.id + '/' + sz.width + '/' + sz.height, function() {
-            __updatingViewportSize = false;
 
-            fnok();
-        });
+        xhrGet('resize/' + buffers.window.id + '/' + sz.width + '/' + sz.height,
+            function() {
+                __updatingViewportSize = false;
+                fnok();
+            });
     } else {
         if (__updatingViewportSize == false) {
             fnok();

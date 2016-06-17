@@ -21,7 +21,7 @@
 
 (defn- homepage
   [request]
-  (let [js ["jquery.js" "cookie.js" "socket.js" "utils.js" "dom.js" "keycode.js" 
+  (let [js ["cookie.js" "socket.js" "utils.js" "dom.js" "keycode.js" 
             "keyboard.js" "syntax/clojure.js" "syntax/css.js" "syntax/xml.js" 
             "syntax/sql.js" "syntax/go.js" "syntax/cs.js" "syntax/javascript.js" "syntax/yaml.js"
             "syntax/markdown.js" "syntax/actionscript.js" "syntax/lisp.js" "syntax/json.js"
@@ -115,4 +115,3 @@
 (defn run [options]
   (reset! web-server
           (run-server #'app options)))
-
