@@ -31,11 +31,14 @@
             "render/watchers.js"]
         css ["main.css" "theme/twilight.css"]]
     (html5
-      (conj (reduce add-js [:head] js)
-            [:meta {:name "apple-touch-fullscreen" :content "yes"}]
-            [:meta {:name "apple-mobile-web-app-capable" :content "yes"}]
-            [:meta {:name "apple-mobile-web-app-status-bar-style" :content "default"}]
-            [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}])
+      (conj
+        (if (-> request :params :cljs some?)
+          (add-js [:head] "cljs.js") ;start migrating UI code to clojurescript
+          (reduce add-js [:head] js))
+        [:meta {:name "apple-touch-fullscreen" :content "yes"}]
+        [:meta {:name "apple-mobile-web-app-capable" :content "yes"}]
+        [:meta {:name "apple-mobile-web-app-status-bar-style" :content "default"}]
+        [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}])
       (reduce add-css [:head] css)
       [:body [:textarea {:type "text" :id "hidden-input" :autocomplete "off"
                          :autocorrect "off" :autocapitalize "off"
@@ -97,7 +100,7 @@
   (@web-server))
 
 (defroutes main-routes
-  (GET "/" [request] (homepage request))
+  (GET "/" request (homepage request))
   (GET "/socket" [] handle-socket)
   ;FIXME: add back later
   (GET "/resize/:id/:w/:h" [id w h]

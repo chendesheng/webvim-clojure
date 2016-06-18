@@ -13,15 +13,20 @@
                            [info.sunng/ring-jetty9-adapter "0.9.2"]
                            [org.clojars.hozumi/clj-commons-exec "1.2.0"]
                            [http-kit "2.1.18"]
-                           [clj-time "0.11.0"]]
+                           [clj-time "0.11.0"]
+                           [org.clojure/clojurescript "1.9.36"]]
+            :plugins [[lein-cljsbuild "1.1.3"]]
+            :cljsbuild {:builds [{:source-paths ["src-cljs"]
+                                  :compiler {:output-to "resources/public/cljs.js"
+                                             :output-dir "target"
+                                             :source-map "resources/public/cljs.js.map"
+                                             :optimizations :whitespace
+                                             :pretty-print true}}]}
             :source-paths ["src" "src/webvim"]
             :resource-paths ["thirdparty/ropes.jar", "resources"]
             :main webvim.main
             :profiles {:dev {:source-paths ["dev"]}}
-            :jvm-opts ["-Dapple.awt.UIElement=true" 
+            :jvm-opts ["-Dapple.awt.UIElement=true"
              ;Prevent Exceptions With “trace missing”
              ;http://theholyjava.wordpress.com/2014/05/19/clojurejava-prevent-exceptions-with-trace-missing/?utm_source=tuicool&utm_medium=referral
                        "-XX:-OmitStackTraceInFastThrow"])
-
-
-
