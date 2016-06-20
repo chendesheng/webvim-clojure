@@ -17,9 +17,9 @@
                            [org.clojure/clojurescript "1.9.36"]]
             :plugins [[lein-cljsbuild "1.1.3"]]
             :cljsbuild {:builds [{:source-paths ["src-cljs"]
-                                  :compiler {:output-to "resources/public/cljs.js"
-                                             :output-dir "resources/public"
-                                             :source-map "resources/public/cljs.js.map"
+                                  :compiler {:output-to "resources/public/js/cljs.js"
+                                             :output-dir "resources/public/js"
+                                             :source-map "resources/public/js/cljs.js.map"
                                              :optimizations :whitespace
                                              :pretty-print true}}]}
             :source-paths ["src" "src/webvim"]

@@ -42,11 +42,19 @@
     (-> .-onopen (set! nil)))
   (swap! state dissoc :conn))
 
+(defn- append-query [url query]
+  (if-not (empty? query)
+    (str url 
+         (if (pos? (.indexOf url "?"))
+           "&" "?")
+         query)
+    url))
+
 (declare ^:private flush-stream)
-(defn- connect [state]
+(defn- connect [state init?]
   (if (-> @state :conn nil? not)
     (reset-conn state))
-  (let [conn (js/WebSocket. (@state :url))]
+  (let [conn (js/WebSocket. (append-query (@state :url) (if init? "init=1" "")))]
     (swap! state assoc :conn conn)
     (set! (.-onopen conn) 
           #(flush-stream state))
@@ -62,14 +70,14 @@
         (do (.send conn stream)
             (swap! state assoc :stream "")))
       (not= s 0)
-      (connect state))))
+      (connect state nil))))
 
 (defn new-conn [url f]
   (let [state (atom {:url url
                      :stream ""
                      :conn nil
                      :onreceive f})]
-    (connect state)
+    (connect state :init)
     state))
 
 (defn send [state key]

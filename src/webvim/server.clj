@@ -33,7 +33,7 @@
     (html5
       (conj
         (if (-> request :params :cljs some?)
-          (add-js [:head] "cljs.js") ;start migrating UI code to clojurescript
+          (add-js [:head] "js/cljs.js") ;start migrating UI code to clojurescript
           (reduce add-js [:head] js))
         [:meta {:name "apple-touch-fullscreen" :content "yes"}]
         [:meta {:name "apple-mobile-web-app-capable" :content "yes"}]
