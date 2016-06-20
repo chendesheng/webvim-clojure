@@ -1,36 +1,28 @@
-(ns webvim.ui.dom)
-
-(defn set-prop! [jsobj k v]
-  (aset jsobj (name k) v))
-
-(defn set-props! [jsobj obj]
-  (doseq [[k v] obj]
-    (set-prop! jsobj k v))
-  jsobj)
+(ns webvim.ui.lib.dom)
 
 (defn $new-buffer [bufid]
   (js/document.body.appendChild
-    (set-props!
-      (js/document.createElement "DIV")
-      {:id (str "buffer-" bufid)
-       :className "buffer"
-       :innerHTML (str "<div id=\"gutter-" bufid "\" class=\"gutter\"></div>"
-                       "<div id=\"content-" bufid "\" class=\"content\">"
-                       "<div id=\"cursor-" bufid "\" class=\"cursor\">&nbsp;</div>" 
-                       "<div id=\"selections-" bufid "\" class=\"selections\"></div>"
-                       "<div id=\"highlights-" bufid "\" class=\"highlights\"></div>"
-                       "<div id=\"autocompl-" bufid "\" class=\"autocompl\"></div>"
-                       "<div id=\"cursor-bracket-" bufid "\" class=\"cursor-bracket\"></div>"
-                       "<div id=\"lines-" bufid "\" class=\"lines\"></div>"
-                       "</div>"
-                       "<div id=\"status-bar-" bufid "\" class=\"status-bar\">"
-                       "<span id=\"status-bar-buf-" bufid "\" class=\"ex\"></span>"
-                       "<span id=\"status-bar-cursor-" bufid "\" class=\"cursor\"></span>"
-                       "<span id=\"status-bar-cursor-second-" bufid "\" class=\"cursor second-cursor\"></span>"
-                       "<span id=\"status-bar-keys-" bufid "\" class=\"ongoing-keys\"></span>"
-                       "<span id=\"status-bar-name-" bufid "\" class=\"buf-name\"></span>"
-                       "</div>"
-                       "<div id=\"ex-autocompl-" bufid "\" class=\"autocompl ex-autocompl\"></div>")})))
+    (doto
+     (js/document.createElement "DIV")
+      (-> .-id (set! (str "buffer-" bufid)))
+      (-> .-className (set! "buffer"))
+      (-> .-innerHTML (set! (str "<div id=\"gutter-" bufid "\" class=\"gutter\"></div>"
+                                 "<div id=\"content-" bufid "\" class=\"content\">"
+                                 "<div id=\"cursor-" bufid "\" class=\"cursor\">&nbsp;</div>" 
+                                 "<div id=\"selections-" bufid "\" class=\"selections\"></div>"
+                                 "<div id=\"highlights-" bufid "\" class=\"highlights\"></div>"
+                                 "<div id=\"autocompl-" bufid "\" class=\"autocompl\"></div>"
+                                 "<div id=\"cursor-bracket-" bufid "\" class=\"cursor-bracket\"></div>"
+                                 "<div id=\"lines-" bufid "\" class=\"lines\"></div>"
+                                 "</div>"
+                                 "<div id=\"status-bar-" bufid "\" class=\"status-bar\">"
+                                 "<span id=\"status-bar-buf-" bufid "\" class=\"ex\"></span>"
+                                 "<span id=\"status-bar-cursor-" bufid "\" class=\"cursor\"></span>"
+                                 "<span id=\"status-bar-cursor-second-" bufid "\" class=\"cursor second-cursor\"></span>"
+                                 "<span id=\"status-bar-keys-" bufid "\" class=\"ongoing-keys\"></span>"
+                                 "<span id=\"status-bar-name-" bufid "\" class=\"buf-name\"></span>"
+                                 "</div>"
+                                 "<div id=\"ex-autocompl-" bufid "\" class=\"autocompl ex-autocompl\"></div>"))))))
 
 (defn- $bufid [prefix bufid]
   (js/document.getElementById (str prefix bufid)))
@@ -65,7 +57,6 @@
 
 (defn $statusBuf [bufid] 
   ($bufid "status-bar-buf-" bufid))
-
 
 (defn $statusKeys [bufid] 
   ($bufid "status-bar-keys-" bufid))

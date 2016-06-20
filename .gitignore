@@ -20,3 +20,11 @@ resources/public/jquery.js
 
 resources/public/ubuntu-mono.css
 node_modules/
+
+resources/public/webvim/
+resources/public/goog/
+resources/public/clojure/
+resources/public/cljs/
+resources/public/cljs.js
+resources/public/cljs.js.map
+resources/public/cljs/core.js

@@ -18,7 +18,7 @@
             :plugins [[lein-cljsbuild "1.1.3"]]
             :cljsbuild {:builds [{:source-paths ["src-cljs"]
                                   :compiler {:output-to "resources/public/cljs.js"
-                                             :output-dir "target"
+                                             :output-dir "resources/public"
                                              :source-map "resources/public/cljs.js.map"
                                              :optimizations :whitespace
                                              :pretty-print true}}]}
