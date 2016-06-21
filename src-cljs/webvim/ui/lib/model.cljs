@@ -17,16 +17,19 @@
 
 (defn apply-patch [data diff watchers]
   (let [new-data (merge data diff)]
-    (if (empty? watchers)
+    (if-not (empty? watchers)
       (doseq [path (keys-in diff)]
+        (println path)
         (let [s (string/join "/" path)]
+          (println s)
           (doseq [[re _] watchers]
             (let [captured (re-seq re s)]
+              (println captured)
               (if-not (nil? (re-seq re s))
                 (trigger watchers re
                          {:old-data data
                           :new-data new-data
-                          :params captured})))))))))
+                          :params (first captured)})))))))))
 
 (defn- re-path [path]
   (re-pattern

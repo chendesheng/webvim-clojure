@@ -12,15 +12,19 @@
   (swap! client-watchers
          #(off-model-change % path watcher-id)))
 
-(defn update-client [diff]
-  (swap! client #(apply-patch % diff @client-watchers)))
+(defn update-client [patch]
+  (println "patch:" patch)
+  (println @client-watchers)
+  (println (swap! client #(apply-patch % patch @client-watchers))))
 
 (defn on-buffer-change [k f]
   (let [prop (name k)]
     (on-client-change
       (str "buffers.*." prop)
       (symbol (str "buffer-" prop "-change-handler"))
-      (fn [[_ bufid] client old-client]
+      (fn [[_ bufid :as params] client old-client]
+        (println "on-buffer-change" bufid)
+        (println params)
         (f (-> client :buffers bufid) client old-client)))))
 
 

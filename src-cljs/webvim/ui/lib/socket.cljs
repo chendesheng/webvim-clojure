@@ -7,35 +7,6 @@
   [line]
   (js->clj (.parse js/JSON line)))
 
-(comment defn connect [url f]
-         (letfn [(idelseconds [t] (-> (current-time) (- t) (/ 1000)))
-                 (_connect []
-                   (doto (js/WebSocket. url)
-                     (-> .-onopen (set! (fn [])))
-                     (-> .-onclose (set! onclose))
-                     (-> .-onmessage
-                         (set! (fn [message]
-                                 (onsuccess (json-parse (.-data message))))))))
-                 (flush-stream
-                   [{stream :stream
-                     conn :conn :as state}]
-                   (if (-> stream empty? not)
-                     (let [s (.-readyState conn)]
-                       (cond
-                         (= s 1)
-                         (do (.send conn stream)
-                             (assoc state :stream ""))
-                         (not= s 0)
-                         (assoc state :conn (_connect))
-                         :else
-                         state))))]
-           (fn [{conn :conn stream :stream :as s}]
-             (-> s
-               (assoc :last-sent (current-time)
-                      :stream (str stream key))
-               flush-stream))))
-
-
 (defn- reset-conn [state]
   (doto (@state :conn)
     (-> .-onmessage (set! nil))
