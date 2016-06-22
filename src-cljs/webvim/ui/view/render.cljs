@@ -4,7 +4,5 @@
 (on-buffer-change
   :mode
   (fn [buf _ _]
-    (case (buf :mode)
-      :normal nil
-      :insert nil)))
+    (println "render mode")))
 

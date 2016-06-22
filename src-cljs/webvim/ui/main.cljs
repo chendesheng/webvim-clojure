@@ -4,47 +4,44 @@
             [webvim.ui.lib.xhr :refer [xhr-get]]
             [webvim.ui.lib.util :refer [current-path]]
             [webvim.ui.controller.page]
+            [goog.net.cookies]
             [webvim.ui.client :refer [client update-client on-client-change on-buffer-change]]))
 
 (enable-console-print!)
-
-(defn get-winid []
-  (.get goog.net.cookies "windowId"))
-
-(defn save-winid [winid]
-  (.set goog.net.cookies "windowId" winid js/Infinity))
 
 (defn- ws-url []
   (str "ws://" js/window.location.hostname
        (if js/window.location.port
          (str ":" js/window.location.port)
-         "") "/socket"))
+         "") "/socket?window=" (@client :id)))
 
 (add-listener
   :onload :onload-handler
   (fn [_]
     ;window.location.href.replace(/^http(s?:\/\/[^/]*)(\/.*)?/i, "ws$1") + path + (query || '?windowId=' + _windowId) 
-    (let [conn (new-conn (ws-url) (fn [alldata]
-                                    (doseq [data alldata]
+    (let [conn (new-conn ws-url (fn [alldata]
+                                  (doseq [data alldata]
                                       ;TODO: get rid of this, make server generate right schema
-                                      (println "seq?" (vector? data))
-                                      (println data)
-                                      (let [[win buf] (if (vector? data) data [nil data])
-                                            bufid (get buf "id") ;TODO: use keyword access
-                                            _ (println "bufid:" bufid)
-                                            active-buf (get @client "active-buf")
-                                            patch (merge (if (nil? buf)
-                                                           nil
-                                                           (if (or (nil? bufid)
-                                                                   (= active-buf bufid))
-                                                             {"buffers" {active-buf buf}}
-                                                             {"active-buf" bufid
-                                                              "buffers" {bufid buf}})) win)]
-                                        (dispatch-event :server-message patch)))))]
+                                    (println "receive:" data)
+                                    (let [[win buf] (if (vector? data) data [nil data])
+                                          bufid (:id buf)
+                                          active-buf (:active-buf @client)
+                                          patch (merge (if-not (nil? buf)
+                                                         (if (or (nil? bufid)
+                                                                 (= active-buf bufid))
+                                                           {:buffers {active-buf buf}}
+                                                           {:active-buf bufid
+                                                            :buffers {bufid buf}})) win)]
+                                      (dispatch-event :server-message patch)))))]
       (add-listener
         :input-key :input-key-handler
         (fn [key]
           (send conn key))))))
+
+(add-listener
+  :unload :save-winid
+  (fn []
+    (.set goog.net.cookies "windowId" (@client :id) js/Infinity)))
 
 (add-listener
   :onresize :onresize-handler
@@ -52,14 +49,29 @@
 
 (add-listener
   :server-message :server-message-handler
-  update-client)
+  (fn [patch]
+    (update-client (if (-> patch :active-buf nil? not)
+                     (do (update-client {:active-buf (patch :active-buf)})
+                         (dissoc patch :active-buf))
+                     patch))))
 
 (on-client-change
   "size" :size-change-handler
-  (fn [_ {{width :width height :height} :size} _]
-    (xhr-get (str "/size/" width "/" height) nil)))
+  (fn [_ {{width :width height :height} :size id :id} _]
+    (xhr-get (str "/size/" id "/" width "/" height) nil)))
 
-(on-buffer-change :mode (fn [buf _ _]
-                          (println "mode change")))
-(on-buffer-change :pos (fn [buf _ _]
-                         (println "pos change")))
+(defn- buffer-change-handler [f]
+  (fn [[_ bufid] client old-client]
+    (-> client :buffers (get bufid) (f client old-client))))
+
+(on-client-change
+  "buffers.*.mode" :mode-change-handler
+  (buffer-change-handler
+    (fn [buf _ _]
+      (println "mode change"))))
+
+(on-client-change
+  "buffers.*.pos" :pos-change-handler
+  (buffer-change-handler
+    (fn [buf _ _]
+      (println "buffers.*.pos"))))

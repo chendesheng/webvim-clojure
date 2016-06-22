@@ -2,7 +2,6 @@
   (:require [webvim.ui.lib.watcher :refer [watch-on watch-off trigger]]
             [clojure.string :as string]))
 
-;only allow have one global model
 (defn- keys-in [m]
   (if (or (and (not (map? m))
                (not (vector? m)))
@@ -20,11 +19,11 @@
     (if-not (empty? watchers)
       (doseq [path (keys-in diff)]
         (println path)
-        (let [s (string/join "/" path)]
+        (let [s (string/join "/" (map #(if (keyword? %)
+                                         (name %) (str %)) path))]
           (println s)
           (doseq [[re _] watchers]
             (let [captured (re-seq re s)]
-              (println captured)
               (if-not (nil? (re-seq re s))
                 (trigger watchers re
                          {:old-data data

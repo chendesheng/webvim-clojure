@@ -1,7 +1,13 @@
 (ns webvim.ui.client
-  (:require [webvim.ui.lib.model :refer [on-model-change off-model-change apply-patch]]))
+  (:require [webvim.ui.lib.model :refer [on-model-change off-model-change apply-patch]]
+            [goog.net.cookies]))
 
-(def client (atom nil))
+(defn- get-winid []
+  (let [id (.get goog.net.cookies "windowId")]
+    (.set goog.net.cookies "windowId" "" js/Infinity)
+    id))
+
+(def client (atom {:id (get-winid)}))
 (def ^:private client-watchers (atom nil))
 
 (defn on-client-change [path watcher-id f]
@@ -13,18 +19,15 @@
          #(off-model-change % path watcher-id)))
 
 (defn update-client [patch]
-  (println "patch:" patch)
-  (println @client-watchers)
-  (println (swap! client #(apply-patch % patch @client-watchers))))
+  (println "update-client:" patch)
+  (swap! client #(apply-patch % patch @client-watchers)))
 
 (defn on-buffer-change [k f]
   (let [prop (name k)]
     (on-client-change
       (str "buffers.*." prop)
       (symbol (str "buffer-" prop "-change-handler"))
-      (fn [[_ bufid :as params] client old-client]
-        (println "on-buffer-change" bufid)
-        (println params)
-        (f (-> client :buffers bufid) client old-client)))))
+      (fn [[_ bufid] client old-client]
+        (-> client :buffers (get bufid) (f client old-client))))))
 
 

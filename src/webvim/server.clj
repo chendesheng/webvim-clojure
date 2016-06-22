@@ -68,14 +68,17 @@
       request channel
       (on-receive channel
                   (fn [body]
-                    (with-window (@channels channel)
-                                 (fire-event (parse-input body) :input-keys))))
+                    (println "body:" body)
+                    (if-not (empty? body)
+                      (with-window (@channels channel)
+                                   (fire-event (parse-input body) :input-keys)))))
       (on-close channel
                 (fn [status] (println "websocket close")))
       ;setup window context
       (let [window (get-or-create-window
                      (-> request :query-params (get "windowId")))]
-        ;(println window)
+        (println "input windowid:" (-> request :query-params (get "windowId")))
+        (println "windowid:" (window :id))
         (with-window
           window
           ;close last channel

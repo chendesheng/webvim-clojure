@@ -1,11 +1,12 @@
 (ns webvim.ui.lib.socket
-  (:require [webvim.ui.lib.util :refer [current-time]]))
+  (:require [webvim.ui.lib.util :refer [current-time]]
+            [clojure.walk :refer [keywordize-keys]]))
 
 ;https://github.com/mmcgrana/cljs-demo/blob/master/src/cljs-demo/util.cljs
 (defn- json-parse
   "Returns ClojureScript data for the given JSON string."
   [line]
-  (js->clj (.parse js/JSON line)))
+  (keywordize-keys (js->clj (.parse js/JSON line))))
 
 (defn- reset-conn [state]
   (doto (@state :conn)
@@ -25,7 +26,7 @@
 (defn- connect [state init?]
   (if (-> @state :conn nil? not)
     (reset-conn state))
-  (let [conn (js/WebSocket. (append-query (@state :url) (if init? "init=1" "")))]
+  (let [conn (js/WebSocket. (append-query ((@state :urlfn)) (if init? "init=1" "")))]
     (swap! state assoc :conn conn)
     (set! (.-onopen conn) 
           #(flush-stream state))
@@ -43,8 +44,8 @@
       (not= s 0)
       (connect state nil))))
 
-(defn new-conn [url f]
-  (let [state (atom {:url url
+(defn new-conn [urlfn f]
+  (let [state (atom {:urlfn urlfn
                      :stream ""
                      :conn nil
                      :onreceive f})]

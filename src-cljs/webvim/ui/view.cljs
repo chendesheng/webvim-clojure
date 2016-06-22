@@ -4,8 +4,6 @@
 
 (on-client-change
   "active-buf" :switch-buffer-handler
-  (fn [_ {bufid :active-buf buffers :buffers} _]
-    ($new-buffer bufid)
-    (let [buf (buffers bufid)]
-      (println (buf :str)))))
+  (fn [_ {bufid :active-buf} _]
+    ($new-buffer bufid)))
 

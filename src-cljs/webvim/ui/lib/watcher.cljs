@@ -25,11 +25,14 @@
 
 (defn trigger [watchers event data]
   (doseq [[_ f] (watchers event)]
-    (try
-      (f data)
-      (catch js/Error e
-        (let [d {:data data :error e}]
-          (trigger watchers [event :error] d) 
-          (trigger watchers :error d))))))
+    ;TODO: try catch
+    ;(try
+    (f data)
+    (comment catch js/Error e
+             (let [d {:data data :error e}]
+               (println e)
+               (trigger watchers [event :error] d) 
+               (trigger watchers :error d)))))
+  ;)
 
 
