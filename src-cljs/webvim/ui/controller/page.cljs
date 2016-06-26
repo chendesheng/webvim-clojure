@@ -1,5 +1,5 @@
 (ns webvim.ui.controller.page
-  (:require [webvim.ui.event :refer [dispatch-event]]))
+  (:require [webvim.ui.lib.event :refer [dispatch-event]]))
 
 (defn handle-size-change [])
 

@@ -39,7 +39,9 @@
         [:meta {:name "apple-mobile-web-app-capable" :content "yes"}]
         [:meta {:name "apple-mobile-web-app-status-bar-style" :content "default"}]
         [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}])
-      (reduce add-css [:head] css)
+      (if (-> request :params :cljs some?)
+        (add-css [:head] "css/cljs.css")
+        (reduce add-css [:head] css))
       [:body [:textarea {:type "text" :id "hidden-input" :autocomplete "off"
                          :autocorrect "off" :autocapitalize "off"
                          :spellcheck "false" :aria-multiline "true"

@@ -1,6 +1,6 @@
-(ns webvim.ui.keyboard
+(ns webvim.ui.controller.input
   (:require [webvim.ui.lib.dom :refer [$hidden-input]]
-            [webvim.ui.event :refer [dispatch-event add-listener add-listener-once]]
+            [webvim.ui.lib.event :refer [dispatch-event add-listener add-listener-once]]
             [webvim.ui.lib.keycode :refer [char32bits? KEYCODE-DIC KEYCODE-KEYDOWN special-key?]]))
 
 ;Handle user input events, including: keyboard events, resize events
@@ -30,17 +30,24 @@
                 (dispatch-event :input-key key))))))
 
 (defn- onkeydown [event]
-  (let [code (-> event .-keyCode)
-        ctrl? (-> event .-ctrlKey nil? not)
-        alt? (-> event .-altKey nil? not)
-        shift? (-> event .-shiftKey nil? not)
+  (let [code (.-keyCode event)
+        ctrl? (.-ctrlKey event)
+        alt? (.-altKey event)
+        shift? (.-shiftKey event)
         keyc (KEYCODE-DIC code)
-        key (or (if keyc
-                  (str (if (and ctrl? (not (#{0 16 17 18} code))) "c-")
-                       (if shift? "s-")
-                       (if alt? "a-")
-                       keyc))
-                (KEYCODE-KEYDOWN code))]
+        keyd (KEYCODE-KEYDOWN code)
+        key (if (or keyd ctrl? alt?)
+              (cond
+                ctrl?
+                (if (and (not (contains? #{0 16 17 18} code))
+                         keyc)
+                  (str "c-" (if shift? "s-") (if alt? "a-") keyc)
+                  keyd)
+                shift?
+                (if keyc
+                  (str "s-" keyc) keyd)
+                :else
+                keyd) keyd)]
     (if key
       (do
         (.preventDefault event)
@@ -54,7 +61,7 @@
       js/document "keypress"
       (fn [event] 
         (if-not (.-defaultPrevented event)
-          (handle-key (js/String.fromCharCode event.keyCode)))))))
+          (handle-key (js/String.fromCharCode (.-keyCode event))))))))
 (comment let [input ($hidden-input)]
          (set! js/document.body.onclick (.-focus input))
          (on-buffer-change

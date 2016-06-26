@@ -1,11 +1,11 @@
 (ns webvim.ui.main
-  (:require [webvim.ui.event :refer [add-listener dispatch-event]]
+  (:require [webvim.ui.lib.event :refer [add-listener dispatch-event]]
             [webvim.ui.lib.socket :refer [new-conn send]]
             [webvim.ui.lib.xhr :refer [xhr-get]]
             [webvim.ui.lib.util :refer [current-path]]
             [webvim.ui.controller.page]
             [goog.net.cookies]
-            [webvim.ui.client :refer [client update-client on-client-change on-buffer-change]]))
+            [webvim.ui.client :refer [client update-client]]))
 
 (enable-console-print!)
 
@@ -36,7 +36,7 @@
       (add-listener
         :input-key :input-key-handler
         (fn [key]
-          (send conn key))))))
+          (send conn (str (:active-buf @client) "!" key)))))))
 
 (add-listener
   :unload :save-winid
@@ -47,31 +47,4 @@
   :onresize :onresize-handler
   #(update-client {:size %}))
 
-(add-listener
-  :server-message :server-message-handler
-  (fn [patch]
-    (update-client (if (-> patch :active-buf nil? not)
-                     (do (update-client {:active-buf (patch :active-buf)})
-                         (dissoc patch :active-buf))
-                     patch))))
-
-(on-client-change
-  "size" :size-change-handler
-  (fn [_ {{width :width height :height} :size id :id} _]
-    (xhr-get (str "/size/" id "/" width "/" height) nil)))
-
-(defn- buffer-change-handler [f]
-  (fn [[_ bufid] client old-client]
-    (-> client :buffers (get bufid) (f client old-client))))
-
-(on-client-change
-  "buffers.*.mode" :mode-change-handler
-  (buffer-change-handler
-    (fn [buf _ _]
-      (println "mode change"))))
-
-(on-client-change
-  "buffers.*.pos" :pos-change-handler
-  (buffer-change-handler
-    (fn [buf _ _]
-      (println "buffers.*.pos"))))
+(add-listener :server-message :server-message-handler update-client)

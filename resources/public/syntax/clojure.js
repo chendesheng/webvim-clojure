@@ -40,7 +40,7 @@ function hlclojure(hljs) {
             ' defproject defroutes'
     };
 
-    var SYMBOLSTART = 'a-zA-Z_\\-!.?+*=<>&#\'0-9';
+    var SYMBOLSTART = 'a-zA-Z_\\-!.?+*=<>&#\|\'0-9';
     var SYMBOLAFTERSTART = SYMBOLSTART + "0-9/;:";
     var SYMBOL_RE = '[' + SYMBOLSTART + '][' + SYMBOLAFTERSTART + ']*';
     var SIMPLE_NUMBER_RE = '[-+]?\\d+(\\.\\d+)?';
@@ -98,7 +98,7 @@ function hlclojure(hljs) {
         starts: BODY
     };
     var CHAR_LITERAL = {
-        begin: /\\(newline|tab|space|return|formfeed|backspace|u[a-fA-F\d]{4}|o[0-7]{3}|[<>\\\w\(\)\[\]\{\}'`~!@#$%^&*-=+])/,
+        begin: /\\(newline|tab|space|return|formfeed|backspace|u[a-fA-F\d]{4}|o[0-7]{3}|[<>\\\w\(\)\[\]\{\}\|'`~!@#$%^&*-=+])/,
         className: 'literal'
     };
     var BLOCK_COMMENT = {

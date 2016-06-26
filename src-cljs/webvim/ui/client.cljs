@@ -1,5 +1,6 @@
 (ns webvim.ui.client
-  (:require [webvim.ui.lib.model :refer [on-model-change off-model-change apply-patch]]
+  (:require [webvim.ui.lib.event :refer [dispatch-event]]
+            [webvim.ui.lib.util :refer [deep-merge]]
             [goog.net.cookies]))
 
 (defn- get-winid []
@@ -8,26 +9,11 @@
     id))
 
 (def client (atom {:id (get-winid)}))
-(def ^:private client-watchers (atom nil))
-
-(defn on-client-change [path watcher-id f]
-  (swap! client-watchers
-         #(on-model-change % path watcher-id f)))
-
-(defn off-client-change [path watcher-id]
-  (swap! client-watchers
-         #(off-model-change % path watcher-id)))
 
 (defn update-client [patch]
-  (println "update-client:" patch)
-  (swap! client #(apply-patch % patch @client-watchers)))
-
-(defn on-buffer-change [k f]
-  (let [prop (name k)]
-    (on-client-change
-      (str "buffers.*." prop)
-      (symbol (str "buffer-" prop "-change-handler"))
-      (fn [[_ bufid] client old-client]
-        (-> client :buffers (get bufid) (f client old-client))))))
+  (let [old-client @client
+        new-client (swap! client deep-merge patch)]
+    (println "update-client:" patch)
+    (dispatch-event :client-changed [patch old-client new-client])))
 
 
