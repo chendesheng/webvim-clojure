@@ -65,6 +65,10 @@
                (measure-left (.-firstChild $statusbuf) pos))]
     (set! (-> $cur .-style .-left) left)))
 
+(defn- toggle-class [ele cls b]
+  ((if b add-class remove-class)
+    ele cls))
+
 (defn render [patch _ _]
   (println "ROOT")
   (println patch)
@@ -91,8 +95,7 @@
                             (if-not (empty? text)
                               ($text-content ($id "status-bar-buf") text)))))
                 :focus? (fn [focus? _ _]
-                          ((if focus? add-class remove-class)
-                            ($id "status-bar") "focus"))
+                          (toggle-class ($id "status-bar") "focus" focus?))
                 :line-buffer (fn [_ [{str :str pos :pos pos2 :pos2}] _]
                                (let [$statusbuf ($id "status-bar-buf")]
                                  ($text-content $statusbuf str)
@@ -100,16 +103,21 @@
                                  (render-status-bar-cursor $statusbuf ($id "status-bar-cursor-second") pos2)))
                 :showkeys (fn [showkeys _ _]
                             (println "showkeys:" showkeys)
-                            ($text-content ($id "status-bar-keys") (clojure.string/join "" showkeys)))
+                            (let [$keys ($id "status-bar-keys")]
+                              ($text-content $keys (clojure.string/join "" (reverse showkeys)))
+                              (if (-> showkeys first nil?)
+                                (js/setTimeout #($text-content $keys "") 100))))
                 :name (fn [name _ _]
                         ($text-content ($id "status-bar-name") name))
                 :beep? (fn [beep? _ _] (if beep? (beep)))
                 :dirty? (fn [dirty? _ _]
-                          ((if dirty? add-class remove-class)
-                            ($id "status-bar-name") "dirty"))}
+                          (toggle-class ($id "status-bar-name") "dirty" dirty?))}
    :buffers {:*
-             {:content (fn [content new-path old-path]
-                         (println "buffers.*.content")) 
+             {:content (fn [content [_ {bufid :id} :as new-path] _]
+                         {:changes (fn [changes _ _]
+                                     (println "new-path:" new-path)
+                                     (doseq [{pos :pos len :len to :to} changes]
+                                       ($text-content ($id (str "lines-" bufid)) to)))})
               :gutter (fn [gutter new-path old-path]
                         (println "buffers.*.gutter"))}}})
 
@@ -147,11 +155,17 @@
                                                     (try-assoc :visual-type (-> buf :visual :type)))))))
         (try-assoc :buffers (reduce-kv
                               (fn [buffers bufid buf]
-                                (assoc buffers bufid
-                                       (-> {}
-                                           (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
-                                           (try-assoc :content (select-keys buf [:changes :scroll-top :y :pos :highlights :visual :tabsize :brackets]))
-                                           (try-assoc :gutter (select-keys buf [:y :scroll-top]))))) {} (patch :buffers))))))
+                                (let [str (buf :str)
+                                      buf (if-not (nil? str)
+                                            (-> buf
+                                                (assoc :changes [{:pos 0 :len 0 :to str}])
+                                                (dissoc :str)))] ;TODO: get rid of :str on server side
+                                  (assoc buffers bufid
+                                         (-> {}
+                                             (assoc :id bufid)
+                                             (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
+                                             (try-assoc :content (select-keys buf [:changes :scroll-top :y :pos :highlights :visual :tabsize :brackets]))
+                                             (try-assoc :gutter (select-keys buf [:y :scroll-top])))))) {} (patch :buffers))))))
 
 (def ^:private ui (atom nil))
 
