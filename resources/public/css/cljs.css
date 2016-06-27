@@ -14,28 +14,28 @@ about z-index:
 
 @font-face {
     font-family: 'Ubuntu Mono';
-    src: url('fonts/UbuntuMono-B.ttf') format('truetype');
+    src: url('../fonts/UbuntuMono-B.ttf') format('truetype');
     font-weight: bold;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Ubuntu Mono';
-    src: url('fonts/UbuntuMono-BI.ttf') format('truetype');
+    src: url('../fonts/UbuntuMono-BI.ttf') format('truetype');
     font-weight: bold;
     font-style: italic;
 }
 
 @font-face {
     font-family: 'Ubuntu Mono';
-    src: url('fonts/UbuntuMono-RI.ttf') format('truetype');
+    src: url('../fonts/UbuntuMono-RI.ttf') format('truetype');
     font-weight: normal;
     font-style: italic;
 }
 
 @font-face {
     font-family: 'Ubuntu Mono';
-    src: url('fonts/UbuntuMono-R.ttf') format('truetype');
+    src: url('../fonts/UbuntuMono-R.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
 }
@@ -349,7 +349,7 @@ pre {
 }
 
 .lines {
-    position: absolute;
+    /*position: absolute;*/
 }
 
 

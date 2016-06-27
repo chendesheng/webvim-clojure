@@ -1,5 +1,6 @@
 (ns webvim.core.ui
   (:require [webvim.core.event :refer [listen]]
+            [webvim.core.lineindex :refer [total-lines]]
             [webvim.core.editor :refer [*window*]])
   (:use webvim.core.line))
 
@@ -141,6 +142,7 @@
             (dissoc-if-equal before :tabsize)
             (dissoc-if-equal before :pos)
             (dissoc-if-equal before :showkeys)
+            (dissoc-if-equal before :lines)
             (dissoc :str)
             remove-fields)))
 
@@ -204,7 +206,8 @@
       (send-off (ui-agent) 
                 (fn [ui buf]
                   (if (or switch-buf? (active-buf? ui buf))
-                    (let [diff (diff-ui ui buf)
+                    (let [buf (assoc buf :lines (-> buf :lineindex total-lines))
+                          diff (diff-ui ui buf)
                           ui (assoc ui :buf (dissoc buf :changes))]
                       (if (or (nil? diff)
                               (empty? diff)) ui

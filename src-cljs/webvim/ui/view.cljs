@@ -118,8 +118,11 @@
                                      (println "new-path:" new-path)
                                      (doseq [{pos :pos len :len to :to} changes]
                                        ($text-content ($id (str "lines-" bufid)) to)))})
-              :gutter (fn [gutter new-path old-path]
-                        (println "buffers.*.gutter"))}}})
+              :gutter (fn [_ [{lines :lines y :y} {bufid :id}] old-path]
+                        (let [$g ($id (str "gutter-" bufid))]
+                          (dotimes [i lines]
+                            (.appendChild $g ($hiccup [:div (inc i) (if (= i y)
+                                                                      {:class "highlight"})])))))}}})
 
 (defn- try-assoc [coll k v]
   (if-not (or (nil? v)
@@ -156,16 +159,17 @@
         (try-assoc :buffers (reduce-kv
                               (fn [buffers bufid buf]
                                 (let [str (buf :str)
-                                      buf (if-not (nil? str)
+                                      buf (if (some? str)
                                             (-> buf
                                                 (assoc :changes [{:pos 0 :len 0 :to str}])
-                                                (dissoc :str)))] ;TODO: get rid of :str on server side
+                                                (dissoc :str))
+                                            buf)] ;TODO: get rid of :str on server side
                                   (assoc buffers bufid
                                          (-> {}
                                              (assoc :id bufid)
                                              (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
                                              (try-assoc :content (select-keys buf [:changes :scroll-top :y :pos :highlights :visual :tabsize :brackets]))
-                                             (try-assoc :gutter (select-keys buf [:y :scroll-top])))))) {} (patch :buffers))))))
+                                             (try-assoc :gutter (select-keys buf [:y :scroll-top :lines])))))) {} (patch :buffers))))))
 
 (def ^:private ui (atom nil))
 
