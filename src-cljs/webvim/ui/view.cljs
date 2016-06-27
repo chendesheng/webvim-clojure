@@ -119,10 +119,16 @@
                                      (doseq [{pos :pos len :len to :to} changes]
                                        ($text-content ($id (str "lines-" bufid)) to)))})
               :gutter (fn [_ [{lines :lines y :y} {bufid :id}] old-path]
-                        (let [$g ($id (str "gutter-" bufid))]
-                          (dotimes [i lines]
-                            (.appendChild $g ($hiccup [:div (inc i) (if (= i y)
-                                                                      {:class "highlight"})])))))}}})
+                        (let [$g ($id (str "gutter-" bufid))
+                              max (-> $g .-lastChild .-textContent parseInt)]
+                          (if (< max lines)
+                            (dotimes [i (- lines max)]
+                              (.appendChild $g ($hiccup [:div (+ i max 1)]))))
+                          (if (> max lines)
+                            (dotimes [_ (- max lines)]
+                              (-> $g .-lastChild .remove)))))}}})
+
+(js/console.log ($hiccup [:div 123]))
 
 (defn- try-assoc [coll k v]
   (if-not (or (nil? v)

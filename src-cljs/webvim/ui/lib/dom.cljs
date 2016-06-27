@@ -193,7 +193,7 @@
           (.appendChild ele ($hiccup child fn-create fn-content))
           (string? child)
           ($text-content ele child)
-          :else
+          (some? child)
           (if fn-content
             (fn-content ele child))))
       ele))
