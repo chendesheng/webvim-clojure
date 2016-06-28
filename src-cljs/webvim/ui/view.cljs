@@ -116,11 +116,17 @@
              {:content (fn [content [_ {bufid :id} :as new-path] _]
                          {:changes (fn [changes _ _]
                                      (println "new-path:" new-path)
-                                     (doseq [{pos :pos len :len to :to} changes]
-                                       ($text-content ($id (str "lines-" bufid)) to)))})
-              :gutter (fn [_ [{lines :lines y :y} {bufid :id}] old-path]
+                                     (let [$lines ($id (str "lines-" bufid))]
+                                       (doseq [{pos :pos len :len to :to} changes]
+                                         (let [s (.-textContent $lines)]
+                                           ($text-content $lines (str (.substr s 0 pos)
+                                                                      to
+                                                                      (.substr s (+ pos len))))))))})
+              :gutter (fn [_ [{lines :lines} {bufid :id}] old-path]
                         (let [$g ($id (str "gutter-" bufid))
-                              max (-> $g .-lastChild .-textContent parseInt)]
+                              $lastChild (.-lastChild $g)
+                              max (if (some? $lastChild)
+                                    (-> $lastChild .-textContent js/parseInt) 0)]
                           (if (< max lines)
                             (dotimes [i (- lines max)]
                               (.appendChild $g ($hiccup [:div (+ i max 1)]))))
@@ -174,8 +180,8 @@
                                          (-> {}
                                              (assoc :id bufid)
                                              (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
-                                             (try-assoc :content (select-keys buf [:changes :scroll-top :y :pos :highlights :visual :tabsize :brackets]))
-                                             (try-assoc :gutter (select-keys buf [:y :scroll-top :lines])))))) {} (patch :buffers))))))
+                                             (try-assoc :content (select-keys buf [:changes :scroll-top :pos :highlights :visual :tabsize :brackets]))
+                                             (try-assoc :gutter (select-keys buf [:scroll-top :lines])))))) {} (patch :buffers))))))
 
 (def ^:private ui (atom nil))
 
