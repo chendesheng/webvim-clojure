@@ -1,6 +1,6 @@
 (ns webvim.core.ui
   (:require [webvim.core.event :refer [listen]]
-            [webvim.core.lineindex :refer [total-lines]]
+            [webvim.core.lineindex :refer [total-lines pos-xy]]
             [webvim.core.editor :refer [*window*]])
   (:use webvim.core.line))
 
@@ -85,7 +85,7 @@
 (defn- remove-fields [buf]
   (-> buf 
       (dissoc :expandtab :CRLF? :history :context :last-cursor 
-              :language :filepath :x :y :cursor :keymap 
+              :language :filepath :x :y :keymap 
               :normal-mode-keymap :insert-mode-keymap :ex-mode-keymap
               :pending-undo :saved-undo :registers :keys
               :save-point :ext :last-visual :nextid :dot-repeat-keys
@@ -96,6 +96,11 @@
       (dissoc-nil :keys)
       (dissoc-false :beep)
       line-editor))
+
+(defn- pos2xy [buf]
+  (if (-> buf :pos some?)
+    (assoc buf :cursor (pos-xy (buf :lineindex) (buf :pos)))
+    buf))
 
 (defn- ui-agent []
   (*window* :ui))
@@ -140,6 +145,7 @@
             (dissoc-if-equal before :message)
             (dissoc-if-equal before :highlights)
             (dissoc-if-equal before :tabsize)
+            (dissoc-if-equal before :cursor)
             (dissoc-if-equal before :pos)
             (dissoc-if-equal before :showkeys)
             (dissoc-if-equal before :lines)
@@ -206,7 +212,9 @@
       (send-off (ui-agent) 
                 (fn [ui buf]
                   (if (or switch-buf? (active-buf? ui buf))
-                    (let [buf (assoc buf :lines (-> buf :lineindex total-lines))
+                    (let [buf (-> buf
+                                  (assoc :lines (-> buf :lineindex total-lines))
+                                  pos2xy)
                           diff (diff-ui ui buf)
                           ui (assoc ui :buf (dissoc buf :changes))]
                       (if (or (nil? diff)
@@ -227,6 +235,7 @@
 
 (listen :change-buffer
         (fn [buf oldbuf c]
+          (println "change:" c)
           ;changes of current command, only for writing back to client
           (update buf :changes conj c)))
 

@@ -63,8 +63,8 @@
   (let [$statusbuf ($id "status-bar-buf")
         left (if (nil? pos)
                -100
-               (.-left (bounding-rect (.-firstChild $statusbuf) (dec pos) pos)))]
-    (set! (-> $cur .-style .-left) (str left "px"))))
+               (.-left (bounding-rect (.-firstChild $statusbuf) pos pos)))]
+    (set! (-> $cur .-style .-left) (str (dec left) "px"))))
 
 (defn- toggle-class [ele cls b]
   ((if b add-class remove-class)
@@ -115,34 +115,45 @@
                 :dirty? (fn [dirty? _ _]
                           (toggle-class ($id "status-bar-name") "dirty" dirty?))}
    :buffers {:*
-             {:content (fn [{changes :changes cursor :pos :as p} [_ {bufid :id} :as new-path] _]
-                         (println "content")
-                         (println p)
-                         (println new-path)
-                         (if (some? changes)
-                           (let [$lines ($id (str "lines-" bufid))]
-                             (doseq [{pos :pos len :len to :to} changes]
-                               (let [s (.-textContent $lines)]
-                                 ($text-content $lines (str (.substr s 0 pos)
-                                                            to
-                                                            (.substr s (+ pos len))))))))
-                         (let [$lines ($id (str "lines-" bufid))
-                               $cur ($id (str "cursor-" bufid))
-                               [left top] (if (-> $lines .-firstChild some?)
-                                            (-> $lines
-                                                .-firstChild
-                                                (bounding-rect cursor cursor)
-                                                rect-left-top)
-                                            (bounding-rect $lines 0 0))]
-                           (if (-> $lines .-textContent .-length (> cursor))
-                             ($text-content $cur (.substr (.-textContent $lines) cursor 1))
-                             (-> $cur .-style .-width (set! "1ch")))
-                           (doto (.-style $cur)
-                             (-> .-marginLeft (set! "-5ch"))
-                             (-> .-color (set! "#000"))
-                             (-> .-background (set! "#fff"))
-                             (-> .-left (set! (str left "px")))
-                             (-> .-top (set! (str (dec top) "px"))))))
+             {:content (fn [{changes :changes [px py] :cursor :as p} [_ {bufid :id} :as new-path] _]
+                         (println "changes")
+                         (println changes)
+                         (let [$lines ($id (str "lines-" bufid))]
+                           (if-not (empty? changes)
+                             (doseq [{[xa ya] :a [xb yb] :b to :to} changes]
+                               (let [children (.-childNodes $lines)
+                                 lines (clojure.string/split-lines
+                                   (str
+                                    (if (-> children .-length (> ya))
+                                     (-> children (aget ya) .-textContent (.substr 0 xa)))
+                                    to
+                                    (if (and (-> children .-length (> yb)) (pos? xb))
+                                      (-> children (aget yb) .-textContent (.substr xb)))))]
+                                 (dotimes [_ (inc (- (if (zero? xb) (dec yb) yb) ya))]
+                                   (.remove (aget children ya)))
+                                 (let [after (aget children ya)]
+                                   (if (nil? after)
+                                     (doseq [line lines]
+                                       (.appendChild $lines ($hiccup [:div.code-block line])))
+                                     (doseq [line lines]
+                                       (.insertBefore $lines ($hiccup [:div.code-block line]) after)))))))
+                           (let [$cur ($id (str "cursor-" bufid))
+                             $cur-line (-> $lines .-childNodes (aget py))
+                             [left top] (if (some? $cur-line)
+                              (-> $cur-line
+                                .-firstChild
+                                (bounding-rect px px)
+                                rect-left-top)
+                              [0 0])]
+                             (if (some? $cur-line)
+                               ($text-content $cur (.substr (.-textContent $cur-line) px 1))
+                               (-> $cur .-style .-width (set! "1ch")))
+                             (doto (.-style $cur)
+                               (-> .-marginLeft (set! "-5ch"))
+                               (-> .-color (set! "#000"))
+                               (-> .-background (set! "#fff"))
+                               (-> .-left (set! (str left "px")))
+                               (-> .-top (set! (str (dec top) "px")))))))
               :gutter (fn [_ [{lines :lines} {bufid :id}] old-path]
                         (let [$g ($id (str "gutter-" bufid))
                               $lastChild (.-lastChild $g)
@@ -187,17 +198,17 @@
                                                     (try-assoc :visual-type (-> buf :visual :type)))))))
         (try-assoc :buffers (reduce-kv
                               (fn [buffers bufid buf]
-                                (let [str (buf :str)
-                                      buf (if (some? str)
+                                (let [s (buf :str)
+                                      buf (if (some? s)
                                             (-> buf
-                                                (assoc :changes [{:pos 0 :len 0 :to str}])
+                                                (assoc :changes [{:a [0 0] :b [0 0] :to s}])
                                                 (dissoc :str))
                                             buf)] ;TODO: get rid of :str on server side
                                   (assoc buffers bufid
                                          (-> {}
                                              (assoc :id bufid)
                                              (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
-                                             (try-assoc :content (select-keys buf [:changes :scroll-top :pos :highlights :visual :tabsize :brackets]))
+                                             (try-assoc :content (select-keys buf [:changes :scroll-top :cursor :highlights :visual :tabsize :brackets]))
                                              (try-assoc :gutter (select-keys buf [:scroll-top :lines])))))) {} (patch :buffers))))))
 
 (def ^:private ui (atom nil))

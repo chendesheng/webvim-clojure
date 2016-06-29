@@ -114,6 +114,7 @@
                       (if (= child :right)
                         (-> tree :left :lines (or 0) (+ data))
                         data)) 0))
+
 (defn- insert-line [tree pos len newline?]
   (update-by-pos tree pos
                  (fn [tree offset]
@@ -191,6 +192,12 @@
 
 (def range-by-line
   (range-by :lines))
+
+(defn pos-xy [lidx pos]
+  (if (>= pos (total-length lidx))
+    [0 (total-lines lidx)]
+    [(- pos (first (range-by-pos lidx pos)))
+     (pos-linenum lidx pos)]))
 
 (comment defn test-pos-linenum []
          (comment pos-linenum (make-tree nil) 0)

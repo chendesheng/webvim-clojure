@@ -1,5 +1,5 @@
 (ns webvim.core.rope
-  (:require [webvim.core.lineindex :refer [update-lineindex pos-linenum total-lines]])
+  (:require [webvim.core.lineindex :refer [update-lineindex pos-linenum total-lines range-by-line pos-xy]])
   (:use webvim.core.event
         webvim.core.utils
         webvim.core.parallel-universe)
@@ -94,15 +94,21 @@
 (defn buf-total-lines [buf]
   (-> buf :lineindex total-lines))
 
+(defn- change-for-client [lidx c]
+  (-> c
+      (assoc :a (pos-xy lidx (c :pos)))
+      (assoc :b (pos-xy lidx (-> c :pos (+ (c :len)))))))
+
 (defn- buf-apply-change [buf c]
   (let [r (buf :str)
-        [newr rc] (apply-change r c)]
+        [newr rc] (apply-change r c)
+        oldindex (buf :lineindex)]
     [(-> buf
          (update :lineindex update-lineindex c)
          (assoc :str newr)
          ;keep pos after change
          (shift-pos (c :pos) (rc :to) (c :to))
-         (fire-event buf c :change-buffer)) rc]))
+         (fire-event buf (change-for-client oldindex c) :change-buffer)) rc]))
 
 (defn- buf-apply-changes [buf changes]
   (reduce 
