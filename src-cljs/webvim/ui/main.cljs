@@ -31,6 +31,7 @@
                                                                  (= active-buf bufid))
                                                            {:buffers {active-buf buf}}
                                                            {:active-buf bufid
+                                                            :layouts [:| bufid]
                                                             :buffers {bufid buf}})) win)]
                                       (dispatch-event :server-message patch)))))]
       (add-listener

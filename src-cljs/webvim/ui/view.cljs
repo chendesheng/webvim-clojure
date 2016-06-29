@@ -1,5 +1,5 @@
 (ns webvim.ui.view
-  (:require [webvim.ui.lib.dom :refer [$id $hiccup $exist? add-class remove-class $remove $text-content beep]]
+  (:require [webvim.ui.lib.dom :refer [$id $hiccup $exist? add-class remove-class $remove $text-content beep $empty]]
             [webvim.ui.lib.patch :refer [trigger-patch]]
             [webvim.ui.lib.util :refer [deep-merge]]
             [webvim.ui.lib.event :refer [add-listener]]
@@ -51,19 +51,20 @@
                     (str " " (visual-types visual-type)))))
            " --"))))
 
-(defn measure-left [ele pos]
-  (let [range (doto (js/document.createRange)
-                (.setStart ele (dec pos))
-                (.setEnd ele pos))
-        rect (.getBoundingClientRect range)]
-    (str (+ (.-left rect) (.-width rect)) "px")))
+(defn- bounding-rect [ele start end]
+  (.getBoundingClientRect (doto (js/document.createRange)
+                            (.setStart ele start)
+                            (.setEnd ele end))))
+
+(defn- rect-left-top [rect]
+  [(.-left rect) (.-top rect)])
 
 (defn- render-status-bar-cursor [$statusbuf $cur pos]
   (let [$statusbuf ($id "status-bar-buf")
         left (if (nil? pos)
-               "-100px"
-               (measure-left (.-firstChild $statusbuf) pos))]
-    (set! (-> $cur .-style .-left) left)))
+               -100
+               (.-left (bounding-rect (.-firstChild $statusbuf) (dec pos) pos)))]
+    (set! (-> $cur .-style .-left) (str left "px"))))
 
 (defn- toggle-class [ele cls b]
   ((if b add-class remove-class)
@@ -75,6 +76,7 @@
   (if (not ($exist? "editor")) ;global ui
     (.appendChild js/document.body
                   ($hiccup [:div#editor
+                            [:div#buffers]
                             [:div#status-bar.status-bar
                              [:span#status-bar-buf.ex]
                              [:span#status-bar-cursor.cursor]
@@ -83,10 +85,10 @@
                              [:span#status-bar-name.buf-name]]])))
   {:title (fn [_ [{cwd :cwd name :name}] _]
             (set! js/document.title (str name " - " cwd)))
-   :layouts (fn [layouts _ _]
-              (let [ele ($layouts layouts)]
-                ($remove "buffers")
-                (.appendChild ($id "editor") ele))) 
+   :layouts (fn [{layouts :layouts} _ _]
+              (.replaceChild ($id "editor")
+                             ($layouts layouts)
+                             ($id "buffers")))
    :status-bar {:message (fn [message _ _]
                            ($text-content ($id "status-bar-buf") message))
                 :mode (fn [_ [{mode :mode submode :submode visual-type :visual-type} {message :message}] _]
@@ -113,15 +115,34 @@
                 :dirty? (fn [dirty? _ _]
                           (toggle-class ($id "status-bar-name") "dirty" dirty?))}
    :buffers {:*
-             {:content (fn [content [_ {bufid :id} :as new-path] _]
-                         {:changes (fn [changes _ _]
-                                     (println "new-path:" new-path)
-                                     (let [$lines ($id (str "lines-" bufid))]
-                                       (doseq [{pos :pos len :len to :to} changes]
-                                         (let [s (.-textContent $lines)]
-                                           ($text-content $lines (str (.substr s 0 pos)
-                                                                      to
-                                                                      (.substr s (+ pos len))))))))})
+             {:content (fn [{changes :changes cursor :pos :as p} [_ {bufid :id} :as new-path] _]
+                         (println "content")
+                         (println p)
+                         (println new-path)
+                         (if (some? changes)
+                           (let [$lines ($id (str "lines-" bufid))]
+                             (doseq [{pos :pos len :len to :to} changes]
+                               (let [s (.-textContent $lines)]
+                                 ($text-content $lines (str (.substr s 0 pos)
+                                                            to
+                                                            (.substr s (+ pos len))))))))
+                         (let [$lines ($id (str "lines-" bufid))
+                               $cur ($id (str "cursor-" bufid))
+                               [left top] (if (-> $lines .-firstChild some?)
+                                            (-> $lines
+                                                .-firstChild
+                                                (bounding-rect cursor cursor)
+                                                rect-left-top)
+                                            (bounding-rect $lines 0 0))]
+                           (if (-> $lines .-textContent .-length (> cursor))
+                             ($text-content $cur (.substr (.-textContent $lines) cursor 1))
+                             (-> $cur .-style .-width (set! "1ch")))
+                           (doto (.-style $cur)
+                             (-> .-marginLeft (set! "-5ch"))
+                             (-> .-color (set! "#000"))
+                             (-> .-background (set! "#fff"))
+                             (-> .-left (set! (str left "px")))
+                             (-> .-top (set! (str (dec top) "px"))))))
               :gutter (fn [_ [{lines :lines} {bufid :id}] old-path]
                         (let [$g ($id (str "gutter-" bufid))
                               $lastChild (.-lastChild $g)
@@ -129,12 +150,10 @@
                                     (-> $lastChild .-textContent js/parseInt) 0)]
                           (if (< max lines)
                             (dotimes [i (- lines max)]
-                              (.appendChild $g ($hiccup [:div (+ i max 1)]))))
+                              (.appendChild $g ($hiccup [:div.line-num (+ i max 1)]))))
                           (if (> max lines)
                             (dotimes [_ (- max lines)]
                               (-> $g .-lastChild .remove)))))}}})
-
-(js/console.log ($hiccup [:div 123]))
 
 (defn- try-assoc [coll k v]
   (if-not (or (nil? v)
@@ -152,9 +171,7 @@
         new-active (-> new-client :buffers (get (new-client :active-buf)))]
     (println "new-active:" new-active)
     (-> patch {}
-        (try-assoc :layouts (if (-> new-client :layouts nil?)
-                              (into [:|] (-> new-client :buffers keys))
-                              (select-keys patch [:layouts])))
+        (try-assoc :layouts  (select-keys patch [:layouts]))
         (try-assoc :title (-> patch
                               (select-keys [:cwd])
                               (try-assoc :name (if active-changed?

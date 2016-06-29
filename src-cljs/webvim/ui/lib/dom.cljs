@@ -91,6 +91,12 @@
       (-> ele .-parentNode (.removeChild ele))))
   ele)
 
+(defn $empty [ele]
+  (loop []
+    (when-let [child (.-firstChild ele)]
+      (.removeChild ele child)
+      (recur))))
+
 (defn $linenum [bufid linenum]
   (js/document.getElementById (str "line-" bufid linenum)))
 
