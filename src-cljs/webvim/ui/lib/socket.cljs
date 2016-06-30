@@ -1,5 +1,6 @@
 (ns webvim.ui.lib.socket
   (:require [webvim.ui.lib.util :refer [current-time]]
+            [webvim.ui.lib.event :refer [dispatch-event]]
             [clojure.walk :refer [keywordize-keys]]))
 
 ;https://github.com/mmcgrana/cljs-demo/blob/master/src/cljs-demo/util.cljs
@@ -8,53 +9,29 @@
   [line]
   (keywordize-keys (js->clj (.parse js/JSON line))))
 
-(defn- reset-conn [state]
-  (doto (@state :conn)
-    (-> .-onmessage (set! nil))
-    (-> .-onopen (set! nil)))
-  (swap! state dissoc :conn))
-
-(defn- append-query [url query]
-  (if-not (empty? query)
-    (str url 
-         (if (pos? (.indexOf url "?"))
-           "&" "?")
-         query)
-    url))
-
-(declare ^:private flush-stream)
-(defn- connect [state init?]
-  (if (-> @state :conn nil? not)
-    (reset-conn state))
-  (let [conn (js/WebSocket. (append-query ((@state :urlfn)) (if init? "init=1" "")))]
-    (swap! state assoc :conn conn)
-    (set! (.-onopen conn) 
-          #(flush-stream state))
-    (set! (.-onmessage conn)
-          (fn [message]
-            ((@state :onreceive) (json-parse (.-data message)))))))
-
-(defn- flush-stream [state]
-  (let [s (-> @state :conn .-readyState)]
+(defn- flush-stream [{conn :conn stream :stream :as state}]
+  (let [s (.-readyState conn)]
     (cond
       (= s 1)
-      (let [{conn :conn stream :stream} @state]
-        (do (.send conn stream)
-            (swap! state assoc :stream "")))
+      (do (.send conn @stream)
+          (reset! stream ""))
       (not= s 0)
-      (connect state nil))))
+      (dispatch-event :net-onfail state))))
 
-(defn new-conn [urlfn f]
-  (let [state (atom {:urlfn urlfn
-                     :stream ""
-                     :conn nil
-                     :onreceive f})]
-    (connect state :init)
+(defn open-conn [url]
+  (let [conn (js/WebSocket. url)
+        state {:stream (atom "")
+               :conn conn}]
+    (set! (.-onopen conn) 
+          (fn []
+            (dispatch-event :net-onopen state)
+            (flush-stream state)))
+    (set! (.-onmessage conn)
+          (fn [message]
+            (dispatch-event :net-onmessage (json-parse (.-data message)))))
     state))
 
-(defn send [state key]
-  (swap! state
-         (fn [s]
-           (update s :stream #(str % key))))
+(defn send [state s]
+  (swap! (state :stream) str s)
   (flush-stream state))
 

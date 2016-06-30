@@ -8,7 +8,7 @@
     (.set goog.net.cookies "windowId" "" js/Infinity)
     id))
 
-(def client (atom {:id (get-winid)}))
+(defonce client (atom {:id (get-winid)}))
 
 (defn update-client [patch]
   (let [old-client @client

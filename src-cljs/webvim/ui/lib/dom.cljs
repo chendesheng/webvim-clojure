@@ -226,3 +226,6 @@
                (= k "|") ($hiccup [:div.hor])))
            (fn [ele id]
              (.appendChild ele ($hiccup [:div.buffer {:id (str "buffer-" id)}])))))
+
+(defn client-size []
+  [js/window.innerWidth js/window.innerHeight])

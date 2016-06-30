@@ -152,9 +152,9 @@
                                  (println "xb" xb "yb" yb)
                                  (println "$linea")
                                  (js/console.log $linea)
-                                 (if (some? $linea)
-                                   (dotimes [_ (inc (- yb ya))]
-                                     (.remove (aget children ya))))
+                                 (dotimes [_ (inc (- yb ya))]
+                                   (if-let [$linea (aget children ya)]
+                                     (.remove $linea)))
                                  (if-let [after (aget children ya)] 
                                    (doseq [line lines]
                                      (.insertBefore $lines ($hiccup [:div.code-block line]) after))
