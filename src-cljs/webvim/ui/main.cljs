@@ -24,9 +24,15 @@
                                       ;TODO: get rid of this, make server generate right schema
                                     (println "receive:" data)
                                     (let [[win buf1] (if (vector? data) data [nil data])
-                                          buf (if (-> buf1 :mode zero?)
-                                                (assoc buf1 :line-buffer nil)
-                                                buf1)
+                                          buf2 (if (-> buf1 :mode zero?)
+                                                 (assoc buf1 :line-buffer nil)
+                                                 buf1)
+                                          buf (if (some? (buf2 :str))
+                                                (-> buf2
+                                                    (assoc :changes [{:a [0 0] :b [0 0] :to (buf2 :str)}])
+                                                    (dissoc :str))
+                                                buf2)
+                                          _ (println "buf:" buf)
                                           bufid (:id buf)
                                           active-buf (:active-buf @client)
                                           patch (merge (if-not (nil? buf)
@@ -36,7 +42,9 @@
                                                            {:active-buf bufid
                                                             :layouts [:| bufid]
                                                             :buffers {bufid buf}})) win)]
-                                      (dispatch-event :server-message patch)))))]
+                                      (dispatch-event :server-message patch)
+                                      (doseq [[bufid buf] (@client :buffers)]
+                                        (swap! client assoc bufid (dissoc buf :changes)))))))]
       (add-listener
         :input-key :input-key-handler
         (fn [key]

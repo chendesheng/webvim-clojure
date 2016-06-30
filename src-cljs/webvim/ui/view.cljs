@@ -131,7 +131,7 @@
                 :dirty? (fn [dirty? _ _]
                           (toggle-class ($id "status-bar-name") "dirty" dirty?))}
    :buffers {:*
-             {:content (fn [{changes :changes [px py] :cursor :as p} [_ {bufid :id} :as new-path] _]
+             {:content (fn [{changes :changes} [{[px py] :cursor} {bufid :id} :as new-path] _]
                          (println "changes")
                          (println changes)
                          (let [$lines ($id (str "lines-" bufid))
@@ -162,17 +162,25 @@
                                      (.appendChild $lines ($hiccup [:div.code-block line])))))))
                            (let [$cur ($id (str "cursor-" bufid))
                                  $cur-line (aget children py)
+                                 _ (js/console.log $cur-line)
+                                 [linesx linesy] (rect-left-top (.getBoundingClientRect $lines))
                                  [left top] (if (some? $cur-line)
-                                              (-> $cur-line
-                                                  .-firstChild
-                                                  (bounding-rect px px)
-                                                  rect-left-top)
+                                              (let [[x y] (-> $cur-line
+                                                              .-firstChild
+                                                              (bounding-rect px px)
+                                                              rect-left-top)]
+                                                (println "xy:" x y)
+                                                [(- x linesx) (- y linesy)])
                                               [0 0])]
-                             (if (some? $cur-line)
-                               ($text-content $cur (.substr (.-textContent $cur-line) px 1))
-                               (-> $cur .-style .-width (set! "1ch")))
+                             (println linesx linesy)
+                             (println left top)
+                             (let [ch (if (some? $cur-line)
+                                        (.substr (.-textContent $cur-line) px 1) " ")]
+                               ($text-content $cur ch)
+                               (if (string/blank? ch)
+                                 (-> $cur .-style .-width (set! "1ch"))))
                              (doto (.-style $cur)
-                               (-> .-marginLeft (set! "-5ch"))
+                               ;(-> .-marginLeft (set! "-5ch"))
                                (-> .-color (set! "#000"))
                                (-> .-background (set! "#fff"))
                                (-> .-left (set! (str left "px")))
@@ -221,18 +229,12 @@
                                                     (try-assoc :visual-type (-> buf :visual :type)))))))
         (try-assoc :buffers (reduce-kv
                               (fn [buffers bufid buf]
-                                (let [s (buf :str)
-                                      buf (if (some? s)
-                                            (-> buf
-                                                (assoc :changes [{:a [0 0] :b [0 0] :to s}])
-                                                (dissoc :str))
-                                            buf)] ;TODO: get rid of :str on server side
-                                  (assoc buffers bufid
-                                         (-> {}
-                                             (assoc :id bufid)
-                                             (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
-                                             (try-assoc :content (select-keys buf [:changes :scroll-top :cursor :highlights :visual :tabsize :brackets]))
-                                             (try-assoc :gutter (select-keys buf [:scroll-top :lines])))))) {} (patch :buffers))))))
+                                (assoc buffers bufid
+                                       (-> {}
+                                           (assoc :id bufid)
+                                           (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
+                                           (try-assoc :content (select-keys buf [:changes :scroll-top :cursor :highlights :visual :tabsize :brackets]))
+                                           (try-assoc :gutter (select-keys buf [:scroll-top :lines]))))) {} (patch :buffers))))))
 
 (def ^:private ui (atom nil))
 
