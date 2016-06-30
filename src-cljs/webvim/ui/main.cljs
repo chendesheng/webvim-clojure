@@ -23,7 +23,10 @@
                                   (doseq [data alldata]
                                       ;TODO: get rid of this, make server generate right schema
                                     (println "receive:" data)
-                                    (let [[win buf] (if (vector? data) data [nil data])
+                                    (let [[win buf1] (if (vector? data) data [nil data])
+                                          buf (if (-> buf1 :mode zero?)
+                                                (assoc buf1 :line-buffer nil)
+                                                buf1)
                                           bufid (:id buf)
                                           active-buf (:active-buf @client)
                                           patch (merge (if-not (nil? buf)

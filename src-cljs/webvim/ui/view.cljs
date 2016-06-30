@@ -74,13 +74,13 @@
 (defn- split-lines [s]
   (loop [lines []
          s s]
-      (let [p (inc (.indexOf s "\n"))]
-        (if (pos? p)
-          (recur (conj lines (.substr s 0 p)) (.substr s p))
-          (if-not (empty? s)
-            (conj lines s))))))
+    (let [p (inc (.indexOf s "\n"))]
+      (if (pos? p)
+        (recur (conj lines (.substr s 0 p)) (.substr s p))
+        (if-not (empty? s)
+          (conj lines s) lines)))))
 
-(defn- normalize-cursor[children x y]
+(defn- normalize-cursor [children x y]
   (let [$line (aget children y)]
     (if (and (some? $line)
              (-> $line .-length (= x)))
@@ -134,43 +134,40 @@
              {:content (fn [{changes :changes [px py] :cursor :as p} [_ {bufid :id} :as new-path] _]
                          (println "changes")
                          (println changes)
-                         (let [$lines ($id (str "lines-" bufid))]
+                         (let [$lines ($id (str "lines-" bufid))
+                               children (.-childNodes $lines)]
                            (if-not (empty? changes)
                              (doseq [{[xa ya] :a [xb yb] :b to :to} changes]
-                               (let [children (.-childNodes $lines)
-                                     [xa ya] (normalize-cursor children xa ya)
-                                     [xb yb] (normalize-cursor children xb yb)
-                                     $linea (aget children ya)
+                               (let [$linea (aget children ya)
                                      $lineb (aget children yb)
                                      lines (split-lines
                                              (str
-                                               (if (and (some? $linea) (pos? xa))
+                                               (if (some? $linea)
                                                  (-> $linea .-textContent (.substr 0 xa)))
                                                to
-                                               (if (and (some? $lineb) (pos? xb))
+                                               (if (some? $lineb)
                                                  (-> $lineb .-textContent (.substr xb)))))]
                                  (println lines)
                                  (println "xa" xa "ya" ya)
                                  (println "xb" xb "yb" yb)
                                  (println "$linea")
                                  (js/console.log $linea)
-                                 (if (nil? $linea)
+                                 (if (some? $linea)
+                                   (dotimes [_ (inc (- yb ya))]
+                                     (.remove (aget children ya))))
+                                 (if-let [after (aget children ya)] 
                                    (doseq [line lines]
-                                     (.appendChild $lines ($hiccup [:div.code-block line])))
-                                   (do
-                                     (dotimes [_ (inc (- (if (zero? xb) (dec yb) yb)
-                                                         ya))]
-                                       (.remove (aget children ya)))
-                                     (doseq [line lines]
-                                       (.insertBefore $lines ($hiccup [:div.code-block line]) $linea)))))))
+                                     (.insertBefore $lines ($hiccup [:div.code-block line]) after))
+                                   (doseq [line lines]
+                                     (.appendChild $lines ($hiccup [:div.code-block line])))))))
                            (let [$cur ($id (str "cursor-" bufid))
-                             $cur-line (-> $lines .-childNodes (aget py))
-                             [left top] (if (some? $cur-line)
-                              (-> $cur-line
-                                .-firstChild
-                                (bounding-rect px px)
-                                rect-left-top)
-                              [0 0])]
+                                 $cur-line (aget children py)
+                                 [left top] (if (some? $cur-line)
+                                              (-> $cur-line
+                                                  .-firstChild
+                                                  (bounding-rect px px)
+                                                  rect-left-top)
+                                              [0 0])]
                              (if (some? $cur-line)
                                ($text-content $cur (.substr (.-textContent $cur-line) px 1))
                                (-> $cur .-style .-width (set! "1ch")))
@@ -218,7 +215,7 @@
                                            (-> patch :buffers (get (:id new-active))))]
                                  (-> buf
                                      (select-keys [:showkeys :dirty? :beep? :name :lang :line-buffer :message])
-                                     (assoc :focus? (-> buf :line-buffer nil? not))
+                                     (assoc :focus? (-> new-active :line-buffer nil? not))
                                      (try-assoc :mode
                                                 (-> (select-keys buf [:mode :submode])
                                                     (try-assoc :visual-type (-> buf :visual :type)))))))
