@@ -3,7 +3,7 @@
             [webvim.ui.lib.patch :refer [trigger-patch]]
             [webvim.ui.lib.util :refer [deep-merge]]
             [webvim.ui.lib.event :refer [add-listener]]
-            [clojure.string :refer [split-lines]]))
+            [clojure.string :as string]))
 
 (defn- $buffer [bufid]
   (let [domid (str "buffer-" bufid)
@@ -70,6 +70,22 @@
   ((if b add-class remove-class)
     ele cls))
 
+;;keep line break
+(defn- split-lines [s]
+  (loop [lines []
+         s s]
+      (let [p (inc (.indexOf s "\n"))]
+        (if (pos? p)
+          (recur (conj lines (.substr s 0 p)) (.substr s p))
+          (if-not (empty? s)
+            (conj lines s))))))
+
+(defn- normalize-cursor[children x y]
+  (let [$line (aget children y)]
+    (if (and (some? $line)
+             (-> $line .-length (= x)))
+      [0 (inc y)] [x y])))
+
 (defn render [patch _ _]
   (println "ROOT")
   (println patch)
@@ -106,7 +122,7 @@
                 :showkeys (fn [showkeys _ _]
                             (println "showkeys:" showkeys)
                             (let [$keys ($id "status-bar-keys")]
-                              ($text-content $keys (clojure.string/join "" (reverse showkeys)))
+                              ($text-content $keys (string/join "" (reverse showkeys)))
                               (if (-> showkeys first nil?)
                                 (js/setTimeout #($text-content $keys "") 100))))
                 :name (fn [name _ _]
@@ -122,21 +138,31 @@
                            (if-not (empty? changes)
                              (doseq [{[xa ya] :a [xb yb] :b to :to} changes]
                                (let [children (.-childNodes $lines)
-                                 lines (clojure.string/split-lines
-                                   (str
-                                    (if (-> children .-length (> ya))
-                                     (-> children (aget ya) .-textContent (.substr 0 xa)))
-                                    to
-                                    (if (and (-> children .-length (> yb)) (pos? xb))
-                                      (-> children (aget yb) .-textContent (.substr xb)))))]
-                                 (dotimes [_ (inc (- (if (zero? xb) (dec yb) yb) ya))]
-                                   (.remove (aget children ya)))
-                                 (let [after (aget children ya)]
-                                   (if (nil? after)
+                                     [xa ya] (normalize-cursor children xa ya)
+                                     [xb yb] (normalize-cursor children xb yb)
+                                     $linea (aget children ya)
+                                     $lineb (aget children yb)
+                                     lines (split-lines
+                                             (str
+                                               (if (and (some? $linea) (pos? xa))
+                                                 (-> $linea .-textContent (.substr 0 xa)))
+                                               to
+                                               (if (and (some? $lineb) (pos? xb))
+                                                 (-> $lineb .-textContent (.substr xb)))))]
+                                 (println lines)
+                                 (println "xa" xa "ya" ya)
+                                 (println "xb" xb "yb" yb)
+                                 (println "$linea")
+                                 (js/console.log $linea)
+                                 (if (nil? $linea)
+                                   (doseq [line lines]
+                                     (.appendChild $lines ($hiccup [:div.code-block line])))
+                                   (do
+                                     (dotimes [_ (inc (- (if (zero? xb) (dec yb) yb)
+                                                         ya))]
+                                       (.remove (aget children ya)))
                                      (doseq [line lines]
-                                       (.appendChild $lines ($hiccup [:div.code-block line])))
-                                     (doseq [line lines]
-                                       (.insertBefore $lines ($hiccup [:div.code-block line]) after)))))))
+                                       (.insertBefore $lines ($hiccup [:div.code-block line]) $linea)))))))
                            (let [$cur ($id (str "cursor-" bufid))
                              $cur-line (-> $lines .-childNodes (aget py))
                              [left top] (if (some? $cur-line)
