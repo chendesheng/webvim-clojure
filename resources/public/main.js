@@ -43,6 +43,7 @@ function watchLocalWindowChange(p, f) {
 
 function mergeBufferToLocal(buf) {
     var watchers = [];
+    delete buf.cursor //:cursor is for cljs ui client
 
     if (buffers.active == null) {
         buffers[buf.id] = buf;
