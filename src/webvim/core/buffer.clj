@@ -121,7 +121,7 @@
                     (or (re-find #"\.\w+$" (or bufname "")) ""))
              :str (rope txtLF)
              :lineindex lineindex
-             :lines 0
+             :lines 1
              :pos 0  ;offset from first char
              :x 0    ;saved x for up down motion
              :y 0    ;num of line breaks from first char
