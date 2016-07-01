@@ -17,8 +17,7 @@
                  [:div.cursor {:id (str "cursor-" bufid)}]
                  [:div.selections {:id (str "selections-" bufid)}]
                  [:div.highlights {:id (str "highlights-" bufid)}]
-                 [:div.brackets {:id (str "brackets-" bufid)}]
-                 [:div.autocompl.ex-autocompl {:id (str "ex-autocompl-" bufid)}]]]))))
+                 [:div.brackets {:id (str "brackets-" bufid)}]]]))))
 
 (defn- $layouts [layouts]
   (println "layouts:" layouts)
@@ -98,7 +97,8 @@
                              [:span#status-bar-cursor.cursor]
                              [:span#status-bar-cursor-second.cursor.cursor-second]
                              [:span#status-bar-keys.ongoing-keys]
-                             [:span#status-bar-name.buf-name]]])))
+                             [:span#status-bar-name.buf-name]]
+                            [:div#autocompl]])))
   {:title (fn [_ [{cwd :cwd name :name}] _]
             (set! js/document.title (str name " - " cwd)))
    :layouts (fn [{layouts :layouts} _ _]
@@ -233,12 +233,11 @@
         (try-assoc :buffers (reduce-kv
                               (fn [buffers bufid buf]
                                 (assoc buffers bufid
-                                       (-> buf 
-                                           (select-keys [:scroll-top])
-                                           (assoc :id bufid)
+                                       (-> {:id bufid} 
                                            (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
                                            (try-assoc :content (select-keys buf [:changes :cursor :highlights :visual :tabsize :brackets]))
-                                           (try-assoc :gutter (select-keys buf [:scroll-top :lines]))))) {} (patch :buffers))))))
+                                           (try-assoc :gutter (select-keys buf [:scroll-top :lines]))
+                                           (merge (select-keys buf [:scroll-top]))))) {} (patch :buffers))))))
 
 (def ^:private ui (atom nil))
 
