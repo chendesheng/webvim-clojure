@@ -112,6 +112,7 @@
     (with-window-id id
                     (update-ui
                       (fn [ui w h]
+                        (println "update size:" w h)
                         (update ui :viewport assoc :w w :h h)) (parse-int w) (parse-int h)))))
 
 (def ^:private app

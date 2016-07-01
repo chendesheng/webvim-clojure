@@ -1,5 +1,5 @@
 (ns webvim.ui.view
-  (:require [webvim.ui.lib.dom :refer [$id $hiccup $exist? add-class remove-class $remove $text-content beep $empty]]
+  (:require [webvim.ui.lib.dom :refer [$id $hiccup $exist? add-class remove-class $remove $text-content beep $empty measure-text-size]]
             [webvim.ui.lib.patch :refer [trigger-patch]]
             [webvim.ui.lib.util :refer [deep-merge]]
             [webvim.ui.lib.event :refer [add-listener]]
@@ -185,7 +185,10 @@
                                (-> .-background (set! "#fff"))
                                (-> .-left (set! (str left "px")))
                                (-> .-top (set! (str (dec top) "px")))))))
-              :gutter (fn [_ [{lines :lines} {bufid :id}] old-path]
+              :scroll-top (fn [scroll-top [_ {bufid :id}] _]
+                            (set! (.-scrollTop ($id (str "buffer-" bufid)))
+                                  (* scroll-top (last (measure-text-size "M")))))
+              :gutter (fn [_ [{lines :lines} {bufid :id}] _]
                         (let [$g ($id (str "gutter-" bufid))
                               $lastChild (.-lastChild $g)
                               max (if (some? $lastChild)
@@ -230,10 +233,11 @@
         (try-assoc :buffers (reduce-kv
                               (fn [buffers bufid buf]
                                 (assoc buffers bufid
-                                       (-> {}
+                                       (-> buf 
+                                           (select-keys [:scroll-top])
                                            (assoc :id bufid)
                                            (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
-                                           (try-assoc :content (select-keys buf [:changes :scroll-top :cursor :highlights :visual :tabsize :brackets]))
+                                           (try-assoc :content (select-keys buf [:changes :cursor :highlights :visual :tabsize :brackets]))
                                            (try-assoc :gutter (select-keys buf [:scroll-top :lines]))))) {} (patch :buffers))))))
 
 (def ^:private ui (atom nil))

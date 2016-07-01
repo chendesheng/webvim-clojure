@@ -3,7 +3,7 @@
             [webvim.ui.lib.socket :refer [open-conn send]]
             [webvim.ui.lib.xhr :refer [xhr-get]]
             [webvim.ui.lib.util :refer [current-path]]
-            [webvim.ui.lib.dom :refer [client-size]]
+            [webvim.ui.lib.dom :refer [client-size $hiccup measure-text-size]]
             [webvim.ui.controller.page]
             [goog.net.cookies]
             [webvim.ui.client :refer [client update-client]]))
@@ -15,7 +15,7 @@
        js/window.location.hostname
        (if js/window.location.port
          (str ":" js/window.location.port))
-       "/socket?window=" (@client :id)))
+       "/socket?windowId=" (@client :id))) ;TODO: rename window to client
 
 (defn- send-size [[w h]]
   (xhr-get (str "resize/" (@client :id) "/" w "/"  h)))
@@ -53,12 +53,20 @@
                         (send conn (str (:active-buf @client) "!" key))))))
     (add-listener-once :net-onopen
                        (fn [_]
-                         (let [timer (atom nil)]
+                         (let [[_ ch] (measure-text-size "M")
+                               [cw _] (measure-text-size "1")
+                               ;padding (.-offsetHeight ($id "status-bar"))
+                               padding 24
+                               px2row-column (fn [[w h]]
+                                               (let [h (- h padding)]
+                                                 [(js/Math.floor (/ w cw)) (js/Math.floor (/ h ch))]))]
+                           (println "cw,ch:" cw ch)
                            (add-listener :onresize :onresize-handler
-                                         (fn [sz]
-                                           (js/clearTimeout @timer)
-                                           (reset! timer (js/setTimeout #(send-size sz) 300))))
-                           (send-size (client-size)))))
+                                         (let [timer (atom nil)]
+                                           (fn [sz]
+                                             (js/clearTimeout @timer)
+                                             (reset! timer (js/setTimeout #(send-size (px2row-column sz))) 300))))
+                           (send-size (px2row-column (client-size))))))
     (add-listener :net-onmessage :update-client
                   (fn [resp]
                     (doseq [patch (map patch-adapt resp)]

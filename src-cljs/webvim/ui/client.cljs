@@ -5,6 +5,7 @@
 
 (defn- get-winid []
   (let [id (.get goog.net.cookies "windowId")]
+    (println "get client id:" id)
     (.set goog.net.cookies "windowId" "" js/Infinity)
     id))
 

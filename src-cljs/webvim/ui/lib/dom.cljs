@@ -229,3 +229,14 @@
 
 (defn client-size []
   [js/window.innerWidth js/window.innerHeight])
+
+(def measure-text-size
+  (memoize
+    (fn [text]
+      (let [sp ($hiccup [:span.code-block text])
+            _ (-> sp .-style .-cssText (set! "opacity:0;position:absolute;right:0;bottom:0;"))
+            _ (.appendChild js/document.body sp)
+            w (.-offsetWidth sp)
+            h (.-offsetHeight sp)
+            _ (.removeChild js/document.body sp)]
+        [w h]))))

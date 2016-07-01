@@ -62,11 +62,15 @@ html,
 }
 
 #buffers {
-    padding-bottom: 1.5em;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 1.5em;
 }
 
 .buffer {
-    bottom: 1.5em;
+    height: 100%;
     overflow: auto;
     -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch;
@@ -210,7 +214,7 @@ pre {
 }
 
 .status-bar {
-    position: fixed;
+    position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
