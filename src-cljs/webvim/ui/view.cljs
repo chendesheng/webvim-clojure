@@ -63,7 +63,7 @@
   (let [$statusbuf ($id "status-bar-buf")
         left (if (nil? pos)
                -100
-               (.-left (bounding-rect (.-firstChild $statusbuf) pos pos)))]
+               (.-right (bounding-rect (.-firstChild $statusbuf) (dec pos) pos)))]
     (set! (-> $cur .-style .-left) (str (dec left) "px"))))
 
 (defn- toggle-class [ele cls b]
@@ -167,7 +167,7 @@
                                  [left top] (if (some? $cur-line)
                                               (let [[x y] (-> $cur-line
                                                               .-firstChild
-                                                              (bounding-rect px px)
+                                                              (bounding-rect px (inc px))
                                                               rect-left-top)]
                                                 (println "xy:" x y)
                                                 [(- x linesx) (- y linesy)])
@@ -184,7 +184,7 @@
                                (-> .-color (set! "#000"))
                                (-> .-background (set! "#fff"))
                                (-> .-left (set! (str left "px")))
-                               (-> .-top (set! (str (dec top) "px")))))))
+                               (-> .-top (set! (str top "px")))))))
               :scroll-top (fn [scroll-top [_ {bufid :id}] _]
                             (set! (.-scrollTop ($id (str "buffer-" bufid)))
                                   (* scroll-top (last (measure-text-size "M")))))
