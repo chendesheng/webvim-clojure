@@ -1,5 +1,5 @@
 (ns webvim.ui.view
-  (:require [webvim.ui.lib.dom :refer [$id $hiccup $exist? add-class remove-class $remove $text-content beep $empty measure-text-size]]
+  (:require [webvim.ui.lib.dom :refer [$id $hiccup $exist? add-class remove-class $remove $text-content beep $empty measure-text-size $show $hide]]
             [webvim.ui.lib.patch :refer [trigger-patch]]
             [webvim.ui.lib.util :refer [deep-merge]]
             [webvim.ui.lib.event :refer [add-listener]]
@@ -17,8 +17,7 @@
                  [:div.cursor {:id (str "cursor-" bufid)}]
                  [:div.selections {:id (str "selections-" bufid)}]
                  [:div.highlights {:id (str "highlights-" bufid)}]
-                 [:div.brackets {:id (str "brackets-" bufid)}]
-                 [:div.autocompl.ex-autocompl {:id (str "ex-autocompl-" bufid)}]]]))))
+                 [:div.brackets {:id (str "brackets-" bufid)}]]]))))
 
 (defn- $layouts [layouts]
   (println "layouts:" layouts)
@@ -33,6 +32,10 @@
            (fn [ele bufid]
              (js/console.log ele)
              (.appendChild ele ($buffer bufid)))))
+
+(def normal-mode 0)
+(def insert-mode 1)
+(def ex-mode 2)
 
 (defn- mode-text [mode submode visual-type]
   (let [modes ["NORMAL" "INSERT"]
@@ -60,8 +63,11 @@
   ([ele]
     (.getBoundingClientRect ele)))
 
-(defn- rect-left-top [rect]
+(defn- rect-pos [rect]
   [(.-left rect) (.-top rect)])
+
+(defn- rect-size [rect]
+  [(.-width rect) (.-height rect)])
 
 (defn- render-status-bar-cursor [$statusbuf $cur pos]
   (let [$statusbuf ($id "status-bar-buf")
@@ -91,6 +97,17 @@
              (-> $line .-length (= x)))
       [0 (inc y)] [x y])))
 
+(defn- cursor-position [$lines-children px py]
+  (let [$cur-line (aget $lines-children py)]
+    (if (some? $cur-line)
+      (let [rect (-> $cur-line
+                     .-firstChild
+                     (bounding-rect px))
+            [x y] (rect-pos rect)
+            h (.-height rect)]
+        (println "xy:" x y)
+        [x (dec y) h]))))
+
 (defn render [patch _ _]
   (println "ROOT")
   (println patch)
@@ -103,10 +120,11 @@
                              [:span#status-bar-cursor.cursor]
                              [:span#status-bar-cursor-second.cursor.cursor-second]
                              [:span#status-bar-keys.ongoing-keys]
-                             [:span#status-bar-name.buf-name]]])))
+                             [:span#status-bar-name.buf-name]]
+                            [:div#autocompl.autocompl]])))
   {:title (fn [_ [{cwd :cwd name :name}] _]
             (set! js/document.title (str name " - " cwd)))
-   :layouts (fn [{layouts :layouts} _ _]
+   :layouts (fn [layouts _ _]
               (.replaceChild ($id "editor")
                              ($layouts layouts)
                              ($id "buffers")))
@@ -135,6 +153,46 @@
                 :beep? (fn [beep? _ _] (if beep? (beep)))
                 :dirty? (fn [dirty? _ _]
                           (toggle-class ($id "status-bar-name") "dirty" dirty?))}
+   :autocompl (fn [_ [{sugs :suggestions i :index ex-autocompl? :ex-autocompl? bufid :bufid [px py] :cursor}] _]
+                (println "render autocompl")
+                (if (-> sugs count (> 1))
+                  (let [$autocompl ($id "autocompl")
+                        selected-sug ((nth sugs i) :name)]
+                    ($empty $autocompl)
+                    (doseq [{nm :name cls :class} (rest sugs)]
+                      (.appendChild $autocompl ($hiccup [:div.with-class {:class cls}
+                                                         [:pre nm]])))
+                    (if (pos? i)
+                      (-> $autocompl .-childNodes (aget (dec i)) (add-class "highlight")))
+                    ((if ex-autocompl?
+                       add-class remove-class) $autocompl "ex-autocompl")
+                    (if ex-autocompl?
+                      (doto (.-style $autocompl)
+                        (-> .-left (set! ""))
+                        (-> .-top (set! ""))
+                        (-> .-marginTop (set! ""))
+                        (-> .-marginLeft (set! "")))
+                      (let [;rect (bounding-rect ($id (str "cursor-" bufid)))
+                            ;x (.-left rect)
+                            ;y (+ (.-top rect) (.-height rect))
+                            [x y1 h] (cursor-position (-> ($id (str "lines-" bufid)) .-childNodes) (- px (count selected-sug)) py)
+                            autocomplh (* (min (dec (count sugs)) 12) h)
+                            [top margin-top] (if (> (+ y1 h autocomplh 5) js/window.innerHeight)
+                                               [(- y1 autocomplh) -5]
+                                               [(+ y1 h) 5])]
+                        (doto (.-style $autocompl)
+                          (-> .-left (set! (str x "px")))
+                          (-> .-top (set! (str top "px")))
+                          (-> .-marginTop (set! (str margin-top "px")))
+                          (-> .-marginLeft (set! "-1ch")))))
+                    ($show $autocompl)
+                    ;TODO: highlight matched characters
+                    ;TODO: scroll to highlight item
+                    (comment let [lineh (-> $autocompl .-firstChild .-offsetHeight)
+                                  a (js/Math.floor ((.-scrollTop $autocompl) / lineh))
+                                  b (js/Math.floor ((+ (.-scrollTop $autocompl) (.-offsetHeight $autocompl)) / lineh))]
+                             (if-not (<= a i b))))
+                  ($hide ($id "autocompl"))))
    :buffers {:*
              {:content (fn [{changes :changes} [{[px py] :cursor} {bufid :id} :as new-path] _]
                          (println "changes")
@@ -168,17 +226,9 @@
                            (let [$cur ($id (str "cursor-" bufid))
                                  $cur-line (aget children py)
                                  _ (js/console.log $cur-line)
-                                 [linesx linesy] (rect-left-top (bounding-rect $lines))
-                                 [left top] (if (some? $cur-line)
-                                              (let [[x y] (-> $cur-line
-                                                              .-firstChild
-                                                              ;(bounding-rect px (inc px))
-                                                              (bounding-rect px)
-                                                              rect-left-top)]
-                                                (println "xy:" x y)
-                                                [(- x linesx) (- y linesy 1)])
-                                              [0 0])]
-                             (println linesx linesy)
+                                 [left top] (let [[linesx linesy :as lines-pos] (rect-pos (bounding-rect $lines))
+                                                  [x y] (or (cursor-position children px py) lines-pos)]
+                                              [(- x linesx) (- y linesy)])]
                              (println left top)
                              (let [ch (if (some? $cur-line)
                                         (.substr (.-textContent $cur-line) px 1) " ")]
@@ -186,7 +236,6 @@
                                (if (string/blank? ch)
                                  (-> $cur .-style .-width (set! "1ch"))))
                              (doto (.-style $cur)
-                               ;(-> .-marginLeft (set! "-5ch"))
                                (-> .-color (set! "#000"))
                                (-> .-background (set! "#fff"))
                                (-> .-left (set! (str left "px")))
@@ -221,8 +270,8 @@
                              (not= (patch :active-buf) (old-client :active-buf)))
         new-active (-> new-client :buffers (get (new-client :active-buf)))]
     (println "new-active:" new-active)
-    (-> patch {}
-        (try-assoc :layouts  (select-keys patch [:layouts]))
+    (-> {}
+        (try-assoc :layouts (patch :layouts))
         (try-assoc :title (-> patch
                               (select-keys [:cwd])
                               (try-assoc :name (if active-changed?
@@ -239,12 +288,21 @@
         (try-assoc :buffers (reduce-kv
                               (fn [buffers bufid buf]
                                 (assoc buffers bufid
-                                       (-> buf 
-                                           (select-keys [:scroll-top])
+                                       (-> {}
                                            (assoc :id bufid)
                                            (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
                                            (try-assoc :content (select-keys buf [:changes :cursor :highlights :visual :tabsize :brackets]))
-                                           (try-assoc :gutter (select-keys buf [:scroll-top :lines]))))) {} (patch :buffers))))))
+                                           (try-assoc :gutter (select-keys buf [:scroll-top :lines]))
+                                           (try-assoc :scroll-top (buf :scroll-top))))) {} (patch :buffers)))
+        (assoc :autocompl
+               (let [autocompl (-> patch :buffers (get (:id new-active)) :autocompl)]
+                 (if (some? autocompl)
+                   (let [ex-mode? (-> new-active :mode (= ex-mode))]
+                     (-> autocompl
+                         (assoc :ex-autocompl? ex-mode?)
+                         (assoc :bufid (new-active :id))
+                         (try-assoc :cursor (when-not ex-mode?
+                                              (new-active :cursor)))))))))))
 
 (def ^:private ui (atom nil))
 

@@ -136,9 +136,12 @@
   (if-not (nil? ele)
     (-> ele .-style .-display (set! "none"))))
 
-(defn $show [ele display]
-  (if-not (nil? ele)
-    (-> ele .-style .-display (set! (or display "")))))
+(defn $show
+  ([ele display]
+    (if-not (nil? ele)
+      (-> ele .-style .-display (set! display))))
+  ([ele]
+    ($show ele "")))
 
 (defn insert-after [p new-ele target-ele]
   (if (nil? target-ele)
