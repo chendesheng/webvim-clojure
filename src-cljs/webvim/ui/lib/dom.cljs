@@ -245,3 +245,6 @@
             h (.-offsetHeight sp)
             _ (.removeChild js/document.body sp)]
         [w h]))))
+
+(defn line-height []
+  (last (measure-text-size "M")))

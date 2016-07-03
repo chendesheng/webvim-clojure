@@ -3,7 +3,7 @@
             [clojure.java.io :as io]
             [clojure.string :as string]
             [webvim.core.ui :refer [send-buf!]]
-            [webvim.core.lineindex :refer [create-lineindex total-lines]]
+            [webvim.core.lineindex :refer [create-lineindex total-lines pos-xy]]
             [webvim.core.register :refer [registers-put!]]
             [webvim.core.editor :refer [*window*]])
   (:use clojure.pprint
@@ -307,8 +307,14 @@
     (-> buf
         (assoc :brackets [])
         (async
-          (let [mpos (pos-match-bracket (buf :str) pos)]
-            (assoc buf :brackets 
-                   (if (nil? mpos) [] [pos mpos]))))))
+          (let [lidx (buf :lineindex)
+                mpos (pos-match-bracket (buf :str) pos)]
+            (if (nil? mpos)
+              (-> buf
+                  (assoc :brackets [])
+                  (assoc :cursor2 []))
+              (-> buf
+                  (assoc :brackets [pos mpos])
+                  (assoc :cursor2 (pos-xy lidx mpos))))))))
   ([buf]
     (buf-match-bracket buf (buf :pos))))

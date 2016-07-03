@@ -146,6 +146,7 @@
             (dissoc-if-equal before :highlights)
             (dissoc-if-equal before :tabsize)
             (dissoc-if-equal before :cursor)
+            (dissoc-if-equal before :cursor2)
             (dissoc-if-equal before :pos)
             (dissoc-if-equal before :showkeys)
             (dissoc-if-equal before :lines)

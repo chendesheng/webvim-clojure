@@ -1,5 +1,5 @@
 (ns webvim.ui.view
-  (:require [webvim.ui.lib.dom :refer [$id $hiccup $exist? add-class remove-class $remove $text-content beep $empty measure-text-size $show $hide]]
+  (:require [webvim.ui.lib.dom :refer [$id $hiccup $exist? add-class remove-class $remove $text-content beep $empty measure-text-size $show $hide line-height]]
             [webvim.ui.lib.patch :refer [trigger-patch]]
             [webvim.ui.lib.util :refer [deep-merge]]
             [webvim.ui.lib.event :refer [add-listener]]
@@ -16,9 +16,9 @@
                 [:div.content {:id (str "content-" bufid)}
                  [:div.lines {:id (str "lines-" bufid)}]
                  [:div.cursor {:id (str "cursor-" bufid)}]
+                 [:div.cursor.cursor2 {:id (str "cursor2-" bufid)}]
                  [:div.selections {:id (str "selections-" bufid)}]
-                 [:div.highlights {:id (str "highlights-" bufid)}]
-                 [:div.brackets {:id (str "brackets-" bufid)}]]]))))
+                 [:div.highlights {:id (str "highlights-" bufid)}]]]))))
 
 (defn- $layouts [layouts]
   ;(println "layouts:" layouts)
@@ -92,14 +92,8 @@
         (if-not (empty? s)
           (conj lines s) lines)))))
 
-(defn- normalize-cursor [children x y]
-  (let [$line (aget children y)]
-    (if (and (some? $line)
-             (-> $line .-length (= x)))
-      [0 (inc y)] [x y])))
-
-(defn- cursor-position [$lines-children px py]
-  (let [$cur-line (aget $lines-children py)]
+(defn- cursor-position [$lines-nodes px py]
+  (let [$cur-line (aget $lines-nodes py)]
     (if (some? $cur-line)
       (let [rect (-> $cur-line
                      .-firstChild
@@ -108,6 +102,33 @@
             h (.-height rect)]
         ;(println "xy:" x y)
         [x (dec y) h]))))
+
+(defn- cursor-position-in-buffer [$lines cx cy]
+  (let [[linesx linesy :as lines-pos] (rect-pos (bounding-rect $lines))
+        [px py h] (or (cursor-position (.-childNodes $lines) cx cy) lines-pos)]
+    [(- px linesx) (- py linesy) h]))
+
+(defn- render-cursor [$lines $cur cx cy reverse-background?]
+  (let [$cur-line (aget (.-childNodes $lines) cy)
+        [px py] (cursor-position-in-buffer $lines cx cy)]
+    (if reverse-background?
+      (let [ch (if (some? $cur-line)
+                 (.substr (.-textContent $cur-line) cx 1) " ")]
+        ($text-content $cur ch)
+        (doto (.-style $cur)
+          (-> .-background (set! "#fff"))
+          (-> .-color (set! "#000"))
+          (-> .-width (set! ""))
+          (-> .-height (set! "")))
+        (if (string/blank? ch)
+          (-> $cur .-style .-width (set! "1ch"))))
+      (doto $cur
+        (-> .-textContent (set! ""))
+        (-> .-style .-width (set! "1ch"))
+        (-> .-style .-height (set! (str (line-height) "px")))))
+    (doto (.-style $cur)
+      (-> .-left (set! (str px "px")))
+      (-> .-top (set! (str py "px"))))))
 
 (defn render [patch _ _]
   ;(println "ROOT")
@@ -213,15 +234,15 @@
                              (if-not (<= a i b))))
                   ($hide ($id "autocompl"))))
    :buffers {:*
-             {:content (fn [{changes :changes} [{[px py] :cursor} {bufid :id} :as new-path] _]
+             {:content (fn [{changes :changes} [{[cx cy] :cursor} {bufid :id} :as new-path] _]
                          ;(println "changes")
                          ;(println changes)
                          (let [$lines ($id (str "lines-" bufid))
-                               children (.-childNodes $lines)]
+                               $lines-nodes (.-childNodes $lines)]
                            (if-not (empty? changes)
                              (doseq [{[xa ya] :a [xb yb] :b to :to} changes]
-                               (let [$linea (aget children ya)
-                                     $lineb (aget children yb)
+                               (let [$linea (aget $lines-nodes ya)
+                                     $lineb (aget $lines-nodes yb)
                                      lines (split-lines
                                              (str
                                                (if (some? $linea)
@@ -235,33 +256,25 @@
                                  ;(println "$linea")
                                  ;(js/console.log $linea)
                                  (dotimes [_ (inc (- yb ya))]
-                                   (if-let [$linea (aget children ya)]
+                                   (if-let [$linea (aget $lines-nodes ya)]
                                      (.remove $linea)))
-                                 (if-let [after (aget children ya)] 
+                                 (if-let [after (aget $lines-nodes ya)] 
                                    (doseq [line lines]
                                      (.insertBefore $lines ($hiccup [:div.code-block line]) after))
                                    (doseq [line lines]
                                      (.appendChild $lines ($hiccup [:div.code-block line])))))))
-                           (let [$cur ($id (str "cursor-" bufid))
-                                 $cur-line (aget children py)
-                                 ;_ (js/console.log $cur-line)
-                                 [left top] (let [[linesx linesy :as lines-pos] (rect-pos (bounding-rect $lines))
-                                                  [x y] (or (cursor-position children px py) lines-pos)]
-                                              [(- x linesx) (- y linesy)])]
-                             ;(println left top)
-                             (let [ch (if (some? $cur-line)
-                                        (.substr (.-textContent $cur-line) px 1) " ")]
-                               ($text-content $cur ch)
-                               (if (string/blank? ch)
-                                 (-> $cur .-style .-width (set! "1ch"))))
-                             (doto (.-style $cur)
-                               (-> .-color (set! "#000"))
-                               (-> .-background (set! "#fff"))
-                               (-> .-left (set! (str left "px")))
-                               (-> .-top (set! (str top "px")))))))
+                           (render-cursor $lines ($id (str "cursor-" bufid)) cx cy true)
+                           {:cursor2 (fn [[cx cy :as cursor2] [_ {cursor :cursor} {bufid :id}] _]
+                                       (let [$lines-nodes ($id (str "lines-" bufid))
+                                             $cursor2 ($id (str "cursor2-" bufid))
+                                             show? (not (or (empty? cursor2) (= cursor2 cursor)))]
+                                         ((if show?
+                                            $show $hide) $cursor2)
+                                         (if show? 
+                                           (render-cursor $lines $cursor2 cx cy false))))}))
               :scroll-top (fn [scroll-top [_ {bufid :id}] _]
                             (set! (.-scrollTop ($id (str "buffer-" bufid)))
-                                  (* scroll-top (last (measure-text-size "M")))))
+                                  (* scroll-top (line-height))))
               :gutter (fn [_ [{lines :lines} {bufid :id}] _]
                         (let [$g ($id (str "gutter-" bufid))
                               $lastChild (.-lastChild $g)
@@ -310,7 +323,7 @@
                                        (-> {}
                                            (assoc :id bufid)
                                            (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
-                                           (try-assoc :content (select-keys buf [:changes :cursor :highlights :visual :tabsize :brackets]))
+                                           (try-assoc :content (select-keys buf [:changes :cursor :cursor2 :highlights :visual :tabsize]))
                                            (try-assoc :gutter (select-keys buf [:scroll-top :lines]))
                                            (try-assoc :scroll-top (buf :scroll-top))))) {} (patch :buffers)))
         (assoc :autocompl

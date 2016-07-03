@@ -350,10 +350,9 @@ pre {
     color: #000;
 }
 
-.cursor-bracket .line-selected {
+.cursor2 {
     background: #007acc;
     opacity: 0.3;
-    width: 9.57px;
     z-index: 1;
 }
 
