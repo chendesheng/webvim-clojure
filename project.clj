@@ -16,13 +16,13 @@
                            [clj-time "0.11.0"]
                            [org.clojure/clojurescript "1.9.36"]]
             :plugins [[lein-cljsbuild "1.1.3"]]
-            :cljsbuild {:builds [{:source-paths ["src-cljs"]
+            :cljsbuild {:builds [{:source-paths ["src-cljs" "src-cljc"]
                                   :compiler {:output-to "resources/public/js/cljs.js"
                                              :output-dir "resources/public/js"
                                              :source-map "resources/public/js/cljs.js.map"
                                              :optimizations :whitespace
                                              :pretty-print true}}]}
-            :source-paths ["src" "src/webvim"]
+            :source-paths ["src" "src-cljc"]
             :resource-paths ["thirdparty/ropes.jar", "resources"]
             :main webvim.main
             :profiles {:dev {:source-paths ["dev"]}}

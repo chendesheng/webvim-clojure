@@ -31,7 +31,7 @@
                   (assoc :changes [{:a [0 0] :b [0 0] :to (buf2 :str)}])
                   (dissoc :str))
               buf2)
-        _ (println "buf:" buf)
+        ;_ (println "buf:" buf)
         bufid (:id buf)
         active-buf (:active-buf @client)]
     (merge (if-not (nil? buf)
@@ -60,7 +60,7 @@
                                px2row-column (fn [[w h]]
                                                (let [h (- h padding)]
                                                  [(js/Math.floor (/ w cw)) (js/Math.floor (/ h ch))]))]
-                           (println "cw,ch:" cw ch)
+                           ;(println "cw,ch:" cw ch)
                            (add-listener :onresize :onresize-handler
                                          (let [timer (atom nil)]
                                            (fn [sz]
@@ -80,7 +80,7 @@
 (add-listener
   :unload :save-winid
   (fn []
-    (println "save client id:" (@client :id))
+    ;(println "save client id:" (@client :id))
     (.set goog.net.cookies "windowId" (@client :id) js/Infinity)))
 
 

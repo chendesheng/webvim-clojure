@@ -192,12 +192,14 @@
       (doseq [part parts]
         (case (first part)
           \# (set! (.-id ele) (.substr part 1))
-          \. (-> ele .-classList (.add (.substr part 1)))))
+          \. (add-class ele (.substr part 1))))
       (doseq [child children]
         (cond
           (map? child)
           (doseq [[k v] child]
-            (.setAttribute ele (name k) v))
+            (if (= k :class)
+              (add-class ele v)
+              (.setAttribute ele (name k) v)))
           (vector? child)
           (.appendChild ele ($hiccup child fn-create fn-content))
           (string? child)

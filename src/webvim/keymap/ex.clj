@@ -513,7 +513,7 @@
    :async true
    :fn-words (fn [buf w] (get-files))
    :fn-suggest fuzzy-suggest
-   :limit-number 20
+   :limit-number 150
    :start-autocompl? (fn [buf keycode]
                        (if (-> buf :line-buffer nil?)
                          buf

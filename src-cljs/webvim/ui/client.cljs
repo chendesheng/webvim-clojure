@@ -14,7 +14,7 @@
 (defn update-client [patch]
   (let [old-client @client
         new-client (swap! client deep-merge patch)]
-    (println "update-client:" patch)
+    ;(println "update-client:" patch)
     (dispatch-event :client-changed [patch old-client new-client])))
 
 

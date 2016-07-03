@@ -3,6 +3,7 @@
             [webvim.ui.lib.patch :refer [trigger-patch]]
             [webvim.ui.lib.util :refer [deep-merge]]
             [webvim.ui.lib.event :refer [add-listener]]
+            [webvim.fuzzy :refer [fuzzy-match]]
             [clojure.string :as string]))
 
 (defn- $buffer [bufid]
@@ -20,7 +21,7 @@
                  [:div.brackets {:id (str "brackets-" bufid)}]]]))))
 
 (defn- $layouts [layouts]
-  (println "layouts:" layouts)
+  ;(println "layouts:" layouts)
   ($hiccup (conj layouts {:id "buffers"})
            (fn [k]
              ($hiccup 
@@ -30,7 +31,7 @@
                   ;should not happen
                   :else :div)]))
            (fn [ele bufid]
-             (js/console.log ele)
+             ;(js/console.log ele)
              (.appendChild ele ($buffer bufid)))))
 
 (def normal-mode 0)
@@ -105,12 +106,12 @@
                      (bounding-rect px))
             [x y] (rect-pos rect)
             h (.-height rect)]
-        (println "xy:" x y)
+        ;(println "xy:" x y)
         [x (dec y) h]))))
 
 (defn render [patch _ _]
-  (println "ROOT")
-  (println patch)
+  ;(println "ROOT")
+  ;(println patch)
   (if (not ($exist? "editor")) ;global ui
     (.appendChild js/document.body
                   ($hiccup [:div#editor
@@ -143,7 +144,7 @@
                                  (render-status-bar-cursor $statusbuf ($id "status-bar-cursor") pos)
                                  (render-status-bar-cursor $statusbuf ($id "status-bar-cursor-second") pos2)))
                 :showkeys (fn [showkeys _ _]
-                            (println "showkeys:" showkeys)
+                            ;(println "showkeys:" showkeys)
                             (let [$keys ($id "status-bar-keys")]
                               ($text-content $keys (string/join "" (reverse showkeys)))
                               (if (-> showkeys first nil?)
@@ -154,14 +155,32 @@
                 :dirty? (fn [dirty? _ _]
                           (toggle-class ($id "status-bar-name") "dirty" dirty?))}
    :autocompl (fn [_ [{sugs :suggestions i :index ex-autocompl? :ex-autocompl? bufid :bufid [px py] :cursor}] _]
-                (println "render autocompl")
+                ;(println "render autocompl")
                 (if (-> sugs count (> 1))
                   (let [$autocompl ($id "autocompl")
+                        subject (-> sugs first :name)
                         selected-sug ((nth sugs i) :name)]
                     ($empty $autocompl)
                     (doseq [{nm :name cls :class} (rest sugs)]
-                      (.appendChild $autocompl ($hiccup [:div.with-class {:class cls}
-                                                         [:pre nm]])))
+                      (.appendChild $autocompl 
+                                    (let [$item ($hiccup [:pre.with-class {:class cls}])
+                                          indexes (fuzzy-match nm subject)]
+                                      (println indexes)
+                                      (loop [a 0
+                                             indexes (seq indexes)]
+                                        (if indexes
+                                          (let [[b & indexes] indexes
+                                                text (.substring nm a b)
+                                                matched (.substr nm b 1)]
+                                            (when-not (empty? text)
+                                              (.appendChild $item (js/document.createTextNode text)))
+                                            (when-not (empty? matched)
+                                              (.appendChild $item ($hiccup [:span.matched matched])))
+                                            (recur (inc b) indexes))
+                                          (let [text (.substr nm a)]
+                                            (when-not (empty? text)
+                                              (.appendChild $item (js/document.createTextNode text)))
+                                            $item))))))
                     (if (pos? i)
                       (-> $autocompl .-childNodes (aget (dec i)) (add-class "highlight")))
                     ((if ex-autocompl?
@@ -195,8 +214,8 @@
                   ($hide ($id "autocompl"))))
    :buffers {:*
              {:content (fn [{changes :changes} [{[px py] :cursor} {bufid :id} :as new-path] _]
-                         (println "changes")
-                         (println changes)
+                         ;(println "changes")
+                         ;(println changes)
                          (let [$lines ($id (str "lines-" bufid))
                                children (.-childNodes $lines)]
                            (if-not (empty? changes)
@@ -210,11 +229,11 @@
                                                to
                                                (if (some? $lineb)
                                                  (-> $lineb .-textContent (.substr xb)))))]
-                                 (println lines)
-                                 (println "xa" xa "ya" ya)
-                                 (println "xb" xb "yb" yb)
-                                 (println "$linea")
-                                 (js/console.log $linea)
+                                 ;(println lines)
+                                 ;(println "xa" xa "ya" ya)
+                                 ;(println "xb" xb "yb" yb)
+                                 ;(println "$linea")
+                                 ;(js/console.log $linea)
                                  (dotimes [_ (inc (- yb ya))]
                                    (if-let [$linea (aget children ya)]
                                      (.remove $linea)))
@@ -225,11 +244,11 @@
                                      (.appendChild $lines ($hiccup [:div.code-block line])))))))
                            (let [$cur ($id (str "cursor-" bufid))
                                  $cur-line (aget children py)
-                                 _ (js/console.log $cur-line)
+                                 ;_ (js/console.log $cur-line)
                                  [left top] (let [[linesx linesy :as lines-pos] (rect-pos (bounding-rect $lines))
                                                   [x y] (or (cursor-position children px py) lines-pos)]
                                               [(- x linesx) (- y linesy)])]
-                             (println left top)
+                             ;(println left top)
                              (let [ch (if (some? $cur-line)
                                         (.substr (.-textContent $cur-line) px 1) " ")]
                                ($text-content $cur ch)
@@ -263,13 +282,13 @@
     coll))
 
 (defn- generate-ui-patch [patch new-client old-client]
-  (println "old-client:" old-client)
-  (println "patch:" patch)
-  (println "new-client:" new-client)
+  ;(println "old-client:" old-client)
+  ;(println "patch:" patch)
+  ;(println "new-client:" new-client)
   (let [active-changed? (and (-> patch :active-buf nil? not)
                              (not= (patch :active-buf) (old-client :active-buf)))
         new-active (-> new-client :buffers (get (new-client :active-buf)))]
-    (println "new-active:" new-active)
+    ;(println "new-active:" new-active)
     (-> {}
         (try-assoc :layouts (patch :layouts))
         (try-assoc :title (-> patch
@@ -311,5 +330,5 @@
                 (let [patch (generate-ui-patch patch new-client old-client)
                       old-ui @ui
                       new-ui (swap! ui deep-merge patch)] 
-                  (println "ui-patch:" patch)
+                  ;(println "ui-patch:" patch)
                   (trigger-patch render patch (list new-ui) (list old-ui)))))

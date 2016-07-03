@@ -240,7 +240,7 @@
 (defn get-namespace [filepath]
   "get namespace under webvim by file path"
   (let [filepath (or filepath "")
-        [[_ _ _ nm]] (re-seq #"(?i)webvim[/\\](src|dev)(/|\\)(.+)\.clj" filepath)]
+        [[_ _ _ nm]] (re-seq #"(?i)webvim[/\\](src|dev|src-cljc|src-cljs)(/|\\)(.+)\.cljc?" filepath)]
     (if (empty? nm)
       nil
       (-> nm
