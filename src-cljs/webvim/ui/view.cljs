@@ -51,10 +51,14 @@
                     (str " " (visual-types visual-type)))))
            " --"))))
 
-(defn- bounding-rect [ele start end]
-  (.getBoundingClientRect (doto (js/document.createRange)
-                            (.setStart ele start)
-                            (.setEnd ele end))))
+(defn- bounding-rect
+  ([ele pos]
+    (let [rects (.getClientRects (doto (js/document.createRange)
+                                   (.setStart ele pos)
+                                   (.setEnd ele pos)))]
+      (aget rects (-> rects .-length dec))))
+  ([ele]
+    (.getBoundingClientRect ele)))
 
 (defn- rect-left-top [rect]
   [(.-left rect) (.-top rect)])
@@ -63,7 +67,8 @@
   (let [$statusbuf ($id "status-bar-buf")
         left (if (nil? pos)
                -100
-               (.-right (bounding-rect (.-firstChild $statusbuf) (dec pos) pos)))]
+               (.-left (bounding-rect (.-firstChild $statusbuf) pos)))]
+
     (set! (-> $cur .-style .-left) (str (dec left) "px"))))
 
 (defn- toggle-class [ele cls b]
@@ -163,14 +168,15 @@
                            (let [$cur ($id (str "cursor-" bufid))
                                  $cur-line (aget children py)
                                  _ (js/console.log $cur-line)
-                                 [linesx linesy] (rect-left-top (.getBoundingClientRect $lines))
+                                 [linesx linesy] (rect-left-top (bounding-rect $lines))
                                  [left top] (if (some? $cur-line)
                                               (let [[x y] (-> $cur-line
                                                               .-firstChild
-                                                              (bounding-rect px (inc px))
+                                                              ;(bounding-rect px (inc px))
+                                                              (bounding-rect px)
                                                               rect-left-top)]
                                                 (println "xy:" x y)
-                                                [(- x linesx) (- y linesy)])
+                                                [(- x linesx) (- y linesy 1)])
                                               [0 0])]
                              (println linesx linesy)
                              (println left top)
