@@ -169,11 +169,7 @@
                              [:span#status-bar-cursor-second.cursor.cursor-second]
                              [:span#status-bar-keys.ongoing-keys]
                              [:span#status-bar-name.buf-name]]
-<<<<<<< HEAD
                             [:div#autocompl.autocompl]])))
-=======
-                            [:div#autocompl]])))
->>>>>>> origin/clojurescript
   {:title (fn [_ [{cwd :cwd name :name}] _]
             (set! js/document.title (str name " - " cwd)))
    :layouts (fn [layouts _ _]
@@ -356,7 +352,6 @@
         (try-assoc :buffers (reduce-kv
                               (fn [buffers bufid buf]
                                 (assoc buffers bufid
-<<<<<<< HEAD
                                        (-> {}
                                            (assoc :id bufid)
                                            (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
@@ -373,13 +368,6 @@
                          (assoc :bufid (new-active :id))
                          (try-assoc :cursor (when-not ex-mode?
                                               (new-active :cursor)))))))))))
-=======
-                                       (-> {:id bufid} 
-                                           (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
-                                           (try-assoc :content (select-keys buf [:changes :cursor :highlights :visual :tabsize :brackets]))
-                                           (try-assoc :gutter (select-keys buf [:scroll-top :lines]))
-                                           (merge (select-keys buf [:scroll-top]))))) {} (patch :buffers))))))
->>>>>>> origin/clojurescript
 
 (def ^:private ui (atom nil))
 
