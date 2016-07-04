@@ -18,7 +18,7 @@
   (let [highlights (buf :highlights)]
     (if (empty? (filter (fn [[a b]]
                           (and (= a (rg 0)) (= b (rg 1)))) highlights))
-      (update buf :highlights conj rg) buf)))
+      (convert-highlights (update buf :highlights conj rg)) buf)))
 
 (defn- set-motion-fail [buf]
   (-> buf
@@ -54,10 +54,11 @@
 (defn highlight-all-matches [buf re]
   ;(println "highlight-all-matches:" (buf :message))
   (let [r (buf :str)]
-    (assoc buf :highlights 
-           (map (fn [[a b]]
-                  [a (dec b)])
-                (pos-re-seq+ r 0 re)))))
+    (convert-highlights
+      (assoc buf :highlights 
+             (map (fn [[a b]]
+                    [a (dec b)])
+                  (pos-re-seq+ r 0 re))))))
 
 (defn search-message [buf s forward?]
   (assoc buf :message (str (if forward? "/" "?") s)))
@@ -78,6 +79,7 @@
   (-> buf
       (assoc :message "")
       (assoc :highlights [])
+      convert-highlights
       (buf-set-pos (-> buf :context :lastpos))))
 
 (defn- search-str [linebuf]
@@ -113,6 +115,7 @@
               (-> buf
                   (buf-set-pos (-> buf :context :lastpos))
                   (assoc :highlights [])
+                  convert-highlights
                   (f re))))))))
 
 (def ^:private linebuf-keymap (init-linebuf-keymap))

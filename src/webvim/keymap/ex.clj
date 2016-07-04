@@ -228,7 +228,7 @@
                                    (sort-by :id (get-buffers)))) "\n") true))
 
 (defn cmd-nohl [buf _ _ _] 
-  (assoc buf :highlights []))
+  (convert-highlights (assoc buf :highlights [])))
 
 (defn- buf-reload [buf]
   (let [f (buf :filepath)

@@ -127,8 +127,34 @@
         (-> .-style .-width (set! "1ch"))
         (-> .-style .-height (set! (str (line-height) "px")))))
     (doto (.-style $cur)
+
       (-> .-left (set! (str px "px")))
       (-> .-top (set! (str py "px"))))))
+
+(defn- render-highlight [$lines $highlights [[ax ay] [bx by]]]
+  (let [[apx apy] (cursor-position-in-buffer $lines ax ay)
+        [bpx bpy] (cursor-position-in-buffer $lines bx by)]
+    (if (= ay by)
+      (.appendChild $highlights
+                    ($hiccup [:span.line-selected
+                              {:style (str "left:" apx "px;" "top:" apy "px;"
+                                           "width:" (- bpx apx) "px;" "height:" (line-height) "px;"
+                                           "padding-right:1ch")}]))
+      (do
+        (.appendChild $highlights
+                      ($hiccup [:span.line-selected
+                                {:style (str "left:" apx "px;" "top:" apy "px;"
+                                             "width:10000px;" "height:" (line-height) "px;")}]))
+        (.appendChild $highlights
+                      ($hiccup [:span.line-selected
+                                {:style (str "left:0px;" "top:" bpy "px;"
+                                             "width:" (+ bpx 9) "px;" "height:" (line-height) "px;"
+                                             "padding-right:1ch")}]))
+        (if (pos? (- by ay 1))
+          (.appendChild $highlights
+                        ($hiccup [:span.line-selected
+                                  {:style (str "left:0px;" "top:" (+ apy (line-height)) "px;" "width:10000px;"
+                                               "height:" (- bpy apy (line-height)) "px;")}])))))))
 
 (defn render [patch _ _]
   ;(println "ROOT")
@@ -264,14 +290,21 @@
                                    (doseq [line lines]
                                      (.appendChild $lines ($hiccup [:div.code-block line])))))))
                            (render-cursor $lines ($id (str "cursor-" bufid)) cx cy true)
-                           {:cursor2 (fn [[cx cy :as cursor2] [_ {cursor :cursor} {bufid :id}] _]
+                           {:cursor2 (fn [[cx cy :as cursor2] [_ {cursor :cursor} _] _]
                                        (let [$lines-nodes ($id (str "lines-" bufid))
                                              $cursor2 ($id (str "cursor2-" bufid))
                                              show? (not (or (empty? cursor2) (= cursor2 cursor)))]
                                          ((if show?
                                             $show $hide) $cursor2)
                                          (if show? 
-                                           (render-cursor $lines $cursor2 cx cy false))))}))
+                                           (render-cursor $lines $cursor2 cx cy false))))
+                            :highlights (fn [highlights _ _]
+                                          (println "render highlights")
+                                          (let [$highlights ($id (str "highlights-" bufid))]
+                                            ($empty $highlights)
+                                            (doseq [rg highlights]
+                                              (println "highlight range:" rg)
+                                              (render-highlight $lines $highlights rg))))}))
               :scroll-top (fn [scroll-top [_ {bufid :id}] _]
                             (set! (.-scrollTop ($id (str "buffer-" bufid)))
                                   (* scroll-top (line-height))))
@@ -289,8 +322,7 @@
 
 (defn- try-assoc [coll k v]
   (if-not (or (nil? v)
-              (and (or (coll? v) (seq? v))
-                   (empty? v)))
+              (and (map? v) (empty? v)))
     (assoc coll k v)
     coll))
 
@@ -323,7 +355,8 @@
                                        (-> {}
                                            (assoc :id bufid)
                                            (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
-                                           (try-assoc :content (select-keys buf [:changes :cursor :cursor2 :highlights :visual :tabsize]))
+                                           (try-assoc :content (-> (select-keys buf [:changes :cursor :cursor2 :visual :tabsize])
+                                                                   (try-assoc :highlights (buf :highlights2))))
                                            (try-assoc :gutter (select-keys buf [:scroll-top :lines]))
                                            (try-assoc :scroll-top (buf :scroll-top))))) {} (patch :buffers)))
         (assoc :autocompl
@@ -343,5 +376,5 @@
                 (let [patch (generate-ui-patch patch new-client old-client)
                       old-ui @ui
                       new-ui (swap! ui deep-merge patch)] 
-                  ;(println "ui-patch:" patch)
+                  (println "ui-patch:" patch)
                   (trigger-patch render patch (list new-ui) (list old-ui)))))

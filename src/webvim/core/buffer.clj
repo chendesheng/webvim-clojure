@@ -154,6 +154,7 @@
              :keys nil
              ;List of highlight ranges, for hlsearch.
              :highlights nil
+             :highlights2 nil ;for cljs client
              ;programming language specific configs
              ;detect language by file ext name
              ;TODO detect language by file content
@@ -301,6 +302,12 @@
                       (file-register (get-buffer-by-id id)))
       (registers-put! "%"
                       (file-register (get-buffer-by-id nextid))))))
+
+;;for new cljs client
+(defn convert-highlights [buf] 
+  (let [lidx (buf :lineindex)]
+    (assoc buf :highlights2 (map (fn [[a b]]
+                                   [(pos-xy lidx a) (pos-xy lidx b)]) (buf :highlights)))))
 
 (defn buf-match-bracket
   ([buf pos]

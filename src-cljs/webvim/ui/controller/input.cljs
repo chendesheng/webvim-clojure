@@ -1,7 +1,9 @@
 (ns webvim.ui.controller.input
-  (:require [webvim.ui.lib.dom :refer [$hidden-input]]
-            [webvim.ui.lib.event :refer [dispatch-event add-listener add-listener-once]]
-            [webvim.ui.lib.keycode :refer [char32bits? KEYCODE-DIC KEYCODE-KEYDOWN special-key?]]))
+  (:require 
+    [webvim.ui.client :refer [active-buffer]]
+    [webvim.ui.lib.dom :refer [$hidden-input]]
+    [webvim.ui.lib.event :refer [dispatch-event add-listener add-listener-once]]
+    [webvim.ui.lib.keycode :refer [char32bits? KEYCODE-DIC KEYCODE-KEYDOWN special-key?]]))
 
 ;Handle user input events, including: keyboard events, resize events
 ;Generate custom events
@@ -16,9 +18,13 @@
         "<c-i>" "<tab>"
         "<c-m>" "<cr>"} key) key))
 
+(defn- current-mode []
+  ((active-buffer) :mode))
+
 ;custom keymap
 (defn- keymap [key f]
-  (f key))
+  (let [keymaps [{"<c-l>" ":nohl<cr>"} {} {}]]
+    (f (or ((keymaps (current-mode)) key) key))))
 
 (defn- handle-key [key]
   (if-not (-> key count zero?)

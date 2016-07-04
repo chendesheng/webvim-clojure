@@ -17,4 +17,6 @@
     ;(println "update-client:" patch)
     (dispatch-event :client-changed [patch old-client new-client])))
 
-
+(defn active-buffer []
+  (let [c @client]
+    (-> c :buffers (get (c :active-buf)))))
