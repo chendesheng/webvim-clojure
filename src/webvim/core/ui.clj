@@ -102,6 +102,23 @@
     (assoc buf :cursor (pos-xy (buf :lineindex) (buf :pos)))
     buf))
 
+(defn- poses2xy [buf ranges]
+  (let [pos-xy (partial pos-xy (buf :lineindex))]
+    (map (fn [[a b]]
+           [(pos-xy a) (pos-xy b)]) ranges)))
+
+(defn- visual2xy [buf]
+  (if (-> buf :visual some?)
+    (update buf :visual (fn [{ranges :ranges :as visual}]
+                          (assoc visual :ranges2 (poses2xy buf ranges))))
+    buf))
+
+(defn- highlights2xy [buf]
+  (if (-> buf :highlights some?)
+    (assoc buf :highlights2
+           (poses2xy buf (buf :highlights)))
+    buf))
+
 (defn- ui-agent []
   (*window* :ui))
 
@@ -216,7 +233,9 @@
                   (if (or switch-buf? (active-buf? ui buf))
                     (let [buf (-> buf
                                   (assoc :lines (-> buf :lineindex total-lines))
-                                  pos2xy)
+                                  pos2xy
+                                  highlights2xy
+                                  visual2xy)
                           diff (diff-ui ui buf)
                           ui (assoc ui :buf (dissoc buf :changes))]
                       (if (or (nil? diff)

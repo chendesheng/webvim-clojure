@@ -133,13 +133,12 @@
 
 (defn- render-highlight [$lines $highlights [[ax ay] [bx by]]]
   (let [[apx apy] (cursor-position-in-buffer $lines ax ay)
-        [bpx bpy] (cursor-position-in-buffer $lines bx by)]
+        [bpx bpy] (cursor-position-in-buffer $lines (inc bx) by)]
     (if (= ay by)
       (.appendChild $highlights
                     ($hiccup [:span.line-selected
                               {:style (str "left:" apx "px;" "top:" apy "px;"
-                                           "width:" (- bpx apx) "px;" "height:" (line-height) "px;"
-                                           "padding-right:1ch")}]))
+                                           "width:" (- bpx apx) "px;" "height:" (line-height) "px;")}]))
       (do
         (.appendChild $highlights
                       ($hiccup [:span.line-selected
@@ -148,8 +147,7 @@
         (.appendChild $highlights
                       ($hiccup [:span.line-selected
                                 {:style (str "left:0px;" "top:" bpy "px;"
-                                             "width:" (+ bpx 9) "px;" "height:" (line-height) "px;"
-                                             "padding-right:1ch")}]))
+                                             "width:" bpx "px;" "height:" (line-height) "px;")}]))
         (if (pos? (- by ay 1))
           (.appendChild $highlights
                         ($hiccup [:span.line-selected
@@ -304,7 +302,13 @@
                                             ($empty $highlights)
                                             (doseq [rg highlights]
                                               (println "highlight range:" rg)
-                                              (render-highlight $lines $highlights rg))))}))
+                                              (render-highlight $lines $highlights rg))))
+                            :visual (fn [{ranges :ranges} _ _]
+                                      (println "render highlights")
+                                      (let [$selections ($id (str "selections-" bufid))]
+                                        ($empty $selections)
+                                        (doseq [rg ranges]
+                                          (render-highlight $lines $selections rg))))}))
               :scroll-top (fn [scroll-top [_ {bufid :id}] _]
                             (set! (.-scrollTop ($id (str "buffer-" bufid)))
                                   (* scroll-top (line-height))))
@@ -356,7 +360,10 @@
                                            (assoc :id bufid)
                                            (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
                                            (try-assoc :content (-> (select-keys buf [:changes :cursor :cursor2 :visual :tabsize])
-                                                                   (try-assoc :highlights (buf :highlights2))))
+                                                                   (try-assoc :highlights (buf :highlights2))
+                                                                   (try-assoc :visual (if (buf :visual)
+                                                                                        {:type (-> buf :visual :type)
+                                                                                         :ranges (-> buf :visual :ranges2)}))))
                                            (try-assoc :gutter (select-keys buf [:scroll-top :lines]))
                                            (try-assoc :scroll-top (buf :scroll-top))))) {} (patch :buffers)))
         (assoc :autocompl

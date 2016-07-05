@@ -144,7 +144,7 @@
              :save-point [nil filepath]
              ;:ranges is a vector of ranges (unordered): [[0 100] [101 200]]. For each range, both ends are inclusive.
              ;:a and :b two ends
-             :visual {:type :no-visual :range [0 0] :ranges nil}
+             :visual {:type :no-visual :range [0 0] :ranges nil :ranges2 nil}
              ;=0 normal mode =1 insert mode =2 ex mode
              :mode :normal-mode
              ;=0 nothing =1 temp normal mode =2 replace mode
@@ -302,12 +302,6 @@
                       (file-register (get-buffer-by-id id)))
       (registers-put! "%"
                       (file-register (get-buffer-by-id nextid))))))
-
-;;for new cljs client
-(defn convert-highlights [buf] 
-  (let [lidx (buf :lineindex)]
-    (assoc buf :highlights2 (map (fn [[a b]]
-                                   [(pos-xy lidx a) (pos-xy lidx b)]) (buf :highlights)))))
 
 (defn buf-match-bracket
   ([buf pos]
