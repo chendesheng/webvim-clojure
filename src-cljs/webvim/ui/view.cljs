@@ -202,7 +202,9 @@
                                 (js/setTimeout #($text-content $keys "") 100))))
                 :name (fn [name _ _]
                         ($text-content ($id "status-bar-name") name))
-                :beep? (fn [beep? _ _] (if beep? (beep)))
+                :beep? (fn [beep? _ _]
+                         (println "beep:" beep?)
+                         (if beep? (beep)))
                 :dirty? (fn [dirty? _ _]
                           (toggle-class ($id "status-bar-name") "dirty" dirty?))}
    :autocompl (fn [_ [{sugs :suggestions i :index ex-autocompl? :ex-autocompl? bufid :bufid [px py] :cursor}] _]
@@ -354,8 +356,9 @@
                                            new-active
                                            (-> patch :buffers (get (:id new-active))))]
                                  (-> buf
-                                     (select-keys [:showkeys :dirty? :beep? :name :lang :line-buffer :message])
+                                     (select-keys [:showkeys :dirty? :name :lang :line-buffer :message])
                                      (assoc :focus? (-> new-active :line-buffer nil? not))
+                                     (try-assoc :beep? (buf :beep))
                                      (try-assoc :mode
                                                 (-> (select-keys buf [:mode :submode])
                                                     (try-assoc :visual-type (-> buf :visual :type)))))))
@@ -389,5 +392,5 @@
                 (let [patch (generate-ui-patch patch new-client old-client)
                       old-ui @ui
                       new-ui (swap! ui deep-merge patch)] 
-                  (println "ui-patch:" patch)
+                  ;(println "ui-patch:" patch)
                   (trigger-patch render patch (list new-ui) (list old-ui)))))

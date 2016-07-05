@@ -73,7 +73,7 @@
     (add-listener :net-onmessage :update-client
                   (fn [resp]
                     (doseq [patch (map patch-adapt resp)]
-                      (println "receive:" patch)
+                      ;(println "receive:" patch)
                       (update-client patch))))
     (add-listener :net-onfail :reconnect
                   (fn [_]
