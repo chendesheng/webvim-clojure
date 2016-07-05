@@ -56,6 +56,10 @@
            " --"))))
 
 (defn- bounding-rect
+  ([ele a b]
+    (.getBoundingClientRect (doto (js/document.createRange)
+                              (.setStart ele a)
+                              (.setEnd ele b))))
   ([ele pos]
     (let [rects (.getClientRects (doto (js/document.createRange)
                                    (.setStart ele pos)
@@ -127,32 +131,34 @@
         (-> .-style .-width (set! "1ch"))
         (-> .-style .-height (set! (str (line-height) "px")))))
     (doto (.-style $cur)
-
       (-> .-left (set! (str px "px")))
       (-> .-top (set! (str py "px"))))))
 
-(defn- render-highlight [$lines $highlights [[ax ay] [bx by]]]
-  (let [[apx apy] (cursor-position-in-buffer $lines ax ay)
-        [bpx bpy] (cursor-position-in-buffer $lines (inc bx) by)]
-    (if (= ay by)
+(defn- lines-ranges [$lines [[ax ay] [bx by]]]
+  (let [$lines-nodes (.-childNodes $lines)
+        lines (reduce (fn [lines i]
+                        (let [$line (aget $lines-nodes i)
+                              length (-> $line .-textContent count)]
+                          (conj lines [[0 i] [length i]]))) [] (range ay (inc by)))]
+    (-> lines
+        (assoc-in [0 0 0] ax)
+        (assoc-in [(- by ay) 1 0] bx))))
+
+(defn- render-highlight [$lines $highlights rg]
+  (println "render-highlight")
+  (println rg)
+  (doseq [[[ax ay] [bx by]] (lines-ranges $lines rg)]
+    (println "range:" ax ay bx by)
+    (let [rt (-> $lines .-childNodes (aget ay) .-firstChild (bounding-rect ax bx))
+          [x y] (let [[linesx linesy] (rect-pos (bounding-rect $lines))
+                      [x y] (rect-pos rt)]
+                  [(- x linesx) (- y linesy)])
+          [w h] (rect-size rt)]
       (.appendChild $highlights
                     ($hiccup [:span.line-selected
-                              {:style (str "left:" apx "px;" "top:" apy "px;"
-                                           "width:" (- bpx apx) "px;" "height:" (line-height) "px;")}]))
-      (do
-        (.appendChild $highlights
-                      ($hiccup [:span.line-selected
-                                {:style (str "left:" apx "px;" "top:" apy "px;"
-                                             "width:10000px;" "height:" (line-height) "px;")}]))
-        (.appendChild $highlights
-                      ($hiccup [:span.line-selected
-                                {:style (str "left:0px;" "top:" bpy "px;"
-                                             "width:" bpx "px;" "height:" (line-height) "px;")}]))
-        (if (pos? (- by ay 1))
-          (.appendChild $highlights
-                        ($hiccup [:span.line-selected
-                                  {:style (str "left:0px;" "top:" (+ apy (line-height)) "px;" "width:10000px;"
-                                               "height:" (- bpy apy (line-height)) "px;")}])))))))
+                              {:style (str "left:" x "px;" "top:" y "px;"
+                                           "width:" w "px;" "height:" (line-height) "px;"
+                                           "padding-right:1ch;")}])))))
 
 (defn render [patch _ _]
   ;(println "ROOT")
@@ -284,9 +290,9 @@
                                      (.remove $linea)))
                                  (if-let [after (aget $lines-nodes ya)] 
                                    (doseq [line lines]
-                                     (.insertBefore $lines ($hiccup [:div.code-block line]) after))
+                                     (.insertBefore $lines ($hiccup [:span.code-block line]) after))
                                    (doseq [line lines]
-                                     (.appendChild $lines ($hiccup [:div.code-block line])))))))
+                                     (.appendChild $lines ($hiccup [:span.code-block line])))))))
                            (render-cursor $lines ($id (str "cursor-" bufid)) cx cy true)
                            {:cursor2 (fn [[cx cy :as cursor2] [_ {cursor :cursor} _] _]
                                        (let [$lines-nodes ($id (str "lines-" bufid))

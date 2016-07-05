@@ -22,3 +22,5 @@ resources/public/ubuntu-mono.css
 node_modules/
 
 resources/public/js/
+
+figwheel_server.log
