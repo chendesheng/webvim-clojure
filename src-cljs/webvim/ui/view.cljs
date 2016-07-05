@@ -145,10 +145,10 @@
         (assoc-in [(- by ay) 1 0] bx))))
 
 (defn- render-highlight [$lines $highlights rg]
-  (println "render-highlight")
-  (println rg)
+  ;(println "render-highlight")
+  ;(println rg)
   (doseq [[[ax ay] [bx by]] (lines-ranges $lines rg)]
-    (println "range:" ax ay bx by)
+    ;(println "range:" ax ay bx by)
     (let [rt (-> $lines .-childNodes (aget ay) .-firstChild (bounding-rect ax bx))
           [x y] (let [[linesx linesy] (rect-pos (bounding-rect $lines))
                       [x y] (rect-pos rt)]
@@ -203,7 +203,7 @@
                 :name (fn [name _ _]
                         ($text-content ($id "status-bar-name") name))
                 :beep? (fn [beep? _ _]
-                         (println "beep:" beep?)
+                         ;(println "beep:" beep?)
                          (if beep? (beep)))
                 :dirty? (fn [dirty? _ _]
                           (toggle-class ($id "status-bar-name") "dirty" dirty?))}
@@ -218,7 +218,7 @@
                       (.appendChild $autocompl 
                                     (let [$item ($hiccup [:pre.with-class {:class cls}])
                                           indexes (fuzzy-match nm subject)]
-                                      (println indexes)
+                                      ;(println indexes)
                                       (loop [a 0
                                              indexes (seq indexes)]
                                         (if indexes
@@ -305,14 +305,14 @@
                                          (if show? 
                                            (render-cursor $lines $cursor2 cx cy false))))
                             :highlights (fn [highlights _ _]
-                                          (println "render highlights")
+                                          ;(println "render highlights")
                                           (let [$highlights ($id (str "highlights-" bufid))]
                                             ($empty $highlights)
                                             (doseq [rg highlights]
-                                              (println "highlight range:" rg)
+                                              ;(println "highlight range:" rg)
                                               (render-highlight $lines $highlights rg))))
                             :visual (fn [{ranges :ranges} _ _]
-                                      (println "render highlights")
+                                      ;(println "render highlights")
                                       (let [$selections ($id (str "selections-" bufid))]
                                         ($empty $selections)
                                         (doseq [rg ranges]
