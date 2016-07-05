@@ -5,6 +5,9 @@
             [webvim.ui.lib.util :refer [current-path]]
             [webvim.ui.lib.dom :refer [client-size $hiccup measure-text-size]]
             [webvim.ui.controller.page]
+            [webvim.ui.view]
+            [webvim.ui.controller.input]
+            [webvim.ui.controller.page]
             [goog.net.cookies]
             [webvim.ui.client :refer [client update-client]]))
 

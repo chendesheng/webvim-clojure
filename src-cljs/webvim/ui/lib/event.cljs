@@ -35,7 +35,7 @@
                (trigger watchers :error d)))))
   ;)
 
-(def ^:private listeners (atom nil))
+(defonce ^:private listeners (atom nil))
 
 (defn add-listener [event id f]
   (swap! listeners watch-on event id f))

@@ -15,18 +15,19 @@
                            [http-kit "2.1.18"]
                            [clj-time "0.11.0"]
                            [org.clojure/clojurescript "1.9.36"]]
-            :plugins [[lein-cljsbuild "1.1.3"]]
-            :cljsbuild {:builds [{:source-paths ["src-cljs" "src-cljc"]
-                                  :compiler {:output-to "resources/public/js/cljs.js"
-                                             :output-dir "resources/public/js"
-                                             :source-map "resources/public/js/cljs.js.map"
-                                             :optimizations :whitespace
-                                             :pretty-print true}}]}
+            :plugins [[lein-cljsbuild "1.1.3"]
+                      [lein-figwheel "0.5.4-3"]]
+            :cljsbuild {:builds [{:id "dev"
+                                  :source-paths ["src-cljs" "src-cljc"]
+                                  :figwheel true
+                                  :compiler {:main "webvim.ui.main"
+                                             :asset-path "js"
+                                             :output-to "resources/public/js/cljs.js"
+                                             :output-dir "resources/public/js"}}]}
             :source-paths ["src" "src-cljc"]
             :resource-paths ["thirdparty/ropes.jar", "resources"]
             :main webvim.main
             :profiles {:dev {:source-paths ["dev"]}}
-            :jvm-opts ["-Dapple.awt.UIElement=true"
-             ;Prevent Exceptions With “trace missing”
+            :jvm-opts [;Prevent Exceptions With “trace missing”
              ;http://theholyjava.wordpress.com/2014/05/19/clojurejava-prevent-exceptions-with-trace-missing/?utm_source=tuicool&utm_medium=referral
                        "-XX:-OmitStackTraceInFastThrow"])

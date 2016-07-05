@@ -3,6 +3,8 @@
             [webvim.ui.lib.util :refer [deep-merge]]
             [goog.net.cookies]))
 
+(enable-console-print!)
+
 (defn- get-winid []
   (let [id (.get goog.net.cookies "windowId")]
     (println "get client id:" id)
