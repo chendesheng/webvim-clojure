@@ -54,22 +54,22 @@
                       :input-key :input-key-handler
                       (fn [key]
                         (send conn (str (:active-buf @client) "!" key))))))
-    (add-listener-once :net-onopen
-                       (fn [_]
-                         (let [[_ ch] (measure-text-size "M")
-                               [cw _] (measure-text-size "1")
-                               ;padding (.-offsetHeight ($id "status-bar"))
-                               padding 24
-                               px2row-column (fn [[w h]]
-                                               (let [h (- h padding)]
-                                                 [(js/Math.floor (/ w cw)) (js/Math.floor (/ h ch))]))]
+    (add-listener :net-onopen :send-resize
+                  (fn [_]
+                    (let [[_ ch] (measure-text-size "M")
+                          [cw _] (measure-text-size "1")
+                          ;padding (.-offsetHeight ($id "status-bar"))
+                          padding 24
+                          px2row-column (fn [[w h]]
+                                          (let [h (- h padding)]
+                                            [(js/Math.floor (/ w cw)) (js/Math.floor (/ h ch))]))]
                            ;(println "cw,ch:" cw ch)
-                           (add-listener :onresize :onresize-handler
-                                         (let [timer (atom nil)]
-                                           (fn [sz]
-                                             (js/clearTimeout @timer)
-                                             (reset! timer (js/setTimeout #(send-size (px2row-column sz))) 300))))
-                           (send-size (px2row-column (client-size))))))
+                      (add-listener :onresize :onresize-handler
+                                    (let [timer (atom nil)]
+                                      (fn [sz]
+                                        (js/clearTimeout @timer)
+                                        (reset! timer (js/setTimeout #(send-size (px2row-column sz))) 300))))
+                      (send-size (px2row-column (client-size))))))
     (add-listener :net-onmessage :update-client
                   (fn [resp]
                     (doseq [patch (map patch-adapt resp)]
@@ -86,5 +86,15 @@
     ;(println "save client id:" (@client :id))
     (.set goog.net.cookies "windowId" (@client :id) js/Infinity)))
 
+(defn fig-reload []
+  (let [[_ ch] (measure-text-size "M")
+        [cw _] (measure-text-size "1")
+        padding 24 ;status bar height
+        px2row-column (fn [[w h]]
+                        (let [h (- h padding)]
+                          [(js/Math.floor (/ w cw)) (js/Math.floor (/ h ch))]))]
+    (send-size (px2row-column (client-size)))) 
+  ;refresh all
+  (update-client @client))
 
 

@@ -19,9 +19,10 @@
                       [lein-figwheel "0.5.4-3"]]
             :cljsbuild {:builds [{:id "dev"
                                   :source-paths ["src-cljs" "src-cljc"]
-                                  :figwheel true
+                                  :figwheel {:on-jsload "webvim.ui.main/fig-reload"}
                                   :compiler {:main "webvim.ui.main"
                                              :asset-path "js"
+                                             :source-map true
                                              :output-to "resources/public/js/cljs.js"
                                              :output-dir "resources/public/js"}}]}
             :source-paths ["src" "src-cljc"]
