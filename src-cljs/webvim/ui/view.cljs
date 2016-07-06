@@ -385,12 +385,13 @@
                          (try-assoc :cursor (when-not ex-mode?
                                               (new-active :cursor)))))))))))
 
-(def ^:private ui (atom nil))
+(defonce ^:private ui (atom nil))
 
-(add-listener :client-changed :ui-render
-              (fn [[patch old-client new-client]]
-                (let [patch (generate-ui-patch patch new-client old-client)
-                      old-ui @ui
-                      new-ui (swap! ui deep-merge patch)] 
+(add-listener
+  :client-changed :ui-render
+  (fn [[patch old-client new-client]]
+    (let [patch (generate-ui-patch patch new-client old-client)
+          old-ui @ui
+          new-ui (swap! ui deep-merge patch)] 
                   ;(println "ui-patch:" patch)
-                  (trigger-patch render patch (list new-ui) (list old-ui)))))
+      (trigger-patch render patch (list new-ui) (list old-ui)))))
