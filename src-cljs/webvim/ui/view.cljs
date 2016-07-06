@@ -39,7 +39,7 @@
 (def ex-mode 2)
 
 (defn- mode-text [mode submode visual-type]
-  (let [modes ["NORMAL" "INSERT"]
+  (let [modes ["" "INSERT"]  ;VIM doesn't display `-- NORMAL MODE --`
         submodes ["" "(insert)"];
         visual-types ["" "VISUAL" "VISUAL LINE" "VISUAL BLOCK"]]
     (if (< mode (count modes))
@@ -160,6 +160,11 @@
                                            "width:" w "px;" "height:" (line-height) "px;"
                                            "padding-right:1ch;")}])))))
 
+(defn- render-mode [{mode :mode submode :submode visual-type :visual-type}]
+  (let [text (mode-text mode submode visual-type)]
+    (if-not (empty? text)
+      ($text-content ($id "status-bar-buf") text))))
+
 (defn render [patch _ _]
   ;(println "ROOT")
   ;(println patch)
@@ -180,13 +185,10 @@
               (.replaceChild ($id "editor")
                              ($layouts layouts)
                              ($id "buffers")))
-   :status-bar {:message (fn [message _ _]
+   :status-bar {:message (fn [message [_ {mode :mode}] _]
                            ($text-content ($id "status-bar-buf") message))
-                :mode (fn [_ [{mode :mode submode :submode visual-type :visual-type} {message :message}] _]
-                        (if (empty? message)
-                          (let [text (mode-text mode submode visual-type)]
-                            (if-not (empty? text)
-                              ($text-content ($id "status-bar-buf") text)))))
+                :mode (fn [_ [mode] _]
+                        (render-mode mode))
                 :focus? (fn [focus? _ _]
                           (toggle-class ($id "status-bar") "focus" focus?))
                 :line-buffer (fn [_ [{str :str pos :pos pos2 :pos2}] _]
@@ -356,12 +358,15 @@
                                            new-active
                                            (-> patch :buffers (get (:id new-active))))]
                                  (-> buf
-                                     (select-keys [:showkeys :dirty? :name :lang :line-buffer :message])
-                                     (assoc :focus? (-> new-active :line-buffer nil? not))
-                                     (try-assoc :beep? (buf :beep))
+                                     (select-keys [:showkeys :name :lang])
                                      (try-assoc :mode
                                                 (-> (select-keys buf [:mode :submode])
-                                                    (try-assoc :visual-type (-> buf :visual :type)))))))
+                                                    (try-assoc :visual-type (-> buf :visual :type))))
+                                     (try-assoc :message (buf :message))
+                                     (try-assoc :line-buffer (buf :line-buffer))
+                                     (assoc :focus? (-> buf :line-buffer nil? not))
+                                     (try-assoc :beep? (buf :beep))
+                                     (try-assoc :dirty? (buf :dirty)))))
         (try-assoc :buffers (reduce-kv
                               (fn [buffers bufid buf]
                                 (assoc buffers bufid
