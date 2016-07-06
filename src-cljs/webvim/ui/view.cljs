@@ -39,7 +39,7 @@
 (def ex-mode 2)
 
 (defn- mode-text [mode submode visual-type]
-  (let [modes ["" "INSERT"]  ;VIM doesn't display `-- NORMAL MODE --`
+  (let [modes ["NORMAL" "INSERT"]
         submodes ["" "(insert)"];
         visual-types ["" "VISUAL" "VISUAL LINE" "VISUAL BLOCK"]]
     (if (< mode (count modes))
@@ -176,8 +176,8 @@
                              [:span#status-bar-buf.ex]
                              [:span#status-bar-cursor.cursor]
                              [:span#status-bar-cursor-second.cursor.cursor-second]
-                             [:span#status-bar-keys.ongoing-keys]
-                             [:span#status-bar-name.buf-name]]
+                             [:span#status-bar-name.buf-name]
+                             [:span#status-bar-keys.ongoing-keys]]
                             [:div#autocompl.autocompl]])))
   {:title (fn [_ [{cwd :cwd name :name}] _]
             (set! js/document.title (str name " - " cwd)))
@@ -186,7 +186,9 @@
                              ($layouts layouts)
                              ($id "buffers")))
    :status-bar {:message (fn [message [_ {mode :mode}] _]
-                           ($text-content ($id "status-bar-buf") message))
+                           ($text-content ($id "status-bar-buf") message)
+                           (if (empty? message)
+                             (render-mode mode)))
                 :mode (fn [_ [mode] _]
                         (render-mode mode))
                 :focus? (fn [focus? _ _]
@@ -208,7 +210,9 @@
                          ;(println "beep:" beep?)
                          (if beep? (beep)))
                 :dirty? (fn [dirty? _ _]
-                          (toggle-class ($id "status-bar-name") "dirty" dirty?))}
+                          (println "render dirty?" dirty?)
+                          (toggle-class ($id "status-bar-name") "buf-dirty" dirty?))}
+
    :autocompl (fn [_ [{sugs :suggestions i :index ex-autocompl? :ex-autocompl? bufid :bufid [px py] :cursor}] _]
                 ;(println "render autocompl")
                 (if (-> sugs count (> 1))
@@ -238,8 +242,7 @@
                                             $item))))))
                     (if (pos? i)
                       (-> $autocompl .-childNodes (aget (dec i)) (add-class "highlight")))
-                    ((if ex-autocompl?
-                       add-class remove-class) $autocompl "ex-autocompl")
+                    (toggle-class $autocompl "ex-autocompl" ex-autocompl?)
                     (if ex-autocompl?
                       (doto (.-style $autocompl)
                         (-> .-left (set! ""))
@@ -364,7 +367,8 @@
                                                     (try-assoc :visual-type (-> buf :visual :type))))
                                      (try-assoc :message (buf :message))
                                      (try-assoc :line-buffer (buf :line-buffer))
-                                     (assoc :focus? (-> buf :line-buffer nil? not))
+                                     (assoc :focus? (and (-> buf :line-buffer nil? not)
+                                                         (-> buf :message empty?)))
                                      (try-assoc :beep? (buf :beep))
                                      (try-assoc :dirty? (buf :dirty)))))
         (try-assoc :buffers (reduce-kv
