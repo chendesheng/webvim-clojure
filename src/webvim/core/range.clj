@@ -18,9 +18,9 @@
   ([buf [a b]]
     (range-linewise buf a b)))
 
-(defn range-line-end [buf pos]
-  [pos (pos-line-end buf pos)])
+(defn range-line-end [buf]
+  [(buf :pos) (pos-line-end buf)])
 
-(defn range-current-line [buf pos]
-  [(pos-line-start buf pos)
-   (pos-line-end buf pos)])
+(defn range-current-line [buf]
+  [(pos-line-start buf)
+   (pos-line-end buf)])

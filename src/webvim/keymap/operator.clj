@@ -97,7 +97,7 @@
 
 (defn set-line-end [buf]
   (-> buf
-      (set-range (range-line-end buf (buf :pos)))
+      (set-range (range-line-end buf))
       (set-inclusive false)))
 
 (defn set-current-line [buf]
