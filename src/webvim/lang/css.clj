@@ -17,6 +17,16 @@
       (assoc :tabsize 4)
       (assoc :expandtab true)))
 
+(defmethod word-re ::css [lang]
+  (let [word-chars "\\w-\\.@#"
+        space-chars "\\s"]
+    {:word-chars word-chars
+     :not-word-chars (str "^" word-chars)
+     :space-chars space-chars
+     :not-space-chars (str "^" space-chars)
+     :punctuation-chars (str "^" word-chars space-chars)
+     :not-punctuation-chars (str word-chars space-chars)}))
+
 (defmethod indent-pos ::css
   [buf]
   (clang-indent buf))
