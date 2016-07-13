@@ -1,7 +1,7 @@
 (ns webvim.core.lineindex
   "log(n) time get line number from pos or get pos range from line number"
   (:require [clojure.string :as string]
-            [webvim.core.utils :refer [negzero split-lines]]
+            [webvim.core.utils :refer [split-lines]]
             [clojure.pprint :refer [pprint]]))
 
 (defn- make-tree [tree]

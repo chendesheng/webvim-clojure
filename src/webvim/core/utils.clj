@@ -287,9 +287,6 @@
 (defn split-lines [s]
   (string/split s #"(?<=\n)"))
 
-(defn negzero [n]
-  (if (neg? n) 0 n))
-
 (defn ensure-ends-with-newline [s]
   (if (-> s last (= \newline))
     s

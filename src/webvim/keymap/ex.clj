@@ -429,7 +429,7 @@
 
 (defn parse-excmd [buf s]
   (if (re-seq #"\s*\d+\s*" s)
-    (let [n (negzero (dec (parse-int s)))]
+    (let [n (-> s parse-int dec (max 0))]
       {:range [n n]
        :cmd nil
        :args ""})

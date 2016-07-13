@@ -1,5 +1,5 @@
 (ns webvim.keymap.scrolling
-  (:require [webvim.core.utils :refer [deep-merge bound-range negzero keymap-comp]]
+  (:require [webvim.core.utils :refer [deep-merge bound-range keymap-comp]]
             [webvim.scrolling :refer [scroll-to viewport-center viewport-inc-lines viewport-top viewport-bottom]]
             [webvim.core.ui :refer [viewport]]
             [webvim.core.rope :refer [buf-total-lines]]
@@ -24,7 +24,7 @@
           row (-> buf :y)
           vrow (- row scroll-top)
           newrow (bound-range (+ row d) 0 (buf-total-lines buf))
-          newst (-> newrow (- vrow) negzero)]
+          newst (-> newrow (- vrow) (max 0))]
       (-> buf
           (assoc :scroll-top newst)
           (lines-row newrow)
