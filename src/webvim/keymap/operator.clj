@@ -102,7 +102,7 @@
 
 (defn set-current-line [buf]
   (-> buf
-      (set-range (range-current-line buf))
+      (set-range (range-current-line buf (buf :pos)))
       (set-linewise false)
       (set-inclusive false)))
 
