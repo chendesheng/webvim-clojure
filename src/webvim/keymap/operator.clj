@@ -6,7 +6,7 @@
     [webvim.mode :refer [set-insert-mode]]
     [webvim.keymap.compile :refer [wrap-key]]
     [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete subr char-at]]
-    [webvim.core.line :refer [make-linewise-range expand-block-ranges
+    [webvim.core.line :refer [expand-block-ranges
                               pos-line-last line-start]]
     [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
     [webvim.core.range :refer [range-inclusive range-exclusive range-linewise range-line-end range-current-line]]
@@ -140,22 +140,23 @@
   ([buf a b linewise?]
     (buf-yank buf a b linewise? false)))
 
+;visual range always inclusive
 (defn set-visual-ranges [{r :str
                           {tp :type rg :range} :visual
                           :as buf}]
-  (println "set-visual-ranges:" (range-linewise buf rg))
+  (println "set-visual-ranges:" (range-inclusive (range-linewise buf rg)))
   ;(.printStackTrace (Exception.))
   (assoc-in buf [:visual :ranges]
             (condp = tp
               :visual-range (list (sort2 rg))
-              :visual-line (list (range-linewise buf rg))
+              :visual-line (list (range-inclusive (range-linewise buf rg)))
               :visual-block (into '() (expand-block-ranges buf rg (buf :tabsize)))
               nil)))
 
 (defn visual-block-lines [buf]
   (let [buf (set-visual-ranges buf)]
     (reduce (fn [items [a b]]
-              (let [eol (dec (pos-line-last buf a))
+              (let [eol (pos-line-last buf a)
                     b (min eol (inc b))]
                 (conj items [(-> buf :str (subr a b)) a b]))) [] (-> buf :visual :ranges))))
 

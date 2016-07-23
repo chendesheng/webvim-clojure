@@ -10,11 +10,12 @@
   (let [[a b] (sort2 rg)]
     [a (inc b)]))
 
+;exclusive
 (defn range-linewise
   ([buf a b]
     (let [[a b] (sort2 a b)]
       [(pos-line-first buf a)
-       (pos-line-last buf b)]))
+       (inc (pos-line-last buf b))]))
   ([buf [a b]]
     (range-linewise buf a b)))
 

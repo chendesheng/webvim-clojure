@@ -22,9 +22,9 @@
 
 (defn pos-line-last
   ([{lidx :lineindex} pos]
-    (last (range-by-pos lidx pos)))
+    (dec (last (range-by-pos lidx pos))))
   ([{pos :pos lidx :lineindex}]
-    (last (range-by-pos lidx pos))))
+    (dec (last (range-by-pos lidx pos)))))
 
 ;(pos-line (rope "aa\nbb") 1)
 
@@ -103,11 +103,6 @@
                  (fn [{lidx :lineindex :as buf}]
                    (first (range-by-line lidx n)))))
 
-(defn make-linewise-range [[a b] buf]
-  ;(println "make-linewise-range:" a b)
-  (let [[a b] (sort2 a b)]
-    [(pos-line-first buf a) (pos-line-last buf b)]))
-
 ;get vertical line start at pos up/down h lines
 (defn vertical-line-pos [buf pos h tabsize skip-hole?]
   (let [r (buf :str)
@@ -184,8 +179,8 @@
   ([buf]
     (line-str buf (buf :pos))))
 
-(defn line-range[{lidx :lineindex} linenum]
+(defn line-range [{lidx :lineindex} linenum]
   (range-by-line lidx linenum))
 
-(defn linenum-by-pos[{lidx :lineindex} pos]
+(defn linenum-by-pos [{lidx :lineindex} pos]
   (pos-linenum lidx pos))

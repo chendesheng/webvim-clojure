@@ -112,7 +112,7 @@
         poses (if append?
                 (map (comp inc second) 
                      (filter (fn [[a b]]
-                               (< a (inc b) (pos-line-last buf a))) ranges))
+                               (<= a b (pos-line-last buf a))) ranges))
                 (map first
                      (not-empty-range ranges)))
         buf (buf-set-pos buf (if append?
@@ -180,7 +180,7 @@
 
 (defn- insert-new-line [buf]
   (buf-indent-current-line
-    (let [b (pos-line-last buf)]
+    (let [b (inc (pos-line-last buf))]
       (-> buf
           (buf-insert b "\n")
           (buf-set-pos b)))))

@@ -3,7 +3,7 @@
             [webvim.scrolling :refer [scroll-to viewport-center viewport-inc-lines viewport-top viewport-bottom]]
             [webvim.core.ui :refer [viewport]]
             [webvim.core.rope :refer [buf-total-lines]]
-            [webvim.core.line :refer [lines-row pos-line-first pos-line-last line-start column]]
+            [webvim.core.line :refer [lines-row line-start column]]
             [webvim.keymap.motion :refer [not-last-line not-first-line not-scroll-start wrap-repeat]]
             [webvim.keymap.compile :refer [wrap-keycode]]))
 
