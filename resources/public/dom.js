@@ -151,7 +151,7 @@ function _timerScroll(ele, scrollto, i) {
 }
 
 function $animateScroll(ele, scrollto) {
-    _timerScroll(ele, scrollto, 5);
+    _timerScroll(ele, scrollto, 3)
 }
 
 function $tabsize(tabsize) {

@@ -41,14 +41,13 @@ about z-index:
 }
 
 body {
-    font-family: 'Ubuntu Mono', 'Source Code Pro for Powerline', 'Source Code Pro', 'Courier New';
-    padding: 0;
+    font-family: 'Inconsolata', 'Ubuntu Mono', 'Source Code Pro for Powerline', 'Source Code Pro', 'Courier New';
     margin: 0;
     color: #ddd;
     width: 100%;
     height: 100%;
     background: #202020;
-    font-size: 1.05em;
+    font-size: 1em;
     tab-size: 4;
     -o-tab-size: 4;
     -ms-tab-size: 4;
@@ -230,12 +229,13 @@ pre {
     float: right;
 }
 
-.status-bar .buf-name.buf-unsaved {
-    opacity: 0.7;
+.status-bar .buf-name.buf-dirty {
+    opacity: 0.6;
 }
 
 .status-bar .ongoing-keys {
-    margin-left: 2ch;
+    margin-right: 5ch;
+    float: right;
 }
 
 .status-bar .ex {
@@ -396,4 +396,8 @@ pre {
 .lines .bracket-6 {
     /*brown*/
     color: #8F6C4D;
+}
+
+.lines .keyword {
+    color: #C5AF75;
 }

@@ -29,11 +29,20 @@
         buf2 (if (-> buf1 :mode zero?)
                (assoc buf1 :line-buffer nil)
                buf1)
-        buf (if (some? (buf2 :str))
-              (-> buf2
-                  (assoc :changes [{:a [0 0] :b [0 0] :to (buf2 :str)}])
+        buf3 (if (-> buf2 :scope-changes some?)
+               (update buf2 :scope-changes
+                       (fn [scope-changes]
+                         ;(println scope-changes)
+                         (vec (map (fn [c]
+                                     (if (vector? c)
+                                       (vec (map #(update % 0 keyword) c))
+                                       c)) scope-changes))))
+               buf2)
+        buf (if (some? (buf3 :str))
+              (-> buf3
+                  (assoc :changes [{:a [0 0] :b [0 0] :to (buf3 :str)}])
                   (dissoc :str))
-              buf2)
+              buf3)
         ;_ (println "buf:" buf)
         bufid (:id buf)
         active-buf (:active-buf @client)]
@@ -80,7 +89,7 @@
   :net-onmessage :update-client
   (fn [resp]
     (doseq [patch (map patch-adapt resp)]
-                      ;(println "receive:" patch)
+      ;(println "receive:" patch)
       (update-client patch))))
 
 (add-listener

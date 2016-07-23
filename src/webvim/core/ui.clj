@@ -110,6 +110,7 @@
 (defn- visual2xy [buf]
   (if (-> buf :visual some?)
     (update buf :visual (fn [{ranges :ranges :as visual}]
+                          (println ranges)
                           (assoc visual :ranges2 (poses2xy buf ranges))))
     buf))
 
@@ -168,6 +169,7 @@
             (dissoc-if-equal before :pos)
             (dissoc-if-equal before :showkeys)
             (dissoc-if-equal before :lines)
+            (dissoc-if-equal before :scope-changes)
             (dissoc :str)
             remove-fields)))
 

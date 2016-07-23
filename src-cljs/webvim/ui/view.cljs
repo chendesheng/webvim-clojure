@@ -6,6 +6,14 @@
             [webvim.fuzzy :refer [fuzzy-match]]
             [clojure.string :as string]))
 
+(defn- tprintln [x]
+  (println x)
+  x)
+
+(defn- tlog [x]
+  (js/console.log x)
+  x)
+
 (defn- $buffer [bufid]
   (let [domid (str "buffer-" bufid)
         ele ($id domid)]
@@ -65,6 +73,10 @@
                                    (.setStart ele pos)
                                    (.setEnd ele pos)))]
       (aget rects (-> rects .-length dec))))
+  ([ele pos ele2 pos2]
+    (.getBoundingClientRect (doto (js/document.createRange)
+                              (.setStart ele pos)
+                              (.setEnd ele2 pos2))))
   ([ele]
     (.getBoundingClientRect ele)))
 
@@ -96,12 +108,22 @@
         (if-not (empty? s)
           (conj lines s) lines)))))
 
+(defn- get-element-and-offset [$line offset]
+  (loop [ele (-> $line .-firstChild)
+         i offset]
+    (if (some? ele)
+      (let [seg (if (= (.-tagName ele) "SPAN")
+                  (.-firstChild ele) ele)
+            seglen (-> seg .-textContent count)]
+        (if (< i seglen)
+          [seg i]
+          (recur (.-nextSibling ele) (- i seglen)))))))
+
 (defn- cursor-position [$lines-nodes px py]
   (let [$cur-line (aget $lines-nodes py)]
     (if (some? $cur-line)
-      (let [rect (-> $cur-line
-                     .-firstChild
-                     (bounding-rect px))
+      (let [rect (apply bounding-rect
+                        (get-element-and-offset $cur-line px))
             [x y] (rect-pos rect)
             h (.-height rect)]
         ;(println "xy:" x y)
@@ -139,21 +161,30 @@
         lines (reduce (fn [lines i]
                         (let [$line (aget $lines-nodes i)
                               length (-> $line .-textContent count)]
-                          (conj lines [[0 i] [length i]]))) [] (range ay (inc by)))]
+                          (conj lines [[0 i] [(dec length) i]]))) [] (range ay (inc by)))]
     (-> lines
         (assoc-in [0 0 0] ax)
         (assoc-in [(- by ay) 1 0] bx))))
 
+(defn- get-rect [ele a b]
+  (if (= a b)
+    (let [rt (apply bounding-rect (get-element-and-offset ele a))]
+      [(rect-pos rt) (rect-size rt)])
+    (let [rt-left (apply bounding-rect (get-element-and-offset ele a))
+          rt-right (apply bounding-rect (get-element-and-offset ele b))]
+      [(rect-pos rt-left)
+       [(- (.-right rt-right) (.-left rt-left))
+        (.-height rt-left)]])))
+
 (defn- render-highlight [$lines $highlights rg]
-  ;(println "render-highlight")
+  ;(println "render-highlight:" rg)
   ;(println rg)
   (doseq [[[ax ay] [bx by]] (lines-ranges $lines rg)]
     ;(println "range:" ax ay bx by)
-    (let [rt (-> $lines .-childNodes (aget ay) .-firstChild (bounding-rect ax bx))
-          [x y] (let [[linesx linesy] (rect-pos (bounding-rect $lines))
-                      [x y] (rect-pos rt)]
-                  [(- x linesx) (- y linesy)])
-          [w h] (rect-size rt)]
+    (let [$line (-> $lines .-childNodes (aget ay))
+          [[x1 y1] [w h]] (get-rect $line ax bx)
+          [x y] (let [[linesx linesy] (rect-pos (bounding-rect $lines))]
+                  [(- x1 linesx) (- y1 linesy)])]
       (.appendChild $highlights
                     ($hiccup [:span.line-selected
                               {:style (str "left:" x "px;" "top:" y "px;"
@@ -164,6 +195,12 @@
   (let [text (mode-text mode submode visual-type)]
     (if-not (empty? text)
       ($text-content ($id "status-bar-buf") text))))
+
+(defn- scopes-line [line scopes]
+  (into
+    [:span.code-block]
+    (map (fn [[cls a b]]
+           [(keyword (str "span." (name cls))) (subs line a b)]) scopes)))
 
 (defn render [patch _ _]
   ;(println "ROOT")
@@ -210,9 +247,8 @@
                          ;(println "beep:" beep?)
                          (if beep? (beep)))
                 :dirty? (fn [dirty? _ _]
-                          (println "render dirty?" dirty?)
+                          ;(println "render dirty?" dirty?)
                           (toggle-class ($id "status-bar-name") "buf-dirty" dirty?))}
-
    :autocompl (fn [_ [{sugs :suggestions i :index ex-autocompl? :ex-autocompl? bufid :bufid [px py] :cursor}] _]
                 ;(println "render autocompl")
                 (if (-> sugs count (> 1))
@@ -321,7 +357,18 @@
                                       (let [$selections ($id (str "selections-" bufid))]
                                         ($empty $selections)
                                         (doseq [rg ranges]
-                                          (render-highlight $lines $selections rg))))}))
+                                          (render-highlight $lines $selections rg))))
+                            :scope-changes (fn [[scy & scopes] [_ {[cx cy] :cursor}]]
+                                             (doseq [[i scs] (map vector (range scy 1000000) scopes)]
+                                               ;(println i)
+                                               ;(println scs)
+                                               (let [$line (-> $lines .-childNodes (aget i))
+                                                     $newline (-> $line .-textContent (scopes-line scs) $hiccup)]
+                                                 ;(println (-> $line .-textContent (scopes-line scs)))
+                                                 ;(js/console.log $line)
+                                                 ;(js/console.log $newline)
+                                                 (.replaceChild $lines $newline $line)))
+                                             (render-cursor $lines ($id (str "cursor-" bufid)) cx cy true))}))
               :scroll-top (fn [scroll-top [_ {bufid :id}] _]
                             (set! (.-scrollTop ($id (str "buffer-" bufid)))
                                   (* scroll-top (line-height))))
@@ -377,7 +424,7 @@
                                        (-> {}
                                            (assoc :id bufid)
                                            (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
-                                           (try-assoc :content (-> (select-keys buf [:changes :cursor :cursor2 :visual :tabsize])
+                                           (try-assoc :content (-> (select-keys buf [:changes :scope-changes :cursor :cursor2 :visual :tabsize])
                                                                    (try-assoc :highlights (buf :highlights2))
                                                                    (try-assoc :visual (if (buf :visual)
                                                                                         {:type (-> buf :visual :type)
