@@ -314,7 +314,7 @@
                   (+ (buf :scroll-top)
                      (-> (viewport) :h dec (* percentFromTop) Math/ceil)))))
 
-(defn- wrap-repeat [f]
+(defn wrap-repeat [f]
   (fn [buf keycode]
     (loop [i (repeat-count buf)
            buf buf]
