@@ -118,14 +118,20 @@
                     lang (subr
                            news (expand-ends-word lang news a newb)))))))))
 
+;TODO: use a field in buf instead
+(defn- handle-buffer? [buf]
+  (nil? (re-seq #"\[[^]]\]" (buf :name))))
+
 (listen
   :change-buffer
   (fn [{lang :language
         news :str
+        nm :name
         :as buf}
        {olds :str
         :as oldbuf} c]
-    (when-not (= news olds)
+    (if (and (handle-buffer? buf)
+             (not= news olds))
       (autocompl-update
         lang news olds c))
     buf))
@@ -133,7 +139,8 @@
 (listen
   :close-buffer
   (fn [buf]
-    (send autocompl-words
-          (fn [words]
-            (remove-words words (autocompl-parse (buf :language) (buf :str)))))
+    (if (handle-buffer? buf)
+      (send autocompl-words
+            (fn [words]
+              (remove-words words (autocompl-parse (buf :language) (buf :str))))))
     buf))
