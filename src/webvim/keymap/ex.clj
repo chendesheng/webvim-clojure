@@ -428,7 +428,7 @@
         (conj res item))) [] items))
 
 (defn parse-excmd [buf s]
-  (if (re-seq #"\s*\d+\s*" s)
+  (if (re-seq #"^\s*\d+\s*$" s)
     (let [n (-> s parse-int dec (max 0))]
       {:range [n n]
        :cmd nil
