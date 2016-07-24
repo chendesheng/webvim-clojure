@@ -59,9 +59,10 @@
 
 (defn- indent-tab-size [^String s] 
   (or (contains?
-        #{"try" "catch" "ns" "if" "if-not" "if-let" "nil?" "fn" "cond" "loop" "doseq" "for" "condp" "do" "doto" "binding" "when" "when-not"} s)
+        #{"try" "catch" "ns" "if" "nil?" "fn" "cond" "loop" "doseq" "for" "condp" "do" "doto" "binding" "when"} s)
       (.startsWith s "def")
       (.startsWith s "if-")
+      (.startsWith s "when-")
       (.startsWith s "let")))
 
 (defn clojure-comment? [line]
@@ -76,6 +77,8 @@
     1
     (not (= (char-at line 0) \())
     1
+    (re-test #"^\(\s*(\(|\[|\{)" line)
+    2
     (re-test #"^\(\s*[^,\s]+[\s,]+[^,\s]+" line)
     (let [w (re-subs #"[^\s\[\{\(]+"
                      (subr line 1 (count line)))]
