@@ -1,6 +1,5 @@
 (ns webvim.core.utils
-  (:require [snipsnap.core :as clipboard]
-            [me.raynes.fs :as fs]
+  (:require [me.raynes.fs :as fs]
             [clojure.string :as string]))
 
 (defn quote-pattern [ch]
@@ -169,7 +168,7 @@
 (defn clipboard-get []
   (if osx?
     ((clojure.java.shell/sh "pbpaste") :out)
-    (clipboard/get-text)))
+    ""))
 
 ;TODO: use xclip in linux
 (defn clipboard-set! [text]
@@ -177,8 +176,7 @@
     osx?
     (clojure.java.shell/sh "pbcopy" :in text)
     windows?
-    (clojure.java.shell/sh "clip" :in text)
-    :else (clipboard/set-text! text)))
+    (clojure.java.shell/sh "clip" :in text)))
 
 (defn- replace-path-sep [f]
   (if windows?
@@ -240,7 +238,7 @@
 (defn get-namespace [filepath]
   "get namespace under webvim by file path"
   (let [filepath (or filepath "")
-        [[_ _ _ nm]] (re-seq #"(?i)webvim[/\\](src|dev)(/|\\)(.+)\.clj" filepath)]
+        [[_ _ _ nm]] (re-seq #"(?i)webvim[/\\](src|dev|src-cljc|src-cljs)(/|\\)(.+)\.cljc?" filepath)]
     (if (empty? nm)
       nil
       (-> nm
@@ -288,9 +286,6 @@
 
 (defn split-lines [s]
   (string/split s #"(?<=\n)"))
-
-(defn negzero [n]
-  (if (neg? n) 0 n))
 
 (defn ensure-ends-with-newline [s]
   (if (-> s last (= \newline))

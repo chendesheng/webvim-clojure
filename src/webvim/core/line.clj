@@ -7,6 +7,9 @@
         webvim.core.utils
         webvim.core.pos))
 
+(defn trim-start [buf [a b]]
+  [(or (first (pos-re+ (buf :str) a #"[\S\n]|((?<=\s)[\S\n])")) 0) b])
+
 (defn pos-line
   ([{lidx :lineindex} pos]
     (range-by-pos lidx pos))
@@ -14,24 +17,23 @@
     (range-by-pos lidx pos)))
 
 (defn pos-line-first
-  ([{lidx :lineindex} pos]
-    (first (range-by-pos lidx pos)))
-  ([{pos :pos lidx :lineindex}]
-    (first (range-by-pos lidx pos))))
+  ([buf pos]
+    (first (pos-line buf pos)))
+  ([{pos :pos :as buf}]
+    (pos-line-first buf pos)))
 ;(pos-line-first (rope "aa\naaa") 4)
 
 (defn pos-line-last
-  ([{lidx :lineindex} pos]
-    (last (range-by-pos lidx pos)))
-  ([{pos :pos lidx :lineindex}]
-    (last (range-by-pos lidx pos))))
+  ([buf pos]
+    (-> buf (pos-line pos) last dec))
+  ([{pos :pos :as buf}]
+    (pos-line-last buf pos)))
 
 ;(pos-line (rope "aa\nbb") 1)
 
 (defn pos-line-start
   ([buf pos]
-    (let [lf (pos-line-first buf pos)]
-      (or (first (pos-re+ (buf :str) lf #"[\S\n]|((?<=\s)[\S\n])")) 0)))
+    (first (trim-start buf (pos-line buf pos))))
   ([{pos :pos :as buf}]
     (pos-line-start buf pos)))
 
@@ -84,6 +86,23 @@
       #(-> % first (< b))
       (pos-lines-seq+ buf a))))
 
+(defn- empty-line? [buf [a b]]
+  (if (<= (- b a) 2)
+    (re-test #"\r?\n" (-> buf :str (subr a b)))))
+
+(defn- pos-paragraph [fndir buf]
+  (let [empty-line? (partial empty-line? buf)
+        not-empty-line? (complement empty-line?)]
+    (->> buf
+         fndir
+         (drop-while empty-line?)
+         (drop-while not-empty-line?)
+         first
+         first)))
+
+(def pos-paragraph+ (partial pos-paragraph pos-lines-seq+))
+(def pos-paragraph- (partial pos-paragraph pos-lines-seq-))
+
 ;(pos-lines-seq+ (rope "aa\nbb\ncc\n\n") 0 1)
 
 (defn lines-n [{lidx :lineindex pos :pos :as buf} delta]
@@ -102,11 +121,6 @@
   (buf-move-line buf
                  (fn [{lidx :lineindex :as buf}]
                    (first (range-by-line lidx n)))))
-
-(defn make-linewise-range [[a b] buf]
-  ;(println "make-linewise-range:" a b)
-  (let [[a b] (sort2 a b)]
-    [(pos-line-first buf a) (pos-line-last buf b)]))
 
 ;get vertical line start at pos up/down h lines
 (defn vertical-line-pos [buf pos h tabsize skip-hole?]
@@ -184,8 +198,8 @@
   ([buf]
     (line-str buf (buf :pos))))
 
-(defn line-range[{lidx :lineindex} linenum]
+(defn line-range [{lidx :lineindex} linenum]
   (range-by-line lidx linenum))
 
-(defn linenum-by-pos[{lidx :lineindex} pos]
+(defn linenum-by-pos [{lidx :lineindex} pos]
   (pos-linenum lidx pos))

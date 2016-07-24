@@ -1,10 +1,10 @@
 (ns webvim.keymap.scrolling
-  (:require [webvim.core.utils :refer [deep-merge bound-range negzero keymap-comp]]
+  (:require [webvim.core.utils :refer [deep-merge bound-range keymap-comp]]
             [webvim.scrolling :refer [scroll-to viewport-center viewport-inc-lines viewport-top viewport-bottom]]
             [webvim.core.ui :refer [viewport]]
             [webvim.core.rope :refer [buf-total-lines]]
-            [webvim.core.line :refer [lines-row pos-line-first pos-line-last line-start column]]
-            [webvim.keymap.motion :refer [not-last-line not-first-line not-scroll-start]]
+            [webvim.core.line :refer [lines-row line-start column]]
+            [webvim.keymap.motion :refer [not-last-line not-first-line not-scroll-start wrap-repeat]]
             [webvim.keymap.compile :refer [wrap-keycode]]))
 
 (defn- round-to-zero
@@ -24,7 +24,7 @@
           row (-> buf :y)
           vrow (- row scroll-top)
           newrow (bound-range (+ row d) 0 (buf-total-lines buf))
-          newst (-> newrow (- vrow) negzero)]
+          newst (-> newrow (- vrow) (max 0))]
       (-> buf
           (assoc :scroll-top newst)
           (lines-row newrow)
@@ -59,13 +59,13 @@
   {"z" {"z" (scroll-to viewport-center)
         "t" (scroll-to viewport-top)
         "b" (scroll-to viewport-bottom)}
-   "<c-u>" (not-first-line (cursor-move-viewport -0.5))
-   "<c-d>" (not-last-line (cursor-move-viewport 0.5))
-   "<c-f>" (<c-f>-beep? (keymap-comp (scroll-to viewport-top) forward-page))
-   "<c-b>" (not-scroll-start (keymap-comp (scroll-to viewport-bottom) backward-page))
+   "<c-u>" (wrap-repeat (not-first-line (cursor-move-viewport -0.5)))
+   "<c-d>" (wrap-repeat (not-last-line (cursor-move-viewport 0.5)))
+   "<c-f>" (wrap-repeat (<c-f>-beep? (keymap-comp (scroll-to viewport-top) forward-page)))
+   "<c-b>" (wrap-repeat (not-scroll-start (keymap-comp (scroll-to viewport-bottom) backward-page)))
    ;TODO: scroll beyond border
-   "<c-e>" (scroll-to (viewport-inc-lines (- 1)))
-   "<c-y>" (scroll-to (viewport-inc-lines 1))})
+   "<c-e>" (wrap-repeat (scroll-to (viewport-inc-lines (- 1))))
+   "<c-y>" (wrap-repeat (scroll-to (viewport-inc-lines 1)))})
 
 (defn wrap-keymap-scrolling [keymap]
   (deep-merge keymap (scrolling-keymap)))

@@ -3,7 +3,7 @@
             [clojure.java.io :as io]
             [clojure.string :as string]
             [webvim.core.ui :refer [send-buf!]]
-            [webvim.core.lineindex :refer [create-lineindex total-lines]]
+            [webvim.core.lineindex :refer [create-lineindex total-lines pos-xy]]
             [webvim.core.register :refer [registers-put!]]
             [webvim.core.editor :refer [*window*]])
   (:use clojure.pprint
@@ -121,6 +121,7 @@
                     (or (re-find #"\.\w+$" (or bufname "")) ""))
              :str (rope txtLF)
              :lineindex lineindex
+             :lines 1
              :pos 0  ;offset from first char
              :x 0    ;saved x for up down motion
              :y 0    ;num of line breaks from first char
@@ -143,7 +144,7 @@
              :save-point [nil filepath]
              ;:ranges is a vector of ranges (unordered): [[0 100] [101 200]]. For each range, both ends are inclusive.
              ;:a and :b two ends
-             :visual {:type :no-visual :range [0 0] :ranges nil}
+             :visual {:type :no-visual :range [0 0] :ranges nil :ranges2 nil}
              ;=0 normal mode =1 insert mode =2 ex mode
              :mode :normal-mode
              ;=0 nothing =1 temp normal mode =2 replace mode
@@ -153,6 +154,7 @@
              :keys nil
              ;List of highlight ranges, for hlsearch.
              :highlights nil
+             :highlights2 nil ;for cljs client
              ;programming language specific configs
              ;detect language by file ext name
              ;TODO detect language by file content
@@ -306,8 +308,14 @@
     (-> buf
         (assoc :brackets [])
         (async
-          (let [mpos (pos-match-bracket (buf :str) pos)]
-            (assoc buf :brackets 
-                   (if (nil? mpos) [] [pos mpos]))))))
+          (let [lidx (buf :lineindex)
+                mpos (pos-match-bracket (buf :str) pos)]
+            (if (nil? mpos)
+              (-> buf
+                  (assoc :brackets [])
+                  (assoc :cursor2 []))
+              (-> buf
+                  (assoc :brackets [pos mpos])
+                  (assoc :cursor2 (pos-xy lidx mpos))))))))
   ([buf]
     (buf-match-bracket buf (buf :pos))))

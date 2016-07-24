@@ -428,8 +428,8 @@
         (conj res item))) [] items))
 
 (defn parse-excmd [buf s]
-  (if (re-seq #"\s*\d+\s*" s)
-    (let [n (negzero (dec (parse-int s)))]
+  (if (re-seq #"^\s*\d+\s*$" s)
+    (let [n (-> s parse-int dec (max 0))]
       {:range [n n]
        :cmd nil
        :args ""})
@@ -513,7 +513,7 @@
    :async true
    :fn-words (fn [buf w] (get-files))
    :fn-suggest fuzzy-suggest
-   :limit-number 20
+   :limit-number 150
    :start-autocompl? (fn [buf keycode]
                        (if (-> buf :line-buffer nil?)
                          buf

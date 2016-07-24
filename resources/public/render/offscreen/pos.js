@@ -234,32 +234,32 @@ var uniqueId = (function() {
 
 
 //extract text from DOM: [a, b)
-function substring(buf, a, b) {
-    if (a == b) return '';
-    if (a > b) throw "a must smaller or equal than b";
-
-    var res = getCodeBlockByPos(buf, a);
-    var ele = res.e;
-
-    var txt = '';
-    var start = res.pos; //pos of block
-    //keep [a, b)
-    while (true) {
-        if (a >= b) {
-            break;
-        }
-
-        txt += ele.textContent.substring(a - start, b - start);
-        ele = ele.nextSibling;
-        if (ele == null)
-            break;
-
-        start = start + ele.textContent.length;
-        a = start;
-    }
-
-    return txt;
-}
+//function substring(buf, a, b) {
+//    if (a == b) return '';
+//    if (a > b) throw "a must smaller or equal than b";
+//
+//    var res = getCodeBlockByPos(buf, a);
+//    var ele = res.e;
+//
+//    var txt = '';
+//    var start = res.pos; //pos of block
+//    //keep [a, b)
+//    while (true) {
+//        if (a >= b) {
+//            break;
+//        }
+//
+//        txt += ele.textContent.substring(a - start, b - start);
+//        ele = ele.nextSibling;
+//        if (ele == null)
+//            break;
+//
+//        start = start + ele.textContent.length;
+//        a = start;
+//    }
+//
+//    return txt;
+//}
 
 function insertNodeAtPos(buf, node, pos) {
     var res = getElementByPos(buf, pos);

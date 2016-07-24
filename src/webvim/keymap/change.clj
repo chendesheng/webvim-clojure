@@ -14,7 +14,7 @@
     [webvim.core.utils :refer [sort2 deep-merge]]
     [webvim.core.rope :refer [buf-replace buf-delete buf-insert buf-set-pos subr indexr]]
     [webvim.core.pos :refer [char+ buf-start]]
-    [webvim.core.line :refer [pos-line expand-block-ranges pos-lines-seq+ pos-line-last pos-line-first line-end line-start line-first]]))
+    [webvim.core.line :refer [pos-line expand-block-ranges pos-lines-seq+ pos-line-last pos-line-first line-end line-start line-first trim-start]]))
 
 (defn- start-insert-mode [f]
   (fn [buf keycode]
@@ -37,8 +37,8 @@
         lines (if (= newy lasty) ;repeat contents must not cross line
                 (reverse 
                   (rest
-                    (take (-> dy absolute inc) (pos-lines-seq+ buf
-                                                               (inc pos)))))
+                    (take (-> dy absolute inc) (map (partial trim-start buf)
+                                                    (pos-lines-seq+ buf pos)))))
                 '())]
     ;(println "lines:" lines)
     (reduce (fn [buf [a b]]
@@ -68,7 +68,7 @@
             (buf-insert buf pos r)) buf poses))
 
 (defn- visual-line-repeat-set-pos [buf pos append?]
-  (let [[[a b]] (pos-lines-seq+ buf pos)
+  (let [[a b] (trim-start buf (pos-line buf pos))
         newpos (if append? (dec b) a)]
     (buf-set-pos buf newpos)))
 
@@ -99,7 +99,7 @@
         [a b] (-> buf :visual :range)]
     (-> buf
         (assoc-in [:context :repeat-lines] (visual-line-repeat-info buf))
-        (visual-line-repeat-set-pos (if (< a b) a b) append?)
+        (visual-line-repeat-set-pos (min a b) append?)
         save-last-pos
         set-insert-mode
         (assoc :keymap keymap))))
@@ -112,7 +112,7 @@
         poses (if append?
                 (map (comp inc second) 
                      (filter (fn [[a b]]
-                               (< a (inc b) (pos-line-last buf a))) ranges))
+                               (<= a b (pos-line-last buf a))) ranges))
                 (map first
                      (not-empty-range ranges)))
         buf (buf-set-pos buf (if append?
@@ -166,7 +166,6 @@
 (defmethod visual-keymap-A :visual-range [buf keycode]
   (let [[a b] (-> buf :visual :range)
         r (buf :str)
-        lidx (buf :lineindex)
         fnmotion (if (> a b)
                    char+
                    (fn [buf]
@@ -180,7 +179,7 @@
 
 (defn- insert-new-line [buf]
   (buf-indent-current-line
-    (let [b (pos-line-last buf)]
+    (let [b (inc (pos-line-last buf))]
       (-> buf
           (buf-insert b "\n")
           (buf-set-pos b)))))

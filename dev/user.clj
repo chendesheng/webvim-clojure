@@ -135,3 +135,48 @@
       {:port 8080 :join? false})))
 
 
+
+(defn model-handler [diff data]
+  (println "ROOT")
+  {:cwd (fn [diff data]
+          (println "cwd"))
+   :buffers (fn [diff data]
+              (println "buffers")
+              {:* (fn [key diff data]
+                    (println "buffers.*")
+                    (println key)
+                    {:* (fn [key diff data]
+                          (println "buffers.*.*")
+                          (println key))
+                     :changes {:0 "change"
+                               :1 "change2"
+                               :+0 "change3"
+                               :-0 "change4"}
+                     :pos (fn [diff data]
+                            (println "buffers.*.pos"))
+                     :scroll-top (fn [diff data]
+                                   (println "buffers.*.scroll-top"))
+                     :str (fn [diff data]
+                            (println "buffers.*.str"))})})})
+
+(defn trigger-patch
+  ([data patch handler key]
+    (if-not (nil? patch)
+      (let [children (if (nil? key)
+                       (handler patch data)
+                       (handler key patch data))]
+        (if (and (map? patch)
+                 (map? children))
+          (doseq [[k v] patch]
+            (let [child* (children :*)]
+              (if (fn? child*)
+                (trigger-patch (get data k) v child* k)))
+            (let [child (children k)]
+              (if (fn? child)
+                (trigger-patch (get data k) v child))))))))
+  ([data patch handler]
+    (trigger-patch data patch handler nil)))
+
+(trigger-patch nil {:cwd "hello"
+                    :buffers {:1 {:pos 1 :scroll-top 1}
+                              :2 {:pos 2 :scroll-top 2}}} model-handler)

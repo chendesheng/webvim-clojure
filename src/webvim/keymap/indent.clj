@@ -7,7 +7,7 @@
             [webvim.indent :refer [buf-indent-current-line buf-indent-lines]]
             [webvim.core.rope :refer [buf-set-pos buf-replace subr re-test buf-insert rblank? char-at buf-delete]]
             [webvim.core.event :refer [listen]]
-            [webvim.core.line :refer [line-start line-end pos-line pos-lines-seq+ pos-line-start]]
+            [webvim.core.line :refer [line-start line-end pos-lines-seq+ pos-line-start]]
             [webvim.core.pos :refer [char- pos-re-seq+]]
             [webvim.core.utils :refer [repeat-chars nop deep-merge]]))
 

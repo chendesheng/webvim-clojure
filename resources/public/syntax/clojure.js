@@ -18,7 +18,7 @@ function hlclojure(hljs) {
             'drop-while while intern condp case reduced cycle split-at split-with repeat replicate ' +
             'iterate range merge zipmap declare line-seq sort comparator sort-by dorun doall nthnext ' +
             'nthrest partition eval doseq await await-for let agent atom send send-off release-pending-sends ' +
-            'add-watch mapv filterv remove-watch agent-error restart-agent set-error-handler error-handler ' +
+            'add-watch mapv map-indexed filterv remove-watch agent-error restart-agent set-error-handler error-handler ' +
             'set-error-mode! error-mode shutdown-agents quote var fn loop recur throw try catch monitor-enter ' +
             'monitor-exit defmacro defn defn- macroexpand macroexpand-1 for dosync and or ' +
             'when when-not when-let comp juxt partial sequence memoize constantly complement identity assert ' +
@@ -32,7 +32,7 @@ function hlclojure(hljs) {
             'reset-meta! commute get-validator alter ref-set ref-history-count ref-min-history ref-max-history ensure sync io! ' +
             'new next conj set! to-array future future-call into-array aset gen-class reduce reduce-kv map filter find empty ' +
             'hash-map hash-set sorted-map sorted-map-by sorted-set sorted-set-by vec vector seq flatten reverse assoc assoc-in dissoc list ' +
-            'disj get union difference intersection extend extend-type extend-protocol int nth delay count concat chunk chunk-buffer ' +
+            'disj get aget union difference intersection extend extend-type extend-protocol int nth delay count concat chunk chunk-buffer ' +
             'chunk-append chunk-first chunk-rest max min dec unchecked-inc-int unchecked-inc unchecked-dec-inc unchecked-dec unchecked-negate ' +
             'unchecked-add-int unchecked-add unchecked-subtract-int unchecked-subtract chunk-next chunk-cons chunked-seq? prn vary-meta ' +
             'lazy-seq spread list* str find-keyword keyword symbol gensym force rationalize finally' +
@@ -40,7 +40,7 @@ function hlclojure(hljs) {
             ' defproject defroutes'
     };
 
-    var SYMBOLSTART = 'a-zA-Z_\\-!.?+*=<>&#\'0-9';
+    var SYMBOLSTART = 'a-zA-Z_\\-!.?+*=<>&#\|\'0-9';
     var SYMBOLAFTERSTART = SYMBOLSTART + "0-9/;:";
     var SYMBOL_RE = '[' + SYMBOLSTART + '][' + SYMBOLAFTERSTART + ']*';
     var SIMPLE_NUMBER_RE = '[-+]?\\d+(\\.\\d+)?';
@@ -98,7 +98,7 @@ function hlclojure(hljs) {
         starts: BODY
     };
     var CHAR_LITERAL = {
-        begin: /\\(newline|tab|space|return|formfeed|backspace|u[a-fA-F\d]{4}|o[0-7]{3}|[<>\\\w\(\)\[\]\{\}'`~!@#$%^&*-=+])/,
+        begin: /\\(newline|tab|space|return|formfeed|backspace|u[a-fA-F\d]{4}|o[0-7]{3}|[<>\\\w\(\)\[\]\{\}\|'`~!@#$%^&*-=+])/,
         className: 'literal'
     };
     var BLOCK_COMMENT = {

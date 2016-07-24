@@ -94,10 +94,10 @@
   (re- buf (re-WORD-end-border (buf :language))))
 
 (defn- paragraph+ [buf keycode]
-  (re+ buf #"(?<=\n)\n[^\n]"))
+  (buf-set-pos buf (or (pos-paragraph+ buf) (-> buf :str count dec)))) 
 
 (defn- paragraph- [buf keycode]
-  (re- buf #"((?<=\n)\n[^\n])"))
+  (buf-set-pos buf (or (pos-paragraph- buf) 0)))
 
 (defn- set-motion-fail [buf]
   (-> buf
@@ -132,7 +132,7 @@
       (f buf keycode))))
 
 (defn- end? [r pos]
-  (>= pos (count r)))
+  (>= (inc pos) (count r)))
 
 (defn not-last-line [f]
   (fn [{r :str :as buf} keycode]
@@ -142,7 +142,7 @@
 
 (defn- not-buf-end [f]
   (fn [{pos :pos r :str :as buf} keycode]
-    (if (end? r (+ pos 2))
+    (if (end? r (inc pos)) ;skip last \n
       (set-motion-fail buf)
       (f buf keycode))))
 
@@ -314,7 +314,7 @@
                   (+ (buf :scroll-top)
                      (-> (viewport) :h dec (* percentFromTop) Math/ceil)))))
 
-(defn- wrap-repeat [f]
+(defn wrap-repeat [f]
   (fn [buf keycode]
     (loop [i (repeat-count buf)
            buf buf]

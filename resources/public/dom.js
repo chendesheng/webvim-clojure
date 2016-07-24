@@ -151,7 +151,7 @@ function _timerScroll(ele, scrollto, i) {
 }
 
 function $animateScroll(ele, scrollto) {
-    _timerScroll(ele, scrollto, 5);
+    _timerScroll(ele, scrollto, 3)
 }
 
 function $tabsize(tabsize) {
@@ -239,11 +239,11 @@ var beep = (function() {
 
 function xhrGet(url, success) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4 && xhr.status == 200) {
             success && success();
         }
     };
+    xhr.open('GET', url, true);
     xhr.send();
 }

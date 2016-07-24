@@ -1,20 +1,21 @@
-(ns webvim.fuzzy)
+(ns webvim.fuzzy
+  (:require [clojure.string :as string]))
 
 (defn fuzzy-match 
   "return char indexs if word \"contains\" subject. length of subject must longer than 2"
-  ([word subject case-insensitive?]
-    (let [word (if case-insensitive?
-                 (clojure.string/lower-case word)
-                 word)
-          subject (if case-insensitive?
-                    (clojure.string/lower-case subject)
-                    subject)
+  ([word subject case-sensitive?]
+    (let [word (if case-sensitive?
+                 word
+                 (string/lower-case word))
+          subject (if case-sensitive?
+                    subject
+                    (string/lower-case subject))
           indexes (reduce (fn [indexes ch]
-                            (let [i (.indexOf word (int ch) 
-                                              (if (empty? indexes)
-                                                0
-                                                (-> indexes last inc)))]
-                              (if (neg? i)
+                            (let [i (string/index-of word ch
+                                                     (if (empty? indexes)
+                                                       0
+                                                       (-> indexes last inc)))]
+                              (if (nil? i)
                                 (reduced [])
                                 (conj indexes i)))) [] subject)]
       (if (empty? indexes)
@@ -44,7 +45,7 @@
                     (sort-by (juxt first second str)
                              (reduce 
                                (fn [suggestions {word :name :as item}]
-                                 (let [indexes (fuzzy-match word w true)]
+                                 (let [indexes (fuzzy-match word w)]
                                    (if (empty? indexes)
                                      suggestions
                                      (conj suggestions [(- (last indexes) 
