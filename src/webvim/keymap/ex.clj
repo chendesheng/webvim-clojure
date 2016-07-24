@@ -5,6 +5,7 @@
             [webvim.panel :refer [append-panel append-output-panel grep-panel ag-panel find-panel edit-file goto-buf]]
             [clojure.string :as string]
             [webvim.core.lineindex :refer [range-by-line]]
+            [clojure.java.shell :refer [sh]]
             [webvim.core.eval :refer [eval-refer-ns]])
   (:use clojure.pprint
         webvim.core.rope
@@ -28,6 +29,17 @@
   (or (fs/hidden? f)
       (some #(re-test #"^\..+" %) (fs/split f))))
 
+;TODO: handle command failed
+(defn git-status-ignored []
+  (->> (sh "git" "status" "-s" "--ignored")
+       :out
+       string/split-lines
+       (filter (partial re-test #"^!! "))
+       (map #(-> %
+                 (subs 3)
+                 fs/absolute
+                 str))))
+
 (defn- file-seq-bfs
   ([pred dirs]
     (if (empty? dirs)
@@ -42,14 +54,18 @@
   ([pred]
     (file-seq-bfs pred (list fs/*cwd*))))
 
+(defn- ignored? [ignored f]
+  (contains? ignored (str f)))
+
 (defn- get-files []
-  (map (comp (fn [f] {:name f :class (cond
-                                       (fs/directory? f) "dir"
-                                       (fs/executable? f) "exe"
-                                       :else "file")})
-             (fn [s]
-               (shorten-path s))
-             str) (file-seq-bfs (comp not hidden?)))) 
+  (println "get-files")
+  (let [ignored? (partial ignored? (set (git-status-ignored)))]
+    (map (comp (fn [f] {:name f :class (cond
+                                         (fs/directory? f) "dir"
+                                         (fs/executable? f) "exe"
+                                         :else "file")})
+               shorten-path
+               str) (file-seq-bfs (complement (some-fn hidden? ignored?))))))
 
 ;(pprint (take 20 (get-files)))
 
@@ -215,7 +231,7 @@
           (assoc buf :message "Path is not a directory or not exists.")))))
 
 (defn cmd-git [buf _ _ args]
-  (let [res (apply clojure.java.shell/sh (concat ["git"] args [:dir (str fs/*cwd*)]))]
+  (let [res (apply sh (concat ["git"] args [:dir (str fs/*cwd*)]))]
     (append-output-panel buf (res :out) true)))
 
 (defn cmd-ls [buf _ _ _]
@@ -232,7 +248,7 @@
 
 (defn- buf-reload [buf]
   (let [f (buf :filepath)
-        res (clojure.java.shell/sh "diff" "-" f "-u" :in (-> buf :str str))]
+        res (sh "diff" "-" f "-u" :in (-> buf :str str))]
     (if (-> res :err empty?) 
       (let [changes (time (parse-diff (str (res :out))))]
         (-> buf
@@ -246,7 +262,7 @@
 (defn cmd-diff [buf _ _ _]
   (let [f (buf :filepath)
         ;TODO: use Java diff library instead of shell command
-        res (clojure.java.shell/sh "diff" "-" f " -u" :in (-> buf :str str))]
+        res (sh "diff" "-" f " -u" :in (-> buf :str str))]
     (if (-> res :err empty?) 
       (let [diff (-> res :out str)]
         (if (string/blank? diff)
