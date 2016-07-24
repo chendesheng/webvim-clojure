@@ -94,10 +94,10 @@
   (re- buf (re-WORD-end-border (buf :language))))
 
 (defn- paragraph+ [buf keycode]
-  (re+ buf #"(?<=\n)\n[^\n]"))
+  (buf-set-pos buf (or (pos-paragraph+ buf) (-> buf :str count dec)))) 
 
 (defn- paragraph- [buf keycode]
-  (re- buf #"((?<=\n)\n[^\n])"))
+  (buf-set-pos buf (or (pos-paragraph- buf) 0)))
 
 (defn- set-motion-fail [buf]
   (-> buf

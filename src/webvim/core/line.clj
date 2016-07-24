@@ -86,6 +86,23 @@
       #(-> % first (< b))
       (pos-lines-seq+ buf a))))
 
+(defn- empty-line? [buf [a b]]
+  (if (<= (- b a) 2)
+    (re-test #"\r?\n" (-> buf :str (subr a b)))))
+
+(defn- pos-paragraph [fndir buf]
+  (let [empty-line? (partial empty-line? buf)
+        not-empty-line? (complement empty-line?)]
+    (->> buf
+         fndir
+         (drop-while empty-line?)
+         (drop-while not-empty-line?)
+         first
+         first)))
+
+(def pos-paragraph+ (partial pos-paragraph pos-lines-seq+))
+(def pos-paragraph- (partial pos-paragraph pos-lines-seq-))
+
 ;(pos-lines-seq+ (rope "aa\nbb\ncc\n\n") 0 1)
 
 (defn lines-n [{lidx :lineindex pos :pos :as buf} delta]
