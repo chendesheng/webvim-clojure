@@ -7,6 +7,9 @@
         webvim.core.utils
         webvim.core.pos))
 
+(defn trim-start [buf [a b]]
+  [(or (first (pos-re+ (buf :str) a #"[\S\n]|((?<=\s)[\S\n])")) 0) b])
+
 (defn pos-line
   ([{lidx :lineindex} pos]
     (range-by-pos lidx pos))
@@ -14,24 +17,23 @@
     (range-by-pos lidx pos)))
 
 (defn pos-line-first
-  ([{lidx :lineindex} pos]
-    (first (range-by-pos lidx pos)))
-  ([{pos :pos lidx :lineindex}]
-    (first (range-by-pos lidx pos))))
+  ([buf pos]
+    (first (pos-line buf pos)))
+  ([{pos :pos :as buf}]
+    (pos-line-first buf pos)))
 ;(pos-line-first (rope "aa\naaa") 4)
 
 (defn pos-line-last
-  ([{lidx :lineindex} pos]
-    (dec (last (range-by-pos lidx pos))))
-  ([{pos :pos lidx :lineindex}]
-    (dec (last (range-by-pos lidx pos)))))
+  ([buf pos]
+    (-> buf (pos-line pos) last dec))
+  ([{pos :pos :as buf}]
+    (pos-line-last buf pos)))
 
 ;(pos-line (rope "aa\nbb") 1)
 
 (defn pos-line-start
   ([buf pos]
-    (let [lf (pos-line-first buf pos)]
-      (or (first (pos-re+ (buf :str) lf #"[\S\n]|((?<=\s)[\S\n])")) 0)))
+    (first (trim-start buf (pos-line buf pos))))
   ([{pos :pos :as buf}]
     (pos-line-start buf pos)))
 
