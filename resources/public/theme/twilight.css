@@ -3,7 +3,7 @@ body,
     background: #202020;
     font-size: 1em;
     color: #F8F8F8;
-    font-family: 'Inconsolata';
+    font-family: 'Inconsolata' 'Ubuntu Mono' 'Consolas';
 }
 
 .gutter {
