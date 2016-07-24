@@ -37,8 +37,7 @@
         lines (if (= newy lasty) ;repeat contents must not cross line
                 (reverse 
                   (rest
-                    (take (-> dy absolute inc) (pos-lines-seq+ buf
-                                                               (inc pos)))))
+                    (take (-> dy absolute inc) (pos-lines-seq+ buf pos))))
                 '())]
     ;(println "lines:" lines)
     (reduce (fn [buf [a b]]
@@ -68,7 +67,7 @@
             (buf-insert buf pos r)) buf poses))
 
 (defn- visual-line-repeat-set-pos [buf pos append?]
-  (let [[[a b]] (pos-lines-seq+ buf pos)
+  (let [[a b] (pos-line buf pos)
         newpos (if append? (dec b) a)]
     (buf-set-pos buf newpos)))
 
@@ -99,7 +98,7 @@
         [a b] (-> buf :visual :range)]
     (-> buf
         (assoc-in [:context :repeat-lines] (visual-line-repeat-info buf))
-        (visual-line-repeat-set-pos (if (< a b) a b) append?)
+        (visual-line-repeat-set-pos (min a b) append?)
         save-last-pos
         set-insert-mode
         (assoc :keymap keymap))))
@@ -166,7 +165,6 @@
 (defmethod visual-keymap-A :visual-range [buf keycode]
   (let [[a b] (-> buf :visual :range)
         r (buf :str)
-        lidx (buf :lineindex)
         fnmotion (if (> a b)
                    char+
                    (fn [buf]
