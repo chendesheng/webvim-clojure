@@ -137,14 +137,14 @@
   (append-panel buf apanel (str \newline (string/join \space (flatten cmds)) \newline) true))
 
 (defn cmd-write [buf _ _ [file]]
-  (if (not (string/blank? file))
+  (if (or (string/blank? file) (path= file (buf :filepath)))
+    (if (string/blank? (buf :filepath))
+      (assoc buf :message "No file name")
+      (write-buffer buf))
     (-> buf
         (assoc :name (fs/base-name file))
-        (assoc :filepath (expand-path file))
-        write-buffer)
-    (if (nil? (buf :filepath))
-      (assoc buf :message "No file name")
-      (write-buffer buf))))
+        (assoc :filepath (-> file expand-path str))
+        (write-buffer true))))
 
 (defn cmd-buffer [buf _ _ [file]]
   (let [matches (find-buffer (get-buffers) file)

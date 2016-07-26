@@ -262,21 +262,30 @@
 ;TODO make write atomic
 ;TODO check disk file change
 (defn write-buffer
-  [buf]
-  (try   
-    (if (buf :dirty)
-      (if (not= (buf :mod-time) (mod-time buf))
-        (assoc buf :message "Error: The file has been changed since reading it.")
+  ([buf force?]
+    (try   
+      (cond
+        force?
         (-> buf
             (fire-event :write-buffer)
             write-to-disk
-            set-mod-time))
-      (assoc buf :message "No changes to write"))
-    (catch Exception e 
-      (fire-event e :exception)
-      (-> buf
-          (assoc :message (str e))
-          (assoc :beep true)))))
+            set-mod-time)
+        (buf :dirty)
+        (if (not= (buf :mod-time) (mod-time buf))
+          (assoc buf :message "Error: The file has been changed since reading it.")
+          (-> buf
+              (fire-event :write-buffer)
+              write-to-disk
+              set-mod-time))
+        :else
+        (assoc buf :message "No changes to write"))
+      (catch Exception e 
+        (fire-event e :exception)
+        (-> buf
+            (assoc :message (str e))
+            (assoc :beep true)))))
+  ([buf]
+    (write-buffer buf false)))
 
 (defn file-register [buf]
   {:id (buf :id) :str (or (buf :filepath) (buf :name))})
