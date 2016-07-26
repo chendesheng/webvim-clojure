@@ -60,6 +60,7 @@
 (defn- indent-tab-size [^String s] 
   (or (contains?
         #{"try" "catch" "ns" "if" "nil?" "fn" "cond" "loop" "doseq" "for" "condp" "do" "doto" "binding" "when"} s)
+      (.startsWith s "with-")
       (.startsWith s "def")
       (.startsWith s "if-")
       (.startsWith s "when-")

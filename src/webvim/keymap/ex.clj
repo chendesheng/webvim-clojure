@@ -24,13 +24,11 @@
         webvim.keymap.linebuf.linebuf
         webvim.keymap.compile))
 
-(defn- hidden? [f]
-  ;(pprint (fs/split f))
-  (or (fs/hidden? f)
-      (some #(re-test #"^\..+" %) (fs/split f))))
 
-;TODO: handle command failed
-(defn git-status-ignored []
+
+
+;;TODO: This takes more than 10ms on my computer, which is too slow. Parse .gitignore file in clojure instead.
+(defn- git-status-ignored []
   (->> (sh "git" "status" "-s" "--ignored")
        :out
        string/split-lines
@@ -40,34 +38,75 @@
                  fs/absolute
                  str))))
 
+(defn- ignored? [ignored ^java.nio.file.Path f]
+  (contains? ignored (str f)))
+
+(def ^:private empty-string-array (make-array String 0))
+
+(defn- get-path [dir]
+  (.getPath (java.nio.file.FileSystems/getDefault) (str dir) empty-string-array))
+
+(defn- list-files [dir]
+  (with-open [stream (java.nio.file.Files/newDirectoryStream dir)]
+    (into [] (iterator-seq (.iterator stream)))))
+
+(def ^:private nofollow-links (into-array java.nio.file.LinkOption [java.nio.file.LinkOption/NOFOLLOW_LINKS]))
+
+(defn- directory? [^java.nio.file.Path p]
+  (java.nio.file.Files/isDirectory p nofollow-links))
+
+(defn- executable? [^java.nio.file.Path p]
+  (java.nio.file.Files/isExecutable p))
+
+(defn- hidden? [^java.nio.file.Path p]
+  (or (java.nio.file.Files/isHidden p)
+      ;make windows respect unix style hidden file
+      (and windows?
+           (-> p (.getName (-> p .getNameCount dec)) str (.startsWith ".")))))
+
+;;TODO: multi-threads scanning
 (defn- file-seq-bfs
   ([pred dirs]
-    (if (empty? dirs)
-      nil
+    (if-not (empty? dirs)
       (let [[dir & dirs] dirs
-            files (filter pred (.listFiles dir))
-            more-dirs (filter fs/directory? files)]
+            files (filter pred (list-files dir))
+            more-dirs (filter directory? files)]
         (concat files
                 (lazy-seq
                   (file-seq-bfs pred
                                 (concat dirs more-dirs)))))))
   ([pred]
-    (file-seq-bfs pred (list fs/*cwd*))))
+    (file-seq-bfs pred (list (get-path fs/*cwd*)))))
 
-(defn- ignored? [ignored f]
-  (contains? ignored (str f)))
-
-(defn- get-files []
+(defn get-files []
   (println "get-files")
-  (let [ignored? (partial ignored? (set (git-status-ignored)))]
-    (map (comp (fn [f] {:name f :class (cond
-                                         (fs/directory? f) "dir"
-                                         (fs/executable? f) "exe"
-                                         :else "file")})
-               shorten-path
-               str) (file-seq-bfs (complement (some-fn hidden? ignored?))))))
+  (map (fn [f]
+         {:name (-> f str shorten-path)
+          :class (if (directory? f) "dir" "file")}) (file-seq-bfs (complement hidden?))))
 
-;(pprint (take 20 (get-files)))
+;(vec (filter (every-pred directory? hidden?) (list-files (get-absolute-path "/users/roy"))))
+
+
+(comment defn walk-files-test []
+         (let [files (transient [])]
+           (java.nio.file.Files/walkFileTree
+             (.getPath (java.nio.file.FileSystems/getDefault) (str fs/*cwd*) empty-string-array)
+             (proxy
+              [java.nio.file.SimpleFileVisitor]
+              []
+               (preVisitDirectory [dir attr]
+                 (if (hidden? dir)
+                   java.nio.file.FileVisitResult/SKIP_SUBTREE
+                   (do
+                     (conj! files dir)
+                     java.nio.file.FileVisitResult/CONTINUE)))
+               (visitFile [f attr]
+                 (conj! files f)
+                 java.nio.file.FileVisitResult/CONTINUE)))
+           (persistent! files)))
+
+(comment time (count (get-files)))
+(comment time (count (walk-files-test)))
 
 (defn- set-line-buffer [buf s]
   (-> buf
@@ -529,7 +568,7 @@
    :async true
    :fn-words (fn [buf w] (get-files))
    :fn-suggest fuzzy-suggest
-   :limit-number 150
+   :limit-number 200
    :start-autocompl? (fn [buf keycode]
                        (if (-> buf :line-buffer nil?)
                          buf
