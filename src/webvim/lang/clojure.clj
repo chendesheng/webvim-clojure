@@ -266,22 +266,22 @@
             (tokenize (subr r (range-by-line lidx i))))) [la] (range la lb)))
 ;(tokenize "(defn[hello])")
 
-(listen :change-buffer
-        (fn [buf oldbuf {[ax ay] :a [bx by] :b}]
-          (async-with-catch
-            buf (assoc buf
-                       :scope-changes
-                       (parse-lines
-                         buf ay
-                         (let [lines (-> buf :lineindex total-lines)
-                               oldlines (-> oldbuf :lineindex total-lines)]
-                           (println "scope-changes:" lines oldlines)
-                           (if (> lines oldlines)
-                             (+ ay (- lines oldlines) 1)
-                             (inc ay))))))))
+#_(listen :change-buffer
+          (fn [buf oldbuf {[ax ay] :a [bx by] :b}]
+            (async-with-catch
+              buf (assoc buf
+                         :scope-changes
+                         (parse-lines
+                           buf ay
+                           (let [lines (-> buf :lineindex total-lines)
+                                 oldlines (-> oldbuf :lineindex total-lines)]
+                             (println "scope-changes:" lines oldlines)
+                             (if (> lines oldlines)
+                               (+ ay (- lines oldlines) 1)
+                               (inc ay))))))))
 
-(listen :new-buffer
-        (fn [buf]
-          (assoc buf
-                 :scope-changes
-                 (parse-lines buf 0 (-> buf :lineindex total-lines)))))
+#_(listen :new-buffer
+          (fn [buf]
+            (assoc buf
+                   :scope-changes
+                   (parse-lines buf 0 (-> buf :lineindex total-lines)))))
