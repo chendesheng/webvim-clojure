@@ -6,8 +6,7 @@
             [clojure.string :as string]
             [webvim.server :as server]
             [webvim.main :refer [start]]
-            [webvim.keymap.ex :refer [print-eval]]
-            [webvim.core.eval :refer [eval-refer-ns]])
+            [webvim.keymap.ex :refer [print-eval]])
   (:use clojure.pprint
         clojure.repl
         webvim.core.buffer

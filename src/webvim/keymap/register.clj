@@ -1,5 +1,5 @@
 (ns webvim.keymap.register
-  (:require [webvim.core.eval :refer [eval-refer-ns]])
+  (:require [webvim.core.eval :refer [eval-sandbox]])
   (:use clojure.pprint
         webvim.keymap.compile
         webvim.keymap.linebuf.linebuf
@@ -17,7 +17,7 @@
 
 (defn- read-eval-put [buf code insert?]
   (let [{result :result
-         exception :exception} (eval-refer-ns nil code)]
+         exception :exception} (eval-sandbox code)]
     (if (nil? exception)
       (do
         (registers-put! "=" {:str code :result result})

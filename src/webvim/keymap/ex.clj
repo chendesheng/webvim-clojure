@@ -6,7 +6,7 @@
             [clojure.string :as string]
             [webvim.core.lineindex :refer [range-by-line]]
             [clojure.java.shell :refer [sh]]
-            [webvim.core.eval :refer [eval-refer-ns]])
+            [webvim.core.eval :refer [eval-with-ns eval-sandbox]])
   (:use clojure.pprint
         webvim.core.rope
         webvim.core.line
@@ -23,9 +23,6 @@
         webvim.exec
         webvim.keymap.linebuf.linebuf
         webvim.keymap.compile))
-
-
-
 
 ;;TODO: This takes more than 10ms on my computer, which is too slow. Parse .gitignore file in clojure instead.
 (defn- git-status-ignored []
@@ -211,7 +208,7 @@
 
 (defn print-eval [buf code]
   (let [{output :output
-         exception :exception} (eval-refer-ns nil code)]
+         exception :exception} (eval-sandbox code)]
     (if (nil? exception)
       (append-output-panel 
         buf
@@ -222,7 +219,7 @@
 (defn do-eval [buf code]
   (let [{result :result
          output :output
-         exception :exception} (eval-refer-ns (get-namespace (buf :filepath)) code)]
+         exception :exception} (eval-with-ns (get-namespace (buf :filepath)) code)]
     (if (nil? exception)
       (let [lines (apply concat
                          (map string/split-lines
