@@ -153,7 +153,7 @@
                             (= keycode (provider :move-down))
                             (autocompl-move buf provider inc)
                             :else
-                            (time (autocompl-suggest buf provider)))))))))))
+                            (autocompl-suggest buf provider))))))))))
 
 (defn- word-char-under-cursor? [buf]
   (let [{not-word-chars :not-word-chars} (word-re (buf :language))
