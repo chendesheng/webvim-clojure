@@ -146,6 +146,13 @@
                       (repeat-chars 
                         (- tabsize (rem (+ (.length ret) idx) tabsize)) \space))))))))
 
+(defn- ensure-not-delete-to-empty [r {:keys [pos len to] :as c}]
+  (if (and (zero? pos)
+           (= (count r) len)
+           (not= (last to) \newline))
+    (update c :to str \newline)
+    c))
+
 (defn buf-replace 
   ([buf a b to]
     (if (and (= a b) (empty? to)) buf
@@ -158,7 +165,7 @@
                                    (last-tabstop (subr r 0 a))
                                    tabsize)
                        (str to))}
-              [newbuf rc] (buf-apply-change buf c)
+              [newbuf rc] (buf-apply-change buf (ensure-not-delete-to-empty r c))
               undo (push-pending (newbuf :pending-undo) rc (buf :pos))]
           (assoc newbuf :pending-undo undo))))
   ([buf [a b] to]
