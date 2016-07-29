@@ -43,9 +43,9 @@
 (defn- get-path [dir]
   (.getPath (java.nio.file.FileSystems/getDefault) (str dir) empty-string-array))
 
-(defn- list-files [dir]
+(defn- list-files [dir pred]
   (with-open [stream (java.nio.file.Files/newDirectoryStream dir)]
-    (into [] (iterator-seq (.iterator stream)))))
+    (into [] (filter pred (iterator-seq (.iterator stream))))))
 
 (def ^:private nofollow-links (into-array java.nio.file.LinkOption [java.nio.file.LinkOption/NOFOLLOW_LINKS]))
 
@@ -66,7 +66,7 @@
   ([pred dirs]
     (if-not (empty? dirs)
       (let [[dir & dirs] dirs
-            files (filter pred (list-files dir))
+            files (list-files dir pred)
             more-dirs (filter directory? files)]
         (concat files
                 (lazy-seq
@@ -75,7 +75,7 @@
   ([pred]
     (file-seq-bfs pred (list (get-path fs/*cwd*)))))
 
-(defn get-files []
+(defn- get-files []
   (println "get-files")
   (map (fn [f]
          {:name (-> f str shorten-path)
