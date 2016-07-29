@@ -36,9 +36,11 @@
     (catch Exception e
       {:exception e})))
 
-(defn eval-with-ns [ns code]
-  (eval-output (code-with-ns ns (str code))))
-
 (defn eval-sandbox [code]
   (eval-output (code-sandbox (str code))))
+
+(defn eval-with-ns [ns code]
+  (if (nil? ns)
+    (eval-sandbox code)
+    (eval-output (code-with-ns ns (str code)))))
 
