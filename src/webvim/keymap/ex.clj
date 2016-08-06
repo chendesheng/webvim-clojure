@@ -283,22 +283,24 @@
   (assoc buf :highlights []))
 
 (defn- buf-reload [buf]
-  (let [f (buf :filepath)
-        res (sh "diff" "-" f "-u" :in (-> buf :str str))]
-    (if (-> res :err empty?) 
-      (let [changes (time (parse-diff (str (res :out))))]
-        (-> buf
-            (apply-line-changes changes)
-            save-undo
-            set-save-point 
-            set-mod-time
-            (assoc :message (format "File reloaded, %d change(s)" (count changes)))))
-      (assoc buf :message (res :err)))))
+  (let [s1 (-> buf :str str)
+        s2 (-> buf :filepath slurp str)
+        _ (spit "c:\\users\\roy\\desktop\\s1.txt" s1)
+        _ (spit "c:\\users\\roy\\desktop\\s2.txt" s2)
+        changes (diff s1 s2)]
+    (println changes)
+    (-> buf
+        (patch changes)
+        save-undo
+        set-save-point 
+        set-mod-time
+        (assoc :message (format "File reloaded, %d change(s)" (count changes))))))
 
 (defn cmd-diff [buf _ _ _]
   (let [f (buf :filepath)
         ;TODO: use Java diff library instead of shell command
-        res (sh "diff" "-" f " -u" :in (-> buf :str str))]
+        res (diff-tool (slurp f) (-> buf :str str))]
+        ;res (sh "diff" "-" f " -u" :in (-> buf :str str))]
     (if (-> res :err empty?) 
       (let [diff (-> res :out str)]
         (if (string/blank? diff)
@@ -429,23 +431,23 @@
   (letfn [(calc-delta [delta op rg]
             (op (or delta 0) (Integer. (subs rg 1))))
           (return-nil-if-all-values-nil [coll]
-            (if (every? #(-> coll % nil?) (keys coll))
-              nil coll))
+                                        (if (every? #(-> coll % nil?) (keys coll))
+                                          nil coll))
           (next-res [{base :base delta :delta} rg]
-            (return-nil-if-all-values-nil
-              {:base (cond
-                       (re-test #"^\d" rg) (-> rg Integer. dec)
-                       (= "$" rg) $
-                       (= "." rg) dot
+                    (return-nil-if-all-values-nil
+                      {:base (cond
+                               (re-test #"^\d" rg) (-> rg Integer. dec)
+                               (= "$" rg) $
+                               (= "." rg) dot
                                ;TODO: (.startsWith "/" rg)
-                       (-> rg first (= \'))
-                       (parse-mark buf (last rg))
-                       :else (or base dot))
-               :delta (if (re-test #"^[+-]\d" rg)
-                        (+ (or delta 0) (Integer. rg))
-                        delta)}))
+                               (-> rg first (= \'))
+                               (parse-mark buf (last rg))
+                               :else (or base dot))
+                       :delta (if (re-test #"^[+-]\d" rg)
+                                (+ (or delta 0) (Integer. rg))
+                                delta)}))
           (res-start [res]
-            (or (:end res) (:start res)))]
+                     (or (:end res) (:start res)))]
     (loop [[rg & restrg] (map #(.trim %) ranges)
            state :start
            res nil]

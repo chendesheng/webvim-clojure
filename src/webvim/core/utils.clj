@@ -302,3 +302,19 @@
   (fn [buf keycode]
     (fprint buf keycode)
     (f buf keycode)))
+
+(defn with-temp-file [s f]
+  (let [file (str (fs/temp-file "webvim"))]
+    (try
+      (spit file s)
+      (f file)
+      (finally
+        (fs/delete file)))))
+
+(comment defmacro with-temp-file [s f & body]
+  `(let [~f (str (fs/temp-file "webvim"))]
+     (try
+       (spit ~f s)
+       ~@body
+       (finally
+         (fs/delete ~f)))))

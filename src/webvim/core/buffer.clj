@@ -59,16 +59,16 @@
 
 (defmacro async [buf & body]
   `(let [abuf# (get-buffer-agent (~buf :id))]
-     (-> abuf#
-         (send (fn [~'buf]
-                 (let [buf# ~@body]
-                   (send-buf! buf#)))))
+     (if (some? abuf#)
+       (-> abuf#
+           (send (fn [~'buf]
+                   (let [buf# ~@body]
+                     (send-buf! buf#))))))
      ~buf))
 
 (defmacro async-with-catch [buf & body]
   `(async ~buf
           (with-catch ~buf ~@body)))
-
 
 
 (defonce output-panel-name "[Output]")
@@ -108,7 +108,7 @@
 (defn set-mod-time [buf]
   (assoc buf :mod-time (mod-time buf)))
 
-(defn- create-buf [bufname filepath txt]
+(defn create-buf [bufname filepath txt]
   (let [txtLF (-> txt
                   (.replace "\r\n" "\n")
                   ensure-ends-with-newline) ;always use LF in memory

@@ -14,6 +14,7 @@
                            [org.clojars.hozumi/clj-commons-exec "1.2.0"]
                            [http-kit "2.1.18"]
                            [clj-time "0.11.0"]
+                           [clj-diff "1.0.0-SNAPSHOT"]
                            [org.clojure/clojurescript "1.9.36"]]
             :plugins [[lein-cljsbuild "1.1.3"]
                       [lein-figwheel "0.5.4-3"]]

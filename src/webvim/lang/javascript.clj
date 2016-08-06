@@ -5,7 +5,6 @@
             [webvim.core.utils :refer [windows? trim-last-newline]])
   (:use webvim.core.lang
         webvim.core.rope
-        webvim.core.diff
         webvim.core.event
         clojure.pprint
         webvim.indent))

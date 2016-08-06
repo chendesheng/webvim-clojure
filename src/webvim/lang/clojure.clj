@@ -59,7 +59,7 @@
 
 (defn- indent-tab-size [^String s] 
   (or (contains?
-        #{"try" "catch" "ns" "if" "nil?" "fn" "cond" "loop" "doseq" "for" "condp" "do" "doto" "binding" "when"} s)
+        #{"try" "catch" "ns" "if" "nil?" "fn" "cond" "loop" "doseq" "for" "condp" "do" "doto" "binding" "when" "case"} s)
       (.startsWith s "with-")
       (.startsWith s "def")
       (.startsWith s "if-")
@@ -150,13 +150,8 @@
 
 (defn- cljfmt-diff [s name]
   (println "cljfmt-diff")
-  (let [news (cljfmt/reformat-string s {:indents (assoc cljfmt/default-indents #".*" [[:block 0]])})
-        tmpfile (str (fs/temp-file "" name))]
-    (spit tmpfile s)
-    ;TODO: (fs/delete tmpfile)
-    (clojure.java.shell/sh 
-      "diff" tmpfile "-" "-u"
-      :in news)))
+  (let [news (cljfmt/reformat-string s {:indents (assoc cljfmt/default-indents #".*" [[:block 0]])})]
+    (diff s news)))
 
 (defn- format-error [buf message]
   (async buf
@@ -168,14 +163,8 @@
 (defn- format-buffer [buf]
   ;use temp file
   (if (buf :dirty)
-    (let [res (time (cljfmt-diff (-> buf :str str) (buf :name)))]
-      ;FIXME: GNU diff exit code: 0: no diff, 1: has diff, 2: trouble
-      (if (-> res :err empty?) 
-        (-> buf
-            (apply-line-changes
-              (time (parse-diff (str (res :out)))))
-            save-undo)
-        (-> res :err str Throwable. throw))) ;use old buf if formatter fails
+    (let [changes (cljfmt-diff (-> buf :str str) (buf :name))]
+      (patch buf changes))
     buf))
 
 (listen :normal-mode-keymap

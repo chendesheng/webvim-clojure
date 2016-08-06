@@ -17,7 +17,7 @@ function hlclojure(hljs) {
             'inc compare do dotimes mapcat take remove take-while drop letfn drop-last take-last ' +
             'drop-while while intern condp case reduced cycle split-at split-with repeat replicate ' +
             'iterate range merge zipmap declare line-seq sort comparator sort-by dorun doall nthnext ' +
-            'nthrest partition eval doseq await await-for let agent atom send send-off release-pending-sends ' +
+            'nthrest partition partition-by eval doseq await await-for let agent atom send send-off release-pending-sends ' +
             'add-watch mapv map-indexed filterv remove-watch agent-error restart-agent set-error-handler error-handler ' +
             'set-error-mode! error-mode shutdown-agents quote var fn loop recur throw try catch monitor-enter ' +
             'monitor-exit defmacro defn defn- macroexpand macroexpand-1 for dosync and or ' +
