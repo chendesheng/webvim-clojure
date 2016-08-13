@@ -34,6 +34,10 @@
 (defn repeat-pos-range [{pos :pos :as buf}]
   [pos (+ pos (repeat-prefix-value buf))])
 
+(defn- repeat-continue [buf keycode]
+  (and (repeat-count? buf)
+       (digit? keycode)))
+
 (defn wrap-keymap-repeat-prefix [keymap]
   (-> keymap
       (wrap-key :enter (fn [handler]
@@ -56,8 +60,7 @@
                             (handler buf keycode)))))
       (wrap-continue (fn [handler]
                        (fn [buf keycode]
-                         (or (and (repeat-count? buf)
-                                  (digit? keycode))
+                         (or (repeat-continue buf keycode)
                              (handler buf keycode)))))
       (wrap-key :after (fn [handler]
                          (fn [buf keycode]

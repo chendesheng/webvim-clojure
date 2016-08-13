@@ -2,8 +2,9 @@
   (:require [clojure.string :as str]
             [webvim.keymap.operator :refer [set-visual-ranges set-default-inclusive set-linewise]]
             [webvim.keymap.motion :refer [init-motion-keymap-with-objects init-motion-keymap-fix-cw]]
-            [webvim.keymap.compile :refer [wrap-key]]
-            [webvim.keymap.scrolling :refer [wrap-keymap-scrolling-visual]])
+            [webvim.keymap.compile :refer [wrap-key wrap-continue]]
+            [webvim.keymap.scrolling :refer [wrap-keymap-scrolling-visual]]
+            [webvim.keymap.repeat :refer [wrap-keymap-repeat-prefix]])
   (:use webvim.keymap.insert
         webvim.keymap.ex
         webvim.core.buffer
@@ -89,7 +90,6 @@
                                     {:type (keycode2type keycode)
                                      :range [pos pos]})))
         :leave clear-visual
-        :continue visual-mode-continue?
         :before (fn [buf keycode] 
                   (update buf :context
                           (fn [context]
@@ -114,8 +114,11 @@
   (let [motion-keymap (init-motion-keymap-fix-cw)]
     (-> motion-keymap
         init-visual-mode-keymap
-        (assoc :continue (fn [_ keycode]
-                           (visual-keycode? keycode))))))
+        wrap-keymap-repeat-prefix
+        (wrap-continue (fn [handler]
+                         (fn [buf keycode]
+                           (or (handler buf keycode)
+                               (visual-keycode? keycode))))))))
 
 (defn- init-visual-mode-keymap-with-operators [motion-keymap buf]
   (fire-event :visual-mode-keymap
@@ -124,7 +127,8 @@
                   (assoc "o" swap-visual-start-end
                          "<tab>" nop
                          "<c-o>" nop
-                         "<c-r>" nop)
+                         "<c-r>" nop
+                         :continue visual-mode-continue?)
                   wrap-keymap-scrolling-visual) buf))
 
 (defn wrap-keymap-visual [keymap buf]

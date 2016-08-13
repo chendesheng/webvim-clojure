@@ -13,6 +13,9 @@
             (fn [showkeys]
               (if (and (= (buf :mode) :normal-mode)
                        (or (= (-> buf :visual :type) :no-visual)
+                           (re-test #"^[1-9]$" keycode)
+                           (and (re-test #"^[0-9]$" (or (first showkeys) ""))
+                                (re-test #"^[0-9]$" keycode))
                            (= keycode "\"")
                            (and (= (last showkeys) "\"") (not= keycode "<esc>")))
                        (-> buf :line-buffer nil?))
