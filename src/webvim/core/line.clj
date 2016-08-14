@@ -88,7 +88,7 @@
 
 (defn- empty-line? [buf [a b]]
   (if (<= (- b a) 2)
-    (re-test #"\r?\n" (-> buf :str (subr a b)))))
+    (re-test #"^\r?\n$" (-> buf :str (subr a b)))))
 
 (defn- pos-paragraph [fndir buf]
   (let [empty-line? (partial empty-line? buf)
