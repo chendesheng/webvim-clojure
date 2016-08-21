@@ -76,7 +76,6 @@ function hlclojure(hljs) {
         className: 'comment',
         begin: '\\^' + SYMBOL_RE
     };
-    var HINT_COL = hljs.COMMENT('\\^\\{', '\\}');
     var KEY = {
         className: 'symbol',
         begin: '::?' + SYMBOL_RE
@@ -107,7 +106,7 @@ function hlclojure(hljs) {
         className: 'comment',
         descendantClassName: 'comment'
     };
-    var DEFAULT_CONTAINS = [BLOCK_COMMENT, LIST, STRING, HINT, HINT_COL, COMMENT, KEY, COLLECTION, CHAR_LITERAL, NUMBER, LITERAL, SYMBOL];
+    var DEFAULT_CONTAINS = [BLOCK_COMMENT, LIST, STRING, HINT, COMMENT, KEY, COLLECTION, CHAR_LITERAL, NUMBER, LITERAL, SYMBOL];
 
     LIST.contains = [BLOCK_COMMENT, NAME, BODY];
     BODY.contains = DEFAULT_CONTAINS;
@@ -117,6 +116,6 @@ function hlclojure(hljs) {
     return {
         aliases: ['clj'],
         illegal: /\S/,
-        contains: [BLOCK_COMMENT, LIST, STRING, HINT, HINT_COL, COMMENT, KEY, COLLECTION, CHAR_LITERAL, NUMBER, LITERAL]
+        contains: [BLOCK_COMMENT, LIST, STRING, HINT, COMMENT, KEY, COLLECTION, CHAR_LITERAL, NUMBER, LITERAL]
     }
 }
