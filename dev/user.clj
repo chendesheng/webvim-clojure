@@ -69,13 +69,22 @@
   (let [code (str "(user/print-buf " (string/join " " props) ")")]
     (print-eval buf code)))
 
+(defn- cmd-test [buf _ _ props]
+  (let [ns (get-namespace (buf :filepath))
+        output (str (repeat-chars 80 \=) "\n:test\n"
+                    (with-out-str
+                      (binding [clojure.test/*test-out* *out*]
+                        (clojure.test/run-tests (symbol ns)))))]
+    (append-output-panel buf output true)))
+
 (defn add-init-ex-commands-event []
   (listen :init-ex-commands
           (fn [cmds _]
             (conj cmds 
                   ["reload" cmd-reload]
                   ["print" cmd-print]
-                  ["doc" cmd-doc]))))
+                  ["doc" cmd-doc]
+                  ["test" cmd-test]))))
 
 (defn- get-files []
   (let [dir? #(.isDirectory %)]
