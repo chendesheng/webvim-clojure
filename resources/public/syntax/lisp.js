@@ -86,7 +86,8 @@ function hllisp(hljs) {
     };
     var LIST = {
         begin: '\\(\\s*',
-        end: '\\)'
+        end: '\\)',
+        className: hljs.rainbowColor
     };
     var BODY = {
         endsWithParent: true,

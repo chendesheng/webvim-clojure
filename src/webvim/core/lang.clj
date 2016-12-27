@@ -40,13 +40,6 @@
       (assoc :tabsize 4)
       (assoc :expandtab true)))
 
-(defn- init-lisp-file-type [buf]
-  (-> buf
-      (assoc-in [:language :id] ::lisp)
-      (assoc-in [:language :name] "Lisp")
-      (assoc :tabsize 2)
-      (assoc :expandtab true)))
-
 (defn- init-json-file-type [buf]
   (-> buf
       (assoc-in [:language :id] ::json)
@@ -77,10 +70,3 @@
   [buf]
   (init-actionscript-file-type buf))
 
-(defmethod init-file-type ".lisp"
-  [buf]
-  (init-lisp-file-type buf))
-
-(defmethod init-file-type ".el"
-  [buf]
-  (init-lisp-file-type buf))

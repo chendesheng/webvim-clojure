@@ -12,6 +12,7 @@
             [webvim.core.keys :refer [input-keys]])
   (:use clojure.pprint
         webvim.lang.clojure ;TODO: load language setting dynamically
+        webvim.lang.lisp
         webvim.lang.javascript
         webvim.lang.css
         webvim.lang.sql
