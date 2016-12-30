@@ -44,7 +44,7 @@ function hllisp(hljs) {
     );
     var VARIABLE = {
         begin: '\\*',
-        end: '\\*'
+        end: '\\*?',
     };
     var KEYWORD = {
         className: 'symbol',
