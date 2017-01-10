@@ -42,7 +42,7 @@
         re-start (re-pattern (str "(?m)(?<=[" filename-black-list "]|^)[^" filename-black-list "]"))
         [_ end] (pos-re+ r pos re-end)
         [start _] (pos-re- r pos re-start)
-        driver (let [driver (subr r (- start 2) start)]
+        driver (let [driver (if (>= start 2) (subr r (- start 2) start) "")]
                  (if (re-test #"[a-zA-Z]:" driver) driver ""))
         [[_ uri _ linenum]] (re-seq #"(([a-zA-Z]:)?[^:]+)(:\d+)?" (str driver (subr r start end)))]
     [uri linenum]))
