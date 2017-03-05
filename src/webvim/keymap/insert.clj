@@ -94,7 +94,7 @@
                 :before (fn [buf keycode]
                           (update-in buf [:context :record-keys] conj keycode))
                 :else insert-mode-default
-                :continue #(not (= "<esc>" %2))
+                :continue #(not= "<esc>" %2)
                 :leave (fn [buf keycode]
                          (-> buf
                              repeat-insert

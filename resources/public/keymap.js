@@ -51,7 +51,7 @@ function imap(key, callback) {
 
 function nmap(key, callback) {
     if (key == '<c-l>') {
-        callback(':nohl<cr>');
+        callback(':nohl<cr>zz');
     } else if (key == '<c-[>') {
         callback('<esc>');
     } else if (key == '<c-s>') {

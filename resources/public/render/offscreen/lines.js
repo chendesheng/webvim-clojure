@@ -106,7 +106,7 @@ function refreshIter(index, buf, states, parentNode) {
         },
         render: function(items) {
             if (!refreshLine(items, ele, buf.dirtyLines)) {
-                delete buf.dirtyLines[ele.id]
+                delete buf.dirtyLines[ele.id];
                 var newele = renderLine(items);
                 parentNode.replaceChild(newele, ele);
                 ele = newele;
@@ -117,5 +117,5 @@ function refreshIter(index, buf, states, parentNode) {
             i++;
             return !endCode(ele);
         }
-    }
+    };
 }

@@ -53,11 +53,14 @@
 (defn- gocode-autocompl [stdin path pos]
   ;(println path)
   ;(println pos)
-  (let [res (clojure.java.shell/sh "gocode" "-f=json"
-                                   "autocomplete" path (str pos)
-                                   :in stdin)
-        [offset suggestions] (-> res :out (json/parse-string true))]
-    suggestions))
+  (try
+    (let [res (clojure.java.shell/sh "gocode" "-f=json"
+                                     "autocomplete" path (str pos)
+                                     :in stdin)
+          [offset suggestions] (-> res :out (json/parse-string true))]
+      suggestions)
+    (catch Exception e
+      (println e))))
 
 (defn- golang-autocompl [provider]
   (assoc provider
