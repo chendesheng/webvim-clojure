@@ -44,7 +44,7 @@
     (let [{s :str
            prefix :prefix
            pos :pos
-           pos2 :pos2} (-> buf :line-buffer)] 
+           pos2 :pos2} (-> buf :line-buffer)]
       (update buf :line-buffer (fn [line-buf]
                                  (-> line-buf
                                      (dissoc :prefix)
@@ -83,9 +83,9 @@
       (update buf :submode buf-submode) buf)))
 
 (defn- remove-fields [buf]
-  (-> buf 
-      (dissoc :expandtab :CRLF? :history :context :last-cursor 
-              :language :filepath :x :y :keymap 
+  (-> buf
+      (dissoc :expandtab :CRLF? :history :context :last-cursor
+              :language :filepath :x :y :keymap
               :normal-mode-keymap :insert-mode-keymap :ex-mode-keymap
               :pending-undo :saved-undo :registers :keys
               :save-point :ext :last-visual :nextid :dot-repeat-keys
@@ -94,7 +94,6 @@
       update-visual
       update-mode
       (dissoc-nil :keys)
-      (dissoc-false :beep)
       line-editor))
 
 (defn- pos2xy [buf]
@@ -133,7 +132,7 @@
           (dissoc-if-equal before :id)
           (dissoc-if-equal before :cwd))))
 
-(defn- diff-buf 
+(defn- diff-buf
   "Write changes to browser."
   [before after]
   (cond (= before after)
@@ -170,6 +169,7 @@
             (dissoc-if-equal before :showkeys)
             (dissoc-if-equal before :lines)
             (dissoc-if-equal before :scope-changes)
+            (dissoc-if-equal before :beep?)
             (dissoc :str)
             remove-fields)))
 
@@ -230,7 +230,7 @@
 (defn send-buf!
   ([buf switch-buf?]
     (let [buf (bound-scroll-top buf)]
-      (send-off (ui-agent) 
+      (send-off (ui-agent)
                 (fn [ui buf]
                   (if (or switch-buf? (active-buf? ui buf))
                     (let [buf (-> buf
@@ -240,6 +240,7 @@
                                   visual2xy)
                           diff (diff-ui ui buf)
                           ui (assoc ui :buf (dissoc buf :changes))]
+                      (println "cursor:" (buf :cursor))
                       (if (or (nil? diff)
                               (empty? diff)) ui
                           ((ui :render!) ui diff)))
@@ -247,7 +248,7 @@
                 buf)
       (-> buf
           (assoc :changes [])
-          (dissoc :beep))))
+          (assoc :beep? false))))
   ([buf]
     ;only for active buffer, use :nextid for switch buffer
     (send-buf! buf false)))

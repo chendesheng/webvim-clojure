@@ -210,7 +210,7 @@
   (let [{output :output
          exception :exception} (eval-sandbox code)]
     (if (nil? exception)
-      (append-output-panel 
+      (append-output-panel
         buf
         (eval-sep (format ":%s\n %s" code output))
         true)
@@ -273,26 +273,26 @@
 (defn cmd-ls [buf _ _ _]
   (append-output-panel buf
                        (str ":ls\n"
-                            (string/join 
-                              "\n" 
+                            (string/join
+                              "\n"
                               (map (fn [buf]
                                      (format "%d: %s" (buf :id) (printable-filepath buf)))
                                    (sort-by :id (get-buffers)))) "\n") true))
 
-(defn cmd-nohl [buf _ _ _] 
+(defn cmd-nohl [buf _ _ _]
   (assoc buf :highlights []))
 
 (defn- buf-reload [buf]
   (let [s1 (-> buf :str str)
         s2 (-> buf :filepath slurp str)
-        _ (spit "c:\\users\\roy\\desktop\\s1.txt" s1)
-        _ (spit "c:\\users\\roy\\desktop\\s2.txt" s2)
+        ;_ (spit "c:\\users\\roy\\desktop\\s1.txt" s1)
+        ;_ (spit "c:\\users\\roy\\desktop\\s2.txt" s2)
         changes (diff s1 s2)]
     (println changes)
     (-> buf
         (patch changes)
         save-undo
-        set-save-point 
+        set-save-point
         set-mod-time
         (assoc :message (format "File reloaded, %d change(s)" (count changes))))))
 
@@ -301,7 +301,7 @@
         ;TODO: use Java diff library instead of shell command
         res (diff-tool (slurp f) (-> buf :str str))]
         ;res (sh "diff" "-" f " -u" :in (-> buf :str str))]
-    (if (-> res :err empty?) 
+    (if (-> res :err empty?)
       (let [diff (-> res :out str)]
         (if (string/blank? diff)
           (assoc buf :message "no changes")
@@ -323,17 +323,17 @@
 (defn cmd-history [buf _ _ _]
   (let [{before :before after :after} @commands-history
         all (concat (reverse before) after)]
-    (append-output-panel 
+    (append-output-panel
       buf
-      (str ":history\n" (string/join "\n" all) "\n") 
+      (str ":history\n" (string/join "\n" all) "\n")
       true)))
 
 (defn cmd-register [buf _ _ _]
-  (append-output-panel 
+  (append-output-panel
     buf
-    (str ":register\n" 
+    (str ":register\n"
          (string/join
-           "\n" 
+           "\n"
            (map-registers (fn [[k v]]
                             (str "\"" k
                                  "  "
@@ -341,11 +341,11 @@
     true))
 
 (defn cmd-jumps [buf _ _ _]
-  (append-output-panel 
+  (append-output-panel
     buf
-    (str ":jumps\n" 
+    (str ":jumps\n"
          (string/join
-           "\n" 
+           "\n"
            (map (fn [item]
                   (format "%s:%s" (or (item :filepath) (item :name)) (item :y)))
                 (jumplist-before))) "\n")
@@ -393,7 +393,7 @@
 
 ;TODO: ex command parser
 (defn- ex-commands [buf]
-  (let [cmds 
+  (let [cmds
         [["write" cmd-write]
          ["nohlsearch" cmd-nohl]
          ["edit" cmd-edit]
@@ -530,7 +530,7 @@
                 buf)
               (-> buf
                   (assoc :message "!!!unknown command!!!")
-                  (assoc :beep true)
+                  (assoc :beep? true)
                   (dissoc :line-buffer)))))))))
 
 (defn- ex-tab-complete [{{r :str} :line-buffer :as buf} cmds]

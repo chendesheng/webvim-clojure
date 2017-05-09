@@ -6,7 +6,7 @@
     [clojure.pprint :refer [pprint]]
     [clojure.string :as string]
     [webvim.core.buffer :refer [update-buffer buf-match-bracket
-                                output-panel-name grep-panel-name ag-panel-name find-panel-name 
+                                output-panel-name grep-panel-name ag-panel-name find-panel-name
                                 directory-panel-name change-active-buffer new-file
                                 get-buffers get-buffer-agent-by-name]]
     [webvim.core.rope :refer [buf-insert buf-set-pos save-undo buf-replace subr]]
@@ -114,7 +114,7 @@
           newbuf)))))
 
 (defn- buf-append [buf & strs]
-  (buf-insert 
+  (buf-insert
     buf
     (-> buf :str count)
     (apply str strs)))
@@ -158,7 +158,7 @@
           (.printStackTrace e)
           (-> buf
               (append-output-panel (format-exception e) true)
-              (assoc :beep true))))
+              (assoc :beep? true))))
 
 (listen :log
         (fn [prefix obj]

@@ -17,7 +17,7 @@
 
 (defn- delete-left-char [{pos :pos :as buf} _]
   (if (zero? pos)
-    (assoc buf :beep true)
+    (assoc buf :beep? true)
     (buf-delete buf (dec pos) pos)))
 
 (defn- insert-keycode [{pos :pos :as buf} keycode]
@@ -79,12 +79,12 @@
                           (let [pos (buf :pos)
                                 newpos (pos-line-start buf)]
                             (if (<= pos newpos)
-                              (assoc buf :beep true)
+                              (assoc buf :beep? true)
                               (buf-delete buf newpos pos))))
                 "<bs>" delete-left-char
                 "<c-w>" (fn [{pos :pos :as buf} keycode]
                           (if (zero? pos)
-                            (assoc buf :beep true)
+                            (assoc buf :beep? true)
                             (let [r (buf :str)
                                   lang (buf :language)
                                   newpos (or (first (pos-re- r (dec pos) (re-word-start-border lang))) 0)]

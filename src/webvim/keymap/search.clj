@@ -23,7 +23,7 @@
 (defn- set-motion-fail [buf]
   (-> buf
       (assoc-in [:context :motion-fail?] true)
-      (assoc :beep true)))
+      (assoc :beep? true)))
 
 (defn re-forward-highlight [buf re]
   (let [pos (buf :pos)
@@ -54,7 +54,7 @@
 (defn highlight-all-matches [buf re]
   ;(println "highlight-all-matches:" (buf :message))
   (let [r (buf :str)]
-    (assoc buf :highlights 
+    (assoc buf :highlights
            (map (fn [[a b]]
                   [a (dec b)])
                 (pos-re-seq+ r 0 re)))))
@@ -64,13 +64,13 @@
 
 (defn search-pattern [s]
   (try
-    (if (empty? s) 
+    (if (empty? s)
       ;http://stackoverflow.com/questions/1723182/a-regex-that-will-never-be-matched-by-anything
       (re-pattern "(?m)(?!x)x")
       (if (re-test #"^[a-z0-9\s\\{}()\[\]]*$" s)
         (re-pattern (str "(?m)(?i)" s))
         (re-pattern (str "(?m)" s))))
-    (catch Exception e 
+    (catch Exception e
       (fire-event e :exception)
       (re-pattern "(?m)(?!x)x"))))
 
@@ -107,7 +107,7 @@
                          search-str
                          search-pattern)
                   f (if forward?
-                      re-forward-highlight 
+                      re-forward-highlight
                       re-backward-highlight)]
             ;(println "lastpos" (-> buf :context :lastpos))
               (-> buf
@@ -134,6 +134,6 @@
       (wrap-key :after
                 (fn [handler]
                   (increment-search-after forward?)))
-      (assoc "<esc>" increment-search-<esc> 
+      (assoc "<esc>" increment-search-<esc>
              "<cr>" increment-search-<cr>)))
 

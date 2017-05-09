@@ -53,7 +53,7 @@
       (-> uri expand-path fs/exists? not)
       (-> buf
           (assoc :message "!!!file or directory not found!!!")
-          (assoc :beep true))
+          (assoc :beep? true))
       (nil? linenum)
       (edit-file buf uri false)
       :else

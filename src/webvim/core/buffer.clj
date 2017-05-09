@@ -15,7 +15,6 @@
         webvim.core.parallel-universe
         webvim.core.event))
 
-
 (defn- buffer-list []
   (*window* :buffers))
 
@@ -34,7 +33,7 @@
             abuf))
         (vals @(buffer-list))))
 
-(defn get-buffers 
+(defn get-buffers
   ([]
     (map deref (vals @(buffer-list))))
   ([f]
@@ -69,7 +68,6 @@
 (defmacro async-with-catch [buf & body]
   `(async ~buf
           (with-catch ~buf ~@body)))
-
 
 (defonce output-panel-name "[Output]")
 (defonce grep-panel-name "[Grep]")
@@ -116,8 +114,8 @@
         buf {:id (swap! gen-buf-id inc)
              :name bufname
              ;= nil if it is a special buffer like [New File] or [Quick Fix]
-             :filepath filepath 
-             :ext (string/lower-case 
+             :filepath filepath
+             :ext (string/lower-case
                     (or (re-find #"\.\w+$" (or bufname "")) ""))
              :str (rope txtLF)
              :lineindex lineindex
@@ -132,7 +130,7 @@
              ;stop record when leave insert mode
              ;save to undo stack when leave insert mode
              ;contains: {:changes [c1 c2] :cursor 100}
-             :pending-undo nil 
+             :pending-undo nil
              ;one undo contains {:changes [] :cursor}
              :history (parallel-universe)
              ;For client display matched brackets: [{:row :col} {:row :col}]
@@ -175,7 +173,7 @@
                 areg (window :registers)]
             (swap! areg (fn [reg]
                           (assoc reg "%" (buf :name))))
-            (send (window :ui) (fn [ui] (assoc ui :buf buf))) 
+            (send (window :ui) (fn [ui] (assoc ui :buf buf)))
             (assoc window
                    :buffers
                    (atom {(buf :id) (wrap-agent buf)})))))
@@ -200,7 +198,7 @@
                   (if (fs/exists? f)
                     (debomify (slurp f)) "")))))
 
-(defn new-file 
+(defn new-file
   ([^String f]
     (-> f
         open-file
@@ -222,14 +220,14 @@
         pos (buf :pos)
         col (inc (column buf))]
     (if (= (char-at r pos) \tab)
-      (format "%d-%d" (- col (-> buf :tabsize dec)) col) 
+      (format "%d-%d" (- col (-> buf :tabsize dec)) col)
       (str col))))
 
 (defn buf-pos-info [buf]
   (let [y (buf :y)
         linescnt (buf-total-lines buf)
         percent (-> y inc (* 100) (/ linescnt) int)]
-    (assoc buf :message (format "\"%s\" line %d of %d --%d%%-- col %s" 
+    (assoc buf :message (format "\"%s\" line %d of %d --%d%%-- col %s"
                                 (printable-filepath buf)
                                 (inc y) linescnt percent (column-str buf)))))
 
@@ -241,7 +239,7 @@
         (fn [buf _ _]
           (async buf
                  (assoc buf :dirty
-                        (or 
+                        (or
                           (-> buf :pending-undo empty? not)
                           (not (identical? (-> buf :history just-now) (-> buf :save-point first)))
                           (not= (buf :filepath) (-> buf :save-point second)))))))
@@ -263,7 +261,7 @@
 ;TODO check disk file change
 (defn write-buffer
   ([buf force?]
-    (try   
+    (try
       (cond
         force?
         (-> buf
@@ -279,11 +277,11 @@
               set-mod-time))
         :else
         (assoc buf :message "No changes to write"))
-      (catch Exception e 
+      (catch Exception e
         (fire-event e :exception)
         (-> buf
             (assoc :message (str e))
-            (assoc :beep true)))))
+            (assoc :beep? true)))))
   ([buf]
     (write-buffer buf false)))
 
@@ -307,7 +305,7 @@
 (defn change-active-buffer [id nextid]
   (if (and (some? nextid) (not= id nextid))
     (do
-      (registers-put! "#" 
+      (registers-put! "#"
                       (file-register (get-buffer-by-id id)))
       (registers-put! "%"
                       (file-register (get-buffer-by-id nextid))))))

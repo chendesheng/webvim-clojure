@@ -37,7 +37,7 @@
 (defn indexr [r s]
   (if (empty? r) -1 (.indexOf r s)))
 
-(defn rblank? 
+(defn rblank?
   ([s]
     (or (nil? s)
         (let [m (.matcher s #"^\s*$")]
@@ -64,7 +64,7 @@
   (let [r (buf :str)
         pos (buf :pos)
         newpos (fix-utf16-pos r (bound-range newpos 0 (-> r .length dec)))]
-    (cond 
+    (cond
       (zero? newpos)
       (assoc buf :y 0 :pos 0)
       (= pos newpos)
@@ -82,7 +82,7 @@
         szfrom (count from)
         szto (count to)
         lidx (buf :lineindex)
-        newpos (cond 
+        newpos (cond
                  (< pos a)
                  pos
                  (>= pos b)
@@ -111,7 +111,7 @@
          (fire-event buf (change-for-client oldindex c) :change-buffer)) rc]))
 
 (defn- buf-apply-changes [buf changes]
-  (reduce 
+  (reduce
     (fn [[buf rchs] c]
       ;(println c)
       (let [[newbuf rc] (buf-apply-change buf c)]
@@ -125,10 +125,10 @@
     (update pending :changes conj c)))
 
 (defn last-tabstop [r]
-  (loop [i 0 it (.reverseIterator r)] 
+  (loop [i 0 it (.reverseIterator r)]
     (if (.hasNext it)
       (let [ch (.next it)]
-        (cond 
+        (cond
           (= ch \tab) i
           (= ch \newline) i
           :else (recur (inc i) it)))
@@ -140,10 +140,10 @@
       ;(println nexti)
       (if (neg? nexti)
         (str ret (subs s i))
-        (recur (inc nexti) 
+        (recur (inc nexti)
                (let [ret (str ret (subs s i nexti))]
-                 (str ret 
-                      (repeat-chars 
+                 (str ret
+                      (repeat-chars
                         (- tabsize (rem (+ (.length ret) idx) tabsize)) \space))))))))
 
 (defn- ensure-not-delete-to-empty [r {:keys [pos len to] :as c}]
@@ -153,7 +153,7 @@
     (update c :to str \newline)
     c))
 
-(defn buf-replace 
+(defn buf-replace
   ([buf a b to]
     (if (and (= a b) (empty? to)) buf
         (let [r (buf :str)
@@ -233,7 +233,7 @@
 (defn- merge-changes
   "compress changes"
   [changes]
-  (reduce 
+  (reduce
     (fn [chs c]
       ;(println chs)
       (let [merged (merge-change (peek chs) c)]
@@ -309,15 +309,15 @@
     (if (nil? item) buf
         (let [[newbuf rchs] (apply-undo buf item)]
           (update newbuf :history
-                  go-back (fn [item] 
+                  go-back (fn [item]
                             (assoc item :changes rchs)))))))
 
 (defn redo [buf]
   (let [item (next-future (buf :history))]
     (if (nil? item) buf
         (let [[newbuf rchs] (apply-undo buf item)]
-          (update newbuf :history 
-                  go-future (fn [item] 
+          (update newbuf :history
+                  go-future (fn [item]
                               (assoc item :changes rchs)))))))
 
 (defn re-test [re s]
@@ -330,8 +330,7 @@
         (string? s) (re-find re s)
         :else (let [m (.matcher s re)]
                 (if (.find m)
-                  (subr s (.start m) (.end m))
-                  nil))))
+                  (subr s (.start m) (.end m))))))
 
 (defn rmatcher [re r]
   (.matcher r re))
@@ -348,8 +347,7 @@
 (defn char-at
   "return nil if out of range"
   [s pos]
-  (if (or (neg? pos) (>= pos (count s)))
-    nil
+  (if (and (<= 0 pos) (< pos (count s)))
     (.charAt s pos)))
 
 (defn ranges-to-texts

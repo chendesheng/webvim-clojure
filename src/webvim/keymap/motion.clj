@@ -21,45 +21,45 @@
 
 (defn- re-cw [lang]
   (let [res (word-re lang)]
-    (re-pattern 
+    (re-pattern
       (str "(?<=[" (res :space-chars) "])[" (res :not-space-chars) "]|"
            "(?<=[" (res :word-chars) "])[" (res :not-word-chars) "]|"
            "(?<=[" (res :punctuation-chars) "])[" (res :not-punctuation-chars) "]"))))
 
 (defn re-cW [lang]
   (let [res (word-re lang)]
-    (re-pattern 
+    (re-pattern
       (str "(?<=[" (res :space-chars) "])[" (res :not-space-chars) "]|"
            "(?<=[" (res :not-space-chars) "])[" (res :space-chars) "]"))))
 
 (defn re-word-start-border [lang]
   (let [res (word-re lang)]
-    (re-pattern 
+    (re-pattern
       (str "(?<=[" (res :not-word-chars) "])[" (res :word-chars) "]|(?<=[" (res :not-punctuation-chars) "])[" (res :punctuation-chars) "]"))))
 
 (defn- re-WORD-start-border [lang]
   (let [res (word-re lang)]
-    (re-pattern 
+    (re-pattern
       (str "(?<=[" (res :space-chars) "])[" (res :not-space-chars) "]"))))
 
 (defn- re-word-end-border [lang]
   (let [res (word-re lang)]
-    (re-pattern 
+    (re-pattern
       (str "[" (res :word-chars) "](?=[" (res :not-word-chars) "])|[" (res :punctuation-chars) "](?=[" (res :not-punctuation-chars) "])"))))
 
 (defn- re-WORD-end-border [lang]
   (let [res (word-re lang)]
-    (re-pattern 
+    (re-pattern
       (str "[" (res :not-space-chars) "](?=[" (res :space-chars) "])"))))
 
 (defn- re+ [buf re]
-  (buf-move buf 
+  (buf-move buf
             (fn [r pos]
-              (or (first (pos-re+ r (inc pos) re)) 
+              (or (first (pos-re+ r (inc pos) re))
                   (-> r count dec)))))
 
 (defn- re- [buf re]
-  (buf-move buf 
+  (buf-move buf
             (fn [r pos]
               (or (first (pos-re- r (dec pos) re)) 0))))
 
@@ -94,7 +94,7 @@
   (re- buf (re-WORD-end-border (buf :language))))
 
 (defn- paragraph+ [buf keycode]
-  (buf-set-pos buf (or (pos-paragraph+ buf) (-> buf :str count dec)))) 
+  (buf-set-pos buf (or (pos-paragraph+ buf) (-> buf :str count dec))))
 
 (defn- paragraph- [buf keycode]
   (buf-set-pos buf (or (pos-paragraph- buf) 0)))
@@ -103,7 +103,7 @@
   (-> buf
       (assoc-in [:context :motion-fail?] true)
       (assoc-in [:context :motion-cancel?] true)
-      (assoc :beep true)))
+      (assoc :beep? true)))
 
 (defn- not-line-first [f]
   (fn [{pos :pos r :str :as buf} keycode]
@@ -159,18 +159,18 @@
         line (subr r a b)  ;only jump inside current line
         re (if inclusive?
              (-> ch quote-pattern re-pattern)
-             (->> ch 
+             (->> ch
                   quote-pattern
                   (format (if forward? ".(?=%s)" "(?=%s)."))
                   re-pattern))
         ;_ (println re)
         f (if forward? pos-re+ pos-re-)
-        fpos (if inclusive?  first 
+        fpos (if inclusive?  first
                  (if forward? first last))
         x (- pos a)
-        newpos (-> line 
+        newpos (-> line
                    (f (if forward?
-                        (inc x) 
+                        (inc x)
                         (if inclusive? (dec x) (- x 2))) re)
                    fpos)]
     (if (nil? newpos)
@@ -200,8 +200,8 @@
   (move-by-char buf keycode false false))
 
 (defn- repeat-move-by-char [buf same-dir?]
-  (let [{ch :str 
-         forward? :forward? 
+  (let [{ch :str
+         forward? :forward?
          inclusive? :inclusive?} (registers-get ";")]
     (move-by-char buf ch (= same-dir? forward?) inclusive?)))
 
@@ -245,7 +245,7 @@
         (do
           (registers-put! "/" {:str s :forward? forward?})
           (let [fn-highlight (if forward? re-forward-highlight re-backward-highlight)]
-            (-> buf 
+            (-> buf
                 (search-message s forward?)
                 (fn-highlight re)
                 (highlight-all-matches re))))))))
@@ -283,7 +283,7 @@
 ;             :highlights (cons not-insects newhighlights)))))
 
 (defn- repeat-search [buf same-dir?]
-  (let [{s :str forward? :forward?} (or (registers-get "/") 
+  (let [{s :str forward? :forward?} (or (registers-get "/")
                                         {:str "" :forward? true})
         re (search-pattern s)
         hightlightall? (-> buf :highlights empty?)
@@ -300,7 +300,7 @@
 (defn- repeat-search- [buf keycode]
   (repeat-search buf false))
 
-(listen 
+(listen
   :change-buffer
   (fn [buf oldbuf c]
     (let [s (:str (registers-get "/"))]
@@ -310,7 +310,7 @@
 
 (defn- viewport-position [percentFromTop]
   (fn [buf keycode]
-    (move-to-line buf 
+    (move-to-line buf
                   (+ (buf :scroll-top)
                      (-> (viewport) :h dec (* percentFromTop) Math/ceil)))))
 
@@ -370,7 +370,7 @@
 (defn- dont-cross-line [f]
   (fn [buf keycode]
     (let [newbuf (f buf keycode)
-          newpos (min (newbuf :pos) 
+          newpos (min (newbuf :pos)
                       (pos-line-end buf))]
       (buf-set-pos newbuf newpos))))
 
@@ -379,12 +379,12 @@
       (merge (init-objects-keymap))))
 
 (defn init-motion-keymap-for-operators []
-  (-> (init-motion-keymap-with-objects) 
+  (-> (init-motion-keymap-with-objects)
       (wrap-key "w" (fn [handler] (dont-cross-line handler)))
       (wrap-key "W" (fn [handler] (dont-cross-line handler)))))
 
 ;vim's "cw" is identical to "ce", but "dw"/"yw" is not equal to "de"/"ye"
 (defn init-motion-keymap-fix-cw []
-  (-> (init-motion-keymap-with-objects) 
+  (-> (init-motion-keymap-with-objects)
       (assoc "w" (dont-cross-line cw-move))
       (assoc "W" (dont-cross-line cW-move))))
