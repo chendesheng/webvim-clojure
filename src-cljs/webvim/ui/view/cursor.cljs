@@ -44,10 +44,15 @@
       (-> .-left (set! (str px "px")))
       (-> .-top (set! (str py "px"))))))
 
+(defn- set-scroll-top [bufid scroll-top]
+  (set! (.-scrollTop ($id (str "buffer-" bufid)))
+        (* scroll-top (line-height))))
+
 (defn render-cursor [{old-bufid :id
                       [x01 y01 :as old-cursor] :cursor
                       [x02 y02 :as old-cursor2] :cursor2}
                      {bufid :id
+                      scroll-top :scroll-top
                       [x11 y11 :as cursor] :cursor
                       [x12 y12 :as cursor2] :cursor2}]
   (let [$lines ($id (str "lines-" bufid))]
@@ -61,7 +66,8 @@
         true)
       (when (not= y01 y11)
         (if y01 (remove-class ($linenum old-bufid y01) "highlight"))
-        (add-class ($linenum bufid y11) "highlight")))
+        (add-class ($linenum bufid y11) "highlight"))
+      (set-scroll-top bufid scroll-top))
     (if (or (not= old-bufid bufid)
             (not= old-cursor2 cursor2))
       (let [$cursor2 ($id (str "cursor2-" bufid))]
