@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as string]
     [webvim.ui.lib.dom :refer [bounding-rect $id $text-content add-class
-                               remove-class]]))
+                               remove-class toggle-class]]))
 
 (def normal-mode 0)
 (def insert-mode 1)
@@ -64,9 +64,14 @@
       (if $statusbar
         (remove-class $statusbar "focus")))))
 
-(defn- render-name [{old-name :name} {name :name}]
+(defn- render-name [{old-name :name
+                     old-dirty :dirty}
+                    {name :name
+                     dirty :dirty}]
   (if (not= old-name name)
-    ($text-content ($id "status-bar-name") name)))
+    ($text-content ($id "status-bar-name") name)
+    (if (not= old-dirty dirty)
+      (toggle-class ($id "status-bar-name") "buf-dirty" dirty))))
 
 (defn- render-showkeys [{old-showkeys :showkeys} {showkeys :showkeys}]
   (if (not= old-showkeys showkeys)
