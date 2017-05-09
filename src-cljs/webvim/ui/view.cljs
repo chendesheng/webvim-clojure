@@ -4,6 +4,12 @@
             [webvim.ui.lib.util :refer [deep-merge]]
             [webvim.ui.lib.event :refer [add-listener]]
             [webvim.fuzzy :refer [fuzzy-match]]
+            [webvim.ui.view.statusbar :refer [render-status-bar]]
+            [webvim.ui.view.gutter :refer [render-gutter]]
+            [webvim.ui.view.lines :refer [render-lines]]
+            [webvim.ui.view.cursor :refer [render-cursor]]
+            [webvim.ui.view.autocompl :refer [render-autocompl]]
+            [webvim.ui.view.visual :refer [render-visual render-highlights]]
             [clojure.string :as string]))
 
 (defn- tprintln [x]
@@ -32,7 +38,7 @@
   ;(println "layouts:" layouts)
   ($hiccup (conj layouts {:id "buffers"})
            (fn [k]
-             ($hiccup 
+             ($hiccup
                [(cond
                   (= k "-") :div.ver
                   (= k "|") :div.hor
@@ -57,7 +63,7 @@
              (modes mode)
              (and (zero? submode) (pos? visual-type))
              (visual-types visual-type)
-             (pos? submode) 
+             (pos? submode)
              (str (submodes submode)
                   (if (pos? visual-type)
                     (str " " (visual-types visual-type)))))
@@ -134,27 +140,27 @@
         [px py h] (or (cursor-position (.-childNodes $lines) cx cy) lines-pos)]
     [(- px linesx) (- py linesy) h]))
 
-(defn- render-cursor [$lines $cur cx cy reverse-background?]
-  (let [$cur-line (aget (.-childNodes $lines) cy)
-        [px py] (cursor-position-in-buffer $lines cx cy)]
-    (if reverse-background?
-      (let [ch (if (some? $cur-line)
-                 (.substr (.-textContent $cur-line) cx 1) " ")]
-        ($text-content $cur ch)
-        (doto (.-style $cur)
-          (-> .-background (set! "#fff"))
-          (-> .-color (set! "#000"))
-          (-> .-width (set! ""))
-          (-> .-height (set! "")))
-        (if (string/blank? ch)
-          (-> $cur .-style .-width (set! "1ch"))))
-      (doto $cur
-        (-> .-textContent (set! ""))
-        (-> .-style .-width (set! "1ch"))
-        (-> .-style .-height (set! (str (line-height) "px")))))
-    (doto (.-style $cur)
-      (-> .-left (set! (str px "px")))
-      (-> .-top (set! (str py "px"))))))
+;(defn- render-cursor [$lines $cur cx cy reverse-background?]
+;  (let [$cur-line (aget (.-childNodes $lines) cy)
+;        [px py] (cursor-position-in-buffer $lines cx cy)]
+;    (if reverse-background?
+;      (let [ch (if (some? $cur-line)
+;                 (.substr (.-textContent $cur-line) cx 1) " ")]
+;        ($text-content $cur ch)
+;        (doto (.-style $cur)
+;          (-> .-background (set! "#fff"))
+;          (-> .-color (set! "#000"))
+;          (-> .-width (set! ""))
+;          (-> .-height (set! "")))
+;        (if (string/blank? ch)
+;          (-> $cur .-style .-width (set! "1ch"))))
+;      (doto $cur
+;        (-> .-textContent (set! ""))
+;        (-> .-style .-width (set! "1ch"))
+;        (-> .-style .-height (set! (str (line-height) "px")))))
+;    (doto (.-style $cur)
+;      (-> .-left (set! (str px "px")))
+;      (-> .-top (set! (str py "px"))))))
 
 (defn- lines-ranges [$lines [[ax ay] [bx by]]]
   (let [$lines-nodes (.-childNodes $lines)
@@ -257,7 +263,7 @@
                         selected-sug ((nth sugs i) :name)]
                     ($empty $autocompl)
                     (doseq [{nm :name cls :class} (rest sugs)]
-                      (.appendChild $autocompl 
+                      (.appendChild $autocompl
                                     (let [$item ($hiccup [:pre.with-class {:class cls}])
                                           indexes (fuzzy-match nm subject)]
                                       ;(println indexes)
@@ -331,20 +337,20 @@
                                  (dotimes [_ (inc (- yb ya))]
                                    (if-let [$linea (aget $lines-nodes ya)]
                                      (.remove $linea)))
-                                 (if-let [after (aget $lines-nodes ya)] 
+                                 (if-let [after (aget $lines-nodes ya)]
                                    (doseq [line lines]
                                      (.insertBefore $lines ($hiccup [:span.code-block line]) after))
                                    (doseq [line lines]
                                      (.appendChild $lines ($hiccup [:span.code-block line])))))))
-                           (render-cursor $lines ($id (str "cursor-" bufid)) cx cy true)
+                           #_(render-cursor $lines ($id (str "cursor-" bufid)) cx cy true)
                            {:cursor2 (fn [[cx cy :as cursor2] [_ {cursor :cursor} _] _]
                                        (let [$lines-nodes ($id (str "lines-" bufid))
                                              $cursor2 ($id (str "cursor2-" bufid))
                                              show? (not (or (empty? cursor2) (= cursor2 cursor)))]
                                          ((if show?
                                             $show $hide) $cursor2)
-                                         (if show? 
-                                           (render-cursor $lines $cursor2 cx cy false))))
+                                         #_(if show?
+                                             (render-cursor $lines $cursor2 cx cy false))))
                             :highlights (fn [highlights _ _]
                                           ;(println "render highlights")
                                           (let [$highlights ($id (str "highlights-" bufid))]
@@ -368,7 +374,7 @@
                                                  ;(js/console.log $line)
                                                  ;(js/console.log $newline)
                                                  (.replaceChild $lines $newline $line)))
-                                             (render-cursor $lines ($id (str "cursor-" bufid)) cx cy true))}))
+                                             #_(render-cursor $lines ($id (str "cursor-" bufid)) cx cy true))}))
               :scroll-top (fn [scroll-top [_ {bufid :id}] _]
                             (set! (.-scrollTop ($id (str "buffer-" bufid)))
                                   (* scroll-top (line-height))))
@@ -385,8 +391,8 @@
                               (-> $g .-lastChild .remove)))))}}})
 
 (defn- try-assoc [coll k v]
-  (if-not (or (nil? v)
-              (and (map? v) (empty? v)))
+  (if (and (some? v)
+           (not (and (map? v) (empty? v))))
     (assoc coll k v)
     coll))
 
@@ -416,21 +422,22 @@
                                      (try-assoc :line-buffer (buf :line-buffer))
                                      (assoc :focus? (and (-> buf :line-buffer nil? not)
                                                          (-> buf :message empty?)))
-                                     (try-assoc :beep? (buf :beep))
+                                     (try-assoc :beep? (buf :beep?))
                                      (try-assoc :dirty? (buf :dirty)))))
-        (try-assoc :buffers (reduce-kv
-                              (fn [buffers bufid buf]
-                                (assoc buffers bufid
-                                       (-> {}
-                                           (assoc :id bufid)
-                                           (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
-                                           (try-assoc :content (-> (select-keys buf [:changes :scope-changes :cursor :cursor2 :visual :tabsize])
-                                                                   (try-assoc :highlights (buf :highlights2))
-                                                                   (try-assoc :visual (if (buf :visual)
-                                                                                        {:type (-> buf :visual :type)
-                                                                                         :ranges (-> buf :visual :ranges2)}))))
-                                           (try-assoc :gutter (select-keys buf [:scroll-top :lines]))
-                                           (try-assoc :scroll-top (buf :scroll-top))))) {} (patch :buffers)))
+        (try-assoc :buffers
+                   (reduce-kv
+                     (fn [buffers bufid buf]
+                       (assoc buffers bufid
+                              (-> {}
+                                  (assoc :id bufid)
+                                  (try-assoc :focus? (if active-changed? (= bufid (:id new-active))))
+                                  (try-assoc :content (-> (select-keys buf [:changes :scope-changes :cursor :cursor2 :visual :tabsize])
+                                                          (try-assoc :highlights (buf :highlights2))
+                                                          (try-assoc :visual (if (buf :visual)
+                                                                               {:type (-> buf :visual :type)
+                                                                                :ranges (-> buf :visual :ranges2)}))))
+                                  (try-assoc :gutter (select-keys buf [:scroll-top :lines]))
+                                  (try-assoc :scroll-top (buf :scroll-top))))) {} (patch :buffers)))
         (assoc :autocompl
                (let [autocompl (-> patch :buffers (get (:id new-active)) :autocompl)]
                  (if (some? autocompl)
@@ -443,11 +450,89 @@
 
 (defonce ^:private ui (atom nil))
 
+;(add-listener
+;  :client-changed :ui-render
+;  (fn [[patch old-client new-client]]
+;    (let [patch (generate-ui-patch patch new-client old-client)
+;          old-ui @ui
+;          new-ui (swap! ui deep-merge patch)]
+;                  ;(println "ui-patch:" patch)
+;      (trigger-patch render patch (list new-ui) (list old-ui)))))
+
+(defn diff? [o1 o2 key]
+  (not= (o1 key) (o2 key)))
+
+(defn active-buf [{active :active-buf buffers :buffers}]
+  (if (some? buffers)
+    (buffers active)))
+
+(defn- render-editor []
+  (if (not ($exist? "editor")) ;global ui
+    (.appendChild js/document.body
+                  ($hiccup [:div#editor
+                            [:div#buffers]
+                            [:div#status-bar.status-bar
+                             [:span#status-bar-buf.ex]
+                             [:span#status-bar-cursor.cursor]
+                             [:span#status-bar-cursor-second.cursor.cursor-second]
+                             [:span#status-bar-name.buf-name]
+                             [:span#status-bar-keys.ongoing-keys]]
+                            [:div#autocompl.autocompl]]))))
+
+(defn- render-beep [old-client client]
+  (if (client :beep?) (beep)))
+
+(defn- render-title [old-client old-buf client buf]
+  (if (or (diff? old-client client :cwd)
+          (diff? old-buf buf :name))
+    (set! js/document.title
+          (str (buf :name)
+               " - "
+               (client :cwd)))))
+
+(defn- render-buffer [{old-bufid :id} {bufid :id}]
+  (println "render-buffer:" old-bufid bufid)
+  (if (not= old-bufid bufid)
+    (do
+      (if (some? old-bufid)
+        ($remove ($id (str "buffer-" old-bufid))))
+      (let [domid (str "buffer-" bufid)]
+        (if-not ($exist? domid)
+          (.appendChild ($id "buffers")
+                        ($hiccup [:div.buffer {:id domid}
+                                  [:div.gutter {:id (str "gutter-" bufid)}]
+                                  [:div.content {:id (str "content-" bufid)}
+                                   [:div.lines {:id (str "lines-" bufid)}]
+                                   [:div.cursor {:id (str "cursor-" bufid)}]
+                                   [:div.cursor.cursor2 {:id (str "cursor2-" bufid)}]
+                                   [:div.selections {:id (str "selections-" bufid)}]
+                                   [:div.highlights {:id (str "highlights-" bufid)}]]])))))))
+
+(defn- render-scroll-top [{old-scroll-top :scroll-top}
+                          {scroll-top :scroll-top
+                           bufid :id}]
+  (if (not= old-scroll-top scroll-top)
+    (set! (.-scrollTop ($id (str "buffer-" bufid)))
+          (* scroll-top (line-height)))))
+
 (add-listener
   :client-changed :ui-render
-  (fn [[patch old-client new-client]]
-    (let [patch (generate-ui-patch patch new-client old-client)
-          old-ui @ui
-          new-ui (swap! ui deep-merge patch)] 
-                  ;(println "ui-patch:" patch)
-      (trigger-patch render patch (list new-ui) (list old-ui)))))
+  (fn [[patch old-client client]]
+    (let [old-buf (if (some? old-client)
+                    (active-buf old-client))
+          buf (active-buf client)]
+      ;(print old-active-buf)
+      ;(print old-buf)
+      ;(print buf)
+      (render-editor)
+      (render-beep old-client client)
+      (render-title old-client old-buf client buf)
+      (render-status-bar old-buf buf)
+      (render-buffer old-buf buf)
+      (render-gutter old-buf buf)
+      (render-lines old-buf buf)
+      (render-visual old-buf buf)
+      (render-highlights old-buf buf)
+      (render-cursor old-buf buf)
+      (render-scroll-top old-buf buf)
+      (render-autocompl old-buf buf))))

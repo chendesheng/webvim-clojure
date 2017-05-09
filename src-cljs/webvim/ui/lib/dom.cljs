@@ -10,7 +10,7 @@
       (-> .-className (set! "buffer"))
       (-> .-innerHTML (set! (str "<div id=\"gutter-" bufid "\" class=\"gutter\"></div>"
                                  "<div id=\"content-" bufid "\" class=\"content\">"
-                                 "<div id=\"cursor-" bufid "\" class=\"cursor\">&nbsp;</div>" 
+                                 "<div id=\"cursor-" bufid "\" class=\"cursor\">&nbsp;</div>"
                                  "<div id=\"selections-" bufid "\" class=\"selections\"></div>"
                                  "<div id=\"highlights-" bufid "\" class=\"highlights\"></div>"
                                  "<div id=\"autocompl-" bufid "\" class=\"autocompl\"></div>"
@@ -29,59 +29,58 @@
 (defn- $bufid [prefix bufid]
   (js/document.getElementById (str prefix bufid)))
 
-(defn $lines [bufid] 
+(defn $lines [bufid]
   ($bufid "lines-" bufid))
 
-(defn $content [bufid] 
+(defn $content [bufid]
   ($bufid "content-" bufid))
 
-(defn $gutter [bufid] 
+(defn $gutter [bufid]
   ($bufid "gutter-" bufid))
 
-(defn $statusBar [bufid] 
+(defn $statusBar [bufid]
   ($bufid "status-bar-" bufid))
 
-(defn $selections [bufid] 
+(defn $selections [bufid]
   ($bufid "selections-" bufid))
 
-(defn $highlights [bufid] 
+(defn $highlights [bufid]
   ($bufid "highlights-" bufid))
 
-
-(defn $cursorBracket [bufid] 
+(defn $cursorBracket [bufid]
   ($bufid "cursor-bracket-" bufid))
 
-(defn $cursor [bufid] 
+(defn $cursor [bufid]
   ($bufid "cursor-" bufid))
 
 (defn $hidden-input []
   (js/document.getElementById "hidden-input"))
 
-(defn $statusBuf [bufid] 
+(defn $statusBuf [bufid]
   ($bufid "status-bar-buf-" bufid))
 
-(defn $statusKeys [bufid] 
+(defn $statusKeys [bufid]
   ($bufid "status-bar-keys-" bufid))
 
-(defn $statusName [bufid] 
+(defn $statusName [bufid]
   ($bufid "status-bar-name-" bufid))
 
-(defn $statusCursor [bufid] 
+(defn $statusCursor [bufid]
   ($bufid "status-bar-cursor-" bufid))
 
-(defn $statusCursorSecond [bufid] 
+(defn $statusCursorSecond [bufid]
   ($bufid "status-bar-cursor-second-" bufid))
 
-(defn $autocompl [bufid] 
+(defn $autocompl [bufid]
   ($bufid "autocompl-" bufid))
 
-(defn $autocomplHeight [bufid] 
+(defn $autocomplHeight [bufid]
   (js/document.getElementById (str "autocompl-" bufid "-highlight")))
 
-(defn $exAutocompl [bufid] 
+(defn $exAutocompl [bufid]
   ($bufid "ex-autocompl-" bufid))
 
-(defn $exAutocomplHeight [bufid] 
+(defn $exAutocomplHeight [bufid]
   (js/document.getElementById (str "ex-autocompl-" bufid "-highlight")))
 
 (defn $remove [ele]
@@ -98,7 +97,7 @@
       (recur))))
 
 (defn $linenum [bufid linenum]
-  (js/document.getElementById (str "line-" bufid linenum)))
+  (js/document.getElementById (str "line-num-" bufid "-" linenum)))
 
 (defn $buffer [bufid]
   (or (js/document.getElementById (str "buffer-" bufid))
@@ -110,7 +109,7 @@
               (.appendChild $cur $input)))
         $buf)))
 
-(def request-animation-frame 
+(def request-animation-frame
   (if (-> js/window .-requestAnimationFrame nil?)
     (fn [f]
       (js/setTimeout f (/ 1000.0 60.0)))
@@ -155,6 +154,10 @@
 
 (defn remove-class  [ele cls]
   (-> ele .-classList (.remove cls)))
+
+(defn toggle-class [ele cls b]
+  ((if b add-class remove-class)
+    ele cls))
 
 (defn removeUnused [ele usedIds]
   (loop [i (.-firstChild ele)]
@@ -248,3 +251,38 @@
 
 (defn line-height []
   (last (measure-text-size "M")))
+
+(defn bounding-rect
+  ([ele a b]
+    (.getBoundingClientRect (doto (js/document.createRange)
+                              (.setStart ele a)
+                              (.setEnd ele b))))
+  ([ele pos]
+    (let [rects (.getClientRects (doto (js/document.createRange)
+                                   (.setStart ele pos)
+                                   (.setEnd ele pos)))]
+      (aget rects (-> rects .-length dec))))
+  ([ele pos ele2 pos2]
+    (.getBoundingClientRect (doto (js/document.createRange)
+                              (.setStart ele pos)
+                              (.setEnd ele2 pos2))))
+  ([ele]
+    (.getBoundingClientRect ele)))
+
+(defn rect-pos [rect]
+  [(.-left rect) (.-top rect)])
+
+(defn rect-size [rect]
+  [(.-width rect) (.-height rect)])
+
+(defn get-element-and-offset [$line offset]
+  (loop [ele (-> $line .-firstChild)
+         i offset]
+    (if (some? ele)
+      (let [seg (if (= (.-tagName ele) "SPAN")
+                  (.-firstChild ele) ele)
+            seglen (-> seg .-textContent count)]
+        (if (< i seglen)
+          [seg i]
+          (recur (.-nextSibling ele) (- i seglen)))))))
+
