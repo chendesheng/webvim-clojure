@@ -48,6 +48,19 @@
   (set! (.-scrollTop ($id (str "buffer-" bufid)))
         (* scroll-top (line-height))))
 
+(defn- set-scroll-left [bufid $cursor]
+  (let [$content ($id (str "content-" bufid))
+        scroll-left (.-scrollLeft $content)
+        offset-width (.-offsetWidth $content)
+        scroll-right (+ scroll-left offset-width)
+        cur-left (.-offsetLeft $cursor)
+        cur-right (+ (.-offsetLeft $cursor) (.-offsetWidth $cursor))]
+    (cond
+      (< cur-left scroll-left)
+      (set! (.-scrollLeft $content) cur-left)
+      (> cur-right scroll-right)
+      (set! (.-scrollLeft $content) (- cur-right offset-width)))))
+
 (defn render-cursor [{old-bufid :id
                       [x01 y01 :as old-cursor] :cursor
                       [x02 y02 :as old-cursor2] :cursor2}
@@ -56,18 +69,20 @@
                       [x11 y11 :as cursor] :cursor
                       [x12 y12 :as cursor2] :cursor2}]
   (let [$lines ($id (str "lines-" bufid))]
-    (when (and (some? cursor)
-               (or (not= old-cursor cursor)
-                   (not= old-bufid bufid)))
-      (render-cursor-inner
-        $lines
-        ($id (str "cursor-" bufid))
-        x11 y11
-        true)
-      (when (not= y01 y11)
-        (if y01 (remove-class ($linenum old-bufid y01) "highlight"))
-        (add-class ($linenum bufid y11) "highlight"))
-      (set-scroll-top bufid scroll-top))
+    (if (and (some? cursor)
+             (or (not= old-cursor cursor)
+                 (not= old-bufid bufid)))
+      (let [$cursor ($id (str "cursor-" bufid))]
+        (render-cursor-inner
+          $lines
+          $cursor
+          x11 y11
+          true)
+        (when (not= y01 y11)
+          (if y01 (remove-class ($linenum old-bufid y01) "highlight"))
+          (add-class ($linenum bufid y11) "highlight"))
+        (set-scroll-top bufid scroll-top)
+        (set-scroll-left bufid $cursor)))
     (if (or (not= old-bufid bufid)
             (not= old-cursor2 cursor2))
       (let [$cursor2 ($id (str "cursor2-" bufid))]
