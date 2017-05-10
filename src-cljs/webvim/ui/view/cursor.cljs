@@ -3,7 +3,7 @@
     [clojure.string :as string]
     [webvim.ui.lib.dom :refer [bounding-rect $id $text-content
                                toggle-class $hiccup rect-pos
-                               line-height $show $hide
+                               line-height $show $hide $toggle
                                get-element-and-offset
                                add-class remove-class $linenum]]))
 
@@ -86,8 +86,7 @@
     (if (or (not= old-bufid bufid)
             (not= old-cursor2 cursor2))
       (let [$cursor2 ($id (str "cursor2-" bufid))]
-        ((if (empty? cursor2)
-           $hide $show) $cursor2)
+        ($toggle $cursor2 (not (empty? cursor2)))
         (if-not (empty? cursor2)
           (render-cursor-inner
             $lines

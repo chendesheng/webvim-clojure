@@ -70,8 +70,7 @@
                                    [:div.highlights {:id (str "highlights-" bufid)}]]])))))))
 
 (defn- render-scroll-top [{old-scroll-top :scroll-top}
-                          {scroll-top :scroll-top
-                           bufid :id}]
+                          {scroll-top :scroll-top bufid :id}]
   (if (not= old-scroll-top scroll-top)
     (set! (.-scrollTop ($id (str "buffer-" bufid)))
           (* scroll-top (line-height)))))
