@@ -54,12 +54,15 @@
         offset-width (.-offsetWidth $content)
         scroll-right (+ scroll-left offset-width)
         cur-left (.-offsetLeft $cursor)
-        cur-right (+ (.-offsetLeft $cursor) (.-offsetWidth $cursor))]
-    (cond
-      (< cur-left scroll-left)
-      (set! (.-scrollLeft $content) cur-left)
-      (> cur-right scroll-right)
-      (set! (.-scrollLeft $content) (- cur-right offset-width)))))
+        cur-right (+ (.-offsetLeft $cursor) (.-offsetWidth $cursor))
+        new-scroll-left (cond
+                          (< cur-left scroll-left)
+                          (if (< cur-left offset-width) 0 cur-left)
+                          (> cur-right scroll-right)
+                          (- cur-right offset-width))]
+    (println "new-scroll-left=" new-scroll-left)
+    (if (some? new-scroll-left)
+      (set! (.-scrollLeft $content) new-scroll-left))))
 
 (defn render-cursor [{old-bufid :id
                       [x01 y01 :as old-cursor] :cursor
