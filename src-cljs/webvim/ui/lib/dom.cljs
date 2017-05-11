@@ -154,10 +154,12 @@
       (.insertBefore p new-ele (.-nextSibling target-ele)))))
 
 (defn add-class [ele cls]
-  (-> ele .-classList (.add cls)))
+  (if (some? ele)
+    (-> ele .-classList (.add cls))))
 
 (defn remove-class  [ele cls]
-  (-> ele .-classList (.remove cls)))
+  (if (some? ele)
+    (-> ele .-classList (.remove cls))))
 
 (defn toggle-class [ele cls b]
   ((if b add-class remove-class)
