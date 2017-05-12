@@ -22,6 +22,7 @@
         [px py h] (or (cursor-position (.-childNodes $lines) cx cy) lines-pos)]
     [(- px linesx) (- py linesy) h]))
 
+;TODO: fix reverse-background?
 (defn- render-cursor-inner [$lines $cur cx cy reverse-background?]
   (let [$cur-line (aget (.-childNodes $lines) cy)
         [px py] (cursor-position-in-buffer $lines cx cy)]
@@ -38,6 +39,7 @@
           (-> $cur .-style .-width (set! "1ch"))))
       (doto $cur
         (-> .-textContent (set! ""))
+        (-> .-style .-background (set! "#fff"))
         (-> .-style .-width (set! "1ch"))
         (-> .-style .-height (set! (str (line-height) "px")))))
     (doto (.-style $cur)
@@ -80,7 +82,7 @@
           $lines
           $cursor
           x11 y11
-          true)
+          false)
         (when (not= y01 y11)
           (if y01 (remove-class ($linenum old-bufid y01) "highlight"))
           (add-class ($linenum bufid y11) "highlight"))
@@ -95,4 +97,4 @@
             $lines
             $cursor2
             x12 y12
-            true))))))
+            false))))))

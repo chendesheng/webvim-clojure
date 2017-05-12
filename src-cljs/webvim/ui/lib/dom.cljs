@@ -281,14 +281,26 @@
 (defn rect-size [rect]
   [(.-width rect) (.-height rect)])
 
+(defn- text-node? [ele]
+  (-> ele .-nodeType (= 3)))
+
+(defn- not-text-node? [ele]
+  (-> ele .-nodeType (not= 3)))
+
+(extend-type js/NodeList
+  ISeqable
+  (-seq [array] (array-seq array 0)))
+
+(defn seq-text-nodes [ele]
+  (filter text-node?
+          (tree-seq not-text-node? #(-> % .-childNodes) ele)))
+
 (defn get-element-and-offset [$line offset]
-  (loop [ele (-> $line .-firstChild)
+  (loop [texts (seq-text-nodes $line)
          i offset]
-    (if (some? ele)
-      (let [seg (if (= (.-tagName ele) "SPAN")
-                  (.-firstChild ele) ele)
-            seglen (-> seg .-textContent count)]
-        (if (< i seglen)
-          [seg i]
-          (recur (.-nextSibling ele) (- i seglen)))))))
+    (let [seg (first texts)
+          seglen (-> seg .-textContent count)]
+      (if (< i seglen)
+        [seg i]
+        (recur (rest texts) (- i seglen))))))
 
