@@ -40,8 +40,8 @@
                              [:span#status-bar-keys.ongoing-keys]]
                             [:div#autocompl.autocompl]]))))
 
-(defn- render-beep [old-client client]
-  (if (client :beep?) (beep)))
+(defn- render-beep [old-buf buf]
+  (if (buf :beep?) (beep)))
 
 (defn- render-title [old-client old-buf client buf]
   (if (or (diff? old-client client :cwd)
@@ -81,7 +81,7 @@
     (let [old-buf (active-buf old-client)
           buf (active-buf client)]
       (render-editor)
-      (render-beep old-client client)
+      (render-beep old-buf buf)
       (render-title old-client old-buf client buf)
       (render-status-bar old-buf buf)
       (render-buffer old-buf buf)
