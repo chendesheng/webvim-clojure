@@ -84,6 +84,6 @@
   (render-showkeys old-buf buf)
   (render-name old-buf buf)
   (render-line-buffer old-buf buf)
-  (render-message old-buf buf)
-  (render-mode old-buf buf))
+  (render-mode old-buf buf)
+  (render-message old-buf buf))
 
