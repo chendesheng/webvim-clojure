@@ -12,21 +12,23 @@
         (if-not (empty? s)
           (conj lines s) lines)))))
 
-;; TODO: put cache into buffer object
 (def scope-cache (array))
 
 (def hljs js/window.hljs)
 
-(defn highlight [line top container]
-  (let [result (.highlight hljs "clojure" line true top)
-        html (.-value result)
-        nexttop (.-top result)]
-    (set! (.-innerHTML container) html)
-    nexttop))
+(defn highlight [lang line top container]
+  (if (-> hljs (.getLanguage lang) nil?)
+    (set! (.-textContent container) line)
+    (let [result (.highlight hljs lang line true top)
+          html (.-value result)
+          nexttop (.-top result)]
+      (set! (.-innerHTML container) html)
+      nexttop)))
 
-(defn render-lines [{old-changes :changes}
-                    {changes :changes
-                     bufid :id}]
+(defn render-lines [{old-changes :changes old-bufid :id}
+                    {changes :changes bufid :id lang :lang}]
+  (if (not= old-bufid bufid)
+    (.splice scope-cache 0 (.-length scope-cache)))
   (if (and (not= old-changes changes)
            (not (empty? changes)))
     (let [$lines ($id (str "lines-" bufid))
@@ -57,18 +59,19 @@
               (if (not-empty lines)
                 (let [line (first lines)
                       $line ($hiccup [:span.code-block])
-                      nexttop (highlight line top $line)]
+                      nexttop (highlight lang line top $line)]
                   (.insertBefore $lines $line after)
                   (.splice scope-cache index 0 nexttop)
                   (recur (rest lines) (inc index) nexttop))
                 (let [currenttop (aget scope-cache index)]
-                  (when (not= top currenttop)
+                  (when (and (-> hljs (.getLanguage lang) some?)
+                             (not= top currenttop))
                     (aset scope-cache index top)
                     (if (-> $lines-nodes .-length (> index))
                       (let [$new-line ($hiccup [:span.code-block])
                             $line (aget $lines-nodes index)
                             line (.-textContent $line)
-                            nexttop (highlight line top $new-line)]
+                            nexttop (highlight lang line top $new-line)]
                         (.replaceChild $lines $new-line $line)
                         (recur nil (inc index) nexttop)))))))
             (loop [lines lines
@@ -77,7 +80,7 @@
               (if (not-empty lines)
                 (let [line (first lines)
                       $line ($hiccup [:span.code-block])
-                      nexttop (highlight line top $line)]
+                      nexttop (highlight lang line top $line)]
                   (aset scope-cache index nexttop)
                   (.appendChild $lines $line)
                   (recur (rest lines) (inc index) nexttop))))))))))

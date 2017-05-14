@@ -54,6 +54,38 @@
       (assoc :tabsize 4)
       (assoc :expandtab true)))
 
+(defn- init-file-type-by
+  ([buf id name tabsize expandtab]
+    (-> buf
+        (assoc-in [:language :id] ::yaml)
+        (assoc-in [:language :name] "YAML")
+        (assoc :tabsize 4)
+        (assoc :expandtab true)))
+  ([buf id name tabsize]
+    (init-file-type-by buf id name tabsize true))
+  ([buf id name]
+    (init-file-type-by buf id name 4 true)))
+
+(defmethod init-file-type ".cs"
+  [buf]
+  (init-file-type-by buf ::csharp "CSharp"))
+
+(defmethod init-file-type ".fs"
+  [buf]
+  (init-file-type-by buf ::fsharp "FSharp"))
+
+(defmethod init-file-type ".hs"
+  [buf]
+  (init-file-type-by buf ::haskell "Haskell"))
+
+(defmethod init-file-type ".erlang"
+  [buf]
+  (init-file-type-by buf ::erlang "Erlang"))
+
+(defmethod init-file-type ".py"
+  [buf]
+  (init-file-type-by buf ::python "Python"))
+
 (defmethod init-file-type ".json"
   [buf]
   (init-json-file-type buf))
