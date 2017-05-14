@@ -487,13 +487,14 @@
       {:range [n n]
        :cmd nil
        :args ""})
-    (let [items (vec (re-seq #"[.$%,;]|[+-]?\d+|'[a-zA-Z0-9<>{}\[\]()']|/(?:\[(?:\\\\|\\\]|/|[^\]])*\]|\\\\|\\/|[^/\[\]])+/?|.+" s))
-          ranges (expand-% (pop items))
-          [cmd args] (re-seq #"\w+|.*" (peek items))]
-      (println "parse-excmd:" items)
-      {:range (parse-range ranges (buf :y) (buf-total-lines buf) buf)
-       :cmd cmd
-       :args (split-arguments args)})))
+    (let [items (vec (re-seq #"[.$%,;]|[+-]?\d+|'[a-zA-Z0-9<>{}\[\]()']|/(?:\[(?:\\\\|\\\]|/|[^\]])*\]|\\\\|\\/|[^/\[\]])+/?|.+" s))]
+      (if (-> items empty? not)
+        (let [ranges (expand-% (pop items))
+              [cmd args] (re-seq #"\w+|.*" (peek items))]
+          (println "parse-excmd:" items)
+          {:range (parse-range ranges (buf :y) (buf-total-lines buf) buf)
+           :cmd cmd
+           :args (split-arguments args)})))))
 
 (comment
   (parse-excmd {:y 20} "1,./^haha\\\\[\\\\\\]/]hello\\//+1grep hello")
