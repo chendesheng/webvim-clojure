@@ -123,6 +123,7 @@
              :pos 0  ;offset from first char
              :x 0    ;saved x for up down motion
              :y 0    ;num of line breaks from first char
+             :cursor [0 0]
              ;screen scrollTop row number, update after every key press
              :scroll-top 0
              ;reverse of changes, 
