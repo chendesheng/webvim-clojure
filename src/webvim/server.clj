@@ -13,46 +13,22 @@
         ring.middleware.json
         ring.middleware.content-type))
 
-(defn- add-js [node src]
-  (conj node [:script {:src src :type "text/javascript"}]))
-
-(defn- add-css [node href]
-  (conj node [:link {:href href :rel "stylesheet"}]))
-
 (defn- homepage
   [request]
-  (let [js ["cookie.js" "socket.js" "utils.js" "dom.js" "keycode.js"
-            "keyboard.js" "syntax/clojure.js" "syntax/css.js" "syntax/xml.js"
-            "syntax/sql.js" "syntax/go.js" "syntax/cs.js" "syntax/javascript.js" "syntax/yaml.js"
-            "syntax/markdown.js" "syntax/actionscript.js" "syntax/lisp.js" "syntax/json.js"
-            "highlight.js" "main.js" "keymap.js" "render/autocompl.js" "render/cursor.js"
-            "render/gutter.js" "render/offscreen/changes.js" "render/offscreen/lines.js"
-            "render/offscreen/pos.js" "render/selection.js" "render/viewport.js"
-            "render/watchers.js"]
-        css ["main.css"
-             "theme/twilight.css"]
-        cljscss ["css/cljs.css"
-                 "//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.11.0/styles/atom-one-dark.min.css"]
-        cljs ["//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.11.0/highlight.min.js"
-              "//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.11.0/languages/javascript.min.js"
-              "//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.11.0/languages/clojure.min.js"
-              "js/cljs.js"]]
-    (html5
-      (conj
-        (if (-> request :params :cljs some?)
-          (reduce add-js [:head] cljs) ;start migrating UI code to clojurescript
-          (reduce add-js [:head] js))
-        [:meta {:name "apple-touch-fullscreen" :content "yes"}]
-        [:meta {:name "apple-mobile-web-app-capable" :content "yes"}]
-        [:meta {:name "apple-mobile-web-app-status-bar-style" :content "default"}]
-        [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}])
-      (if (-> request :params :cljs some?)
-        (reduce add-css [:head] cljscss)
-        (reduce add-css [:head] css))
-      [:body [:textarea {:type "text" :id "hidden-input" :autocomplete "off"
-                         :autocorrect "off" :autocapitalize "off"
-                         :spellcheck "false" :aria-multiline "true"
-                         :role "textbox" :wrap "off" :disabled "disabled"}]])))
+  (html5
+    [:head
+     [:script {:src "js/highlight.pack.js"} :type "text/javascript"]
+     [:script {:src "js/cljs.js"} :type "text/javascript"]
+     [:link {:href "css/cljs.css" :rel "stylesheet"}]
+     [:link {:href "css/atom-one-dark.css" :rel "stylesheet"}]
+     [:meta {:name "apple-touch-fullscreen" :content "yes"}]
+     [:meta {:name "apple-mobile-web-app-capable" :content "yes"}]
+     [:meta {:name "apple-mobile-web-app-status-bar-style" :content "default"}]
+     [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]]
+    [:body [:textarea {:type "text" :id "hidden-input" :autocomplete "off"
+                       :autocorrect "off" :autocapitalize "off"
+                       :spellcheck "false" :aria-multiline "true"
+                       :role "textbox" :wrap "off" :disabled "disabled"}]]))
 
 (defn- parse-input [body]
   (let [[id keycode]
