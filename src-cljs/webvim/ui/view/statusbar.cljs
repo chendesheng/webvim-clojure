@@ -49,20 +49,21 @@
   (let [left (if (nil? pos)
                -100
                (.-left (bounding-rect (.-firstChild $status) pos)))]
+    (println "render-status-bar-cursor:" (.-id $cur))
+    (println "render-status-bar-cursor:" pos)
+    (println "render-status-bar-cursor-display:" (-> $cur .-style .-display))
     (set! (-> $cur .-style .-left) (str (dec left) "px"))))
 
 (defn- render-line-buffer [{old-line-buf :line-buffer} {line-buf :line-buffer}]
-  (let [$statusbar ($id "status-bar")]
+  (let [$statusbar ($id "status-bar")
+        $status ($id "status-bar-buf")]
+    (toggle-class $statusbar "focus" (some? line-buf))
     (if (and (not= old-line-buf line-buf)
              (some? line-buf))
-      (let [$status ($id "status-bar-buf")
-            {str :str pos :pos pos2 :pos2} line-buf]
+      (let [{str :str pos :pos pos2 :pos2} line-buf]
         ($text-content $status str)
         (render-status-bar-cursor $status ($id "status-bar-cursor") pos)
-        (render-status-bar-cursor $status ($id "status-bar-cursor-second") pos2)
-        (add-class $statusbar "focus"))
-      (if $statusbar
-        (remove-class $statusbar "focus")))))
+        (render-status-bar-cursor $status ($id "status-bar-cursor-second") pos2)))))
 
 (defn- render-name [{old-name :name
                      old-dirty :dirty}
