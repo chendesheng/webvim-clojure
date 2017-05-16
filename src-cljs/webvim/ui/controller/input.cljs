@@ -1,5 +1,6 @@
 (ns webvim.ui.controller.input
-  (:require 
+  (:require
+    [clojure.string :as string]
     [webvim.ui.client :refer [active-buffer]]
     [webvim.ui.lib.dom :refer [$hidden-input]]
     [webvim.ui.lib.event :refer [dispatch-event add-listener add-listener-once]]
@@ -18,8 +19,30 @@
         "<c-i>" "<tab>"
         "<c-m>" "<cr>"} key) key))
 
+(def normal-mode 0)
+
 (defn- current-mode []
   ((active-buffer) :mode))
+
+(defn- map-fullwith-to-halfwidth [text]
+  (string/join
+    (map (fn [c]
+           (or
+             ({"！" "!"
+               "¥" "$"
+               "…" "^"
+               "（" "("
+               "）" ")"
+               "【" "["
+               "】" "]"
+               "「" "{"
+               "」" "}"
+               "“" "\""
+               "：" ":"
+               "《" "<"
+               "》" ">"
+               "‘" "'"} c)
+             c)) (seq text))))
 
 ;custom keymap
 (defn- keymap [key f]
