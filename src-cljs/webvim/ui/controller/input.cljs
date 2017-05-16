@@ -41,7 +41,9 @@
                "：" ":"
                "《" "<"
                "》" ">"
-               "‘" "'"} c)
+               "‘" "'"
+               "／" "/"
+               "？" "?"} c)
              c)) (seq text))))
 
 ;custom keymap
@@ -88,9 +90,12 @@
     (.addEventListener js/document "keydown" onkeydown);
     (.addEventListener
       js/document "keypress"
-      (fn [event] 
+      (fn [event]
         (if-not (.-defaultPrevented event)
-          (handle-key (js/String.fromCharCode (.-keyCode event))))))))
+          (handle-key (let [key (js/String.fromCharCode (.-keyCode event))]
+                        (if (and (some? key) (= (current-mode) normal-mode))
+                          (map-fullwith-to-halfwidth key)
+                          key))))))))
 (comment let [input ($hidden-input)]
          (set! js/document.body.onclick (.-focus input))
          (on-buffer-change
