@@ -52,7 +52,6 @@
                (client :cwd)))))
 
 (defn- render-buffer [{old-bufid :id} {bufid :id}]
-  (println "render-buffer:" old-bufid bufid)
   (if (not= old-bufid bufid)
     (do
       (if (some? old-bufid)

@@ -298,9 +298,9 @@
 (defn get-element-and-offset [$line offset]
   (loop [texts (seq-text-nodes $line)
          i offset]
-    (let [seg (first texts)
-          seglen (-> seg .-textContent count)]
+    (let [ele (first texts)
+          seglen (-> ele .-textContent count)]
       (if (< i seglen)
-        [seg i]
+        [ele i]
         (recur (rest texts) (- i seglen))))))
 

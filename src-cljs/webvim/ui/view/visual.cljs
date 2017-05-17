@@ -37,7 +37,7 @@
                   [(- x1 linesx) (- y1 linesy)])]
       (.appendChild $highlights
                     ($hiccup [:span.line-selected
-                              {:style (str "left:" x "px;" "top:" y "px;"
+                              {:style (str "left:" x "px;" "top:" (dec y) "px;"
                                            "width:" w "px;" "height:" (line-height) "px;"
                                            "padding-right:1ch;")}])))))
 

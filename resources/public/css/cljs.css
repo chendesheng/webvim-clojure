@@ -134,12 +134,11 @@ pre {
 
 .cursor {
     position: absolute;
-    color: white;
     z-index: 1;
     white-space: pre;
     height: 1.2em;
     line-height: 1.2em;
-    opacity: 0.5;
+    white-space: pre;
 }
 
 .cursor.ime {
@@ -352,9 +351,8 @@ pre {
 }
 
 .cursor2 {
-    background: #007acc;
-    opacity: 0.3;
     z-index: 1;
+    opacity: 0.65;
 }
 
 .lines {

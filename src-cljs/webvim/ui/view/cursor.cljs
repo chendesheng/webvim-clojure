@@ -10,39 +10,37 @@
 (defn- cursor-position [$lines-nodes px py]
   (let [$cur-line (aget $lines-nodes py)]
     (if (some? $cur-line)
-      (let [rect (apply bounding-rect
-                        (get-element-and-offset $cur-line px))
-            [x y] (rect-pos rect)
-            h (.-height rect)]
+      (let [[ele idx] (get-element-and-offset $cur-line px)
+            rect (bounding-rect ele idx)
+            [x y] (rect-pos rect)]
         ;(println "xy:" x y)
-        [x (dec y) h]))))
+        [x (dec y) ele idx]))))
 
 (defn- cursor-position-in-buffer [$lines cx cy]
   (let [[linesx linesy :as lines-pos] (rect-pos (bounding-rect $lines))
-        [px py h] (or (cursor-position (.-childNodes $lines) cx cy) lines-pos)]
-    [(- px linesx) (- py linesy) h]))
+        [px py ele offset] (or (cursor-position (.-childNodes $lines) cx cy) lines-pos)]
+    [(- px linesx)
+     (- py linesy)
+     (.-parentNode ele)
+     (-> ele .-textContent (.substr offset 1))]))
 
-;TODO: fix reverse-background?
-(defn- render-cursor-inner [$lines $cur cx cy reverse-background?]
+(defn- render-cursor-inner [$lines $cur cx cy]
   (let [$cur-line (aget (.-childNodes $lines) cy)
-        [px py] (cursor-position-in-buffer $lines cx cy)]
-    (if reverse-background?
-      (let [ch (if (some? $cur-line)
-                 (.substr (.-textContent $cur-line) cx 1) " ")]
-        ($text-content $cur ch)
-        (doto (.-style $cur)
-          (-> .-background (set! "#fff"))
-          (-> .-color (set! "#000"))
-          (-> .-width (set! ""))
-          (-> .-height (set! "")))
-        (if (string/blank? ch)
-          (-> $cur .-style .-width (set! "1ch"))))
-      (doto $cur
-        (-> .-textContent (set! ""))
-        (-> .-style .-background (set! "#fff"))
-        (-> .-style .-width (set! "1ch"))
-        (-> .-style .-height (set! (str (line-height) "px")))))
+        [px py ele ch'] (cursor-position-in-buffer $lines cx cy)
+        ch (if (= ch' "\n") " " ch')
+        style (-> ele js/window.getComputedStyle)
+        color (-> js/document.body js/window.getComputedStyle .-backgroundColor)
+        background  (.-color style)
+        fontWeight (.-fontWeight style)
+        fontStyle (.-fontStyle style)]
+    ($text-content $cur ch)
     (doto (.-style $cur)
+      (-> .-background (set! background))
+      (-> .-color (set! color))
+      (-> .-fontStyle (set! fontStyle))
+      (-> .-fontWeight (set! fontWeight))
+      (-> .-width (set! ""))
+      (-> .-height (set! ""))
       (-> .-left (set! (str px "px")))
       (-> .-top (set! (str py "px"))))))
 
@@ -62,27 +60,29 @@
                           (if (< cur-left offset-width) 0 cur-left)
                           (> cur-right scroll-right)
                           (- cur-right offset-width))]
-    (println "new-scroll-left=" new-scroll-left)
     (if (some? new-scroll-left)
       (set! (.-scrollLeft $content) new-scroll-left))))
 
 (defn render-cursor [{old-bufid :id
                       [x01 y01 :as old-cursor] :cursor
-                      [x02 y02 :as old-cursor2] :cursor2}
+                      [x02 y02 :as old-cursor2] :cursor2
+                      old-changes :changes}
                      {bufid :id
                       scroll-top :scroll-top
                       [x11 y11 :as cursor] :cursor
-                      [x12 y12 :as cursor2] :cursor2}]
+                      [x12 y12 :as cursor2] :cursor2
+                      changes :changes}]
   (let [$lines ($id (str "lines-" bufid))]
     (if (and (some? cursor)
              (or (not= old-cursor cursor)
-                 (not= old-bufid bufid)))
+                 (not= old-bufid bufid)
+                 (and (not= old-changes changes)
+                      (not (empty? changes)))))
       (let [$cursor ($id (str "cursor-" bufid))]
         (render-cursor-inner
           $lines
           $cursor
-          x11 y11
-          false)
+          x11 y11)
         (when (not= y01 y11)
           (if y01 (remove-class ($linenum old-bufid y01) "highlight"))
           (add-class ($linenum bufid y11) "highlight"))
@@ -96,5 +96,5 @@
           (render-cursor-inner
             $lines
             $cursor2
-            x12 y12
-            false))))))
+            x12 y12))))))
+
