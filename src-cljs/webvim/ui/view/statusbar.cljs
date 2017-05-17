@@ -20,7 +20,6 @@
                       (str " " (visual-types visual-type))))
                (pos? visual-type)
                (visual-types visual-type))]
-    (print "render-mode:" mode submode visual-type)
     (if (empty? text)
       ""
       (str "-- " text " --"))))
@@ -38,7 +37,6 @@
       ($text-content ($id "status-bar-buf") text))))
 
 (defn- render-message [{old-message :message} {message :message}]
-  (print "render-message:" old-message message (not= old-message message))
   (when (and (not= old-message message)
              (not= message ""))
     ($text-content ($id "status-bar-buf") message)))
@@ -47,13 +45,9 @@
   (let [left (if (nil? pos)
                -100
                (.-left (bounding-rect (.-firstChild $status) pos)))]
-    (println "render-status-bar-cursor:" (.-id $cur))
-    (println "render-status-bar-cursor:" pos)
-    (println "render-status-bar-cursor-display:" (-> $cur .-style .-display))
     (set! (-> $cur .-style .-left) (str (dec left) "px"))))
 
 (defn- render-line-buffer [{old-line-buf :line-buffer} {line-buf :line-buffer}]
-  (println "render-line-buffer:" old-line-buf line-buf)
   (let [$statusbar ($id "status-bar")
         $status ($id "status-bar-buf")]
     (toggle-class $statusbar "focus" (some? line-buf))
@@ -80,7 +74,6 @@
         (js/setTimeout #($text-content $keys "") 100)))))
 
 (defn render-status-bar [old-buf buf]
-  (println "render-status-bar")
   (render-showkeys old-buf buf)
   (render-name old-buf buf)
   (render-mode old-buf buf)

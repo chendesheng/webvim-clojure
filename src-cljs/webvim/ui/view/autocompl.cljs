@@ -18,7 +18,6 @@
         [x (dec y) h]))))
 
 (defn render-autocompl-inner [$autocompl bufid sugs i ex-autocompl? px py]
-  (print "render-autocompl")
   (if (-> sugs count (> 1))
     (let [subject (-> sugs first :name)
           selected-sug ((nth sugs i) :name)]
@@ -86,6 +85,5 @@
     (cond
       (not= old-autocompl autocompl)
       (render-autocompl-inner $autocompl bufid sugs i (= mode ex-mode) px py)
-      (or (nil? autocompl)
-          (empty? sugs))
+      (or (nil? autocompl) (empty? sugs))
       ($hide $autocompl))))
