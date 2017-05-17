@@ -1,7 +1,7 @@
 (ns webvim.ui.view
   (:require [webvim.ui.lib.dom :refer [$id $hiccup $exist? add-class remove-class
-                                       $remove $text-content beep $empty
-                                       measure-text-size $show $hide line-height]]
+                                       $remove $text-content beep $empty $hidden-input
+                                       measure-text-size $show $hide line-height $cursor]]
             [webvim.ui.lib.event :refer [add-listener]]
             [webvim.fuzzy :refer [fuzzy-match]]
             [webvim.ui.view.statusbar :refer [render-status-bar]]
@@ -53,20 +53,22 @@
 
 (defn- render-buffer [{old-bufid :id} {bufid :id}]
   (if (not= old-bufid bufid)
-    (do
+    (let [$input ($hidden-input)]
+      ($remove $input)
       (if (some? old-bufid)
         ($remove ($id (str "buffer-" old-bufid))))
       (let [domid (str "buffer-" bufid)]
-        (if-not ($exist? domid)
+        (when-not ($exist? domid)
           (.appendChild ($id "buffers")
                         ($hiccup [:div.buffer {:id domid}
                                   [:div.gutter {:id (str "gutter-" bufid)}]
                                   [:div.content {:id (str "content-" bufid)}
                                    [:div.lines {:id (str "lines-" bufid)}]
-                                   [:div.cursor {:id (str "cursor-" bufid)}]
-                                   [:div.cursor.cursor2 {:id (str "cursor2-" bufid)}]
+                                   [:div.cursor {:id (str "cursor-" bufid)} " "]
+                                   [:div.cursor.cursor2 {:id (str "cursor2-" bufid)} " "]
                                    [:div.selections {:id (str "selections-" bufid)}]
-                                   [:div.highlights {:id (str "highlights-" bufid)}]]])))))))
+                                   [:div.highlights {:id (str "highlights-" bufid)}]]])))
+        (-> bufid $cursor (.appendChild $input))))))
 
 (defn- render-scroll-top [{old-scroll-top :scroll-top}
                           {scroll-top :scroll-top bufid :id}]
@@ -74,12 +76,30 @@
     (set! (.-scrollTop ($id (str "buffer-" bufid)))
           (* scroll-top (line-height)))))
 
+(def normal-mode 0)
+(def insert-mode 1)
+(def ex-mode 2)
+
+(defn- render-ime [{old-bufid :id} {mode :mode bufid :id}]
+  (let [$input ($hidden-input)]
+    ; (println "render-ime" $input bufid)
+    (cond
+      (= mode normal-mode)
+      (doto $input
+        (.blur)
+        (-> .-disabled (set! true))) ;no ime for password input
+      (= mode insert-mode)
+      (doto $input
+        (-> .-disabled (set! false))
+        (.focus)))))
+
 (add-listener
   :client-changed :ui-render
   (fn [[patch old-client client]]
     (let [old-buf (active-buf old-client)
           buf (active-buf client)]
       (render-editor)
+      (render-ime old-buf buf)
       (render-beep old-buf buf)
       (render-title old-client old-buf client buf)
       (render-status-bar old-buf buf)

@@ -33,7 +33,7 @@
         background  (.-color style)
         fontWeight (.-fontWeight style)
         fontStyle (.-fontStyle style)]
-    ($text-content $cur ch)
+    ($text-content (-> $cur .-childNodes first)  ch)
     (doto (.-style $cur)
       (-> .-background (set! background))
       (-> .-color (set! color))

@@ -54,7 +54,7 @@
   ($bufid "cursor-" bufid))
 
 (defn $hidden-input []
-  (js/document.getElementById "hidden-input"))
+  (js/document.getElementById (str "hidden-input")))
 
 (defn $statusBuf [bufid]
   ($bufid "status-bar-buf-" bufid))
@@ -98,16 +98,6 @@
 
 (defn $linenum [bufid linenum]
   (js/document.getElementById (str "line-num-" bufid "-" linenum)))
-
-(defn $buffer [bufid]
-  (or (js/document.getElementById (str "buffer-" bufid))
-      (let [$input ($hidden-input)
-            $buf ($new-buffer bufid)
-            $cur ($cursor bufid)]
-        (if (not= (.-parentNode $input) $cur)
-          (do ($remove $input)
-              (.appendChild $cur $input)))
-        $buf)))
 
 (def request-animation-frame
   (if (-> js/window .-requestAnimationFrame nil?)
