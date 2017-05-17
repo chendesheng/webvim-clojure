@@ -1,5 +1,5 @@
 (ns webvim.keymap.linebuf.linebuf
-  (:require 
+  (:require
     [webvim.keymap.objects :refer [current-word current-WORD]]
     [webvim.keymap.compile :refer [wrap-key wrap-keycode]])
   (:use webvim.core.rope
@@ -8,7 +8,7 @@
         webvim.core.register
         webvim.core.parallel-universe
         webvim.keymap.linebuf.history
-        webvim.core.utils)) 
+        webvim.core.utils))
 
 (defn- set-line-buffer [buf s]
   (-> buf
@@ -17,13 +17,13 @@
 
 (defn- recover-command-history [buf ahistory]
   (let [s (@ahistory next-future)]
-    (if (nil? s) 
+    (if (nil? s)
       buf
       (set-line-buffer buf s))))
 
 (defn- save-history! [ahistory s]
   (if-not (or (empty? s) (= (just-now @ahistory) s))
-    (swap! ahistory 
+    (swap! ahistory
            #(-> %
                 fast-forward
                 (new-future s)))))
@@ -57,16 +57,16 @@
 
 (defn- linebuf-insert [buf r]
   (if (empty? r) buf
-      (update-linebuf 
-        buf 
+      (update-linebuf
+        buf
         (fn [linebuf]
           (let [pos (linebuf :pos)]
             (-> linebuf
                 (linebuf-replace pos pos r)))))))
 
 (defn- linebuf-delete [buf offset]
-  (update-linebuf 
-    buf 
+  (update-linebuf
+    buf
     (fn [linebuf]
       (let [pos (linebuf :pos)
             r (linebuf :str)
@@ -75,10 +75,10 @@
             b1 (bound-range b 0 (count r))]
         (linebuf-replace linebuf a1 b1 "")))))
 
-(defn- linebuf-move 
+(defn- linebuf-move
   [buf fnmove]
-  (update-linebuf 
-    buf 
+  (update-linebuf
+    buf
     (fn [linebuf]
       (let [pos (linebuf :pos)
             r (linebuf :str)
@@ -117,13 +117,13 @@
          (-> buf :line-buffer nil?)
          (contains? #{"<cr>" "<esc>"} keycode))))
 
-(defn- linebuf-leave [buf keycode] 
+(defn- linebuf-leave [buf keycode]
   (-> buf
-      (dissoc :line-buffer)
+      (assoc :line-buffer nil)
       (assoc :message (or (buf :message) "")))) ;Make sure :message get value
 
 (defn- linebuf-<bs>
-  [{{r :str} :line-buffer :as buf} keycode] 
+  [{{r :str} :line-buffer :as buf} keycode]
   (if (empty? r)
     (dissoc buf :line-buffer)
     (linebuf-delete buf -1)))
