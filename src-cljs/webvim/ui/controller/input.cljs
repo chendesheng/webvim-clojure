@@ -1,7 +1,7 @@
 (ns webvim.ui.controller.input
   (:require
     [clojure.string :as string]
-    [webvim.ui.lib.dom :refer [$remove $hiccup $text-content $hidden-input add-class remove-class $cursor $bufid get-element-and-offset]]
+    [webvim.ui.lib.dom :refer [$remove $hiccup $text-content $hidden-input add-class remove-class $cursor $bufid get-element-and-offset $id]]
     [webvim.ui.client :refer [active-buffer]]
     [webvim.ui.lib.event :refer [dispatch-event add-listener add-listener-once]]
     [webvim.ui.lib.keycode :refer [char32bits? KEYCODE-DIC KEYCODE-KEYDOWN special-key? map-shift-char]]))
@@ -15,15 +15,23 @@
 (defn- get-caret [$input]
   (.-selectionStart $input))
 
-(defn- insert-node-at-pos [{bufid :id [x y] :cursor} node]
-  (let [$lines ($bufid "lines-" bufid)
-        $lines-nodes (.-childNodes $lines)
-        $line (aget $lines-nodes y)
-        [ele idx] (get-element-and-offset $line x)]
-    (doto (js/document.createRange)
-      (.setStart ele idx)
-      (.setEnd ele idx)
-      (.insertNode node))))
+(defn- insert-node-at-pos [{bufid :id [x y] :cursor line-buffer :line-buffer} node]
+  (if (nil? line-buffer)
+    (let [$lines ($bufid "lines-" bufid)
+          $lines-nodes (.-childNodes $lines)
+          $line (aget $lines-nodes y)
+          [ele idx] (get-element-and-offset $line x)]
+      (doto (js/document.createRange)
+        (.setStart ele idx)
+        (.setEnd ele idx)
+        (.insertNode node)))
+    (let [{pos :pos} line-buffer
+          $status-buf ($id "status-bar-buf")
+          ele (.-firstChild $status-buf)]
+      (doto (js/document.createRange)
+        (.setStart ele pos)
+        (.setEnd ele pos)
+        (.insertNode node)))))
 
 (defn ime-preview [$input]
   (let [preview-node (atom nil)
@@ -53,13 +61,16 @@
                     (if (-> text .-length pos?)
                       (do
                         (set-preview-content text)
+                        (-> ($id "status-bar-cursor") (add-class "ime"))
                         (-> (active-buffer) :id $cursor (add-class "ime")))
                       (do
                         (remove-preview-node)
+                        (-> ($id "status-bar-cursor") (remove-class "ime"))
                         (-> (active-buffer) :id $cursor (remove-class "ime"))))))
      :on-input (fn []
                  (-> $input .-value (set! ""))
                  (remove-preview-node)
+                 (-> ($id "status-bar-cursor") (remove-class "ime"))
                  (-> (active-buffer) :id $cursor (remove-class "ime")))}))
 
 ;buildin keymap

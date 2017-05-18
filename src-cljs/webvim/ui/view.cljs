@@ -80,18 +80,36 @@
 (def insert-mode 1)
 (def ex-mode 2)
 
-(defn- render-ime [{old-bufid :id} {mode :mode bufid :id}]
+(defn- render-ime [{old-bufid :id
+                    old-mode :mode
+                    old-line-buffer :line-buffer}
+                   {bufid :id
+                    mode :mode
+                    line-buffer :line-buffer}]
   (let [$input ($hidden-input)]
     ; (println "render-ime" $input bufid)
+    (when (and (nil? old-line-buffer)
+               (some? line-buffer))
+      (println "input in status-bar-cursor")
+      (doto ($hidden-input)
+        ($remove)
+        (->> (.appendChild ($id "status-bar-cursor")))))
+    (when (and (some? old-line-buffer)
+               (nil? line-buffer))
+      (println "input in cursor")
+      (doto ($hidden-input)
+        ($remove)
+        (->> (.appendChild ($cursor bufid)))))
     (cond
+      (or (= mode insert-mode)
+          (some? line-buffer))
+      (doto $input
+        (-> .-disabled (set! false))
+        (.focus))
       (= mode normal-mode)
       (doto $input
         (.blur)
-        (-> .-disabled (set! true))) ;no ime for password input
-      (= mode insert-mode)
-      (doto $input
-        (-> .-disabled (set! false))
-        (.focus)))))
+        (-> .-disabled (set! true))))))
 
 (add-listener
   :client-changed :ui-render
@@ -99,7 +117,6 @@
     (let [old-buf (active-buf old-client)
           buf (active-buf client)]
       (render-editor)
-      (render-ime old-buf buf)
       (render-beep old-buf buf)
       (render-title old-client old-buf client buf)
       (render-status-bar old-buf buf)
@@ -109,5 +126,6 @@
       (render-visual old-buf buf)
       (render-highlights old-buf buf)
       (render-cursor old-buf buf)
+      (render-ime old-buf buf)
       (render-scroll-top old-buf buf)
       (render-autocompl old-buf buf))))
