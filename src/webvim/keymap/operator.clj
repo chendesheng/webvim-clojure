@@ -107,12 +107,10 @@
       (set-inclusive false)))
 
 (defn set-current-pos [{r :str pos :pos :as buf}]
-  (if (and
-        (-> buf :str count dec (not= pos))
-        (or
-          (surrogate? (char-at r pos))
-          (variation-selector? (char-at r (inc pos)))))
-    (set-range buf [pos (+ pos 1)])
+  (if (or
+        (surrogate? (char-at r pos))
+        (variation-selector? (char-at r (inc pos))))
+    (set-range buf [pos (inc pos)])
     (set-range buf [pos pos])))
 
 (defn make-linewise-operator

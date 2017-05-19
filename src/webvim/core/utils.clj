@@ -12,15 +12,18 @@
     (sort2 a b)))
 ;Variation Selectors 
 (defn variation-selector? [ch]
-  (or (nil? ch)
-      (<= 0xFE00 (int ch) 0xFEFF)))
+  (and
+    (some? ch)
+    (<= 0xFE00 (int ch) 0xFEFF)))
 
 ;https://en.wikipedia.org/wiki/UTF-16#U.2BD800_to_U.2BDFFF
 (defn surrogate? [ch]
-  (<= 0xD800 (int ch) 0xDFFF))
+  (and
+    (some? ch)
+    (<= 0xD800 (int ch) 0xDFFF)))
 
 (defn keycode-to-char [keycode]
-  (cond 
+  (cond
     (= 1 (count keycode))
     keycode
     (and (= 2 (count keycode)) (-> keycode first surrogate?))
@@ -35,7 +38,7 @@
 
 (defn make-range
   ([a b inclusive?]
-    (if inclusive? 
+    (if inclusive?
       (let [[a b] (sort2 a b)]
         [a (inc b)])
       (sort2 a b)))
@@ -59,12 +62,12 @@
 ;(map? node) equals true then node is a branch node (or a sub tree)
 ;(map? node) equals false then node is a leaf
 (defn- tree-reduce-recur [visit-branch visit-leaf path ctx root]
-  (reduce 
+  (reduce
     (fn [ctx [k v :as node]]
       (let [path (conj path node)]
         (if (map? v)
-          (visit-branch 
-            (tree-reduce-recur 
+          (visit-branch
+            (tree-reduce-recur
               visit-branch visit-leaf path ctx v) path)
           (visit-leaf ctx path)))) ctx root))
 
@@ -104,7 +107,7 @@
   (into (or coll []) xs))
 
 (defn crlf? [txt]
-  (-> #"\r?\n"  
+  (-> #"\r?\n"
       (re-seq txt)
       first
       count
@@ -122,7 +125,7 @@
             (let [nexti (.indexOf s "\t" i)]
               (if (neg? nexti)
                 (+ ret (- len i))
-                (recur (inc nexti) 
+                (recur (inc nexti)
                        (+ ret (round-to-tabstop (- nexti i) tabsize))))))))))
 
 (comment
@@ -187,7 +190,7 @@
   (-> f
       replace-path-sep
       fs/expand-home
-      fs/normalized)) 
+      fs/normalized))
 
 (defn path= [f1 f2]
   (try
@@ -312,9 +315,9 @@
         (fs/delete file)))))
 
 (comment defmacro with-temp-file [s f & body]
-  `(let [~f (str (fs/temp-file "webvim"))]
-     (try
-       (spit ~f s)
-       ~@body
-       (finally
-         (fs/delete ~f)))))
+         `(let [~f (str (fs/temp-file "webvim"))]
+            (try
+              (spit ~f s)
+              ~@body
+              (finally
+                (fs/delete ~f)))))
