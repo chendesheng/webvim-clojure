@@ -111,7 +111,7 @@
         (str (if ctrl? "c-")
              (if alt? "a-")
              (if shift? "s-")
-             (escape-keys keyc))))))
+             keyc)))))
 
 (defn- onkeydown [event]
   (let [key (get-key-for-keydown event)]
