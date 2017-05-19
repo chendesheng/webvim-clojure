@@ -1,5 +1,5 @@
 (ns webvim.keymap.operator
-  (:require 
+  (:require
     [webvim.core.event :refer [log]]
     [clojure.string :as str]
     [clojure.pprint :refer [pprint]]
@@ -80,7 +80,7 @@
           ;(log [rg (-> buf :context :linewise?)])
           (-> buf
             ;This will make cursor position in right place after undo/redo. 
-              (buf-set-pos (first rg)) 
+              (buf-set-pos (first rg))
               (fn-operator rg)
               fn-set-pos
               (update :context dissoc :linewise? :inclusive? :range)))
@@ -107,9 +107,11 @@
       (set-inclusive false)))
 
 (defn set-current-pos [{r :str pos :pos :as buf}]
-  (if (or
-        (surrogate? (char-at r pos))
-        (variation-selector? (char-at r (inc pos))))
+  (if (and
+        (-> buf :str count dec (not= pos))
+        (or
+          (surrogate? (char-at r pos))
+          (variation-selector? (char-at r (inc pos)))))
     (set-range buf [pos (+ pos 1)])
     (set-range buf [pos pos])))
 
