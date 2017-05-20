@@ -161,7 +161,8 @@
                         :name "Plain Text"}
              :CRLF? (crlf? txt)
              :tabsize 4
-             :expandtab false}]
+             :expandtab false
+             :view 0}]
     (-> buf
         set-mod-time
         init-file-type

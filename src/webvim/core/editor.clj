@@ -11,8 +11,9 @@
   (reset! (*window* :cwd) (str s)))
 
 (defn- create-window []
-  (fire-event {:id (uuid) 
-               :cwd (atom (str fs/*cwd*))} :create-window))
+  (fire-event {:id (uuid)
+               :cwd (atom (str fs/*cwd*))
+               :views [:| 0.5 0 1]} :create-window))
 
 (defmacro with-window [window & body]
   `(binding [*window* ~window

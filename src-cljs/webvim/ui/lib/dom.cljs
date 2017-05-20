@@ -2,32 +2,14 @@
 
 (enable-console-print!)
 
-(defn $new-buffer [bufid]
-  (js/document.body.appendChild
-    (doto
-     (js/document.createElement "DIV")
-      (-> .-id (set! (str "buffer-" bufid)))
-      (-> .-className (set! "buffer"))
-      (-> .-innerHTML (set! (str "<div id=\"gutter-" bufid "\" class=\"gutter\"></div>"
-                                 "<div id=\"content-" bufid "\" class=\"content\">"
-                                 "<div id=\"cursor-" bufid "\" class=\"cursor\">&nbsp;</div>"
-                                 "<div id=\"selections-" bufid "\" class=\"selections\"></div>"
-                                 "<div id=\"highlights-" bufid "\" class=\"highlights\"></div>"
-                                 "<div id=\"autocompl-" bufid "\" class=\"autocompl\"></div>"
-                                 "<div id=\"cursor-bracket-" bufid "\" class=\"cursor-bracket\"></div>"
-                                 "<div id=\"lines-" bufid "\" class=\"lines\"></div>"
-                                 "</div>"
-                                 "<div id=\"status-bar-" bufid "\" class=\"status-bar\">"
-                                 "<span id=\"status-bar-buf-" bufid "\" class=\"ex\"></span>"
-                                 "<span id=\"status-bar-cursor-" bufid "\" class=\"cursor\"></span>"
-                                 "<span id=\"status-bar-cursor-second-" bufid "\" class=\"cursor second-cursor\"></span>"
-                                 "<span id=\"status-bar-keys-" bufid "\" class=\"ongoing-keys\"></span>"
-                                 "<span id=\"status-bar-name-" bufid "\" class=\"buf-name\"></span>"
-                                 "</div>"
-                                 "<div id=\"ex-autocompl-" bufid "\" class=\"autocompl ex-autocompl\"></div>"))))))
-
 (defn- $bufid [prefix bufid]
   (js/document.getElementById (str prefix bufid)))
+
+(defn $buffer [bufid]
+  ($bufid "buffer-" bufid))
+
+(defn $view [bufid]
+  ($bufid "view-" bufid))
 
 (defn $lines [bufid]
   ($bufid "lines-" bufid))
@@ -38,8 +20,23 @@
 (defn $gutter [bufid]
   ($bufid "gutter-" bufid))
 
-(defn $statusBar [bufid]
+(defn $status-bar [bufid]
   ($bufid "status-bar-" bufid))
+
+(defn $status-bar-buf [bufid]
+  ($bufid "status-bar-buf-" bufid))
+
+(defn $status-bar-cursor [bufid]
+  ($bufid "status-bar-cursor-" bufid))
+
+(defn $status-bar-cursor-second [bufid]
+  ($bufid "status-bar-cursor-second-" bufid))
+
+(defn $status-bar-name [bufid]
+  ($bufid "status-bar-name-" bufid))
+
+(defn $status-bar-keys [bufid]
+  ($bufid "status-bar-keys-" bufid))
 
 (defn $selections [bufid]
   ($bufid "selections-" bufid))
@@ -56,19 +53,19 @@
 (defn $hidden-input []
   (js/document.getElementById (str "hidden-input")))
 
-(defn $statusBuf [bufid]
+(defn $status-buf [bufid]
   ($bufid "status-bar-buf-" bufid))
 
-(defn $statusKeys [bufid]
+(defn $status-keys [bufid]
   ($bufid "status-bar-keys-" bufid))
 
-(defn $statusName [bufid]
+(defn $status-name [bufid]
   ($bufid "status-bar-name-" bufid))
 
-(defn $statusCursor [bufid]
+(defn $status-cursor [bufid]
   ($bufid "status-bar-cursor-" bufid))
 
-(defn $statusCursorSecond [bufid]
+(defn $status-cursor-second [bufid]
   ($bufid "status-bar-cursor-second-" bufid))
 
 (defn $autocompl [bufid]

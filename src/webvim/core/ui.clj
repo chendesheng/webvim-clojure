@@ -124,7 +124,8 @@
 
 (defn- window-data [window]
   {:id (window :id)
-   :cwd @(window :cwd)})
+   :cwd @(window :cwd)
+   :views (window :views)})
 
 (defn- diff-window [before after]
   (if (= before after) nil
