@@ -268,6 +268,9 @@
 (defn rect-size [rect]
   [(.-width rect) (.-height rect)])
 
+(defn rect [rt]
+  [(.-left rt) (.-top rt) (.-right rt) (.-bottom rt)])
+
 (defn- text-node? [ele]
   (-> ele .-nodeType (= 3)))
 
