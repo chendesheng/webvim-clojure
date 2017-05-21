@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as string]
     [webvim.ui.lib.dom :refer [$remove $hiccup $text-content $hidden-input add-class remove-class $cursor $bufid get-element-and-offset $id]]
-    [webvim.ui.client :refer [active-buffer]]
+    [webvim.ui.client :refer [active-buffer client]]
     [webvim.ui.lib.event :refer [dispatch-event add-listener add-listener-once]]
     [webvim.ui.lib.keycode :refer [char32bits? KEYCODE-DIC KEYCODE-KEYDOWN special-key? map-shift-char]]))
 
@@ -56,22 +56,22 @@
                                   (.setEnd (.-firstChild @preview-node) pos)
                                   (.insertNode @preview-cursor))
                                 preview-node))]
-    {:on-typing (fn []
+    {:on-typing (fn [bufid]
                   (let [text (.-value $input)]
                     (if (-> text .-length pos?)
                       (do
                         (set-preview-content text)
                         (-> ($id "status-bar-cursor") (add-class "ime"))
-                        (-> (active-buffer) :id $cursor (add-class "ime")))
+                        (-> bufid $cursor (add-class "ime")))
                       (do
                         (remove-preview-node)
                         (-> ($id "status-bar-cursor") (remove-class "ime"))
-                        (-> (active-buffer) :id $cursor (remove-class "ime"))))))
-     :on-input (fn []
+                        (-> bufid $cursor (remove-class "ime"))))))
+     :on-input (fn [bufid]
                  (-> $input .-value (set! ""))
                  (remove-preview-node)
                  (-> ($id "status-bar-cursor") (remove-class "ime"))
-                 (-> (active-buffer) :id $cursor (remove-class "ime")))}))
+                 (-> bufid $cursor (remove-class "ime")))}))
 
 ;buildin keymap
 (defn- keymap-alias [key]
@@ -86,19 +86,21 @@
   ((active-buffer) :mode))
 
 ;custom keymap
-(defn- keymap [key f]
+(defn- keymap [mode key f]
   (let [keymaps [{"<c-l>" ":nohl<cr>zz"} {} {}]]
-    (f (or ((keymaps (current-mode)) key) key))))
+    (f (or ((keymaps mode) key) key))))
 
-(defn- handle-key [key]
-  (println "key:" key)
+(defn- handle-key [mode key]
+  ;(println "key:" key)
   (if-not (-> key count zero?)
     (let [key (if (special-key? key)
                 (str "<" key ">")
                 (escape-keys key))]
-      (keymap (keymap-alias key)
-              (fn [key]
-                (dispatch-event :input-key key))))))
+      (keymap
+        mode
+        (keymap-alias key)
+        (fn [key]
+          (dispatch-event :input-key key))))))
 
 (defn- get-key-for-keydown [event]
   (let [code (.-keyCode event)
@@ -118,7 +120,7 @@
     (when (special-key? key)
       (.stopPropagation event)
       (.preventDefault event)
-      (handle-key key))))
+      (handle-key (current-mode) key))))
 
 (add-listener-once
   :onload
@@ -128,21 +130,22 @@
                                                  (when key
                                                    (.stopPropagation event)
                                                    (.preventDefault event)
-                                                   (handle-key key)))));
+                                                   (handle-key (current-mode) key)))));
     (let [bufid (:id (active-buffer))
           $input ($hidden-input)
-          ime-handler (ime-preview $input)]
+          {on-typing :on-typing
+           on-input :on-input} (ime-preview $input)]
       (.addEventListener $input "keydown" (fn [event]
                                             (let [key (get-key-for-keydown event)]
                                               (when (special-key? key)
                                                 (.stopPropagation event)
                                                 (.preventDefault event)
-                                                (handle-key key)))))
+                                                (handle-key (current-mode) key)))))
       (.addEventListener $input "input" (fn [event]
-                                          (js/setTimeout (:on-typing ime-handler) 0)))
+                                          (js/setTimeout (partial on-typing (@client :active-buffer))  0)))
       (.addEventListener $input "textInput" (fn [event]
                                               (keymap (-> event .-data escape-keys keymap-alias)
                                                       (fn [key]
                                                         (dispatch-event :input-key key)))
-                                              (js/setTimeout (:on-input ime-handler) 0))))))
+                                              (js/setTimeout (partial on-input (@client :active-buffer)) 0))))))
 

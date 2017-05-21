@@ -8,7 +8,7 @@
     [webvim.core.rope :refer [buf-subr buf-set-pos buf-delete subr char-at]]
     [webvim.core.line :refer [expand-block-ranges
                               pos-line-last line-start]]
-    [webvim.core.register :refer [registers-delete-to! registers-yank-to! registers-put!]]
+    [webvim.core.register :refer [registers-delete-to registers-yank-to registers-put]]
     [webvim.core.range :refer [range-inclusive range-exclusive range-linewise range-line-end range-current-line]]
     [webvim.core.utils :refer [make-range sort2 nop nilor surrogate? variation-selector?]]))
 
@@ -133,10 +133,12 @@
 (defn buf-yank
   ([buf a b linewise? delete?]
     (let [s (buf-subr buf a b)]
-      ((if delete?
-         registers-delete-to!
-         registers-yank-to!) (-> buf :context :register) {:str s :linewise? linewise?})
-      (update buf :context dissoc :register)))
+      (-> buf
+          (update-in [:window :registers]
+                     (if delete?
+                       registers-delete-to
+                       registers-yank-to) (-> buf :context :register) {:str s :linewise? linewise?})
+          (update :context dissoc :register))))
   ([buf a b linewise?]
     (buf-yank buf a b linewise? false)))
 

@@ -80,19 +80,20 @@
       (assoc :highlights [])
       (buf-set-pos (-> buf :context :lastpos))))
 
-(defn- search-str [linebuf]
+(defn- search-str [{linebuf :line-buffer
+                    {registers :registers} :window}]
   (let [s (-> linebuf :str str)]
     (if (.startsWith s (linebuf :prefix))
-      (:str (registers-get "/"))
+      (:str (registers-get registers "/"))
       s)))
 
 (defn- increment-search-<cr> [buf keycode]
   ;(println "increment-search-<cr>" (buf :message))
   (let [linebuf (buf :line-buffer)
-        s (search-str linebuf)
+        s (search-str buf)
         prefix (linebuf :prefix)]
-    (registers-put! "/" {:str s :forward? (= prefix "/")})
     (-> buf
+        (update-in [:window :registers] registers-put "/" {:str s :forward? (= prefix "/")})
         (assoc :message (str prefix s))
         (highlight-all-matches (search-pattern s)))))
 
@@ -102,8 +103,8 @@
       buf
       ;(println "increment-search" (buf :message))
       (let [linebuf (buf :line-buffer)]
-        (if (nil? linebuf) buf
-            (let [re (-> linebuf
+        (if (-> buf :line-buffer nil?) buf
+            (let [re (-> buf
                          search-str
                          search-pattern)
                   f (if forward?

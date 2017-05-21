@@ -1,7 +1,8 @@
 (ns webvim.core.ui
   (:require [webvim.core.event :refer [listen]]
             [webvim.core.lineindex :refer [total-lines pos-xy]]
-            [webvim.core.editor :refer [*window*]])
+            [clojure.data :refer [diff]]
+            [webvim.core.utils :refer [map-vals]])
   (:use webvim.core.line))
 
 (defn- dissoc-empty [buf ks]
@@ -12,7 +13,7 @@
     buf))
 
 (defn- dissoc-nil [buf k]
-  (if (nil? (buf k))
+  (if (-> buf (get k) nil?)
     (dissoc buf k)
     buf))
 
@@ -39,7 +40,7 @@
                        :limit-number)))))
 
 (defn- line-editor [buf]
-  (if (nil? (buf :line-buffer))
+  (if (-> buf :line-buffer nil?)
     buf
     (let [{s :str
            prefix :prefix
@@ -70,7 +71,7 @@
     :temp-normal-mode 1} mode))
 
 (defn- update-visual [buf]
-  (if (-> :visual buf some?)
+  (if (-> buf :visual some?)
     (update buf :visual (fn [visual]
                           (-> visual
                               (dissoc :range)
@@ -88,7 +89,7 @@
               :language :filepath :x :y :keymap
               :normal-mode-keymap :insert-mode-keymap :ex-mode-keymap
               :pending-undo :saved-undo :registers :keys
-              :save-point :ext :last-visual :nextid :dot-repeat-keys
+              :save-point :ext :last-visual :dot-repeat-keys
               :last-indents :mod-time :autocompl-provider :lineindex)
       (dissoc-empty [:changes])
       update-visual
@@ -119,21 +120,12 @@
            (poses2xy buf (buf :highlights)))
     buf))
 
-(defn- ui-agent []
-  (*window* :ui))
-
 (defn- window-data [window]
   {:id (window :id)
    :cwd @(window :cwd)
    :views (window :views)})
 
-(defn- diff-window [before after]
-  (if (= before after) nil
-      (-> after
-          (dissoc-if-equal before :id)
-          (dissoc-if-equal before :cwd))))
-
-(defn- diff-buf
+(defn diff-buf
   "Write changes to browser."
   [before after]
   (cond (= before after)
@@ -171,92 +163,130 @@
             (dissoc-if-equal before :lines)
             (dissoc-if-equal before :scope-changes)
             (dissoc-if-equal before :beep?)
+            (dissoc-if-equal before :view)
             (dissoc :str)
             remove-fields)))
 
 ;FIXME: doesn't feel right to put window object inside buf
-(defn- diff-ui [{buf :buf window :window :as ui} newbuf]
-  (let [diff (diff-buf buf newbuf)
-        diffwin (diff-window window (window-data *window*))]
-    (if (nil? diffwin) diff ;write array back if window object changes
-        [diffwin diff])))
+(comment defn- diff-ui [{buf :buf window :window :as ui} newbuf]
+         (let [diff (diff-buf buf newbuf)
+               diffwin (diff-window window (window-data *window*))]
+           (if (nil? diffwin) diff ;write array back if window object changes
+               [diffwin diff])))
 
 (listen
   :create-window
   (fn [window]
     (assoc window
-           :ui
-           (agent
-             {:viewport {:w 0 :h 0}
-              :render! (fn [a b] a)
-              :window (window-data window)}
-             :error-handler
-             (fn [ui err]
-               (println "ui agent fail:")
-               (println ":bufid " (-> ui :buf :id))
-               (println ":filepath " (-> ui :buf :filepath))
-               (println err))))))
-
-(defn update-ui
-  ([f]
-    (send (ui-agent) f))
-  ([f a]
-    (send (ui-agent) f a))
-  ([f a b]
-    (send (ui-agent) f a b)))
-
-(defn get-from-ui [key]
-  (@(ui-agent) key))
-
-(defn viewport []
-  (get-from-ui :viewport))
+           :render! (fn [a b] a))))
 
 (defn- bound-scroll-top
   "Change scroll top make cursor inside viewport"
-  [buf]
-  (let [st (buf :scroll-top)]
-    (assoc buf :scroll-top
-           (let [y (buf :y)
-                 h ((viewport) :h)]
-             (cond
-               (zero? h) 0
-               (< y st) y
-               (< y (+ st h)) st
-               (neg? (-> y (- h) inc)) 0
-               :else (-> y (- h) inc))))))
+  [buf h]
+  (update buf :scroll-top
+          (fn [st]
+            (let [y (buf :y)]
+              (println "bound-scroll-top: h=" h "y=" y)
+              (cond
+                (nil? h) 0
+                (zero? h) 0
+                (< y st) y
+                (< y (+ st h)) st
+                (neg? (-> y (- h) inc)) 0
+                :else (-> y (- h) inc))))))
 
-(defn- active-buf? [ui buf]
-  (= (buf :id) (-> ui :buf :id)))
-
-(defn send-buf!
-  ([buf switch-buf?]
-    (let [buf (bound-scroll-top buf)]
-      (send-off (ui-agent)
-                (fn [ui buf]
-                  (if (or switch-buf? (active-buf? ui buf))
-                    (let [buf (-> buf
-                                  (assoc :lines (-> buf :lineindex total-lines))
-                                  pos2xy
-                                  highlights2xy
-                                  visual2xy)
-                          diff (diff-ui ui buf)
-                          ui (assoc ui :buf (dissoc buf :changes))]
-                      (println "cursor:" (buf :cursor))
-                      (if (or (nil? diff)
-                              (empty? diff)) ui
-                          ((ui :render!) ui diff)))
-                    ui))
-                buf)
-      (-> buf
-          (assoc :changes [])
-          (assoc :beep? false))))
-  ([buf]
+(comment defn send-buf!
+         ([buf switch-buf?]
+           (let [buf (bound-scroll-top buf)]
+             (send-off (ui-agent)
+                       (fn [ui buf]
+                         (if (or switch-buf? (active-buf? ui buf))
+                           (let [buf (-> buf
+                                         (assoc :lines (-> buf :lineindex total-lines))
+                                         pos2xy
+                                         highlights2xy
+                                         visual2xy)
+                                 diff (diff-ui ui buf)
+                                 ui (assoc ui :buf (dissoc buf :changes))]
+                             (println "cursor:" (buf :cursor))
+                             (if (or (nil? diff)
+                                     (empty? diff)) ui
+                                 ((ui :render!) ui diff)))
+                           ui))
+                       buf)
+             (-> buf
+                 (assoc :changes [])
+                 (assoc :beep? false))))
+         ([buf]
     ;only for active buffer, use :nextid for switch buffer
-    (send-buf! buf false)))
+           (send-buf! buf false)))
 
-(defn ui-buf []
-  [(diff-window nil (get-from-ui :window))
-   (diff-buf nil (get-from-ui :buf))])
+(defn- visible-buffers [buffers]
+  (into {}
+        (filter (fn [[_ buf]]
+                  (-> buf :view some?)) buffers)))
+
+(defn- map-diff [m1 m2 fn-diff-val]
+  (let [keys1 (keys m1)
+        keys2 (keys m2)
+        [only1 only2 both] (diff keys1 keys2)
+        removed (partial reduce (fn [res key]
+                                  (assoc res key nil)))
+        added (partial reduce (fn [res key]
+                                (assoc res key (fn-diff-val nil (m2 key)))))
+        changed (partial reduce (fn [res key]
+                                  (let [diff (fn-diff-val (m1 key) (m2 key))]
+                                    (if (nil? diff)
+                                      res
+                                      (assoc res key diff)))))]
+    (-> {}
+        (removed only1)
+        (added only2)
+        (changed both))))
+
+(defn- diff-buffers [buffers old-buffers]
+  (if (not= buffers old-buffers)
+    (map-diff (visible-buffers old-buffers)
+              (visible-buffers buffers)
+              (fn [a b]
+                (diff-buf a b)))))
+
+(defn- diff-window [window old-window]
+  (-> (select-keys window [:active-buffer :views :cwd])
+      (dissoc-if-equal old-window :active-buffer)
+      (dissoc-if-equal old-window :views)
+      (dissoc-if-equal old-window :cwd)
+      (assoc :buffers (diff-buffers (window :buffers)
+                                    (old-window :buffers)))
+      (dissoc-nil :buffers)))
+
+(defn- print-window [window]
+  (update window :buffers
+          (fn [buffers]
+            (map-vals (fn [buf]
+                        (-> buf
+                            remove-fields
+                            (dissoc :autocompl :str :highlights))) buffers))))
+
+(listen :window-changed
+        (fn [{render! :render! :as window} old-window _]
+          ;(println "window:" (print-window window))
+          ;(println "old-window:" (print-window old-window))
+          (println "diff-window:" (print-window (diff-window window old-window)))
+          (render! window (diff-window window old-window))
+          (update window
+                  :buffers
+                  (fn [buffers]
+                    (map-vals #(assoc % :changes []) buffers)))))
+
+(listen :buffer-changed
+        (fn [buf _ window]
+          (-> buf
+              (bound-scroll-top (-> window :viewport :h))
+              (assoc :lines (-> buf :lineindex total-lines))
+              pos2xy
+              highlights2xy
+              visual2xy)))
 
 (listen :change-buffer
         (fn [buf oldbuf c]

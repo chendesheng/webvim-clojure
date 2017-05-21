@@ -6,7 +6,8 @@
             [webvim.core.rope :refer [save-undo]]
             [webvim.core.utils :refer [windows? trim-last-newline with-temp-file]]
             [webvim.core.diff :refer [diff patch]]
-            [webvim.core.buffer :refer [async-with-catch buf-match-bracket async]]))
+            [webvim.core.editor :refer [async-update-buffer]]
+            [webvim.core.buffer :refer [buf-match-bracket]]))
 
 (defn- js-beautify [s name filetype]
   (println "js-beautify")
@@ -19,20 +20,19 @@
     ;FIXME: trim-last-newline is only a temp solution
     (let [s (-> buf :str str trim-last-newline)
           res (time (js-beautify s (buf :name) type))]
-      (if (-> res :exit zero?) 
+      (if (-> res :exit zero?)
         (-> buf
-            (patch (diff s (-> res :out str))) 
+            (patch (diff s (-> res :out str)))
             save-undo)
         (do
           (println "Format Error:" (res :err))
           (-> res :err Throwable. throw))))));use old buf if formatter fails
 
 (defn- format-error [buf message]
-  (async buf
-         (update buf
-                 :message
-                 #(str %2 %3 " " %1)
-                 "Format failed: " message)))
+  (update buf
+          :message
+          #(str %2 %3 " " %1)
+          "Format failed: " message))
 
 (defn wrap-async-auto-format [cmds formatter]
   (letfn [(f [buf]
@@ -48,9 +48,10 @@
                 (fn [buf cmd rg args]
                   (-> buf
                       (assoc :message "formatting...")
-                      (async-with-catch
-                        (-> buf
-                            f
-                            (fnwrite cmd rg args)
-                            buf-match-bracket))))))))
+                      (async-update-buffer
+                        (fn [buf]
+                          (-> buf
+                              f
+                              (fnwrite cmd rg args)
+                              buf-match-bracket)))))))))
 

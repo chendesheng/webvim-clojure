@@ -1,7 +1,5 @@
 (ns webvim.jumplist
-  (:require [clojure.core.async :as async]
-            [clojure.java.io :as io]
-            [webvim.core.editor :refer [*window*]])
+  (:require [clojure.java.io :as io])
   (:use clojure.pprint
         webvim.core.event
         webvim.core.rope
@@ -28,13 +26,10 @@
         (fn [window]
           (println "jumplist create-window")
           (assoc window
-                 :jumplist (atom {}))))
+                 :jumplist {})))
 
-(defn- jumplist []
-  (*window* :jumplist))
-
-(defn jumplist-before []
-  (@(jumplist) :before))
+(defn jumplist-before [jumplist]
+  (jumplist :before))
 
 ;jump-push before these motions
 ;ONLY work for single keycode
@@ -63,37 +58,51 @@
 (defn- push-current [jl buf]
   (new-future jl (select-keys buf [:id :pos :y :filepath :name])))
 
+(defn- update-jumplist [buf fn-update]
+  (update-in
+    buf
+    [:window :jumplist] fn-update))
+
 (defn jump-push
   "Add :pos to jump list"
-  [buf]
-  (swap! (jumplist) (fn [jl {id :id pos :pos :as buf}]
-                      (if (and
-                            (= (-> jl just-now :pos) pos)
-                            (= (-> jl just-now :id) id))
-                        jl
-                        (push-current jl buf))) buf)
-  buf)
+  [{id :id pos :pos :as buf}]
+  (update-jumplist
+    buf
+    (fn [jl]
+      (if (and
+            (= (-> jl just-now :pos) pos)
+            (= (-> jl just-now :id) id))
+        jl
+        (push-current jl buf)))))
 
 ;TODO: handle not exist buffer
 (defn jump-next
   [buf]
-  (if (no-next? @(jumplist)) nil
-      (-> (jumplist)
-          (swap! go-future)
-          next-future)))
+  (update-in buf
+             [:window :jumplist]
+             (fn [jl]
+               (if (no-next? jl)
+                 nil
+                 (-> jl
+                     go-future
+                     next-future)))))
 
 (defn jump-prev
   [buf]
-  (if (no-prev? @(jumplist)) nil
-      (-> (jumplist)
-          (swap! (fn [jl]
-                   (if (no-current? jl) 
-                     (-> jl
-                         (push-current buf)
-                         go-back
-                         go-back)
-                     (go-back jl))))
-          next-future)))
+  (update-jumplist
+    buf
+    (fn [jl]
+      (if (no-prev? jl)
+        nil
+        (if (no-current? jl)
+          (-> jl
+              (push-current buf)
+              go-back
+              go-back
+              next-future)
+          (-> jl
+              go-back
+              next-future))))))
 
 ;split old buffer to 3 parts [0 a) [a b) [b count)
 (defn- shift-by-change [pos y oldbuf {cpos :pos clen :len :as c}]
@@ -114,13 +123,15 @@
 (defn- on-buffer-change [buf oldbuf c]
   (let [bufid (buf :id)]
     ;TODO: This could be slow.
-    (swap! (jumplist) 
-           rewrite-history
-           (fn [{id :id pos :pos y :y :as p}]
-             (if (= id bufid)
-               (merge p (shift-by-change pos y oldbuf c))
-               p)))
-    buf))
+    (update-jumplist
+      buf
+      (fn [jl]
+        (rewrite-history
+          jl
+          (fn [{id :id pos :pos y :y :as p}]
+            (if (= id bufid)
+              (merge p (shift-by-change pos y oldbuf c))
+              p)))))))
 
 ;keep track positions when buffer changed
 (listen

@@ -45,14 +45,33 @@
               buf3)
         ;_ (println "buf:" buf)
         bufid (:id buf)
-        active-buf (:active-buf @client)]
+        active-buffer (:active-buffer @client)]
     (merge (if-not (nil? buf)
              (if (or (nil? bufid)
-                     (= active-buf bufid))
-               {:buffers {active-buf buf}}
-               {:active-buf bufid
+                     (= active-buffer bufid))
+               {:buffers {active-buffer buf}}
+               {:active-buffer bufid
                 :layouts [:| bufid]
                 :buffers {bufid buf}})) win)))
+
+(defn- adapt [patch]
+  (let [adapt-changes (fn [buf]
+                        (if (some? (:str buf))
+                          (-> buf
+                              (assoc :changes [{:a [0 0] :b [0 0] :to (buf :str)}])
+                              (dissoc :str))
+                          buf))]
+    (if (-> patch :buffers some?)
+      (update patch :buffers
+              (fn [buffers]
+                (into
+                  {}
+                  (map
+                    (fn [[bufid buf]]
+                      [(-> bufid name js/parseInt)
+                       (adapt-changes buf)])
+                    buffers))))
+      patch)))
 
 (add-listener
   :onload :onload-handler
@@ -65,7 +84,7 @@
     (add-listener
       :input-key :input-key-handler
       (fn [key]
-        (send conn (str (:active-buf @client) "!" key))))))
+        (send conn (str (:active-buffer @client) "!" key))))))
 
 (add-listener
   :net-onopen :send-resize
@@ -88,9 +107,11 @@
 (add-listener
   :net-onmessage :update-client
   (fn [resp]
-    (doseq [patch (map patch-adapt resp)]
+    (doseq [patch (if (vector? resp)
+                    resp [resp])]
+
       ;(println "receive:" patch)
-      (update-client patch))))
+      (update-client (adapt patch)))))
 
 (add-listener
   :net-onfail :reconnect
@@ -114,7 +135,7 @@
         px2row-column (fn [[w h]]
                         (let [h (- h 24)]
                           [(intdiv w cw) (intdiv h ch)]))]
-    (send-size (px2row-column (client-size)))) 
+    (send-size (px2row-column (client-size))))
   ;refresh all
   (let [patch (update @client :buffers
                       (fn [buffers]

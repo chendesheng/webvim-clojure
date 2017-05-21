@@ -1,6 +1,5 @@
 (ns user
   (:require [me.raynes.fs :as fs]
-            [clojure.core.async :as async]
             [cljfmt.core :as cljfmt]
             [webvim.panel :refer [append-output-panel]]
             [clojure.string :as string]
@@ -17,13 +16,13 @@
         webvim.core.utils
         webvim.keymap))
 
-(defn print-buf
-  ([]
-    (let [buf (dissoc (get-from-ui :buf) :str :history :keymap :normal-mode-keymap 
-                      :insert-mode-keymap :lineindex :ex-mode-keymap :context)]
-      (pprint buf)))
-  ([& ks]
-    (pprint (select-keys (get-from-ui :buf) ks))))
+(comment defn print-buf
+         ([]
+           (let [buf (dissoc (get-from-ui :buf) :str :history :keymap :normal-mode-keymap
+                             :insert-mode-keymap :lineindex :ex-mode-keymap :context)]
+             (pprint buf)))
+         ([& ks]
+           (pprint (select-keys (get-from-ui :buf) ks))))
 
 (defn- cache-resource [path url]
   (if-not (fs/exists? path)
@@ -34,12 +33,7 @@
   (doseq [r []]
     (apply cache-resource r)))
 
-(defn restart []
-  (do-buffers
-    (fn [buf]
-      (let [tmp (init-keymap-tree buf)
-            keymaps (assoc tmp :keymap (tmp :normal-mode-keymap))]
-        (merge buf keymaps))))
+(defn restart [window]
   (future
     (Thread/sleep 10) ;wait some time so restart happens after flush states to client
     (server/stop)
@@ -47,19 +41,37 @@
   "ok")
 
 (defn eval-reload [^String ns]
-  (try 
+  (try
     (->> (format "(use '%s :reload)" ns) read-string eval)
     (catch Exception e
       (str e))))
 
+(defn- reload-keymap [buf]
+  (let [tmp (init-keymap-tree buf)
+        keymaps (assoc tmp :keymap (tmp :normal-mode-keymap))]
+    (merge buf keymaps)))
+
+(defn- reload-keymaps [{bufid :id :as buf}]
+  (let [buf (reload-keymap buf)]
+    (map-vals (fn [buf]
+                (if (not= bufid (buf :id))
+                  (let [tmp (init-keymap-tree buf)
+                        keymaps (assoc tmp :keymap (tmp :normal-mode-keymap))]
+                    (merge buf keymaps))
+                  buf))
+              (-> buf :window :buffers))))
+
 (defn- cmd-reload [buf _ _ _]
   (let [ns (get-namespace (buf :filepath))
-        ret (if (nil? ns)  
+        ret (if (nil? ns)
               "Can't get right namespace"
               (eval-reload ns))]
-    (if (nil? ret)
-      (assoc buf :message (restart))
-      (assoc buf :message (str ret)))))
+    (-> buf
+        reload-keymaps
+        (assoc :message
+               (if (nil? ret)
+                 (restart (buf :window))
+                 (str ret))))))
 
 (defn- cmd-doc [buf _ _ [name]]
   (let [code (str "(doc " name ")")]
@@ -69,22 +81,21 @@
   (let [code (str "(user/print-buf " (string/join " " props) ")")]
     (print-eval buf code)))
 
-(defn- cmd-test [buf _ _ props]
-  (let [ns (get-namespace (buf :filepath))
-        output (str (repeat-chars 80 \=) "\n:test\n"
-                    (with-out-str
-                      (binding [clojure.test/*test-out* *out*]
-                        (clojure.test/run-tests (symbol ns)))))]
-    (append-output-panel buf output true)))
+(comment defn- cmd-test [buf _ _ props]
+         (let [ns (get-namespace (buf :filepath))
+               output (str (repeat-chars 80 \=) "\n:test\n"
+                           (with-out-str
+                             (binding [clojure.test/*test-out* *out*]
+                               (clojure.test/run-tests (symbol ns)))))]
+           (append-output-panel buf output true)))
 
 (defn add-init-ex-commands-event []
   (listen :init-ex-commands
           (fn [cmds _]
-            (conj cmds 
+            (conj cmds
                   ["reload" cmd-reload]
-                  ["print" cmd-print]
-                  ["doc" cmd-doc]
-                  ["test" cmd-test]))))
+                  ;["print" cmd-print]
+                  ["doc" cmd-doc]))))
 
 (defn- get-files []
   (let [dir? #(.isDirectory %)]
@@ -113,36 +124,34 @@
     (println f)
     (format-clj-file (str f))))
 
-(defn reset-buffers []
-  (let [buffers (get-buffers persistent-buffers)]
-    (reset-buffers!)
-    (registers-put! "%" nil)
-    (doseq [{filepath :filepath y :y} buffers]
-      (let [buf @(new-file filepath y)]
-        (cond
-          (and (-> (get-from-ui :buf) :filepath some?)
-               (path= filepath ((get-from-ui :buf) :filepath)))
-          (do
-            (update-ui (fn [ui] (dissoc ui :buf)))
-            (registers-put! "%" {:str filepath :id (buf :id)})
-            (send-buf! buf))
-          (path= filepath (:str (registers-get "#")))
-          (registers-put! "#" {:str filepath :id (buf :id)}))))
-    (if (nil? (registers-get "%"))
-      (let [buf (first (get-buffers))]
-        (registers-put! "%" {:str (buf :filepath) :id (buf :id)})
-        (send-buf! buf)))))
+(comment defn reset-buffers []
+         (let [buffers (get-buffers persistent-buffers)]
+           (reset-buffers!)
+           (registers-put! "%" nil)
+           (doseq [{filepath :filepath y :y} buffers]
+             (let [buf @(new-file filepath y)]
+               (cond
+                 (and (-> (get-from-ui :buf) :filepath some?)
+                      (path= filepath ((get-from-ui :buf) :filepath)))
+                 (do
+                   (update-ui (fn [ui] (dissoc ui :buf)))
+                   (registers-put! "%" {:str filepath :id (buf :id)})
+                   (send-buf! buf))
+                 (path= filepath (:str (registers-get "#")))
+                 (registers-put! "#" {:str filepath :id (buf :id)}))))
+           (if (nil? (registers-get "%"))
+             (let [buf (first (get-buffers))]
+               (registers-put! "%" {:str (buf :filepath) :id (buf :id)})
+               (send-buf! buf)))))
 
 ;Not sure why agent await blocking everything. Start a java thread works fine.
-(defonce main 
+(defonce main
   (do
     (cache-resources)
     (add-init-ex-commands-event)
     (start
       true
       {:port 8080 :join? false})))
-
-
 
 (defn model-handler [diff data]
   (println "ROOT")

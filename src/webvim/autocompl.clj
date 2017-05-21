@@ -21,7 +21,7 @@
 (defn- not-word-chars [lang]
   (-> lang word-re :not-word-chars))
 
-(defn- split-words 
+(defn- split-words
   "split text to word vector"
   [lang txt]
   (split txt (re-pattern (str "[" (not-word-chars lang) "]")) -1))
@@ -110,8 +110,8 @@
                 oldb (-> c :len (+ a))
                 newb (-> c :to count (+ a))]
             (-> words
-                (remove-words 
-                  (autocompl-parse 
+                (remove-words
+                  (autocompl-parse
                     lang (subr olds (expand-ends-word lang olds a oldb))))
                 (merge-words
                   (autocompl-parse

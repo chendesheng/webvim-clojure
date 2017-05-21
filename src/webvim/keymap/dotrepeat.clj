@@ -9,20 +9,25 @@
         webvim.core.event))
 
 (defn- dot-repeat [buf keycode]
-  (let [keycodes ((registers-get ".") :keys)]
+  (let [keycodes (-> buf :window :registers (registers-get ".") :keys)]
     (if (empty? keycodes)
       buf
       (replay-keys buf keycodes))))
 
 (defn- save-dot-repeat [buf]
   (let [keys (-> buf :dot-repeat-keys reverse)
-        nochange? (-> buf :pending-undo empty?)]
+        nochange? (-> buf :pending-undo empty?)
+        buf (dissoc buf :dot-repeat-keys)]
     (if-not (or nochange? ;only repeat keys make changes
                 (empty? keys)
                 ;don't repeat these keys
                 (contains? #{"." "u" "p" "P" ":" "<c-r>"} (first keys)))
-      (registers-put! "." {:keys keys :str (string/join keys)}))
-    (dissoc buf :dot-repeat-keys)))
+      (update-in buf
+                 [:window :registers]
+                 registers-put
+                 "."
+                 {:keys keys :str (string/join keys)})
+      buf)))
 
 (listen
   :before-handle-key
@@ -33,7 +38,7 @@
   :normal-mode-keymap
   (fn [keymap _]
     (-> keymap
-        (wrap-key 
+        (wrap-key
           :after
           (fn [handler]
             (fn [buf keycode]

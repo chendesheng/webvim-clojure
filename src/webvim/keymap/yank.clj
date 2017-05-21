@@ -3,7 +3,7 @@
     [clojure.string :as string]
     [webvim.core.utils :refer [nop]]
     [webvim.core.rope :refer [buf-set-pos buf-subr]]
-    [webvim.core.register :refer [registers-yank-to! registers-put!]]
+    [webvim.core.register :refer [registers-yank-to registers-put]]
     [webvim.core.event :refer [listen]]
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.keymap.repeat :refer [wrap-keymap-repeat-prefix]]
@@ -14,13 +14,19 @@
                                     set-linewise set-range set-visual-range]]))
 
 (defn yank-blockwise [buf items]
-  (registers-put! (-> buf :context :register) {:str (string/join "\n" (map first items)) :blockwise? true}))
+  (update-in buf [:window :registers]
+             (registers-put (-> buf :context :register)
+                            {:str (string/join "\n" (map first items)) :blockwise? true})))
 
 (defn yank-range
   ([buf [a b]]
     (let [s (buf-subr buf a b)]
-      (registers-yank-to! (-> buf :context :register)
-                          {:str s :linewise? (-> buf :context :linewise?)})
+      (-> buf
+          :window
+          :registers
+          (registers-yank-to
+            (-> buf :context :register)
+            {:str s :linewise? (-> buf :context :linewise?)}))
       (update buf :context dissoc :register))))
 
 (defn- visual-block-yank [buf]
@@ -44,7 +50,7 @@
                    (wrap-temp-visual-mode visual-keymap visual-keymap-y)
                    {"y" (make-operator-current-line yank-range)
                     :after (if-not-keycode fn-yank
-                             (conj keycodes-visual "y"))}))
+                                           (conj keycodes-visual "y"))}))
            "Y" (make-operator-current-line yank-range))))
 
 (listen

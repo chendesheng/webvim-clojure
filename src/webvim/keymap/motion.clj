@@ -2,8 +2,7 @@
   (:require
     [webvim.keymap.objects :refer [current-word]]
     [webvim.keymap.compile :refer [wrap-keycode wrap-key]]
-    [webvim.keymap.repeat :refer [repeat-count? repeat-count]]
-    [webvim.core.ui :refer [viewport]])
+    [webvim.keymap.repeat :refer [repeat-count? repeat-count]])
   (:use webvim.core.pos
         webvim.core.buffer
         webvim.core.register
@@ -184,25 +183,32 @@
       (assoc-in buf [:context :motion-cancel?] true))))
 
 (defn- move-to-char+ [buf keycode]
-  (registers-put! ";" {:str keycode :forward? true :inclusive? true})
-  (move-by-char buf keycode true true))
+  (-> buf
+      (update-in [:window :registers] registers-put ";" {:str keycode :forward? true :inclusive? true})
+      (move-by-char keycode true true)))
 
 (defn- move-to-char- [buf keycode]
-  (registers-put! ";" {:str keycode :forward? false :inclusive? true})
-  (move-by-char buf keycode false true))
+  (-> buf
+      (update-in [:window :registers] registers-put ";" {:str keycode :forward? false :inclusive? true})
+      (move-by-char keycode false true)))
 
 (defn- move-before-char+ [buf keycode]
-  (registers-put! ";" {:str keycode :forward? true :inclusive? false})
-  (move-by-char buf keycode true false))
+  (-> buf
+      (update-in [:window :registers] registers-put ";" {:str keycode :forward? true :inclusive? false})
+      (move-by-char keycode true false)))
 
 (defn- move-before-char- [buf keycode]
-  (registers-put! ";" {:str keycode :forward? false :inclusive? false})
-  (move-by-char buf keycode false false))
+  (-> buf
+      (update-in [:window :registers] registers-put ";" {:str keycode :forward? false :inclusive? false})
+      (move-by-char keycode false false)))
 
 (defn- repeat-move-by-char [buf same-dir?]
   (let [{ch :str
          forward? :forward?
-         inclusive? :inclusive?} (registers-get ";")]
+         inclusive? :inclusive?} (-> buf
+                                     :window
+                                     :registers
+                                     (registers-get ";"))]
     (move-by-char buf ch (= same-dir? forward?) inclusive?)))
 
 (defn- repeat-move-by-char+ [buf keycode]
@@ -242,26 +248,24 @@
           s (str re)]
       (if (nil? re)
         (assoc buf :message "No string under cursor")
-        (do
-          (registers-put! "/" {:str s :forward? forward?})
-          (let [fn-highlight (if forward? re-forward-highlight re-backward-highlight)]
-            (-> buf
-                (search-message s forward?)
-                (fn-highlight re)
-                (highlight-all-matches re))))))))
+        (let [fn-highlight (if forward? re-forward-highlight re-backward-highlight)]
+          (-> buf
+              (update-in [:window :registers] registers-put "/" {:str s :forward? forward?})
+              (search-message s forward?)
+              (fn-highlight re)
+              (highlight-all-matches re)))))))
 
 (defn- same-word-first [buf]
   (let [re (re-current-word buf)
         s (str re)]
     (if (nil? re)
       (assoc buf :message "No string under cursor")
-      (do
-        (registers-put! "/" {:str s :forward? true})
-        (-> buf
-            buf-start
-            (search-message s true)
-            (re-forward-highlight re)
-            (highlight-all-matches re))))))
+      (-> buf
+          (update-in [:window :registers] registers-put "/" {:str s :forward? true})
+          buf-start
+          (search-message s true)
+          (re-forward-highlight re)
+          (highlight-all-matches re)))))
 
 ;TODO: only highlight diff parts
 ;(defonce listen-change-buffer
@@ -283,7 +287,7 @@
 ;             :highlights (cons not-insects newhighlights)))))
 
 (defn- repeat-search [buf same-dir?]
-  (let [{s :str forward? :forward?} (or (registers-get "/")
+  (let [{s :str forward? :forward?} (or (-> buf :window :registers (registers-get "/"))
                                         {:str "" :forward? true})
         re (search-pattern s)
         hightlightall? (-> buf :highlights empty?)
@@ -303,7 +307,7 @@
 (listen
   :change-buffer
   (fn [buf oldbuf c]
-    (let [s (:str (registers-get "/"))]
+    (let [s (-> buf :window :registers (registers-get "/") :str)]
       (if-not (or (-> buf :highlights empty?) (empty? s))
         (highlight-all-matches buf (search-pattern s))
         buf))))
@@ -312,7 +316,7 @@
   (fn [buf keycode]
     (move-to-line buf
                   (+ (buf :scroll-top)
-                     (-> (viewport) :h dec (* percentFromTop) Math/ceil)))))
+                     (-> buf :window :viewport :h dec (* percentFromTop) Math/ceil)))))
 
 (defn wrap-repeat [f]
   (fn [buf keycode]

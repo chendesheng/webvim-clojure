@@ -1,7 +1,7 @@
 (ns webvim.keymap.jump
   (:require
     [me.raynes.fs :as fs]
-    [webvim.core.buffer :refer [change-active-buffer get-buffer-by-id]]
+    [webvim.core.buffer :refer [change-active-buffer]]
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.panel :refer [edit-file output-panel goto-buf]]
     [webvim.core.rope :refer [buf-set-pos subr re-test]]
@@ -16,7 +16,7 @@
     (loop [pos (fndir buf)]  ;TODO: filter lazy seq instead of loop
       (if (nil? pos)
         buf ;newest or oldest
-        (let [newbuf (get-buffer-by-id (pos :id))]
+        (let [newbuf (-> buf :window :buffers (get (pos :id)))]
           (if (nil? newbuf)
             ;buffer has been deleted, ignore
             (recur (fndir buf))
@@ -30,7 +30,7 @@
                   (buf-set-pos buf newpos)
                   (let []
                     (change-active-buffer id newid)
-                    (assoc buf :nextid newid))))
+                    (assoc-in buf [:window :active-buffer] newid))))
               ;buffer has been modifed and cursor is no longer inside, ignore
               (recur (fndir buf)))))))))
 
@@ -65,10 +65,10 @@
       (assoc
         "<f1>" (wrap-keycode #(goto-buf % (@(output-panel false) :id)))
         "<c-s-6>" (fn [buf keycode]
-                    (let [reg (registers-get "#")]
-                      (if (nil? reg)
+                    (let [nextid (-> buf :window :registers (registers-get "#") :id)]
+                      (if (nil? nextid)
                         (assoc buf :message "No alternative file")
-                        (goto-buf buf (:id (get-buffer-by-id (:id reg)))))))
+                        (goto-buf buf nextid))))
         "<c-o>" (move-to-jumplist jump-prev)
         ;<tab> === <c-i>
         "<tab>" (move-to-jumplist jump-next))))

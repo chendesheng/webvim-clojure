@@ -132,7 +132,7 @@
   (first (clojure.string/split-lines s)))
 
 (defn- linebuf-put [buf keycode]
-  (let [txt (:str (registers-get keycode))]
+  (let [txt (-> buf :window :registers (registers-get keycode) :str)]
     (if (string? txt)
       (linebuf-insert buf (str-first-line txt))
       buf)))

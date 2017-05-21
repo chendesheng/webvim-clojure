@@ -1,12 +1,12 @@
 (ns webvim.keymap.delete
-  (:require 
+  (:require
     [webvim.core.utils :refer [nop]]
     [webvim.core.rope :refer [buf-set-pos buf-delete buf-subr]]
     [webvim.core.line :refer [line-end line-start]]
     [webvim.core.event :refer [listen log]]
     [webvim.keymap.compile :refer [wrap-keycode]]
     [webvim.keymap.visual :refer [wrap-temp-visual-mode keycodes-visual]]
-    [webvim.core.register :refer [registers-delete-to!]]
+    [webvim.core.register :refer [registers-delete-to]]
     [webvim.keymap.yank :refer [yank-blockwise]]
     [webvim.keymap.operator :refer [set-current-pos set-range set-linewise set-line-end
                                     set-visual-range visual-block-lines
@@ -23,7 +23,7 @@
 
 (defn- shift-ranges-delete [ranges a b]
   (if (< a b)
-    (map 
+    (map
       (fn [[a1 b1]]
         [(shift-delete a1 a b)
          (shift-delete b1 a b)])
@@ -41,8 +41,9 @@
 (defn delete-range [buf [a b :as rg]]
   ;(log ["delete-range" rg])
   (let [s (buf-subr buf a b)]
-    (registers-delete-to! (-> buf :context :register)
-                          {:str s :linewise? (-> buf :context :linewise?)})
+    (-> buf :window :registers
+        (registers-delete-to (-> buf :context :register)
+                             {:str s :linewise? (-> buf :context :linewise?)}))
     (-> buf
         (buf-delete a b)
         (update :context dissoc :register))))

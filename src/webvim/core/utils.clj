@@ -321,3 +321,14 @@
               ~@body
               (finally
                 (fs/delete ~f)))))
+
+(defn map-vals
+  "Returns a lazy hashmap consisting of the result of applying f to
+  the value of each set in hashmap.
+  Function f should accept one single argument."
+  {:added "1.9"}
+  [f m]
+  (persistent!
+    (reduce-kv (fn [m k v] (assoc! m k (f v)))
+               (transient (empty m)) m)))
+

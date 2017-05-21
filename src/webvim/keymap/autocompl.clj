@@ -1,6 +1,7 @@
 (ns webvim.keymap.autocompl
   (:require
-    [webvim.keymap.compile :refer [wrap-key]])
+    [webvim.keymap.compile :refer [wrap-key]]
+    [webvim.core.editor :refer [get-or-create-window async-update-buffer]])
   (:use clojure.pprint
         webvim.core.buffer
         webvim.core.event
@@ -28,7 +29,7 @@
                               fn-suggest
                               async]}]
   (println "new-autocompl")
-  (if (-> buf :autocompl nil?) 
+  (if (-> buf :autocompl nil?)
     (let [w (uncomplete-word buf)]
       (if (nil? w) buf
           (if async
@@ -38,12 +39,13 @@
                                     :w w
                                     :suggestions nil
                                     :index 0
-                                    :async-done? false})]
+                                    :async-done? false})
+                  {{winid :id} :window bufid :id} buf]
               (future
                 (println "future")
-                (let [abuf (get-buffer-agent (buf :id))
-                      autocompl-w (fn [] (-> @abuf :autocompl :w))
-                      autocompl-some? (fn [] (-> @abuf :autocompl some?))]
+                (let [awindow (get-or-create-window winid)
+                      autocompl-w (fn [] (-> @awindow :buffers (get bufid) :autocompl :w))
+                      autocompl-some? (fn [] (-> @awindow :buffers (get bufid) :autocompl some?))]
                   (loop [words (first all-words)
                          rest-words (next all-words)]
                     ;(println (empty? rest-words))
@@ -53,25 +55,25 @@
                     ;stop generate words when :autocompl is nil
                     (let [suggestions (limit-suggestions fn-suggest (autocompl-w) words limit-number)]
                       ;(pprint suggestions)
-                      (send abuf
-                            (fn [buf words suggestions]
-                              (if (-> buf :autocompl nil?)
-                                buf
-                                (-> buf
-                                    (update :autocompl
-                                            assoc :words words :suggestions suggestions)
-                                    send-buf!))) words suggestions))
+                      (async-update-buffer
+                        winid bufid
+                        (fn [buf]
+                          (if (-> buf :autocompl nil?)
+                            buf
+                            (update buf :autocompl
+                                    assoc :words words :suggestions suggestions)))))
                     (if (and (autocompl-some?) (some? rest-words))
                       (recur (concat words (first rest-words))
                              (next rest-words))
                       ;spin and re-calculate suggestions when :w changes until autocompl session ends by check (-> buf :autocompl nil?) is true
-                      (loop [oldw (autocompl-w) 
+                      (loop [oldw (autocompl-w)
                              w (autocompl-w)]
                         (if (not= oldw w)
-                          (send abuf (fn [buf suggestions]
-                                       (-> buf
-                                           (assoc-in [:autocompl :suggestions] suggestions)
-                                           send-buf!)) (limit-suggestions fn-suggest w words limit-number))
+                          (let [suggestions (limit-suggestions fn-suggest w words limit-number)]
+                            (async-update-buffer
+                              winid bufid
+                              (fn [buf]
+                                (assoc-in buf [:autocompl :suggestions] suggestions))))
                           (Thread/sleep 10))
                         (if (autocompl-some?)
                           (recur w (autocompl-w))))))))
@@ -93,7 +95,7 @@
   (let [w (uncomplete-word buf)]
     (if (nil? w)
       (assoc buf :autocompl nil) ;stop if no uncomplete word
-      (update buf :autocompl assoc 
+      (update buf :autocompl assoc
               :index 0 :w w
               :suggestions (if async
                              (-> buf :autocompl :suggestions)
@@ -114,7 +116,7 @@
           buf
           (let [newi (mod (+ (f i) cnt) cnt)
                 neww (suggestions newi)]
-            (-> buf 
+            (-> buf
                 (assoc-in [:autocompl :index] newi)
                 (replace-suggestion neww w))))))))
 
@@ -188,7 +190,7 @@
                        :start-autocompl? (fn [buf keycode]
                                            (or (= keycode "<c-p>")
                                                (= keycode "<c-n>")))
-                       :continue-autocompl? (fn [_ keycode] 
+                       :continue-autocompl? (fn [_ keycode]
                                               (not= keycode "<esc>"))})
 
 (listen

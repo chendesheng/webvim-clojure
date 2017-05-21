@@ -24,7 +24,8 @@
 (defn- diff? [o1 o2 key]
   (not= (o1 key) (o2 key)))
 
-(defn- active-buf [{active :active-buf buffers :buffers}]
+(defn- active-buffer [{active :active-buffer buffers :buffers}]
+  ;(println (keys buffers))
   (if (some? buffers)
     (buffers active)))
 
@@ -149,9 +150,9 @@
   :client-changed :ui-render
   (fn [[patch old-client client]]
     (render-views old-client client)
-    (let [old-buf (active-buf old-client)
-          buf (active-buf client)]
-      (render-beep old-buf buf)
+    (let [old-buf (active-buffer old-client)
+          buf (active-buffer client)]
+      ;(render-beep old-buf buf)
       (render-title old-client old-buf client buf)
       (render-buffer old-buf buf)
       (render-status-bar old-buf buf)

@@ -2,10 +2,9 @@
   (:require [me.raynes.fs :as fs]
             [clojure.java.io :as io]
             [clojure.string :as string]
-            [webvim.core.ui :refer [send-buf!]]
             [webvim.core.lineindex :refer [create-lineindex total-lines pos-xy]]
-            [webvim.core.register :refer [registers-put!]]
-            [webvim.core.editor :refer [*window*]])
+            [webvim.core.register :refer [registers-put file-register]]
+            [webvim.core.editor :refer [async-update-buffer]])
   (:use clojure.pprint
         webvim.core.rope
         webvim.core.pos
@@ -15,39 +14,11 @@
         webvim.core.parallel-universe
         webvim.core.event))
 
-(defn- buffer-list []
-  (*window* :buffers))
-
-(defn get-buffer-agent [id]
-  (@(buffer-list) id))
-
-(defn get-buffer-by-id [id]
-  (let [abuf (get-buffer-agent id)]
-    (if (nil? abuf)
-      nil
-      @abuf)))
-
-(defn get-buffer-agent-by-name [name]
-  (some (fn [abuf]
-          (if (= (@abuf :name) name)
-            abuf))
-        (vals @(buffer-list))))
-
 (defn get-buffers
-  ([]
-    (map deref (vals @(buffer-list))))
-  ([f]
-    (filter f (get-buffers))))
-
-(defn do-buffers [f]
-  (doseq [abuf (vals @(buffer-list))]
-    (send abuf f)))
-
-(defn remove-buffer [id]
-  (swap! (buffer-list) dissoc id))
-
-(defn reset-buffers! []
-  (reset! (buffer-list) {}))
+  ([buf]
+    (-> buf :window :buffers vals))
+  ([buf f]
+    (filter f (get-buffers buf))))
 
 (defmacro with-catch [buf & body]
   `(try
@@ -55,19 +26,6 @@
      (catch Exception e#
        (fire-event e# :exception)
        (assoc ~buf :message (str e#)))))
-
-(defmacro async [buf & body]
-  `(let [abuf# (get-buffer-agent (~buf :id))]
-     (if (some? abuf#)
-       (-> abuf#
-           (send (fn [~'buf]
-                   (let [buf# ~@body]
-                     (send-buf! buf#))))))
-     ~buf))
-
-(defmacro async-with-catch [buf & body]
-  `(async ~buf
-          (with-catch ~buf ~@body)))
 
 (defonce output-panel-name "[Output]")
 (defonce grep-panel-name "[Grep]")
@@ -89,15 +47,6 @@
                           (println ":filepath " (buf :filepath))
                           (println err))))
 
-(defn- buffer-list-save!
-  "Generate buffer id (increase from 1) and add to buffer-list"
-  [buf]
-  (let [abuf (wrap-agent buf)]
-    (swap! (buffer-list)
-           (fn [buffers abuf]
-             (assoc buffers (@abuf :id) abuf)) abuf)
-    abuf))
-
 (defn mod-time [buf]
   (if (-> buf :filepath nil?)
     0
@@ -107,6 +56,7 @@
   (assoc buf :mod-time (mod-time buf)))
 
 (defn create-buf [bufname filepath txt]
+  (println "create-buf:" bufname filepath (->> txt (take 20) (apply str)))
   (let [txtLF (-> txt
                   (.replace "\r\n" "\n")
                   ensure-ends-with-newline) ;always use LF in memory
@@ -162,7 +112,7 @@
              :CRLF? (crlf? txt)
              :tabsize 4
              :expandtab false
-             :view 0}]
+             :view nil}]
     (-> buf
         set-mod-time
         init-file-type
@@ -171,14 +121,11 @@
 (listen :create-window
         (fn [window]
           (println "buffer create-window")
-          (let [buf (create-buf "" nil "")
-                areg (window :registers)]
-            (swap! areg (fn [reg]
-                          (assoc reg "%" (buf :name))))
-            (send (window :ui) (fn [ui] (assoc ui :buf buf)))
-            (assoc window
-                   :buffers
-                   (atom {(buf :id) (wrap-agent buf)})))))
+          (let [{bufid :id bufname :name :as buf} (create-buf "" nil "")]
+            (-> window
+                (assoc-in [:registers "%"] bufname)
+                (assoc :buffers {bufid (assoc buf :view 0)}) ;init view
+                (assoc :active-buffer bufid)))))
 
 ;http://stackoverflow.com/questions/13789092/length-of-the-first-line-in-an-utf-8-file-with-bom
 ;TODO: use Apache Commons IO: http://commons.apache.org/proper/commons-io/download_io.cgi
@@ -189,27 +136,19 @@
       (.substring line 1)
       line)))
 
-(defn open-file
-  "Create buffer from a file by slurp, return emtpy buffer if file not exists"
-  [^String f]
-  (if (or (nil? f) (contains? panels f)) ;TODO: handle disk files with same name. ???use negative id for these buffers???
-    (create-buf (str f) nil "")
-    (let [f (-> f .trim fs/normalized)]
-      (create-buf (fs/base-name f)
-                  (str f)
-                  (if (fs/exists? f)
-                    (debomify (slurp f)) "")))))
-
 (defn new-file
   ([^String f]
-    (-> f
-        open-file
-        buffer-list-save!))
+    (if (or (nil? f) (contains? panels f)) ;TODO: handle disk files with same name. ???use negative id for these buffers???
+      (create-buf (str f) nil "")
+      (let [f (-> f .trim fs/normalized)]
+        (create-buf (fs/base-name f)
+                    (str f)
+                    (if (fs/exists? f)
+                      (debomify (slurp f)) "")))))
   ([^String f y]
     (-> f
-        open-file
-        (lines-row y)
-        buffer-list-save!)))
+        new-file
+        (lines-row y))))
 
 (defn printable-filepath [buf]
   (let [{nm :name
@@ -239,12 +178,13 @@
 
 (listen :change-buffer
         (fn [buf _ _]
-          (async buf
-                 (assoc buf :dirty
-                        (or
-                          (-> buf :pending-undo empty? not)
-                          (not (identical? (-> buf :history just-now) (-> buf :save-point first)))
-                          (not= (buf :filepath) (-> buf :save-point second)))))))
+          (async-update-buffer
+            buf
+            (assoc buf :dirty
+                   (or
+                     (-> buf :pending-undo empty? not)
+                     (not (identical? (-> buf :history just-now) (-> buf :save-point first)))
+                     (not= (buf :filepath) (-> buf :save-point second)))))))
 
 (defn- write-to-disk [buf]
   (let [tmp (-> buf :str str)
@@ -287,44 +227,43 @@
   ([buf]
     (write-buffer buf false)))
 
-(defn file-register [buf]
-  {:id (buf :id) :str (or (buf :filepath) (buf :name))})
-
 (def persistent-buffers #(-> % :filepath some?))
 (def temp-buffers #(-> % :filepath nil?))
 
-(defn get-buffer-by-filepath [filepath]
+(defn get-buffer-by-filepath [buf filepath]
   (first (filter
            (fn [buf]
-             (= (buf :filepath) filepath)) (get-buffers))))
+             (= (buf :filepath) filepath)) (get-buffers buf))))
 
-(defn update-buffer [id f & args]
-  (let [abuf (get-buffer-agent id)]
-    (if (nil? abuf)
-      nil
-      (apply send abuf f args))))
-
-(defn change-active-buffer [id nextid]
-  (if (and (some? nextid) (not= id nextid))
-    (do
-      (registers-put! "#"
-                      (file-register (get-buffer-by-id id)))
-      (registers-put! "%"
-                      (file-register (get-buffer-by-id nextid))))))
+(defn change-active-buffer [{bufid :id :as buf} nextid]
+  (let [buf (-> buf
+                (assoc-in [:window :buffers nextid :view] (buf :view))
+                (assoc :view nil))
+        put (partial update-in buf [:window :registers] registers-put)]
+    (if (and (some? nextid) (not= bufid nextid))
+      (put "#" (file-register (-> buf :window :buffers (get bufid))))
+      (put "%" (file-register (-> buf :window :buffers (get nextid)))))))
 
 (defn buf-match-bracket
   ([buf pos]
     (-> buf
         (assoc :brackets [])
-        (async
-          (let [lidx (buf :lineindex)
-                mpos (pos-match-bracket (buf :str) pos)]
-            (if (nil? mpos)
-              (-> buf
-                  (assoc :brackets [])
-                  (assoc :cursor2 []))
-              (-> buf
-                  (assoc :brackets [pos mpos])
-                  (assoc :cursor2 (pos-xy lidx mpos))))))))
+        (async-update-buffer
+          (fn [buf]
+            (let [lidx (buf :lineindex)
+                  mpos (pos-match-bracket (buf :str) pos)]
+              (if (nil? mpos)
+                (-> buf
+                    (assoc :brackets [])
+                    (assoc :cursor2 []))
+                (-> buf
+                    (assoc :brackets [pos mpos])
+                    (assoc :cursor2 (pos-xy lidx mpos)))))))))
   ([buf]
     (buf-match-bracket buf (buf :pos))))
+
+(defn get-buf-by-path [buf path]
+  (->> buf :window :buffers vals
+       (some #(if (and (-> % :filepath some?)
+                       (path= path (% :filepath))) %))))
+

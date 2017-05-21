@@ -1,7 +1,6 @@
 (ns webvim.keymap.ex
   (:require [me.raynes.fs :as fs]
             [webvim.mode :refer [set-normal-mode]]
-            [webvim.core.editor :refer [update-cwd]]
             [webvim.panel :refer [append-panel append-output-panel grep-panel ag-panel find-panel edit-file goto-buf]]
             [clojure.string :as string]
             [webvim.core.lineindex :refer [range-by-line]]
@@ -128,9 +127,11 @@
 
 (defn- exec-shell-commands [buf apanel cmds]
   (println "exec-shell-commands:" cmds)
-  (exec-async (-> cmds flatten unquote-args)
-              (fn [line]
-                (append-panel buf apanel (str line \newline) false)))
+  (exec-async
+    (buf :window)
+    (-> cmds flatten unquote-args)
+    (fn [line]
+      (append-panel buf apanel (str line \newline) false)))
   (append-panel buf apanel (str \newline (string/join \space (flatten cmds)) \newline) true))
 
 (defn cmd-write [buf _ _ [file]]
@@ -144,7 +145,7 @@
         (write-buffer true))))
 
 (defn cmd-buffer [buf _ _ [file]]
-  (let [matches (find-buffer (get-buffers) file)
+  (let [matches (find-buffer (get-buffers buf) file)
         cnt (count matches)
         equals (filter #(= (% :name) file) matches)]
     (cond
@@ -158,8 +159,8 @@
       ;display matched buffers at most 5 buffers
       (assoc buf :message (str "which one? " (string/join ", " (map :name (take 5 matches))))))))
 
-(defn- get-buffers-id []
-  (map :id (get-buffers)))
+(defn- get-buffers-id [buf]
+  (-> buf :window :buffers keys))
 
 (defn- empty-nil [f]
   (fn [& args]
@@ -171,35 +172,33 @@
   (let [id (buf :id)
         nextid (or
                  ;get next id larger than current
-                 (->> (get-buffers-id) (filter #(> % id)) (apply (empty-nil min)))
-                 (apply min (get-buffers-id)))]
+                 (->> (get-buffers-id buf) (filter #(> % id)) (apply (empty-nil min)))
+                 (apply min (get-buffers-id buf)))]
     (goto-buf buf nextid)))
 
 (defn cmd-bprev [buf _ _ _]
   (let [id (buf :id)
         nextid (or
-                 (->> (get-buffers-id) (filter #(< % id)) (apply (empty-nil max)))
-                 (apply max (get-buffers-id)))]
+                 (->> (get-buffers-id buf) (filter #(< % id)) (apply (empty-nil max)))
+                 (apply max (get-buffers-id buf)))]
     (goto-buf buf nextid)))
 
-(defn- get-buffer-from-reg [reg]
-  (if (nil? reg) nil
-      (get-buffer-agent (reg :id))))
-
 (defn cmd-bdelete [buf _ _ _]
-  (remove-buffer (buf :id))
-  (let [nextbuf @(or (get-buffer-from-reg (registers-get "#")) (new-file nil))
+  (let [{buffers :buffers
+         registers :registers} (buf :window)
+        nextbuf (or (buffers (-> registers (registers-get "#") :id))
+                    (new-file nil))
         nextid (nextbuf :id)
         alternatebuf (some (fn [buf]
-                             (if (not= (buf :id) nextid)
-                               buf nil))
-                           (get-buffers))]
-    (registers-put! "%" (file-register nextbuf))
-    (if (nil? alternatebuf)
-      (registers-put! "#" nil)
-      (registers-put! "#" (file-register alternatebuf)))
+                             (if (not= (buf :id) nextid) buf))
+                           (get-buffers buf))]
     (-> buf
-        (assoc :nextid nextid)
+        (assoc-in [:window :active-buf] nextid)
+        (assoc-in [:window :registers] (-> registers
+                                           (registers-put "%" (file-register nextbuf))
+                                           (registers-put "#" (if (some? alternatebuf)
+                                                                (file-register alternatebuf)))))
+        (update-in [:window :buffers] dissoc (buf :id))
         (fire-event :close-buffer))))
 
 (defn- eval-sep [content]
@@ -263,7 +262,9 @@
   (if (string/blank? path) (assoc buf :message (str fs/*cwd*))
       (let [dir (expand-path path)]
         (if (fs/directory? dir)
-          (assoc buf :message (str "Change working directory to: " (update-cwd dir)))
+          (-> buf
+              (assoc-in [:window :cwd] dir)
+              (assoc :message (str "Change working directory to: " dir)))
           (assoc buf :message "Path is not a directory or not exists.")))))
 
 (defn cmd-git [buf _ _ args]
@@ -277,7 +278,7 @@
                               "\n"
                               (map (fn [buf]
                                      (format "%d: %s" (buf :id) (printable-filepath buf)))
-                                   (sort-by :id (get-buffers)))) "\n") true))
+                                   (sort-by :id (get-buffers buf)))) "\n") true))
 
 (defn cmd-nohl [buf _ _ _]
   (assoc buf :highlights []))
@@ -334,10 +335,11 @@
     (str ":register\n"
          (string/join
            "\n"
-           (map-registers (fn [[k v]]
-                            (str "\"" k
-                                 "  "
-                                 (clojure.string/escape (or (:str v) "") {\newline "\\n"}))))) "\n")
+           (->> buf :window :registers
+                (map (fn [[k v]]
+                       (str "\"" k
+                            "  "
+                            (clojure.string/escape (or (:str v) "") {\newline "\\n"})))))))
     true))
 
 (defn cmd-jumps [buf _ _ _]
@@ -527,8 +529,7 @@
             (if (>= (count handlers) 1)
               (let [[[handler cmd args]] handlers
                     buf (handler buf cmd rg args)]
-                (registers-put! ":" {:str s})
-                buf)
+                (update-in buf [:window :registers] registers-put ":" {:str s}))
               (-> buf
                   (assoc :message "!!!unknown command!!!")
                   (assoc :beep? true)

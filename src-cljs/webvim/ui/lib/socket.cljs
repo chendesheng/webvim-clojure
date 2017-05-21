@@ -22,8 +22,9 @@
   (let [conn (js/WebSocket. url)
         state {:stream (atom "")
                :conn conn}]
-    (set! (.-onopen conn) 
-          (fn []
+    (set! (.-onopen conn)
+          (fn [resp]
+            ;(println (.-data resp))
             (dispatch-event :net-onopen state)
             (flush-stream state)))
     (set! (.-onmessage conn)

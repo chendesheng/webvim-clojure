@@ -19,25 +19,23 @@
   (let [{result :result
          exception :exception} (eval-sandbox code)]
     (if (nil? exception)
-      (do
-        (registers-put! "=" {:str code :result result})
+      (let [buf (-> buf
+                    (update-in [:window :registers] registers-put "=" {:str code :result result})
+                    (assoc-in [:context :register] "="))]
         (if insert?
-          (-> buf
-              (assoc-in [:context :register] "=")
-              (buf-insert result))
-          (assoc-in buf [:context :register] "=")))
+          (buf-insert result) buf))
       (assoc buf :message (str exception)))))
 
 (defonce ^:private linebuf-keymap (init-linebuf-keymap))
 (defn- expression-keymap [insert?]
   (-> linebuf-keymap
-      (wrap-key 
+      (wrap-key
         :enter (fn [handler]
                  (fn [buf keycode]
                    (-> buf
                        (assoc :line-buffer {:prefix keycode :str (rope "()") :pos 1})
                        (handler keycode)))))
-      (assoc "<cr>" (fn [buf keycode] 
+      (assoc "<cr>" (fn [buf keycode]
                       (let [code (-> buf :line-buffer :str str)]
                         (read-eval-put buf code insert?))))))
 

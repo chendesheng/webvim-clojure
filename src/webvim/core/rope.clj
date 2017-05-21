@@ -61,18 +61,20 @@
       pos)))
 
 (defn buf-set-pos [buf newpos]
-  (let [r (buf :str)
-        pos (buf :pos)
-        newpos (fix-utf16-pos r (bound-range newpos 0 (-> r .length dec)))]
-    (cond
-      (zero? newpos)
-      (assoc buf :y 0 :pos 0)
-      (= pos newpos)
-      buf
-      :else
-      (assoc buf
-             :y (-> buf :lineindex (pos-linenum newpos))
-             :pos newpos))))
+  (if (nil? newpos)
+    buf
+    (let [r (buf :str)
+          pos (buf :pos)
+          newpos (fix-utf16-pos r (bound-range newpos 0 (-> r .length dec)))]
+      (cond
+        (zero? newpos)
+        (assoc buf :y 0 :pos 0)
+        (= pos newpos)
+        buf
+        :else
+        (assoc buf
+               :y (-> buf :lineindex (pos-linenum newpos))
+               :pos newpos)))))
 
 (defn- shift-pos
   ;only need (buf :pos) and (buf :y)

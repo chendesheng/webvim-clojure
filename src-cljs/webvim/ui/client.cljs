@@ -16,9 +16,9 @@
 (defn update-client [patch]
   (let [old-client @client
         new-client (swap! client deep-merge patch)]
-    ;(println "update-client:" patch)
+    ;use atom watcher instead
     (dispatch-event :client-changed [patch old-client new-client])))
 
 (defn active-buffer []
   (let [c @client]
-    (-> c :buffers (get (c :active-buf)))))
+    (-> c :buffers (get (c :active-buffer)))))
