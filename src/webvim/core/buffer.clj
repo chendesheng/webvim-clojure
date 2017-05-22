@@ -56,7 +56,6 @@
   (assoc buf :mod-time (mod-time buf)))
 
 (defn create-buf [bufname filepath txt]
-  (println "create-buf:" bufname filepath (->> txt (take 20) (apply str)))
   (let [txtLF (-> txt
                   (.replace "\r\n" "\n")
                   ensure-ends-with-newline) ;always use LF in memory
@@ -69,7 +68,7 @@
                     (or (re-find #"\.\w+$" (or bufname "")) ""))
              :str (rope txtLF)
              :lineindex lineindex
-             :lines 1
+             :lines (total-lines lineindex)
              :pos 0  ;offset from first char
              :x 0    ;saved x for up down motion
              :y 0    ;num of line breaks from first char

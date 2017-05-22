@@ -144,8 +144,10 @@
       (.addEventListener $input "input" (fn [event]
                                           (js/setTimeout (partial on-typing (@client :active-buffer))  0)))
       (.addEventListener $input "textInput" (fn [event]
-                                              (keymap (-> event .-data escape-keys keymap-alias)
-                                                      (fn [key]
-                                                        (dispatch-event :input-key key)))
+                                              (keymap
+                                                (current-mode)
+                                                (-> event .-data escape-keys keymap-alias)
+                                                (fn [key]
+                                                  (dispatch-event :input-key key)))
                                               (js/setTimeout (partial on-input (@client :active-buffer)) 0))))))
 
