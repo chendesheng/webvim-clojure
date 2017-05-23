@@ -47,6 +47,13 @@
                           (println ":filepath " (buf :filepath))
                           (println err))))
 
+(defn- buf-match-bracket [buf]
+  (let [mpos (pos-match-bracket (buf :str) (buf :pos))]
+    (assoc buf :cursor2
+           (if (nil? mpos)
+             []
+             (-> buf :lineindex (pos-xy mpos))))))
+
 (defn mod-time [buf]
   (if (-> buf :filepath nil?)
     0
@@ -116,6 +123,7 @@
     (-> buf
         set-mod-time
         init-file-type
+        buf-match-bracket ;FIXME: this could be slow
         (fire-event :new-buffer))))
 
 (listen :create-window
@@ -245,23 +253,14 @@
       (put "#" (file-register (-> buf :window :buffers (get bufid))))
       (put "%" (file-register (-> buf :window :buffers (get nextid)))))))
 
-(defn buf-match-bracket
-  ([buf pos]
-    (-> buf
-        (assoc :brackets [])
-        (async-update-buffer
-          (fn [buf]
-            (let [lidx (buf :lineindex)
-                  mpos (pos-match-bracket (buf :str) pos)]
-              (if (nil? mpos)
-                (-> buf
-                    (assoc :brackets [])
-                    (assoc :cursor2 []))
-                (-> buf
-                    (assoc :brackets [pos mpos])
-                    (assoc :cursor2 (pos-xy lidx mpos)))))))))
-  ([buf]
-    (buf-match-bracket buf (buf :pos))))
+(listen :buffer-changed
+        (fn [buf old-buf {winid :id}]
+          (if (or (not= (:str old-buf) (:str buf))
+                  (not= (:pos old-buf) (:pos buf)))
+            (do
+              (async-update-buffer winid (buf :id) buf-match-bracket)
+              (assoc buf :cursor2 []))
+            buf)))
 
 (defn get-buf-by-path [buf path]
   (->> buf :window :buffers vals

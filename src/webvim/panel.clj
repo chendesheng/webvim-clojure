@@ -5,9 +5,9 @@
     [me.raynes.fs :as fs]
     [clojure.pprint :refer [pprint]]
     [clojure.string :as string]
-    [webvim.core.buffer :refer [buf-match-bracket
-                                output-panel-name grep-panel-name ag-panel-name find-panel-name
-                                directory-panel-name change-active-buffer new-file
+    [webvim.core.buffer :refer [output-panel-name grep-panel-name ag-panel-name
+                                find-panel-name directory-panel-name
+                                change-active-buffer new-file
                                 get-buffers get-buf-by-path]]
     [webvim.core.rope :refer [buf-insert buf-set-pos save-undo buf-replace subr]]
     [webvim.core.line :refer [line-start move-to-line column]]
@@ -140,9 +140,7 @@
                   line-start
                   save-undo
                   (fn-set-pos pos)
-                  cursor-center-viewport
-                  send-buf!
-                  buf-match-bracket))) goto?)
+                  cursor-center-viewport))) goto?)
   #_(if goto? (goto-buf buf (:id @apanel)) buf))
 
 (defn append-output-panel [buf s goto?]

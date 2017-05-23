@@ -4,7 +4,6 @@
             [webvim.panel :refer [append-output-panel]]
             ;[webvim.persistent :refer [recover-buffers start-track]]
             [webvim.core.rope :refer [re-test]]
-            [webvim.core.buffer :refer [buf-match-bracket new-file]]
             [webvim.keymap.compile :refer [keycode-cancel apply-keycodes]]
             [webvim.core.event :refer [listen fire-event]]
             [webvim.core.editor :refer [update-buffer]])
@@ -29,7 +28,7 @@
         (fn [{awindow :awindow bufid :bufid keycodes :keycodes}]
           (send awindow
                 (fn [old-window bufid keycodes]
-                  (println "input-keys:" keycodes)
+                  ;(println "input-keys:" keycodes)
                   (update-buffer old-window
                                  bufid
                                  #(apply-keycodes-transact % keycodes)))

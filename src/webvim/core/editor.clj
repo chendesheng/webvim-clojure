@@ -25,19 +25,18 @@
 
 (defn update-buffer [old-window bufid fn-update]
   (let [old-buf (-> old-window :buffers (get bufid))
-        {window :window
-         bufid :id
-         :as buf} (-> old-buf
-                      ;The handler is buffer object centric
-                      ;Change :window when need to update the window object;
-                      (assoc :window old-window)
-                      fn-update)
-        ;FIXME: confusing event name, there is a :change-buffer event which fires when :str changes
-        new-buf (fire-event (dissoc buf :window) old-buf window :buffer-changed)
-        new-window (update-in window
-                              [:buffers bufid]
-                              #(if (some? %) new-buf))]
-    (fire-event new-window old-window nil :window-changed)))
+        ;The handler is buffer object centric
+        ;Change :window when need to update the window object;
+        input-buf (assoc old-buf :window old-window)
+        {window :window bufid :id :as buf} (fn-update input-buf)]
+    (if (= input-buf buf)
+      old-window ;return old-window if nothing changed
+      (let [;FIXME: confusing event name, there is a :change-buffer event which fires when :str changes
+            new-buf (fire-event (dissoc buf :window) old-buf window :buffer-changed)
+            new-window (update-in window
+                                  [:buffers bufid]
+                                  #(if (some? %) new-buf))]
+        (fire-event new-window old-window nil :window-changed)))))
 
 (defn async-update [winid fn-update]
   (send (get-or-create-window winid) fn-update))

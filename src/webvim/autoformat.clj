@@ -6,8 +6,7 @@
             [webvim.core.rope :refer [save-undo]]
             [webvim.core.utils :refer [windows? trim-last-newline with-temp-file]]
             [webvim.core.diff :refer [diff patch]]
-            [webvim.core.editor :refer [async-update-buffer]]
-            [webvim.core.buffer :refer [buf-match-bracket]]))
+            [webvim.core.editor :refer [async-update-buffer]]))
 
 (defn- js-beautify [s name filetype]
   (println "js-beautify")
@@ -52,6 +51,5 @@
                         (fn [buf]
                           (-> buf
                               f
-                              (fnwrite cmd rg args)
-                              buf-match-bracket)))))))))
+                              (fnwrite cmd rg args))))))))))
 
