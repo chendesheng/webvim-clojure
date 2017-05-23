@@ -262,9 +262,10 @@
   (if (string/blank? path) (assoc buf :message (str fs/*cwd*))
       (let [dir (expand-path path)]
         (if (fs/directory? dir)
-          (-> buf
-              (assoc-in [:window :cwd] dir)
-              (assoc :message (str "Change working directory to: " dir)))
+          (let [dir (-> dir str shorten-path)]
+            (-> buf
+                (assoc-in [:window :cwd] dir)
+                (assoc :message (str "Change working directory to: " dir))))
           (assoc buf :message "Path is not a directory or not exists.")))))
 
 (defn cmd-git [buf _ _ args]

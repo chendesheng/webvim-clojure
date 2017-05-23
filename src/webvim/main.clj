@@ -18,30 +18,6 @@
         webvim.lang.csharp
         webvim.lang.html))
 
-(comment defn- change-buffer! [buf keycodes]
-         (time
-           (try
-             (let [oldbuf buf
-                   buf (-> buf (apply-keycodes keycodes) send-buf!)
-                   nextid (buf :nextid)]
-        ;TODO: add event here
-               (if (or (not= (oldbuf :str) (buf :str)) (not= (oldbuf :pos) (buf :pos)))
-                 (if (= (buf :mode) :insert-mode)
-                   (buf-match-bracket buf (-> buf :pos dec))
-                   (buf-match-bracket buf)))
-               (if (nil? nextid)
-                 buf
-                 (do
-                   (update-buffer nextid
-                                  (fn [buf]
-                                    (-> buf
-                                        (fire-event :switch-buffer)
-                                        buf-match-bracket
-                                        (send-buf! true))))
-                   (dissoc buf :nextid))))
-             (catch Exception e
-               (fire-event :error (keycode-cancel buf) e)))))
-
 (defn- apply-keycodes-transact [buf keycodes]
   (time
     (try
@@ -53,6 +29,7 @@
         (fn [{awindow :awindow bufid :bufid keycodes :keycodes}]
           (send awindow
                 (fn [old-window bufid keycodes]
+                  (println "input-keys:" keycodes)
                   (update-buffer old-window
                                  bufid
                                  #(apply-keycodes-transact % keycodes)))

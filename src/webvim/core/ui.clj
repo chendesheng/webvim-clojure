@@ -120,11 +120,6 @@
            (poses2xy buf (buf :highlights)))
     buf))
 
-(defn- window-data [window]
-  {:id (window :id)
-   :cwd @(window :cwd)
-   :views (window :views)})
-
 (defn diff-buf
   "Write changes to browser."
   [before after]
@@ -167,13 +162,6 @@
             (dissoc :str)
             remove-fields)))
 
-;FIXME: doesn't feel right to put window object inside buf
-(comment defn- diff-ui [{buf :buf window :window :as ui} newbuf]
-         (let [diff (diff-buf buf newbuf)
-               diffwin (diff-window window (window-data *window*))]
-           (if (nil? diffwin) diff ;write array back if window object changes
-               [diffwin diff])))
-
 (listen
   :create-window
   (fn [window]
@@ -194,32 +182,6 @@
                 (< y (+ st h)) st
                 (neg? (-> y (- h) inc)) 0
                 :else (-> y (- h) inc))))))
-
-(comment defn send-buf!
-         ([buf switch-buf?]
-           (let [buf (bound-scroll-top buf)]
-             (send-off (ui-agent)
-                       (fn [ui buf]
-                         (if (or switch-buf? (active-buf? ui buf))
-                           (let [buf (-> buf
-                                         (assoc :lines (-> buf :lineindex total-lines))
-                                         pos2xy
-                                         highlights2xy
-                                         visual2xy)
-                                 diff (diff-ui ui buf)
-                                 ui (assoc ui :buf (dissoc buf :changes))]
-                             (println "cursor:" (buf :cursor))
-                             (if (or (nil? diff)
-                                     (empty? diff)) ui
-                                 ((ui :render!) ui diff)))
-                           ui))
-                       buf)
-             (-> buf
-                 (assoc :changes [])
-                 (assoc :beep? false))))
-         ([buf]
-    ;only for active buffer, use :nextid for switch buffer
-           (send-buf! buf false)))
 
 (defn- visible-buffers [buffers]
   (into {}
@@ -272,7 +234,7 @@
         (fn [{render! :render! :as window} old-window _]
           ;(println "window:" (print-window window))
           ;(println "old-window:" (print-window old-window))
-          (println "diff-window:" (print-window (diff-window window old-window)))
+          ;(println "diff-window:" (print-window (diff-window window old-window)))
           (render! window (diff-window window old-window))
           (update window
                   :buffers

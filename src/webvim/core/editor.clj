@@ -1,14 +1,14 @@
 (ns webvim.core.editor
   (:require [webvim.core.event :refer [fire-event]]
             [me.raynes.fs :as fs]
-            [webvim.core.utils :refer [uuid]]
+            [webvim.core.utils :refer [uuid shorten-path]]
             [webvim.core.views]))
 
 (defonce editor (atom {:windows {}}))
 
 (defn- create-window []
   (fire-event {:id (uuid)
-               :cwd (str fs/*cwd*)
+               :cwd (-> fs/*cwd* str shorten-path)
                :active-buffer nil
                :viewport {:w 0 :h 0}
                :registers {}} :create-window))

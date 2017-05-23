@@ -90,6 +90,7 @@
              :last-cursor nil
              ;first one is recent undo item, second is filepath, if either of these changes then the buffer is dirty
              :save-point [nil filepath]
+             :dirty false
              ;:ranges is a vector of ranges (unordered): [[0 100] [101 200]]. For each range, both ends are inclusive.
              ;:a and :b two ends
              :visual {:type :no-visual :range [0 0] :ranges nil :ranges2 nil}
@@ -179,11 +180,12 @@
         (fn [buf _ _]
           (async-update-buffer
             buf
-            (assoc buf :dirty
-                   (or
-                     (-> buf :pending-undo empty? not)
-                     (not (identical? (-> buf :history just-now) (-> buf :save-point first)))
-                     (not= (buf :filepath) (-> buf :save-point second)))))))
+            (fn [buf]
+              (assoc buf :dirty
+                     (or
+                       (-> buf :pending-undo empty? not)
+                       (not (identical? (-> buf :history just-now) (-> buf :save-point first)))
+                       (not= (buf :filepath) (-> buf :save-point second))))))))
 
 (defn- write-to-disk [buf]
   (let [tmp (-> buf :str str)
