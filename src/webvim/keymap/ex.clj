@@ -189,19 +189,31 @@
 (defn cmd-bdelete [buf _ _ _]
   (let [{buffers :buffers
          registers :registers} (buf :window)
-        nextbuf (or (buffers (-> registers (registers-get "#") :id))
-                    (new-file nil))
+        nextbuf (let [buf (-> registers (registers-get "#") :id buffers)]
+                  (if (nil? buf) (new-file nil) buf))
         nextid (nextbuf :id)
         alternatebuf (some (fn [buf]
-                             (if (not= (buf :id) nextid) buf))
+                             (if (-> buf :id (not= nextid)) buf))
                            (get-buffers buf))]
     (-> buf
-        (assoc-in [:window :active-buf] nextid)
-        (assoc-in [:window :registers] (-> registers
-                                           (registers-put "%" (file-register nextbuf))
-                                           (registers-put "#" (if (some? alternatebuf)
-                                                                (file-register alternatebuf)))))
-        (update-in [:window :buffers] dissoc (buf :id))
+        (update :window
+                #(-> %
+                     (update :registers
+                             (fn [registers]
+                               (-> registers
+                                   (registers-put "%" (file-register nextbuf))
+                                   (registers-put "#" (if (some? alternatebuf)
+                                                        (file-register alternatebuf))))))
+                     (update :buffers
+                             (fn [buffers]
+                               (let [nextbuf (assoc nextbuf :view (buf :view))
+                                     buffers
+                                     (-> buffers
+                                         (dissoc (buf :id))
+                                         (assoc nextid nextbuf))]
+                                 (println "update buffers:" nextid (nextbuf :name) (keys buffers))
+                                 buffers)))
+                     (assoc :active-buffer nextid)))
         (fire-event :close-buffer))))
 
 (defn- eval-sep [content]
