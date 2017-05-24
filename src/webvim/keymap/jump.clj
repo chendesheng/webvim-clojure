@@ -3,7 +3,7 @@
     [me.raynes.fs :as fs]
     [webvim.core.buffer :refer [change-active-buffer]]
     [webvim.keymap.compile :refer [wrap-keycode]]
-    [webvim.panel :refer [edit-file output-panel goto-buf]]
+    [webvim.panel :refer [edit-file goto-buf]]
     [webvim.core.rope :refer [buf-set-pos subr re-test]]
     [webvim.core.pos :refer [pos-re+ pos-re-]]
     [webvim.core.register :refer [registers-get]]
@@ -63,7 +63,7 @@
   (-> keymap
       (update "g" assoc "f" (wrap-keycode goto-file))
       (assoc
-        "<f1>" (wrap-keycode #(goto-buf % (@(output-panel false) :id)))
+        ;;"<f1>" (wrap-keycode #(goto-buf % (@(output-panel false) :id)))
         "<c-s-6>" (fn [buf keycode]
                     (let [nextid (-> buf :window :registers (registers-get "#") :id)]
                       (if (nil? nextid)

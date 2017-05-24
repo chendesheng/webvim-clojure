@@ -1,11 +1,12 @@
 (ns webvim.keymap.ex
   (:require [me.raynes.fs :as fs]
             [webvim.mode :refer [set-normal-mode]]
-            [webvim.panel :refer [append-panel append-output-panel grep-panel ag-panel find-panel edit-file goto-buf]]
+            [webvim.panel :refer [append-panel append-output-panel edit-file goto-buf]]
             [clojure.string :as string]
             [webvim.core.lineindex :refer [range-by-line]]
             [clojure.java.shell :refer [sh]]
-            [webvim.core.eval :refer [eval-with-ns eval-sandbox]])
+            [webvim.core.eval :refer [eval-with-ns eval-sandbox]]
+            [webvim.core.editor :refer [async-update-buffer]])
   (:use clojure.pprint
         webvim.core.rope
         webvim.core.line
@@ -125,14 +126,16 @@
            (subs s 1 (-> s count (- 2)))
            s)) args))
 
-(defn- exec-shell-commands [buf apanel cmds]
+(defn- exec-shell-commands [buf panel cmds]
   (println "exec-shell-commands:" cmds)
   (exec-async
-    (buf :window)
     (-> cmds flatten unquote-args)
     (fn [line]
-      (append-panel buf apanel (str line \newline) false)))
-  (append-panel buf apanel (str \newline (string/join \space (flatten cmds)) \newline) true))
+      (async-update-buffer
+        buf
+        (fn [buf]
+          (append-panel buf panel (str line \newline) false)))))
+  (append-panel buf panel (str \newline (string/join \space (flatten cmds)) \newline) true))
 
 (defn cmd-write [buf _ _ [file]]
   (if (or (string/blank? file) (path= file (buf :filepath)))
@@ -241,15 +244,15 @@
     (do-eval buf code)))
 
 (defn cmd-grep [buf _ _ args]
-  (exec-shell-commands buf (grep-panel)
+  (exec-shell-commands buf grep-panel-name
                        ["grep" "-rnI" args "."]))
 
 (defn cmd-ag [buf _ _ args]
-  (exec-shell-commands buf (ag-panel)
+  (exec-shell-commands buf ag-panel-name
                        ["ag" "--vimgrep" args]))
 
 (defn cmd-find [buf _ _ args]
-  (exec-shell-commands buf (find-panel)
+  (exec-shell-commands buf find-panel-name
                        ["find" "." "-name" args "-not" "-path" "*/.*"]))
 
 (defn cmd-move-to-line [buf cmd [row]]
@@ -634,5 +637,4 @@
           (if (and (not= (buf :mod-time) (mod-time buf))
                    (not (buf :dirty)))
             (buf-reload buf)
-
             buf)))

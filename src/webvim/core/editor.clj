@@ -48,3 +48,8 @@
     (async-update-buffer winid bufid fn-update)
     buf))
 
+(defn async-update-other-buffer
+  [{{winid :id} :window :as buf} otherbufid fn-update]
+  (async-update-buffer winid otherbufid fn-update)
+  buf)
+

@@ -14,42 +14,8 @@
     [webvim.core.pos :refer [buf-end buf-start]]
     [webvim.core.utils :refer [shorten-path visual-size path= pretty-trace expand-path]]
     [webvim.scrolling :refer [cursor-center-viewport]]
-    [webvim.core.editor :refer [update-buffer]]
+    [webvim.core.editor :refer [async-update-other-buffer]]
     [webvim.jumplist :refer [jump-push]]))
-
-(defn- get-panel [create? name]
-  (or (if create?
-        (new-file name))))
-
-(defn output-panel
-  ([create?]
-    (get-panel create? output-panel-name))
-  ([]
-    (output-panel true)))
-
-(defn grep-panel
-  ([create?]
-    (get-panel create? grep-panel-name))
-  ([]
-    (grep-panel true)))
-
-(defn ag-panel
-  ([create?]
-    (get-panel create? ag-panel-name))
-  ([]
-    (ag-panel true)))
-
-(defn find-panel
-  ([create?]
-    (get-panel create? find-panel-name))
-  ([]
-    (find-panel true)))
-
-(defn directory-panel
-  ([create?]
-    (get-panel create? directory-panel-name))
-  ([]
-    (directory-panel true)))
 
 (defn goto-buf [{id :id :as buf} nextid]
   (if (or (nil? nextid) (= nextid id))
@@ -67,19 +33,46 @@
                      (assoc buffers new-bufid new-buf)))
         (goto-buf new-bufid))))
 
-(comment defn- edit-dir [path]
-         (let [abuf (directory-panel)
-               files (string/join "\n"
-                                  (map (fn [f]
-                                         (shorten-path (str f)))
-                                       (cons (fs/parent path) (fs/list-dir path))))]
-           @(send abuf
-                  (fn [buf]
-                    (-> buf
-                        (buf-replace 0 (-> buf :str count) (str files "\n"))
-                        buf-start
-                        save-undo
-                        send-buf!)))))
+(defn- get-or-create-panel [buffers panel]
+  (let [panel-buf (some #(if (-> % :name (= panel)) %) (vals buffers))]
+    (if (nil? panel-buf)
+      (new-file panel)
+      panel-buf)))
+
+(defn- update-panel [buf panel fn-update goto?]
+  (let [panel-buf (-> buf :window :buffers (get-or-create-panel panel))
+        panel-bufid (panel-buf :id)
+        pos (-> panel-buf :str count dec dec)
+        fn-set-pos (if goto? buf-set-pos (fn [buf _] buf))
+        fn-goto-buf (if goto? goto-buf (fn [buf _] buf))]
+    (if (= panel-bufid (buf :id))
+      (-> buf
+          fn-update
+          (fn-set-pos pos))
+      (-> buf
+          (assoc-in [:window :buffers panel-bufid] panel-buf)
+          (fn-goto-buf panel-bufid)
+          (async-update-other-buffer
+            panel-bufid
+            (fn [buf]
+              (-> buf
+                  fn-update
+                  (fn-set-pos pos))))))))
+
+(defn- edit-dir [buf path]
+  (let [files (string/join
+                "\n"
+                (map (fn [f]
+                       (shorten-path (str f)))
+                     (cons (fs/parent path) (fs/list-dir path))))]
+    (update-panel
+      buf
+      directory-panel-name
+      #(-> %
+           (buf-replace 0 (-> % :str count) (str files "\n"))
+           buf-start
+           save-undo)
+      true)))
 
 (defn- update-x [buf]
   (assoc buf :x (column buf)))
@@ -96,7 +89,7 @@
           new-buf (fn [buf]
                     (if (or new-file? (fs/exists? file))
                       (if (fs/directory? file)
-                        buf  ; TODO: add back directory
+                        (edit-dir buf (str file))  ; TODO: add back directory
                         (new-and-goto-file buf (str file)))))]
       (or (self-buf buf)
           (exists-buf buf)
@@ -106,21 +99,7 @@
     (let [newbuf (edit-file buf file new-file?)
           nextid (newbuf :nextid)
           row (dec linenum)]
-      (if (nil? nextid)
-        (if (<= row 0) buf
-            (-> buf
-                jump-push
-                (move-to-line (dec row))
-                update-x))
-        (do
-          (println "goto row:" row)
-          (update-buffer nextid
-                         (fn [buf row]
-                           (if (<= row 0) buf
-                               (-> buf
-                                   (move-to-line row)
-                                   update-x))) row)
-          newbuf)))))
+      buf)))
 
 (defn- buf-append [buf & strs]
   (buf-insert
@@ -128,23 +107,19 @@
     (-> buf :str count)
     (apply str strs)))
 
-(defn append-panel [buf apanel s goto?]
-  buf
-  #_(send apanel
-          (fn [buf goto?]
-            (let [pos (-> buf :str count dec dec)
-                  fn-set-pos (if goto? buf-set-pos (fn [buf pos] buf))]
-              (-> buf
-                  (buf-append s)
-                  buf-end
-                  line-start
-                  save-undo
-                  (fn-set-pos pos)
-                  cursor-center-viewport))) goto?)
-  #_(if goto? (goto-buf buf (:id @apanel)) buf))
+(defn append-panel [buf panel s goto?]
+  (update-panel
+    buf
+    panel
+    #(-> %
+         (buf-append s)
+         buf-end
+         line-start
+         save-undo)
+    goto?))
 
 (defn append-output-panel [buf s goto?]
-  (append-panel buf (output-panel) s goto?))
+  (append-panel buf output-panel-name s goto?))
 
 (defn- format-exception [e]
   (str e

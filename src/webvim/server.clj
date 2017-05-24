@@ -7,7 +7,8 @@
             [webvim.core.utils :refer [vconj parse-int]]
             [webvim.core.keys :refer [input-keys]]
             [webvim.core.event :refer [fire-event]]
-            [webvim.core.ui :refer [diff-buf]])
+            [webvim.core.ui :refer [diff-buf]]
+            [webvim.core.buffer :refer [new-file]])
   (:use (compojure handler [core :only (GET POST defroutes)])
         ring.middleware.resource
         ring.util.response
@@ -65,6 +66,15 @@
                            (map (fn [[bufid buf]]
                                   [bufid (diff-buf nil buf)]))))))))
 
+(defn- create-init-buffer [window]
+  (if (-> window :buffers empty?)
+    (let [{bufid :id bufname :name :as buf} (new-file "")]
+      (-> window
+          (assoc-in [:registers "%"] bufname)
+          (assoc-in [:buffers bufid] (assoc buf :view 0)) ;init view
+          (assoc :active-buffer bufid)))
+    window))
+
 (defn- handle-socket [request]
   (let [channels (atom {})]
     (with-channel
@@ -91,14 +101,14 @@
         (swap! channels assoc channel awindow)
         (send awindow
               (fn [window channel]
-                (assoc window
-                       :channel channel
-                       :render! (partial write-client! channel))) channel)
+                (-> window
+                    (assoc
+                      :channel channel
+                      :render! (partial write-client! channel))
+                    create-init-buffer)) channel)
         ;send back full state at start connet
         (if (-> request :query-params (contains? "init"))
-          (do
-            (println (window-initial-response window))
-            (send! channel (json/generate-string (window-initial-response window)))))))))
+          (send! channel (json/generate-string (window-initial-response @awindow))))))))
 
 (defonce ^:private web-server (atom nil))
 

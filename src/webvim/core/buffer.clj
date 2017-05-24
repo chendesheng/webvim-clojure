@@ -27,14 +27,18 @@
        (fire-event e# :exception)
        (assoc ~buf :message (str e#)))))
 
-(defonce output-panel-name "[Output]")
-(defonce grep-panel-name "[Grep]")
+(defonce output-panel-name "[output]")
+(defonce grep-panel-name "[grep]")
 (defonce ag-panel-name "[ag]")
-(defonce find-panel-name "[Find]")
-(defonce directory-panel-name "[Directory]")
+(defonce find-panel-name "[find]")
+(defonce directory-panel-name "[directory]")
 
 ;A panel is just a speical buffer
-(defonce panels #{output-panel-name grep-panel-name find-panel-name directory-panel-name})
+(defonce panels #{output-panel-name
+                  grep-panel-name
+                  find-panel-name
+                  directory-panel-name
+                  ag-panel-name})
 
 ;generate buffer id and buffer id only
 (defonce gen-buf-id (atom 0))
@@ -146,8 +150,8 @@
 
 (defn new-file
   ([^String f]
-    (if (or (nil? f) (contains? panels f)) ;TODO: handle disk files with same name. ???use negative id for these buffers???
-      (create-buf (str f) nil "")
+    (if (or (empty? f) (contains? panels f)) ;TODO: handle disk files with same name. ???use negative id for these buffers???
+      (create-buf f nil "")
       (let [f (-> f .trim fs/normalized)]
         (create-buf (fs/base-name f)
                     (str f)
