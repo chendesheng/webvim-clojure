@@ -5,11 +5,33 @@
         webvim.core.rope
         webvim.core.parallel-universe))
 
+;;
+; motion             | jumplist    | cursor after motion
+;--------------------|-------------|--------------------
+; initial position A | (A |)       | A 
+; jump to B          | (B | A)     | B  
+; jump to C          | (C | B A)   | C     
+; c+o                | (C B | A)   | B      
+; c+o                | (C B A |)   | A
+; jump to D          | (D | A)     | D
+; move to D'         | (D | A)     | D'
+; c+o                | (D' A |)    | A
+; c+i                | (D' | A)    | D'
+; c+i                | (D' | A)    | D'
+;
+; zipper api
+; initial: (right-most (next (zipper [pos])))
+; current location: (node zp)
+; jump to pos: (left (insert-left (next (zipper (cons (node zp) (rights zp)))) pos))
+; c+o: (if (-> zp rights emptys) zp (right zp))
+; c+i: (if (-> zp lefts empty?) zp (left zp))
+
+
 ;global list of history positions
 ;1) save position **before** motions 
 ;2) cursor always equal to (next-future @jumplist) if next-future is nil use buf position as next-future
 ;Example: 
-; motion             | @jumplist                        | cursor after motion
+; motion             | jumplist                         | cursor after motion
 ;--------------------|----------------------------------|--------------------
 ; initial position A | {:before ()      :after ()}      | A 
 ; jump to B          | {:before (A)     :after ()}      | B  
@@ -56,7 +78,8 @@
       nil?))
 
 (defn- push-current [jl buf]
-  (new-future jl (select-keys buf [:id :pos :y :filepath :name])))
+  (-> jl
+      (new-future (select-keys buf [:id :pos :y :filepath :name]))))
 
 (defn- update-jumplist [buf fn-update]
   (update-in
@@ -75,34 +98,23 @@
         jl
         (push-current jl buf)))))
 
-;TODO: handle not exist buffer
 (defn jump-next
   [buf]
-  (update-in buf
-             [:window :jumplist]
-             (fn [jl]
-               (if (no-next? jl)
-                 nil
-                 (-> jl
-                     go-future
-                     next-future)))))
+  (update-jumplist buf go-future))
 
-(defn jump-prev
-  [buf]
+(defn jump-prev [buf]
   (update-jumplist
     buf
     (fn [jl]
-      (if (no-prev? jl)
-        nil
-        (if (no-current? jl)
-          (-> jl
-              (push-current buf)
-              go-back
-              go-back
-              next-future)
-          (-> jl
-              go-back
-              next-future))))))
+      (if (-> jl next-future nil?)
+        (-> jl
+            (push-current buf)
+            go-back
+            go-back)
+        (go-back jl)))))
+
+(defn jump-current-pos [buf]
+  (-> buf :window :jumplist next-future))
 
 ;split old buffer to 3 parts [0 a) [a b) [b count)
 (defn- shift-by-change [pos y oldbuf {cpos :pos clen :len :as c}]

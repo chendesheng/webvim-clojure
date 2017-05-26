@@ -8,31 +8,28 @@
     [webvim.core.pos :refer [pos-re+ pos-re-]]
     [webvim.core.register :refer [registers-get]]
     [webvim.core.utils :refer [parse-int deep-merge expand-path]]
-    [webvim.jumplist :refer [jump-prev jump-next]]))
+    [webvim.jumplist :refer [jump-prev jump-next jump-current-pos]]))
 
 (defn- move-to-jumplist
   [fndir]
-  (fn [buf keycode]
-    (loop [pos (fndir buf)]  ;TODO: filter lazy seq instead of loop
-      (if (nil? pos)
-        buf ;newest or oldest
-        (let [newbuf (-> buf :window :buffers (get (pos :id)))]
-          (if (nil? newbuf)
-            ;buffer has been deleted, ignore
-            (recur (fndir buf))
-            ;pos is avaliable
-            (if (< (pos :pos) (count (newbuf :str)))
-              (let [id (buf :id)
-                    newid (pos :id)
-                    newpos (pos :pos)]
-                (if (= newid id)
-                  ;update pos inside current buffer
-                  (buf-set-pos buf newpos)
-                  (let []
-                    (change-active-buffer id newid)
-                    (assoc-in buf [:window :active-buffer] newid))))
-              ;buffer has been modifed and cursor is no longer inside, ignore
-              (recur (fndir buf)))))))))
+  (fn [old-buf keycode]
+    (loop [buf (fndir old-buf)]  ;TODO: filter lazy seq instead of loop
+      (let [old-pos (jump-current-pos old-buf)
+            {next-bufid :id
+             next-pos :pos :as pos} (jump-current-pos buf)]
+        (->> old-buf :window :jumplist (println "old-jumplist:"))
+        (->> buf :window :jumplist (println "jumplist:"))
+        (print "move-to-jumplist:" next-bufid next-pos)
+        (cond
+          (or (nil? pos) (= old-pos pos))
+          old-buf ;newest or oldest
+          (= (buf :id) next-bufid)
+          (buf-set-pos buf next-pos)
+          (-> buf :window :buffers (get next-bufid) nil?)
+          ;buffer has been deleted, ignore
+          (recur (fndir buf))
+          :else
+          (goto-buf buf next-bufid))))))
 
 (defn- path-under-cursor [buf]
   (let [r (buf :str)

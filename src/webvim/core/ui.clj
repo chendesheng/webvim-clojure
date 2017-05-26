@@ -192,6 +192,7 @@
   (let [keys1 (keys m1)
         keys2 (keys m2)
         [only1 only2 both] (diff keys1 keys2)
+        _ (println "(diff keys1 keys2) = " only1 only2 both)
         removed (partial reduce (fn [res key]
                                   (assoc res key nil)))
         added (partial reduce (fn [res key]
