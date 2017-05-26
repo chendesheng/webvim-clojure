@@ -2,7 +2,7 @@
 
 (defn scroll-to [f]
   (fn [buf keycode]
-    ;(println "scroll-to:" 
+    (println "scroll-to: viewport=" (-> buf :window :id) (-> buf :window :viewport))
     (assoc buf :scroll-top
            (f (buf :scroll-top) (-> buf :window :viewport :h) (buf :y)))))
 

@@ -130,15 +130,6 @@
         buf-match-bracket ;FIXME: this could be slow
         (fire-event :new-buffer))))
 
-(listen :create-window
-        (fn [window]
-          (println "buffer create-window")
-          (let [{bufid :id bufname :name :as buf} (create-buf "" nil "")]
-            (-> window
-                (assoc-in [:registers "%"] bufname)
-                (assoc :buffers {bufid (assoc buf :view 0)}) ;init view
-                (assoc :active-buffer bufid)))))
-
 ;http://stackoverflow.com/questions/13789092/length-of-the-first-line-in-an-utf-8-file-with-bom
 ;TODO: use Apache Commons IO: http://commons.apache.org/proper/commons-io/download_io.cgi
 (defn debomify

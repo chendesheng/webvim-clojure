@@ -7,23 +7,31 @@
 
 (defonce editor (atom {:windows {}}))
 
-(defn- create-window []
-  (fire-event {:id (uuid)
-               :cwd (-> fs/*cwd* str shorten-path)
-               :active-buffer nil
-               :viewport {:w 0 :h 0}
-               :registers {}
-               :jumplist (-> '(nil) zip/seq-zip zip/next)} :create-window))
+(defn- create-window [id]
+  (->
+    {:id id
+     :cwd (-> fs/*cwd* str shorten-path)
+     :active-buffer nil
+     :viewport {:w 0 :h 0}
+     :registers {}
+     :jumplist (-> '(nil) zip/seq-zip zip/next)}
+    (fire-event :create-window)
+    (agent :error-handler
+           (fn [window err]
+             (println "window agent failed:" err)))))
 
 (defn get-or-create-window [id]
-  (or (-> @editor :windows (get id))
-      (let [{id :id :as window} (create-window)
-            awindow (agent window
-                           :error-handler
-                           (fn [window err]
-                             (println "window agent failed:" err)))]
-        (swap! editor assoc-in [:windows id] awindow)
-        awindow)))
+  (let [id (if (empty? id) (uuid) id)]
+    (-> editor
+        (swap!
+          (fn [ed]
+            (update-in ed [:windows id]
+                       (fn [awindow]
+                         (if (nil? awindow)
+                           (create-window id)
+                           awindow)))))
+        :windows
+        (get id))))
 
 (defn update-buffer [old-window bufid fn-update]
   (let [old-buf (-> old-window :buffers (get bufid))

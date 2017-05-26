@@ -120,7 +120,7 @@
            (poses2xy buf (buf :highlights)))
     buf))
 
-(defn diff-buf
+(defn- diff-buf
   "Write changes to browser."
   [before after]
   (cond (= before after)
@@ -161,12 +161,6 @@
             (dissoc-if-equal before :view)
             (dissoc :str)
             remove-fields)))
-
-(listen
-  :create-window
-  (fn [window]
-    (assoc window
-           :render! (fn [a b] a))))
 
 (defn- bound-scroll-top
   "Change scroll top make cursor inside viewport"
@@ -211,16 +205,15 @@
   (if (not= buffers old-buffers)
     (map-diff (visible-buffers old-buffers)
               (visible-buffers buffers)
-              (fn [a b]
-                (diff-buf a b)))))
+              diff-buf)))
 
-(defn- diff-window [window old-window]
+(defn diff-window [window old-window]
   (-> (select-keys window [:active-buffer :views :cwd])
       (dissoc-if-equal old-window :active-buffer)
       (dissoc-if-equal old-window :views)
       (dissoc-if-equal old-window :cwd)
-      (assoc :buffers (diff-buffers (window :buffers)
-                                    (old-window :buffers)))
+      (assoc :buffers (diff-buffers (:buffers window)
+                                    (:buffers old-window)))
       (dissoc-nil :buffers)))
 
 (defn- print-window [window]
