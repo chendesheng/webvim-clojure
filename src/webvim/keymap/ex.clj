@@ -366,7 +366,7 @@
            "\n"
            (map (fn [item]
                   (format "%s:%s" (or (item :filepath) (item :name)) (item :y)))
-                (jumplist-before))) "\n")
+                (jumplist buf))) "\n")
     true))
 
 (defn- all-poses [m]

@@ -2,7 +2,8 @@
   (:require [webvim.core.event :refer [fire-event]]
             [me.raynes.fs :as fs]
             [webvim.core.utils :refer [uuid shorten-path]]
-            [webvim.core.views]))
+            [webvim.core.views]
+            [clojure.zip :as zip]))
 
 (defonce editor (atom {:windows {}}))
 
@@ -11,7 +12,8 @@
                :cwd (-> fs/*cwd* str shorten-path)
                :active-buffer nil
                :viewport {:w 0 :h 0}
-               :registers {}} :create-window))
+               :registers {}
+               :jumplist (-> '(nil) zip/seq-zip zip/next)} :create-window))
 
 (defn get-or-create-window [id]
   (or (-> @editor :windows (get id))

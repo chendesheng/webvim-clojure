@@ -8,20 +8,29 @@
     [webvim.core.pos :refer [pos-re+ pos-re-]]
     [webvim.core.register :refer [registers-get]]
     [webvim.core.utils :refer [parse-int deep-merge expand-path]]
-    [webvim.jumplist :refer [jump-prev jump-next jump-current-pos]]))
+    [webvim.jumplist :refer [jump-prev jump-next jump-current-pos]]
+    [clojure.zip :as zip]))
+
+(defn- print-zip [z]
+  (println
+    (zip/lefts z)
+    (zip/node z)
+    (zip/rights z)))
 
 (defn- move-to-jumplist
   [fndir]
   (fn [old-buf keycode]
     (loop [buf (fndir old-buf)]  ;TODO: filter lazy seq instead of loop
-      (let [old-pos (jump-current-pos old-buf)
+      (let [old-loc (jump-current-pos old-buf)
             {next-bufid :id
-             next-pos :pos :as pos} (jump-current-pos buf)]
-        (->> old-buf :window :jumplist (println "old-jumplist:"))
-        (->> buf :window :jumplist (println "jumplist:"))
+             next-pos :pos :as loc} (jump-current-pos buf)]
+        (println "old-loc" old-loc)
+        (println "loc" loc)
+        (->> old-buf :window :jumplist print-zip)
+        (->> buf :window :jumplist print-zip)
         (print "move-to-jumplist:" next-bufid next-pos)
         (cond
-          (or (nil? pos) (= old-pos pos))
+          (or (nil? loc) (= old-loc loc))
           old-buf ;newest or oldest
           (= (buf :id) next-bufid)
           (buf-set-pos buf next-pos)

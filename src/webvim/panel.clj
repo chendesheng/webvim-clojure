@@ -17,13 +17,13 @@
     [webvim.core.editor :refer [async-update-other-buffer]]
     [webvim.jumplist :refer [jump-push]]))
 
-(defn goto-buf [{id :id :as buf} nextid]
-  (if (or (nil? nextid) (= nextid id))
-    buf
-    (-> buf
-        jump-push
-        (change-active-buffer nextid)
-        (assoc-in [:window :active-buffer] nextid))))
+(defn goto-buf
+  ([{id :id :as buf} nextid]
+   (if (or (nil? nextid) (= nextid id))
+     buf
+     (-> buf
+         (change-active-buffer nextid)
+         (assoc-in [:window :active-buffer] nextid)))))
 
 (defn- new-and-goto-file [buf file]
   (let [{new-bufid :id :as new-buf} (new-file file)]
@@ -31,6 +31,7 @@
         (update-in [:window :buffers]
                    (fn [buffers]
                      (assoc buffers new-bufid new-buf)))
+        jump-push
         (goto-buf new-bufid))))
 
 (defn- get-or-create-panel [buffers panel]
@@ -44,7 +45,12 @@
         panel-bufid (panel-buf :id)
         pos (-> panel-buf :str count dec dec)
         fn-set-pos (if goto? buf-set-pos (fn [buf _] buf))
-        fn-goto-buf (if goto? goto-buf (fn [buf _] buf))]
+        fn-goto-buf (if goto?
+                      (fn[buf nextid]
+                        (-> buf
+                            jump-push
+                            (goto-buf nextid)))
+                      (fn [buf _] buf))]
     (if (= panel-bufid (buf :id))
       (-> buf
           fn-update
@@ -85,7 +91,9 @@
           exists-buf (fn [buf]
                        (let [next-buf (get-buf-by-path buf file)]
                          (if (some? next-buf)
-                           (goto-buf buf (next-buf :id)))))
+                           (-> buf 
+                               jump-push
+                               (goto-buf (next-buf :id))))))
           new-buf (fn [buf]
                     (if (or new-file? (fs/exists? file))
                       (if (fs/directory? file)
