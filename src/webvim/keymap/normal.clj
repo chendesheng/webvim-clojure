@@ -16,7 +16,7 @@
             [webvim.core.pos :refer [char-]]
             [webvim.core.event :refer [listen]]
             [webvim.core.line :refer [buf-update-column]]
-            [webvim.jumplist :refer [motions-push-jumps jump-push]]
+            [webvim.jumplist :refer [motions-push-jumps jump-push cursor-location]]
             [webvim.keymap.compile :refer [wrap-keycode]]
             [webvim.keymap.replace :refer [wrap-keymap-replace]])
   (:use clojure.pprint
@@ -36,10 +36,14 @@
 (defn- normal-mode-after [buf keycode]
   (let [insert-mode? (= (buf :mode) :insert-mode)
         save-undo (if insert-mode? identity save-undo)
-        fix-pos (if insert-mode? identity normal-mode-fix-pos)]
-    (if (some? (motions-push-jumps (string/join (buf :keys))))
-      (jump-push (-> buf :context :lastbuf)))
+        fix-pos (if insert-mode? identity normal-mode-fix-pos)
+        save-location (if (some? (motions-push-jumps (string/join (buf :keys))))
+                        (let [loc (-> buf :context :lastbuf cursor-location)]
+                          #(jump-push % loc))
+                        identity)]
+
     (-> buf
+        save-location
         fix-pos
         (update-x-if-not-jk keycode)
         (update :context dissoc :range)
@@ -49,7 +53,7 @@
 
 (defn init-normal-mode-keymap [buf]
   (let [visual-keymap (init-visual-mode-keymap-for-operators)]
-    (-> (init-motion-keymap) 
+    (-> (init-motion-keymap)
         (merge
           {"u" (wrap-keycode undo)
            "<c-r>" (wrap-keycode redo)
@@ -58,7 +62,7 @@
            :continue (fn [buf keycode]
                        (= (buf :mode) :normal-mode))
            :before (fn [buf keycode]
-                     (update buf :context assoc :lastbuf buf)) 
+                     (update buf :context assoc :lastbuf buf))
            :after normal-mode-after})
         (wrap-keymap-visual buf)
         wrap-keymap-addsub

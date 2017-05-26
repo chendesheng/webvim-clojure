@@ -24,11 +24,6 @@
       (let [old-loc (jump-current-pos old-buf)
             {next-bufid :id
              next-pos :pos :as loc} (jump-current-pos buf)]
-        (println "old-loc" old-loc)
-        (println "loc" loc)
-        (->> old-buf :window :jumplist print-zip)
-        (->> buf :window :jumplist print-zip)
-        (print "move-to-jumplist:" next-bufid next-pos)
         (cond
           (or (nil? loc) (= old-loc loc))
           old-buf ;newest or oldest

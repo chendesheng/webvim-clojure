@@ -26,24 +26,6 @@
 ; c+o: (if (-> zp rights emptys) zp (right zp))
 ; c+i: (if (-> zp lefts empty?) zp (left zp))
 
-
-;global list of history positions
-;1) save position **before** motions 
-;2) cursor always equal to (next-future @jumplist) if next-future is nil use buf position as next-future
-;Example: 
-; motion             | jumplist                         | cursor after motion
-;--------------------|----------------------------------|--------------------
-; initial position A | {:before ()      :after ()}      | A 
-; jump to B          | {:before (A)     :after ()}      | B  
-; jump to C          | {:before (B A)   :after ()}      | C     
-; c+o                | {:before (A)     :after (B C)}   | B      
-; c+o                | {:before ()      :after (A B C)} | A
-; jump to D          | {:before (A)     :after ()}      | D
-; move to D'         | {:before (A)     :after ()}      | D'
-; c+o                | {:before ()      :after (A D')}  | A
-; c+i                | {:before (A)     :after (D')}    | D'
-; c+i                | {:before (A)     :after (D')}    | D'
-
 (defn- seq-silblings [z]
   (concat
     (zip/lefts z)
@@ -63,19 +45,22 @@
     buf
     [:window :jumplist] fn-update))
 
-(defn- get-location [buf]
+(defn cursor-location [buf]
   (select-keys buf [:id :pos :y :filepath :name]))
 
-(defn jump-push [buf]
-  (let [loc (get-location buf)]
+(defn jump-push
+  ([buf loc]
     (update-jumplist
       buf
-      (fn[jl]
+      (fn [jl]
         (->> (zip/rights jl)
              (cons loc)
              (cons nil)
              zip/seq-zip
-             zip/next)))))
+             zip/next))))
+  ([buf]
+    (let [loc (cursor-location buf)]
+      (jump-push buf loc))))
 
 ; prevent nil location
 (defn- safe-move [location fn-move]
@@ -87,15 +72,15 @@
 (defn jump-prev [buf]
   (update-jumplist
     buf
-    (fn[jl]
+    (fn [jl]
       (-> jl
-          (zip/edit #(or % (get-location buf)))
+          (zip/edit #(or % (cursor-location buf)))
           (safe-move zip/right)))))
 
 (defn jump-current-pos [buf]
   (or
     (-> buf :window :jumplist zip/node)
-    (get-location buf)))
+    (cursor-location buf)))
 
 ;split old buffer to 3 parts [0 a) [a b) [b count)
 (defn- shift-by-change [pos y oldbuf {cpos :pos clen :len :as c}]
@@ -120,15 +105,15 @@
       buf
       (fn [jl]
         (let [fn-update (fn [{id :id pos :pos y :y :as p}]
-                            (if (= id bufid)
-                              (merge p (shift-by-change pos y oldbuf c))
-                              p))]
+                          (if (= id bufid)
+                            (merge p (shift-by-change pos y oldbuf c))
+                            p))]
           (->> jl
-              zip/rights
-              (map fn-update)
-              (cons (fn-update (zip/node jl)))
-              zip/seq-zip
-              zip/next))))))
+               zip/rights
+               (map fn-update)
+               (cons nil)
+               zip/seq-zip
+               zip/next))))))
 
 ;keep track positions when buffer changed
 (listen
