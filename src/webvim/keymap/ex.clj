@@ -206,13 +206,10 @@
                                                         (file-register alternatebuf))))))
                      (update :buffers
                              (fn [buffers]
-                               (let [nextbuf (assoc nextbuf :view (buf :view))
-                                     buffers
-                                     (-> buffers
-                                         (dissoc (buf :id))
-                                         (assoc nextid nextbuf))]
-                                 (println "update buffers:" nextid (nextbuf :name) (keys buffers))
-                                 buffers)))
+                               (-> buffers
+                                   (dissoc (buf :id))
+                                   (update nextid (fn [nextbuf]
+                                                    (assoc nextbuf :view (buf :view)))))))
                      (assoc :active-buffer nextid)))
         (fire-event :close-buffer))))
 
