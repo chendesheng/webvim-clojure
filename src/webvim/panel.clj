@@ -15,22 +15,21 @@
     [webvim.core.utils :refer [shorten-path visual-size path= pretty-trace expand-path]]
     [webvim.scrolling :refer [cursor-center-viewport]]
     [webvim.core.editor :refer [async-update-other-buffer]]
+    [webvim.core.lineindex :refer [range-by-line]]
     [webvim.jumplist :refer [jump-push]]))
 
 (defn goto-buf
   ([{id :id :as buf} nextid]
-   (if (or (nil? nextid) (= nextid id))
-     buf
-     (-> buf
-         (change-active-buffer nextid)
-         (assoc-in [:window :active-buffer] nextid)))))
+    (if (or (nil? nextid) (= nextid id))
+      buf
+      (-> buf
+          (change-active-buffer nextid)
+          (assoc-in [:window :active-buffer] nextid)))))
 
 (defn- new-and-goto-file [buf file]
   (let [{new-bufid :id :as new-buf} (new-file file)]
     (-> buf
-        (update-in [:window :buffers]
-                   (fn [buffers]
-                     (assoc buffers new-bufid new-buf)))
+        (assoc-in [:window :buffers new-bufid] new-buf)
         jump-push
         (goto-buf new-bufid))))
 
@@ -46,7 +45,7 @@
         pos (-> panel-buf :str count dec dec)
         fn-set-pos (if goto? buf-set-pos (fn [buf _] buf))
         fn-goto-buf (if goto?
-                      (fn[buf nextid]
+                      (fn [buf nextid]
                         (-> buf
                             jump-push
                             (goto-buf nextid)))
@@ -91,7 +90,7 @@
           exists-buf (fn [buf]
                        (let [next-buf (get-buf-by-path buf file)]
                          (if (some? next-buf)
-                           (-> buf 
+                           (-> buf
                                jump-push
                                (goto-buf (next-buf :id))))))
           new-buf (fn [buf]
@@ -104,10 +103,14 @@
           (new-buf buf)
           buf)))
   ([buf file linenum new-file?]
-    (let [newbuf (edit-file buf file new-file?)
-          nextid (newbuf :nextid)
-          row (dec linenum)]
-      buf)))
+    (let [buf (edit-file buf file new-file?)
+          nextid (-> buf :window :active-buffer)]
+      (async-update-other-buffer
+        buf
+        nextid
+        (fn [buf]
+          (buf-set-pos buf
+                       (-> buf :lineindex (range-by-line (dec linenum)) first)))))))
 
 (defn- buf-append [buf & strs]
   (buf-insert
