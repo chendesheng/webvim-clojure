@@ -97,7 +97,7 @@
                     (if (or new-file? (fs/exists? file))
                       (if (fs/directory? file)
                         (edit-dir buf (str file))  ; TODO: add back directory
-                        (new-and-goto-file buf (str file)))))]
+                        (new-and-goto-file buf (-> file expand-path str)))))]
       (or (self-buf buf)
           (exists-buf buf)
           (new-buf buf)
