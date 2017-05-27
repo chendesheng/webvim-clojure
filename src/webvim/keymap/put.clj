@@ -33,6 +33,7 @@
 
 (defn- put-from-register [buf reg append?]
   (let [{s :str res :result linewise? :linewise? blockwise? :blockwise?} (-> buf :window :registers (registers-get reg))]
+    (println "put-from-register:" s linewise?)
     (cond
       linewise?
       (put-linewise buf s append?)
@@ -57,13 +58,12 @@
 (defn wrap-keymap-put [keymap]
   (assoc keymap
          "p" (fn [buf keycode]
-               (let [append? (if (-> buf
+               (let [append? (or (-> buf
                                      :window
                                      :registers
                                      (registers-get (-> buf :context :register))
                                      :linewise?)
-                               true
-                               (not= (char-at (buf :str) (buf :pos)) \newline))]
-               ;(println "append?" append?)
+                                 (not= (char-at (buf :str) (buf :pos)) \newline))]
+                 (println "append?" append? (-> buf :context :register))
                  (put-from-register buf (-> buf :context :register) append?)))
          "P" (wrap-keycode #(put-from-register % (-> % :context :register) false))))

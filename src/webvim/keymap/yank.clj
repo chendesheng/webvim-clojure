@@ -22,12 +22,13 @@
   ([buf [a b]]
     (let [s (buf-subr buf a b)]
       (-> buf
-          :window
-          :registers
-          (registers-yank-to
-            (-> buf :context :register)
-            {:str s :linewise? (-> buf :context :linewise?)}))
-      (update buf :context dissoc :register))))
+          (update-in [:window :registers]
+                     (fn [registers]
+                       (registers-yank-to
+                         registers
+                         (-> buf :context :register)
+                         {:str s :linewise? (-> buf :context :linewise?)})))
+          (update :context dissoc :register)))))
 
 (defn- visual-block-yank [buf]
   (let [items (visual-block-lines buf)
