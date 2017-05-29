@@ -33,7 +33,7 @@
   (doseq [r []]
     (apply cache-resource r)))
 
-(defn restart [window]
+(defn restart []
   (future
     (Thread/sleep 10) ;wait some time so restart happens after flush states to client
     (server/stop)
@@ -52,14 +52,9 @@
     (merge buf keymaps)))
 
 (defn- reload-keymaps [{bufid :id :as buf}]
-  (let [buf (reload-keymap buf)]
-    (map-vals (fn [buf]
-                (if (not= bufid (buf :id))
-                  (let [tmp (init-keymap-tree buf)
-                        keymaps (assoc tmp :keymap (tmp :normal-mode-keymap))]
-                    (merge buf keymaps))
-                  buf))
-              (-> buf :window :buffers))))
+  (-> buf
+      reload-keymap
+      (update-in [:window :buffers] #(map-vals reload-keymap %))))
 
 (defn- cmd-reload [buf _ _ _]
   (let [ns (get-namespace (buf :filepath))
@@ -70,7 +65,7 @@
         reload-keymaps
         (assoc :message
                (if (nil? ret)
-                 (restart (buf :window))
+                 (restart)
                  (str ret))))))
 
 (defn- cmd-doc [buf _ _ [name]]
