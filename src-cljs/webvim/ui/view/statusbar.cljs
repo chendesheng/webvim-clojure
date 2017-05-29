@@ -44,21 +44,22 @@
              (not= message ""))
     ($text-content ($status-bar-buf bufid) message)))
 
-(defn- render-status-bar-cursor [$status $cur pos]
+(defn- render-status-bar-cursor [statusbar-left $status $cur pos]
   (let [left (if (nil? pos)
                -100
                (.-left (bounding-rect (.-firstChild $status) pos)))]
-    (set! (-> $cur .-style .-left) (str (dec left) "px"))))
+    (set! (-> $cur .-style .-left) (str (-> left (- statusbar-left) dec) "px"))))
 
 (defn- render-line-buffer [{old-line-buf :line-buffer} {line-buf :line-buffer bufid :id}]
   (let [$statusbar ($status-bar bufid)
-        $status ($status-bar-buf bufid)]
+        $status ($status-bar-buf bufid)
+        statusbar-left (-> $statusbar bounding-rect .-left)]
     (toggle-class $statusbar "focus" (some? line-buf))
     (if (not= old-line-buf line-buf)
       (let [{str :str pos :pos pos2 :pos2} line-buf]
         ($text-content $status str)
-        (render-status-bar-cursor $status ($status-bar-cursor bufid) pos)
-        (render-status-bar-cursor $status ($status-bar-cursor-second bufid) pos2)))))
+        (render-status-bar-cursor statusbar-left $status ($status-bar-cursor bufid) pos)
+        (render-status-bar-cursor statusbar-left $status ($status-bar-cursor-second bufid) pos2)))))
 
 (defn- render-name [{old-name :name
                      old-dirty :dirty}

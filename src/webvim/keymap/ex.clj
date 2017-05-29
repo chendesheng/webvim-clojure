@@ -6,7 +6,8 @@
             [webvim.core.lineindex :refer [range-by-line]]
             [clojure.java.shell :refer [sh]]
             [webvim.core.eval :refer [eval-with-ns eval-sandbox]]
-            [webvim.core.editor :refer [async-update-buffer]])
+            [webvim.core.editor :refer [async-update-buffer]]
+            [webvim.core.views :refer [split-view remove-view]])
   (:use clojure.pprint
         webvim.core.rope
         webvim.core.line
@@ -408,6 +409,43 @@
         (recur (substitude-line buf i from to whole-line?) (inc i))
         buf))))
 
+(defn- buf-split-view [buf direction]
+  (let [new-buf (new-file nil)
+        new-bufid (new-buf :id)]
+    (-> buf
+        jump-push
+        (update
+          :window
+          (fn [window]
+            (-> window
+                (assoc-in [:buffers new-bufid] new-buf)
+                (split-view (buf :view) new-bufid direction 0.5 true)
+                (assoc :active-buffer new-bufid)))))))
+
+(defn cmd-vsplit [buf _ _ _]
+  (buf-split-view buf "|"))
+
+(defn cmd-hsplit [buf _ _ _]
+  (buf-split-view buf "-"))
+
+(defn cmd-quit [buf _ _ _]
+  (if (-> buf :buffers vals count (= 1))
+    (assoc buf :message "can't quit last one")
+    (-> buf
+        jump-push
+        (update :window remove-view (buf :view))
+        (cmd-bdelete nil nil nil))))
+
+(defn cmd-only [buf _ _ _]
+  (update buf
+          :window
+          (fn [window]
+            (-> window
+                (assoc :views (buf :view))
+                (update :buffers
+                        (fn [buffers]
+                          (map-vals #(dissoc % :view) buffers)))))))
+
 ;TODO: ex command parser
 (defn- ex-commands [buf]
   (let [cmds
@@ -429,7 +467,13 @@
          ["ls" cmd-ls]
          ["git" cmd-git]
          ["diff" cmd-diff]
-         ["substitute" cmd-substitude]]]
+         ["substitute" cmd-substitude]
+         ["split" cmd-vsplit]
+         ["vsplit" cmd-vsplit]
+         ["hsplit" cmd-hsplit]
+         ["only" cmd-only]
+         ;["quit" cmd-quit]
+]]
     (fire-event :init-ex-commands cmds buf)))
 
 (defn- split-arguments [s]

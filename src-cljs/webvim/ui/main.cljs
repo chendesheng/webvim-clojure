@@ -79,7 +79,7 @@
     (doseq [patch (if (vector? resp)
                     resp [resp])]
 
-      (println "receive:" patch)
+      ;(println "receive:" patch)
       (update-client (adapt patch)))))
 
 (add-listener

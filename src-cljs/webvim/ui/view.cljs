@@ -38,16 +38,18 @@
     (set! js/document.title (str name " - " cwd))))
 
 (defn- render-buffer [{old-bufid :id} {bufid :id view :view}]
+  ;(println "render-buffer:")
   (when (and (some? old-bufid) (nil? bufid))
-    (println "old-bufid:" old-bufid)
-    (println "old-bufid:" ($buffer old-bufid))
-    (println "old-bufid:" ($status-bar old-bufid))
+    ;(println "old-bufid:" old-bufid)
+    ;(println "old-bufid:" ($buffer old-bufid))
+    ;(println "old-bufid:" ($status-bar old-bufid))
     (doto old-bufid
       (-> $buffer $remove)
       (-> $status-bar $remove)))
   (when (and (nil? old-bufid)
              (some? bufid)
              (-> bufid $buffer nil?))
+    ;(println ($view view))
     (doto ($view view)
       (.appendChild ($hiccup
                       [:div.buffer {:id (str "buffer-" bufid)}
@@ -115,39 +117,50 @@
       (let [[type size viewa viewb] view]
         (cond
           (= type "-")
-          [:div.view-box.view-box-hor style
+          [:div.view.view-box.view-box-hor style
            (render-views-recur viewa :height size)
            (render-views-recur viewb :height (- 1 size))]
           (= type "|")
-          [:div.view-box.view-box-ver style
+          [:div.view.view-box.view-box-ver style
            (render-views-recur viewa :width size)
            (render-views-recur viewb :width (- 1 size))]))
-      [:div.view (assoc style :id (str "view-" view))])))
+      [:div.view.inactive-view (assoc style :id (str "view-" view))])))
 
 (defn- render-views [{old-views :views} {views :views buffers :buffers}]
   (if (not= old-views views)
-    (let [$newviews ($hiccup (render-views-recur views :width 1.0))
+    (let [buffers (vals buffers)
+          $newviews ($hiccup (render-views-recur views :width 1.0))
           tmpdoc (js/document.createDocumentFragment)]
       (.appendChild tmpdoc $newviews)
+      (js/console.log "buffers:" buffers)
       (doseq [{bufid :id view :view} buffers]
-        (if-let [$buf ($buffer bufid)]
-          (-> tmpdoc
-              (.getElementById (str "view-" view))
-              (.appendChild (-> bufid $buffer $remove)))))
+        (let [$old-v ($view view)
+              $v (.getElementById tmpdoc (str "view-" view))]
+          ;(println "render-views:" bufid view)
+          ;(println $old-v)
+          ;(println $v)
+          (if (and (some? $old-v)
+                   (some? $v))
+            (loop [$ele (.-firstChild $old-v)]
+              (if (some? $ele)
+                (do
+                  (->> $ele
+                       $remove
+                       (.appendChild $v))
+                  (recur (.-firstChild $old-v))))))))
       (doto ($id "buffers")
         ($empty)
-        (.appendChild (.-firstChild tmpdoc)))
-      (doseq [buf buffers] ;; FIXME: we lost scroll left here
-        (render-scroll-top nil buf)))))
+        (.appendChild (-> tmpdoc .-firstChild $remove))))))
 
 (defn- render-active-buffer [old-client client]
   (let [{old-view :view old-bufid :id :as old-buf} (active-buffer old-client)
         {view :view bufid :id :as buf} (active-buffer client)]
     (when (not= old-view view)
       (if (some? old-view)
-        (-> old-view $view (remove-class "active-view")))
+        (-> old-view $view (add-class "inactive-view")))
       (if (some? view)
-        (-> view $view (add-class "active-view"))))
+        (-> view $view (remove-class "inactive-view"))))
+    ;(println "render-active-buffer:" old-bufid bufid)
     (when (not= old-bufid bufid)
       (if (some? old-bufid)
         (->> ($hidden-input) $remove (.appendChild js/document.body)))
@@ -158,12 +171,16 @@
 (add-listener
   :client-changed :ui-render
   (fn [[patch old-client client]]
+    ;(println "client-changed:old:" old-client)
+    ;(println "client-changed:new:" client)
+    ;(println old-client)
+    ;(println client)
     (render-views old-client client)
     (render-active-buffer old-client client)
     (doseq [bufid (-> patch :buffers keys)]
+      ;(println "bufid:" bufid)
       (let [old-buf (-> old-client :buffers (get bufid))
             buf (-> client :buffers (get bufid))]
-        ;(render-beep old-buf buf)
         (render-title old-client old-buf client buf)
         (render-buffer old-buf buf)
         (when (some? buf)

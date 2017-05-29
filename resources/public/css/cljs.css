@@ -70,19 +70,19 @@ html,
     overflow: hidden;
 }
 
-.view, .view-box {
+.view {
     height: 100%;
     width: 100%;
     position: absolute;
 }
 
-.view-box-hor .view:first-child {
+.view-box-hor > .view:first-child {
     top: 0;
     left: 0;
 }
 
-.view-box-hor .view:first-child:before,
-.view-box-ver .view:first-child:before {
+.view-box-hor > .view:first-child:before,
+.view-box-ver > .view:first-child:before {
     content: '';
     display: block;
     background: #eee;
@@ -90,14 +90,14 @@ html,
     z-index: 4;
 }
 
-.view-box-ver .view:first-child:before {
+.view-box-ver > .view:first-child:before {
     width: 2px;
     height: 100%;
     right: -1px;
     cursor: ew-resize;
 }
 
-.view-box-hor .view:first-child:before {
+.view-box-hor > .view:first-child:before {
     width: 100%;
     height: 2px;
     bottom: -1px;
@@ -105,17 +105,17 @@ html,
     background: transparent;
 }
 
-.view-box-hor .view:last-child {
+.view-box-hor > .view:last-child {
     bottom: 0;
     left: 0;
 }
 
-.view-box-ver .view:first-child {
+.view-box-ver > .view:first-child {
     left: 0;
     top: 0;
 }
 
-.view-box-ver .view:last-child {
+.view-box-ver > .view:last-child {
     right: 0;
     top: 0;
 }
@@ -201,6 +201,11 @@ pre {
     height: 1.2em;
     line-height: 1.2em;
     white-space: pre;
+}
+
+.inactive-view .cursor,
+.inactive-view .cursor-second {
+    display: none;
 }
 
 .cursor.ime {
@@ -303,6 +308,11 @@ pre {
 .status-bar .ex {
     white-space: pre;
 }
+
+.inactive-view .status-bar {
+    opacity: 0.6;
+}
+
 
 ::-webkit-scrollbar {
     display: none;

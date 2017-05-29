@@ -8,7 +8,8 @@
     [webvim.core.pos :refer [pos-re+ pos-re-]]
     [webvim.core.register :refer [registers-get]]
     [webvim.core.utils :refer [parse-int deep-merge expand-path]]
-    [webvim.jumplist :refer [jump-prev jump-next jump-current-pos]]
+    [webvim.core.views :refer [next-view]]
+    [webvim.jumplist :refer [jump-prev jump-next jump-current-pos jump-push]]
     [clojure.zip :as zip]))
 
 (defn- print-zip [z]
@@ -72,4 +73,9 @@
                         (goto-buf buf nextid))))
         "<c-o>" (move-to-jumplist jump-prev)
         ;<tab> === <c-i>
-        "<tab>" (move-to-jumplist jump-next))))
+        "<tab>" (move-to-jumplist jump-next)
+        "<c-w>" {"w" (fn [buf _]
+                       (println "runkeys: <c-w> w")
+                       (-> buf
+                           jump-push
+                           (update :window next-view (buf :view))))})))

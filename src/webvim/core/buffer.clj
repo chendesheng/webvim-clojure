@@ -240,9 +240,11 @@
              (= (buf :filepath) filepath)) (get-buffers buf))))
 
 (defn change-active-buffer [{bufid :id :as buf} nextid]
-  (let [buf (-> buf
-                (assoc-in [:window :buffers nextid :view] (buf :view))
-                (assoc :view nil))
+  (let [buf (if (-> buf :window :buffers (get nextid) :view nil?)
+              (-> buf
+                  (assoc-in [:window :buffers nextid :view] (buf :view))
+                  (dissoc :view))
+              buf)
         put (partial update-in buf [:window :registers] registers-put)]
     (if (and (some? nextid) (not= bufid nextid))
       (put "#" (file-register (-> buf :window :buffers (get bufid))))

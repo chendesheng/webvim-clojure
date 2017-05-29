@@ -1,4 +1,4 @@
-(defproject webvim "0.4.0-SNAPSHOT"
+(defproject webvim "0.6.0-SNAPSHOT"
             :description "Toy vim clone"
             :url "http://example.com/FIXME"
             :license {:name "MIT License"

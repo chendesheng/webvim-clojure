@@ -120,7 +120,7 @@
 
 ;TODO: use a field in buf instead
 (defn- handle-buffer? [buf]
-  (nil? (re-seq #"\[[^]]\]" (buf :name))))
+  (nil? (re-seq #"\[[^]]\]" (-> buf :name (or "")))))
 
 (listen
   :change-buffer

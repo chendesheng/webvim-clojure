@@ -229,7 +229,7 @@
         (fn [{render! :render! :as window} old-window _]
           ;(println "window:" (print-window window))
           ;(println "old-window:" (print-window old-window))
-          ;(println "diff-window:" (print-window (diff-window window old-window)))
+          (println "diff-window:" (print-window (diff-window window old-window)))
           (render! window (diff-window window old-window))
           (update window
                   :buffers
