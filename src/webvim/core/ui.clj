@@ -208,7 +208,8 @@
               diff-buf)))
 
 (defn diff-window [window old-window]
-  (-> (select-keys window [:active-buffer :views :cwd])
+  (-> (select-keys window [:id :active-buffer :views :cwd])
+      (dissoc-if-equal old-window :id)
       (dissoc-if-equal old-window :active-buffer)
       (dissoc-if-equal old-window :views)
       (dissoc-if-equal old-window :cwd)

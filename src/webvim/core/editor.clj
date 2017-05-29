@@ -21,15 +21,18 @@
              (println "window agent failed:" err)))))
 
 (defn get-or-create-window [id]
+  (println "get-or-create-window:" id)
   (let [id (if (empty? id) (uuid) id)]
     (-> editor
         (swap!
           (fn [ed]
-            (update-in ed [:windows id]
-                       (fn [awindow]
-                         (if (nil? awindow)
-                           (create-window id)
-                           awindow)))))
+            (update-in
+              ed
+              [:windows id]
+              (fn [awindow]
+                (if (nil? awindow)
+                  (create-window id)
+                  awindow)))))
         :windows
         (get id))))
 

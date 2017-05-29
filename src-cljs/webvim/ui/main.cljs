@@ -23,37 +23,6 @@
 (defn- send-size [[w h]]
   (xhr-get (str "resize/" (@client :id) "/" w "/"  h)))
 
-;;will drop this after server side overhaul
-(defn- patch-adapt [data]
-  (let [[win buf1] (if (vector? data) data [nil data])
-        buf2 (if (-> buf1 :mode zero?)
-               (assoc buf1 :line-buffer nil)
-               buf1)
-        buf3 (if (-> buf2 :scope-changes some?)
-               (update buf2 :scope-changes
-                       (fn [scope-changes]
-                         ;(println scope-changes)
-                         (vec (map (fn [c]
-                                     (if (vector? c)
-                                       (vec (map #(update % 0 keyword) c))
-                                       c)) scope-changes))))
-               buf2)
-        buf (if (some? (buf3 :str))
-              (-> buf3
-                  (assoc :changes [{:a [0 0] :b [0 0] :to (buf3 :str)}])
-                  (dissoc :str))
-              buf3)
-        ;_ (println "buf:" buf)
-        bufid (:id buf)
-        active-buffer (:active-buffer @client)]
-    (merge (if-not (nil? buf)
-             (if (or (nil? bufid)
-                     (= active-buffer bufid))
-               {:buffers {active-buffer buf}}
-               {:active-buffer bufid
-                :layouts [:| bufid]
-                :buffers {bufid buf}})) win)))
-
 (defn- adapt [patch]
   (let [adapt-changes (fn [buf]
                         (if (some? (:str buf))
@@ -110,7 +79,7 @@
     (doseq [patch (if (vector? resp)
                     resp [resp])]
 
-      ;(println "receive:" patch)
+      (println "receive:" patch)
       (update-client (adapt patch)))))
 
 (add-listener
@@ -121,7 +90,7 @@
 (add-listener
   :unload :save-winid
   (fn []
-    ;(println "save client id:" (@client :id))
+    (println "save client id:" (@client :id))
     (.set goog.net.cookies "windowId" (@client :id) js/Infinity)))
 
 (defn- mmap [f coll]
