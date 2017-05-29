@@ -347,12 +347,14 @@
     buf
     (str ":register\n"
          (string/join
-           "\n"
+           ""
            (->> buf :window :registers
                 (map (fn [[k v]]
                        (str "\"" k
                             "  "
-                            (clojure.string/escape (or (:str v) "") {\newline "\\n"})))))))
+                            (clojure.string/escape (or (:str v) "") {\newline "\\n"})
+                            \newline)))
+                sort)))
     true))
 
 (defn cmd-jumps [buf _ _ _]

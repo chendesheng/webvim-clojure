@@ -55,21 +55,20 @@
                 (registers-put regs1 ch v)
                 regs1)]
     (if (not= ch black-hole-reg)
-      (do
-        ;Register 1: Last deletion. Register 2: Second last deletion. And so on.
-        (let [regs3 (-> regs2
-                        (assoc "1" v)
-                        (assoc "2" (regs2 "1"))
-                        (assoc "3" (regs2 "2"))
-                        (assoc "4" (regs2 "3"))
-                        (assoc "5" (regs2 "4"))
-                        (assoc "6" (regs2 "5"))
-                        (assoc "7" (regs2 "6"))
-                        (assoc "8" (regs2 "7"))
-                        (assoc "9" (regs2 "8")))]
-          (if (->> v :str (re-seq #"\r?\n") count zero?)
-            (registers-put regs3 small-delete-reg v)
-            regs2))))))
+      ;Register 1: Last deletion. Register 2: Second last deletion. And so on.
+      (let [regs3 (-> regs2
+                      (assoc "1" v)
+                      (assoc "2" (regs2 "1"))
+                      (assoc "3" (regs2 "2"))
+                      (assoc "4" (regs2 "3"))
+                      (assoc "5" (regs2 "4"))
+                      (assoc "6" (regs2 "5"))
+                      (assoc "7" (regs2 "6"))
+                      (assoc "8" (regs2 "7"))
+                      (assoc "9" (regs2 "8")))]
+        (if (->> v :str (re-seq #"\r?\n") count zero?)
+          (registers-put regs3 small-delete-reg v)
+          regs3)))))
 
 (defn file-register [{name :name id :id filepath :filepath}]
   {:id id :str (or filepath name)})

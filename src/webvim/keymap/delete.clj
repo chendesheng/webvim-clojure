@@ -41,11 +41,12 @@
 (defn delete-range [buf [a b :as rg]]
   ;(log ["delete-range" rg])
   (let [s (buf-subr buf a b)]
-    (-> buf :window :registers
-        (registers-delete-to (-> buf :context :register)
-                             {:str s :linewise? (-> buf :context :linewise?)}))
     (-> buf
         (buf-delete a b)
+        (update-in [:window :registers]
+                   registers-delete-to
+                   (-> buf :context :register)
+                   {:str s :linewise? (-> buf :context :linewise?)})
         (update :context dissoc :register))))
 
 (defn- temp-visual-keymap-d [buf keycode]
