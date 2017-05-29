@@ -81,11 +81,11 @@
   (js/document.getElementById (str "ex-autocompl-" bufid "-highlight")))
 
 (defn $remove [ele]
-  (if (and (some? ele)
-           (-> ele .-remove some?))
-    (.remove ele)
-    (if (-> ele .-parentNode some?)
-      (-> ele .-parentNode (.removeChild ele))))
+  (if (some? ele)
+    (if (-> ele .-remove some?)
+      (.remove ele)
+      (if (-> ele .-parentNode some?)
+        (-> ele .-parentNode (.removeChild ele)))))
   ele)
 
 (defn $empty [ele]
