@@ -90,8 +90,10 @@
               :normal-mode-keymap :insert-mode-keymap :ex-mode-keymap
               :pending-undo :saved-undo :registers :keys
               :save-point :ext :last-visual :dot-repeat-keys
-              :last-indents :mod-time :autocompl-provider :lineindex)
+              :last-indents :mod-time :autocompl-provider :lineindex
+              :grammar :rule-stacks :scopes :str)
       (dissoc-empty [:changes])
+      (dissoc-empty [:scope-changes])
       update-visual
       update-mode
       (dissoc-nil :keys)
@@ -127,9 +129,9 @@
         nil
         (or (nil? before) (not (= (:id before) (:id after))))
         (-> after
-            (assoc :str (-> after :str str))
             (assoc :lang (-> after :language :name))
-            (dissoc :changes)
+            (assoc :changes [{:a [0 0] :b [0 0] :to (-> after :str str)}])
+            (assoc :scope-changes [0 (after :scopes)])
             (remove-autocompl before)
             remove-fields)
         :else
@@ -156,10 +158,8 @@
             (dissoc-if-equal before :pos)
             (dissoc-if-equal before :showkeys)
             (dissoc-if-equal before :lines)
-            (dissoc-if-equal before :scope-changes)
             (dissoc-if-equal before :beep?)
             (dissoc-if-equal before :view)
-            (dissoc :str)
             remove-fields)))
 
 (defn- bound-scroll-top
@@ -223,18 +223,22 @@
             (map-vals (fn [buf]
                         (-> buf
                             remove-fields
-                            (dissoc :autocompl :str :highlights))) buffers))))
+                            (dissoc :autocompl :str :highlights)
+                            (dissoc :scopes)
+                            (dissoc :scope-changes))) buffers))))
 
 (listen :window-changed
         (fn [{render! :render! :as window} old-window _]
           ;(println "window:" (print-window window))
           ;(println "old-window:" (print-window old-window))
-          (println "diff-window:" (print-window (diff-window window old-window)))
+          ;(println "diff-window:" (print-window (diff-window window old-window)))
           (render! window (diff-window window old-window))
           (update window
                   :buffers
                   (fn [buffers]
-                    (map-vals #(assoc % :changes []) buffers)))))
+                    (map-vals #(-> %
+                                   (assoc :changes [])
+                                   (dissoc :scope-changes)) buffers)))))
 
 (listen :buffer-changed
         (fn [buf _ window]

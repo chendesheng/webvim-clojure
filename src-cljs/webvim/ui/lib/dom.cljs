@@ -178,8 +178,11 @@
 (defn $create [tag]
   (js/document.createElement tag))
 
-(defn $text-content [ele text]
-  (set! (.-textContent ele) (str text)))
+(defn $text-content
+  ([ele text]
+    (set! (.-textContent ele) (str text)))
+  ([ele]
+    (.-textContent ele)))
 
 (defn $hiccup
   ([[tag & children] fn-create fn-content]

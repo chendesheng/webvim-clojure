@@ -2,7 +2,8 @@
   (:require [me.raynes.fs :as fs]
             [clojure.java.shell :refer [sh]]
             [webvim.autoformat :refer [wrap-async-auto-format js-beautify-formatter]]
-            [webvim.core.utils :refer [windows? trim-last-newline]])
+            [webvim.core.utils :refer [windows? trim-last-newline]]
+            [webvim.core.syntax :refer [load-grammar tokenize-all]])
   (:use webvim.core.lang
         webvim.core.rope
         webvim.core.event
@@ -12,6 +13,14 @@
 (println "load javascript language")
 
 (defmethod init-file-type ".js"
+  [buf]
+  (-> buf
+      (assoc-in [:language :id] ::javascript)
+      (assoc-in [:language :name] "JavaScript")
+      (assoc :tabsize 2)
+      (assoc :expandtab true)))
+
+(defmethod init-file-type ".jsx"
   [buf]
   (-> buf
       (assoc-in [:language :id] ::javascript)
@@ -43,3 +52,11 @@
                   (json? buf))
             (wrap-async-auto-format cmds (js-beautify-formatter "js"))
             cmds)))
+
+(listen :new-buffer
+        (fn [buf]
+          (if (-> buf :language :id (= ::javascript))
+            (-> buf
+                (assoc :grammar (load-grammar "/users/chendesheng/webvim/syntaxes/javascript.tmLanguage.json"))
+                tokenize-all)
+            buf)))

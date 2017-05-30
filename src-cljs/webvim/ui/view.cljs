@@ -7,7 +7,7 @@
             [webvim.fuzzy :refer [fuzzy-match]]
             [webvim.ui.view.statusbar :refer [render-status-bar]]
             [webvim.ui.view.gutter :refer [render-gutter]]
-            [webvim.ui.view.lines :refer [render-lines]]
+            [webvim.ui.view.lines :refer [render-lines render-scopes]]
             [webvim.ui.view.cursor :refer [render-cursor]]
             [webvim.ui.view.autocompl :refer [render-autocompl]]
             [webvim.ui.view.visual :refer [render-visual render-highlights]]
@@ -187,6 +187,7 @@
           (render-status-bar old-buf buf)
           (render-gutter old-buf buf)
           (render-lines old-buf buf)
+          (render-scopes old-buf buf)
           (render-visual old-buf buf)
           (render-highlights old-buf buf)
           (render-cursor old-buf buf)

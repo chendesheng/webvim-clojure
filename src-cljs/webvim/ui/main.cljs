@@ -78,7 +78,6 @@
   (fn [resp]
     (doseq [patch (if (vector? resp)
                     resp [resp])]
-
       ;(println "receive:" patch)
       (update-client (adapt patch)))))
 

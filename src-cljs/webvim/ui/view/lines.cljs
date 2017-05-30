@@ -25,10 +25,35 @@
       (set! (.-innerHTML container) html)
       nexttop)))
 
-(defn render-lines [{old-changes :changes old-bufid :id}
-                    {changes :changes bufid :id lang :lang}]
-  (if (not= old-bufid bufid)
-    (.splice scope-cache 0 (.-length scope-cache)))
+(defn- normalize-classes [classes]
+  (->> classes
+       (mapcat (fn [class-name]
+                 (string/split class-name ".")))
+       distinct
+       ;(filter (complement #{"source" "clojure"}))
+       (string/join " ")))
+
+(defn- create-span [text class-name]
+  (doto (js/document.createElement "SPAN")
+    (-> .-className (set! class-name))
+    (-> .-textContent (set! text))))
+
+(defn- render-line [line scopes]
+  (loop [i 0
+         [[a b classes :as scope] & scopes] scopes
+         result ($hiccup [:span.code-block])]
+    (if (some? scope)
+      (do
+        (if (< i a) (.appendChild result (js/document.createTextNode (subs line i a))))
+        (.appendChild result
+                      (create-span (subs line a b)
+                                   (normalize-classes classes)))
+        (recur b scopes result))
+      result)))
+
+(defn render-lines [{old-changes :changes}
+                    {changes :changes
+                     bufid :id}]
   (if (and (not= old-changes changes)
            (not (empty? changes)))
     (let [$lines ($id (str "lines-" bufid))
@@ -49,38 +74,26 @@
           ;(println "$linea")
           ;(js/console.log $linea)
           (dotimes [_ (inc (- yb ya))]
-            (when-let [$linea (aget $lines-nodes ya)]
-              (.remove $linea)
-              (.splice scope-cache ya 1)))
+            (if-let [$linea (aget $lines-nodes ya)]
+              (.remove $linea)))
           (if-let [after (aget $lines-nodes ya)]
-            (loop [lines lines
-                   index ya ; index of the "after" line
-                   top (aget scope-cache (dec ya))]
-              (if (not-empty lines)
-                (let [line (first lines)
-                      $line ($hiccup [:span.code-block])
-                      nexttop (highlight lang line top $line)]
-                  (.insertBefore $lines $line after)
-                  (.splice scope-cache index 0 nexttop)
-                  (recur (rest lines) (inc index) nexttop))
-                (let [currenttop (aget scope-cache index)]
-                  (when (and (-> hljs (.getLanguage lang) some?)
-                             (not= top currenttop))
-                    (aset scope-cache index top)
-                    (if (-> $lines-nodes .-length (> index))
-                      (let [$new-line ($hiccup [:span.code-block])
-                            $line (aget $lines-nodes index)
-                            line (.-textContent $line)
-                            nexttop (highlight lang line top $new-line)]
-                        (.replaceChild $lines $new-line $line)
-                        (recur nil (inc index) nexttop)))))))
-            (loop [lines lines
-                   index (.-length $lines-nodes)
-                   top (aget scope-cache (.-length $lines-nodes))]
-              (if (not-empty lines)
-                (let [line (first lines)
-                      $line ($hiccup [:span.code-block])
-                      nexttop (highlight lang line top $line)]
-                  (aset scope-cache index nexttop)
-                  (.appendChild $lines $line)
-                  (recur (rest lines) (inc index) nexttop))))))))))
+            (doseq [line lines]
+              (.insertBefore $lines ($hiccup [:span.code-block line]) after))
+            (doseq [line lines]
+              (.appendChild $lines ($hiccup [:span.code-block line])))))))))
+
+(defn render-scopes [{old-scope-changes :scope-changes} {scope-changes :scope-changes bufid :id}]
+  (if (and (not= old-scope-changes scope-changes)
+           (-> scope-changes empty? not))
+    (let [[start scopes] scope-changes
+          $lines ($id (str "lines-" bufid))]
+      (loop [$line (-> $lines .-childNodes (aget start))
+             [scope & scopes] scopes]
+        (if (some? scope)
+          (let [line ($text-content $line)
+                $next-line (.-nextSibling $line)]
+            (.replaceChild $lines
+                           (render-line line scope)
+                           $line)
+            (recur $next-line scopes)))))))
+
