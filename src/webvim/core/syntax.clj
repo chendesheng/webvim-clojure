@@ -91,9 +91,9 @@
           (if (-> buf :rule-stacks nil?)
             buf
             (let [linea (pos-linenum lidx pos)
-                  lineb (->> to count (+ pos) inc (pos-linenum lidx))
+                  lineb (->> to count (+ pos) (pos-linenum lidx) inc)
                   old-linea linea
-                  old-lineb (->> pos (+ len) inc (pos-linenum old-lidx))]
+                  old-lineb (->> pos (+ len) (pos-linenum old-lidx) inc)]
               (println "update rule-stacks" c linea lineb old-linea old-lineb)
               (-> buf
                   (update :changeLines (fn [[a b :as rg]]
