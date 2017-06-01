@@ -332,3 +332,8 @@
     (reduce-kv (fn [m k v] (assoc! m k (f v)))
                (transient (empty m)) m)))
 
+(defn splice [v a b to]
+  (let [before (subvec v 0 a)
+        after (subvec v b (count v))]
+    (vec (concat before to after))))
+

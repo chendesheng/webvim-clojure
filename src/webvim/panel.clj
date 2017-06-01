@@ -1,7 +1,7 @@
 ;buildin panels: [Output] [Grep] [Directory] etc.
 (ns webvim.panel
   (:require
-    [webvim.core.event :refer [listen]]
+    [webvim.core.event :refer [listen fire-event]]
     [me.raynes.fs :as fs]
     [clojure.pprint :refer [pprint]]
     [clojure.string :as string]
@@ -29,7 +29,8 @@
 (defn- new-and-goto-file [buf file]
   (let [{new-bufid :id :as new-buf} (new-file file)]
     (-> buf
-        (assoc-in [:window :buffers new-bufid] new-buf)
+        (assoc-in [:window :buffers new-bufid]
+                  (fire-event :add-buffer new-buf (buf :window)))
         jump-push
         (goto-buf new-bufid))))
 
@@ -55,7 +56,8 @@
           fn-update
           (fn-set-pos pos))
       (-> buf
-          (assoc-in [:window :buffers panel-bufid] panel-buf)
+          (assoc-in [:window :buffers panel-bufid]
+                    (fire-event :add-buffer panel-buf (buf :window)))
           (fn-goto-buf panel-bufid)
           (async-update-other-buffer
             panel-bufid

@@ -53,10 +53,13 @@
             (wrap-async-auto-format cmds (js-beautify-formatter "js"))
             cmds)))
 
-(listen :new-buffer
-        (fn [buf]
-          (if (-> buf :language :id (= ::javascript))
+(listen :add-buffer
+        (fn [buf window]
+          (if (javascript? buf)
             (-> buf
-                (assoc :grammar (load-grammar "/users/chendesheng/webvim/syntaxes/javascript.tmLanguage.json"))
+                (assoc :grammar
+                       (-> window
+                           :registry
+                           (load-grammar "syntaxes/javascript.tmLanguage.json")))
                 tokenize-all)
             buf)))

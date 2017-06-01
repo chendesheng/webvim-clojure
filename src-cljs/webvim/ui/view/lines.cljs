@@ -85,15 +85,16 @@
 (defn render-scopes [{old-scope-changes :scope-changes} {scope-changes :scope-changes bufid :id}]
   (if (and (not= old-scope-changes scope-changes)
            (-> scope-changes empty? not))
-    (let [[start scopes] scope-changes
-          $lines ($id (str "lines-" bufid))]
-      (loop [$line (-> $lines .-childNodes (aget start))
-             [scope & scopes] scopes]
-        (if (some? scope)
-          (let [line ($text-content $line)
-                $next-line (.-nextSibling $line)]
-            (.replaceChild $lines
-                           (render-line line scope)
-                           $line)
-            (recur $next-line scopes)))))))
+    (doseq [scope-change scope-changes]
+      (let [[start scopes] scope-change
+            $lines ($id (str "lines-" bufid))]
+        (loop [$line (-> $lines .-childNodes (aget start))
+               [scope & scopes] scopes]
+          (if (some? scope)
+            (let [line ($text-content $line)
+                  $next-line (.-nextSibling $line)]
+              (.replaceChild $lines
+                             (render-line line scope)
+                             $line)
+              (recur $next-line scopes))))))))
 

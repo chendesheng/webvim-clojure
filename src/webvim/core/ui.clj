@@ -131,7 +131,7 @@
         (-> after
             (assoc :lang (-> after :language :name))
             (assoc :changes [{:a [0 0] :b [0 0] :to (-> after :str str)}])
-            (assoc :scope-changes [0 (after :scopes)])
+            (assoc :scope-changes [[0 (after :scopes)]])
             (remove-autocompl before)
             remove-fields)
         :else
@@ -251,7 +251,7 @@
 
 (listen :change-buffer
         (fn [buf oldbuf c]
-          (println "change:" c)
+          ;(println "change:" c)
           ;changes of current command, only for writing back to client
           (update buf :changes conj c)))
 

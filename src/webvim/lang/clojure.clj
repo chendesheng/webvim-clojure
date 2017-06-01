@@ -181,10 +181,16 @@
             (wrap-async-auto-format cmds format-buffer)
             cmds)))
 
-(listen :new-buffer
-        (fn [buf]
-          (if (-> buf :language :id (= ::clojure))
+(defn- clojure? [buf]
+  (-> buf :language :id (= ::clojure)))
+
+(listen :add-buffer
+        (fn [buf window]
+          (if (clojure? buf)
             (-> buf
-                (assoc :grammar (load-grammar "/users/chendesheng/webvim/syntaxes/clojure.tmLanguage.json"))
+                (assoc :grammar
+                       (-> window
+                           :registry
+                           (load-grammar "syntaxes/clojure.tmLanguage.json")))
                 tokenize-all)
             buf)))
