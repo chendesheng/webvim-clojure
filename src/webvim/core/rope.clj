@@ -189,6 +189,22 @@
 (defn buf-subr [buf a b]
   (-> buf :str (subr a b) str))
 
+(defn- minpt [[a1 b1 :as p1] [a2 b2 :as p2]]
+  (if (or (nil? p1) (nil? p2))
+    nil
+    (cond
+      (< a1 a2) p1
+      (= a1 a2) (if (<= b1 b2) p1 p2)
+      :else p2)))
+
+(defn- maxpt [[a1 b1 :as p1] [a2 b2 :as p2]]
+  (if (or (nil? p1) (nil? p2))
+    nil
+    (cond
+      (< a1 a2) p2
+      (= a1 a2) (if (<= b1 b2) p2 p1)
+      :else p1)))
+
 ;A change is one edit at **single** point. 
 ;For example:
 ;  {:len 0 :to "aa" :pos 0}
@@ -208,31 +224,36 @@
       (let [p1 (c1 :pos) p2 (c2 :pos)
             to1 (c1 :to) to2 (c2 :to)
             l1 (c1 :len) l2 (c2 :len)
-            lt1 (count to1) lt2 (count to2)]
-        (cond
-          (= p1 p2)
-          {:pos p1
-           :to (str to2 (subs to1 (min lt1 l2)))
-           :len (+ l1 (max 0 (- l2 lt1)))}
-          (= p1 (+ p2 l2))
-          {:pos p2
-           :to (str to2 to1)
-           :len (+ l1 l2)}
-          (= (+ p1 lt1) p2)
-          {:pos p1
-           :to (str to1 to2)
-           :len (+ l1 l2)}
-          (= (+ p1 lt1) (+ p2 l2))
-          {:pos (min p1 p2)
-           :to (str (subs to1 0 (max (- lt1 l2) 0)) to2)
-           :len (- (+ p1 l1) (min p1 p2))}
-          :else nil))))
+            lt1 (count to1) lt2 (count to2)
+            a (minpt (c1 :a) (c2 :a))
+            b (maxpt (c1 :b) (c2 :b))]
+        (assoc
+          (cond
+            (= p1 p2)
+            {:pos p1
+             :to (str to2 (subs to1 (min lt1 l2)))
+             :len (+ l1 (max 0 (- l2 lt1)))}
+            (= p1 (+ p2 l2))
+            {:pos p2
+             :to (str to2 to1)
+             :len (+ l1 l2)}
+            (= (+ p1 lt1) p2)
+            {:pos p1
+             :to (str to1 to2)
+             :len (+ l1 l2)}
+            (= (+ p1 lt1) (+ p2 l2))
+            {:pos (min p1 p2)
+             :to (str (subs to1 0 (max (- lt1 l2) 0)) to2)
+             :len (- (+ p1 l1) (min p1 p2))}
+            :else nil)
+          :a a
+          :b b))))
 
 ;(merge-change {:pos 2 :len 3 :to "de"} {:pos 3 :len 1 :to "aa"})
 ;(merge-change {:pos 2 :len 3 :to "de"} {:pos 0 :len 4 :to "aa"})
 ;(merge-change {:pos 2 :len 3 :to "de"} {:pos 2 :len 2 :to "aa"})
 
-(defn- merge-changes
+(defn merge-changes
   "compress changes"
   [changes]
   (reduce

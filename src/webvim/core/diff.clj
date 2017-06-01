@@ -1,11 +1,11 @@
 (ns webvim.core.diff
   (:require [clj-diff.core :as d]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [webvim.core.rope :refer [buf-insert buf-replace buf-delete]])
   (:use webvim.core.utils
         webvim.core.line
         webvim.core.pos
-        clojure.pprint
-        webvim.core.rope))
+        clojure.pprint))
 
 (defn- parse-hunks [diff]
   (re-seq #"@@ -(\d+),?(\d+)? \+(\d+),?(\d+)? @@([\s\S]*?)(?=$|(?<=\r?\n)@@.*?@@)" diff))

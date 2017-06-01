@@ -2,6 +2,7 @@
   (:require [webvim.core.event :refer [fire-event]]
             [me.raynes.fs :as fs]
             [webvim.core.utils :refer [uuid shorten-path expand-path]]
+            [webvim.core.rope :refer [merge-changes]]
             [webvim.core.views]
             [clojure.zip :as zip]))
 
@@ -47,7 +48,13 @@
       (if (= input-buf buf)
         old-window ;return old-window if nothing changed
         (let [;FIXME: confusing event name, there is a :change-buffer event which fires when :str changes
-              new-buf (fire-event (dissoc buf :window) old-buf window :buffer-changed)
+              new-buf (-> buf
+                          (update :changes merge-changes)
+                          (dissoc :window)
+                          (fire-event
+                            old-buf
+                            window
+                            :buffer-changed))
               new-window (update-in window
                                     [:buffers bufid]
                                     #(if (some? %) new-buf))]
