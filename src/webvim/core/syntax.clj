@@ -60,40 +60,62 @@
                     grammar :grammar
                     lidx :lineindex
                     r :str
-                    :as buf}
-                   linea lineb]
-  (loop [buf buf
-         n linea
-         continuation (get rule-stacks linea)]
-    (if (or (>= n (total-lines lidx))
-            (and (> n lineb)
-                 (= continuation (get rule-stacks n))))
-      (update buf :scope-changes vconj [linea (-> buf :scopes (subvec linea n))])
-      (let [line (str (subr r (range-by-line lidx n)))
-            [rule-stack tokens] (tokenize-line grammar line continuation)]
-        (recur (-> buf
-                   (set-rule-stack n continuation)
-                   (set-scopes n tokens))
-               (inc n)
-               rule-stack)))))
+                    [linea lineb] :changeLines
+                    :as buf}]
+  (println "re-tokenize" linea lineb)
+  (if (nil? linea)
+    buf
+    (loop [buf buf
+           n linea
+           continuation (get rule-stacks linea)]
+      (if (or (>= n (total-lines lidx))
+              (and (>= n lineb)
+                   (.equals continuation (get rule-stacks n))))
+        (update buf :scope-changes vconj [linea (-> buf :scopes (subvec linea n))])
+        (let [line (str (subr r (range-by-line lidx n)))
+              [rule-stack tokens] (tokenize-line grammar line continuation)]
+          (recur (-> buf
+                     (set-rule-stack n continuation)
+                     (set-scopes n tokens))
+                 (inc n)
+                 rule-stack))))))
+
+(listen :buffer-changed
+        (fn [buf _ _]
+          (-> buf
+              re-tokenize
+              (dissoc :changeLines))))
 
 (listen :change-buffer
         (fn [{lidx :lineindex :as buf} {old-lidx :lineindex :as old-buf} {pos :pos len :len to :to :as c}]
-          (println c)
-          (let [linea (pos-linenum lidx pos)
-                lineb (->> to count (+ pos) (pos-linenum lidx) inc)
-                old-linea linea
-                old-lineb (->> pos (+ len) (pos-linenum old-lidx) inc)]
-            (re-tokenize
+          (if (-> buf :rule-stacks nil?)
+            buf
+            (let [linea (pos-linenum lidx pos)
+                  lineb (->> to count (+ pos) inc (pos-linenum lidx))
+                  old-linea linea
+                  old-lineb (->> pos (+ len) inc (pos-linenum old-lidx))]
+              (println "update rule-stacks" c linea lineb old-linea old-lineb)
               (-> buf
-                  (update :rule-stacks (fn [rule-stacks]
-                                         (splice rule-stacks
-                                                 old-linea old-lineb
-                                                 (repeat (- lineb linea) nil))))
-                  (update :scopes (fn [scopes]
-                                    (splice scopes
-                                            old-linea old-lineb
-                                            (repeat (- lineb linea) nil)))))
-              linea
-              lineb))))
+                  (update :changeLines (fn [[a b :as rg]]
+                                         (if (nil? rg)
+                                           [linea lineb]
+                                           (let [a (cond
+                                                     (< a linea) a
+                                                     (>= a lineb) (+ a (- (- lineb linea) (- old-lineb old-linea)))
+                                                     :else linea)
+                                                 b (cond
+                                                     (< b linea) b
+                                                     (>= b lineb) (+ b (- (- lineb linea) (- old-lineb old-linea)))
+                                                     :else linea)]
+                                             [(min a linea) (max b lineb)]))))
+                  (update :rule-stacks
+                          (fn [rule-stacks]
+                            (splice rule-stacks
+                                    old-linea old-lineb
+                                    (repeat (- lineb linea) nil))))
+                  (update :scopes
+                          (fn [scopes]
+                            (splice scopes
+                                    old-linea old-lineb
+                                    (repeat (- lineb linea) nil)))))))))
 
